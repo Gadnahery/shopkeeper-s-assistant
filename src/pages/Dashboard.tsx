@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +9,7 @@ import {
   Plus,
   Package,
   Receipt,
+  Loader2,
 } from "lucide-react";
 import {
   PieChart,
@@ -20,42 +22,9 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-
-const kpiData = [
-  {
-    title: "Today Sales",
-    value: "1,250,000",
-    subtitle: "KES • All payment methods",
-    icon: LayoutGrid,
-    iconBg: "bg-primary/10",
-    iconColor: "text-primary",
-  },
-  {
-    title: "Transactions",
-    value: "46",
-    subtitle: "Receipts issued today",
-    icon: FileText,
-    iconBg: "bg-secondary/10",
-    iconColor: "text-secondary",
-  },
-  {
-    title: "Low Stock",
-    value: "7 Items",
-    subtitle: "Check inventory before closing",
-    icon: AlertTriangle,
-    iconBg: "bg-destructive/10",
-    iconColor: "text-destructive",
-    link: true,
-  },
-  {
-    title: "Cash vs M-Pesa",
-    value: "60% / 40%",
-    subtitle: "Today's payment split",
-    icon: CreditCard,
-    iconBg: "bg-primary/10",
-    iconColor: "text-primary",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTodaySales } from "@/hooks/useSales";
+import { useLowStockProducts, useProducts } from "@/hooks/useProducts";
 
 const salesTrendData = [
   { day: "Mon", sales: 180000 },
@@ -67,38 +36,75 @@ const salesTrendData = [
   { day: "Sun", sales: 120000 },
 ];
 
-const categoryData = [
-  { name: "Building Materials", value: 60, color: "hsl(160, 65%, 50%)" },
-  { name: "Tools", value: 25, color: "hsl(36, 100%, 50%)" },
-  { name: "Electrical & Others", value: 15, color: "hsl(220, 14%, 80%)" },
-];
-
-const alerts = [
-  {
-    type: "warning",
-    title: "Low stock: Cement 50kg",
-    subtitle: "Building Materials • Reorder soon",
-    badge: "(3 left)",
-  },
-  {
-    type: "info",
-    title: "Pending supplier order",
-    subtitle: "Order #SUP-1023 • Expected tomorrow",
-  },
-  {
-    type: "success",
-    title: "Last sale: INV-045 – 20,500",
-    subtitle: "KES • Cash payment",
-  },
-];
-
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+  const { data: todaySales, isLoading: salesLoading } = useTodaySales();
+  const { data: lowStockProducts } = useLowStockProducts();
+  const { data: allProducts } = useProducts();
+
+  const formatNumber = (num: number) => {
+    return num.toLocaleString("en-US");
+  };
+
+  const cashPercent = todaySales?.total ? Math.round((todaySales.cash / todaySales.total) * 100) : 0;
+  const mpesaPercent = 100 - cashPercent;
+
+  const categoryData = [
+    { name: "Building Materials", value: 60, color: "hsl(160, 65%, 50%)" },
+    { name: "Tools", value: 25, color: "hsl(36, 100%, 50%)" },
+    { name: "Electrical & Others", value: 15, color: "hsl(220, 14%, 80%)" },
+  ];
+
+  const kpiData = [
+    {
+      title: t("dashboard.todaySales"),
+      value: salesLoading ? "..." : formatNumber(todaySales?.total || 0),
+      subtitle: "TSH • All payment methods",
+      icon: LayoutGrid,
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
+    },
+    {
+      title: t("dashboard.transactions"),
+      value: salesLoading ? "..." : (todaySales?.count || 0).toString(),
+      subtitle: t("dashboard.receiptsIssued"),
+      icon: FileText,
+      iconBg: "bg-secondary/10",
+      iconColor: "text-secondary",
+    },
+    {
+      title: t("dashboard.lowStock"),
+      value: `${lowStockProducts?.length || 0} ${t("common.items")}`,
+      subtitle: t("dashboard.checkInventory"),
+      icon: AlertTriangle,
+      iconBg: "bg-destructive/10",
+      iconColor: "text-destructive",
+      link: true,
+    },
+    {
+      title: t("dashboard.cashVsMpesa"),
+      value: `${cashPercent}% / ${mpesaPercent}%`,
+      subtitle: t("dashboard.paymentSplit"),
+      icon: CreditCard,
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
+    },
+  ];
+
+  const alerts = lowStockProducts?.slice(0, 3).map((p) => ({
+    type: "warning",
+    title: `Low stock: ${p.name}`,
+    subtitle: `${t("inventory.stock")}: ${p.stock} / Alert: ${p.low_stock_alert}`,
+    badge: `(${p.stock} left)`,
+  })) || [];
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground">At-a-glance view of Colman Hardware performance today.</p>
+        <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
       </div>
 
       {/* KPI Cards */}
@@ -112,7 +118,10 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground">{kpi.title}</p>
               <p className="mt-1 text-2xl font-bold text-foreground">{kpi.value}</p>
               {kpi.link ? (
-                <button className="mt-1 text-sm font-medium text-destructive hover:underline">
+                <button 
+                  className="mt-1 text-sm font-medium text-destructive hover:underline"
+                  onClick={() => navigate("/inventory")}
+                >
                   {kpi.subtitle}
                 </button>
               ) : (
@@ -128,10 +137,10 @@ export default function Dashboard() {
         {/* Sales Trend */}
         <Card className="lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-semibold">Sales Trend</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t("dashboard.salesTrend")}</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="h-8">Daily</Button>
-              <Button variant="ghost" size="sm" className="h-8">Weekly</Button>
+              <Button variant="outline" size="sm" className="h-8">{t("dashboard.daily")}</Button>
+              <Button variant="ghost" size="sm" className="h-8">{t("dashboard.weekly")}</Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -152,7 +161,7 @@ export default function Dashboard() {
         {/* Stock by Category */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">Stock by Category</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t("dashboard.stockByCategory")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
@@ -174,8 +183,8 @@ export default function Dashboard() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xs text-muted-foreground">Total Items</span>
-                  <span className="text-lg font-bold">1,240</span>
+                  <span className="text-xs text-muted-foreground">{t("dashboard.totalItems")}</span>
+                  <span className="text-lg font-bold">{allProducts?.length || 0}</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -198,49 +207,45 @@ export default function Dashboard() {
       {/* Alerts & Recent Activity */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-semibold">Alerts & Recent Activity</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t("dashboard.alerts")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {alerts.map((alert, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <span
-                  className={`mt-1.5 h-2 w-2 rounded-full ${
-                    alert.type === "warning"
-                      ? "bg-destructive"
-                      : alert.type === "info"
-                      ? "bg-muted-foreground"
-                      : "bg-muted-foreground"
-                  }`}
-                />
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {alert.title}{" "}
-                    {alert.badge && (
-                      <span className="font-semibold text-destructive">{alert.badge}</span>
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{alert.subtitle}</p>
+            {alerts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No alerts at this time.</p>
+            ) : (
+              alerts.map((alert, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <span className="mt-1.5 h-2 w-2 rounded-full bg-destructive" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {alert.title}{" "}
+                      {alert.badge && (
+                        <span className="font-semibold text-destructive">{alert.badge}</span>
+                      )}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{alert.subtitle}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => navigate("/sales")}>
           <Plus className="h-4 w-4" />
-          New Sale
+          {t("dashboard.newSale")}
         </Button>
-        <Button className="gap-2 bg-secondary hover:bg-secondary/90">
+        <Button className="gap-2 bg-secondary hover:bg-secondary/90" onClick={() => navigate("/inventory/add")}>
           <Package className="h-4 w-4" />
-          Add Product
+          {t("dashboard.addProduct")}
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => navigate("/expenses")}>
           <Receipt className="h-4 w-4" />
-          Record Expense
+          {t("dashboard.recordExpense")}
         </Button>
       </div>
     </div>
