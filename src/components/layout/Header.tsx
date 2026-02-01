@@ -1,5 +1,15 @@
-import { Bell } from "lucide-react";
+import { Bell, Globe } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/contexts/SidebarContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   shopName?: string;
@@ -12,14 +22,17 @@ export function Header({
   userName = "Alex Johnson",
   userRole = "Store Manager"
 }: HeaderProps) {
+  const { isCollapsed } = useSidebar();
+  const { language, setLanguage, t } = useLanguage();
+  
   const now = new Date();
-  const formattedDate = now.toLocaleDateString('en-GB', {
+  const formattedDate = now.toLocaleDateString(language === 'sw' ? 'sw-TZ' : 'en-GB', {
     weekday: 'long',
     day: 'numeric',
     month: 'short',
     year: 'numeric'
   });
-  const formattedTime = now.toLocaleTimeString('en-GB', {
+  const formattedTime = now.toLocaleTimeString(language === 'sw' ? 'sw-TZ' : 'en-GB', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true
@@ -36,10 +49,37 @@ export function Header({
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {/* Language Toggle */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Globe className="h-5 w-5" />
+              <span className="absolute -bottom-0.5 -right-0.5 rounded bg-primary px-1 text-[9px] font-bold uppercase text-primary-foreground">
+                {language}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => setLanguage("en")}
+              className={cn(language === "en" && "bg-accent")}
+            >
+              🇬🇧 {t("settings.english")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setLanguage("sw")}
+              className={cn(language === "sw" && "bg-accent")}
+            >
+              🇹🇿 {t("settings.swahili")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Notifications */}
         <button className="relative rounded-full p-2 hover:bg-muted">
           <Bell className="h-5 w-5 text-muted-foreground" />
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
         </button>
 
         {/* User Info */}

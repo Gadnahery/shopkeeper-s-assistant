@@ -16,16 +16,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calendar, FileText, FileSpreadsheet } from "lucide-react";
+import { Calendar, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-
-const bestSellingProducts = [
-  { name: "Cement 50kg", amount: 2450000, percentage: 100 },
-  { name: "Wall Paint (White)", amount: 1200000, percentage: 49 },
-  { name: "Roofing Sheets", amount: 850000, percentage: 35 },
-  { name: "Nails (4 Inch)", amount: 320000, percentage: 13 },
-  { name: "Hammers & Tools", amount: 180000, percentage: 7 },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useSales } from "@/hooks/useSales";
+import { format } from "date-fns";
 
 const categoryData = [
   { name: "Construction", value: 55, color: "hsl(160, 65%, 50%)" },
@@ -34,26 +29,10 @@ const categoryData = [
   { name: "Others", value: 8, color: "hsl(220, 14%, 80%)" },
 ];
 
-const recentTransactions = [
-  {
-    date: "24 Oct, 10:45 AM",
-    invoice: "#INV-045",
-    customer: "Juma Construction",
-    amount: 2500000,
-    payment: "M-Pesa",
-    status: "Completed",
-  },
-  {
-    date: "24 Oct, 09:30 AM",
-    invoice: "#INV-044",
-    customer: "Walk-in Customer",
-    amount: 45000,
-    payment: "Cash",
-    status: "Completed",
-  },
-];
-
 export default function Reports() {
+  const { t } = useLanguage();
+  const { data: sales, isLoading } = useSales();
+
   const formatNumber = (num: number) => {
     return num.toLocaleString("en-US");
   };
@@ -64,6 +43,37 @@ export default function Reports() {
     return num.toString();
   };
 
+  // Calculate totals
+  const totalSales = sales?.reduce((sum, s) => sum + Number(s.total), 0) || 0;
+  const cashTotal = sales?.filter(s => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total), 0) || 0;
+  const mpesaTotal = sales?.filter(s => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total), 0) || 0;
+
+  // Calculate best selling products from sale_items
+  const productSales: Record<string, number> = {};
+  sales?.forEach(sale => {
+    (sale.sale_items as any[])?.forEach((item: any) => {
+      productSales[item.product_name] = (productSales[item.product_name] || 0) + Number(item.total);
+    });
+  });
+
+  const bestSellingProducts = Object.entries(productSales)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, amount], index) => ({
+      name,
+      amount,
+      percentage: index === 0 ? 100 : Math.round((amount / (Object.values(productSales)[0] || 1)) * 100),
+    }));
+
+  const recentTransactions = sales?.slice(0, 5).map(sale => ({
+    date: format(new Date(sale.created_at), "dd MMM, hh:mm a"),
+    invoice: sale.invoice_number,
+    customer: (sale.customers as any)?.name || t("sales.walkIn"),
+    amount: Number(sale.total),
+    payment: sale.payment_method,
+    status: sale.status,
+  })) || [];
+
   return (
     <div className="space-y-6">
       {/* Filters & Actions */}
@@ -71,28 +81,28 @@ export default function Reports() {
         <div className="flex gap-3">
           <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Oct 1, 2024 - Oct 24, 2024</span>
+            <span className="text-sm">This Month</span>
           </div>
           <Select defaultValue="sales">
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="sales">Sales Summary</SelectItem>
-              <SelectItem value="stock">Stock Report</SelectItem>
-              <SelectItem value="profit">Profit & Loss</SelectItem>
-              <SelectItem value="customer">Customer Ledger</SelectItem>
+              <SelectItem value="sales">{t("reports.salesSummary")}</SelectItem>
+              <SelectItem value="stock">{t("reports.stockReport")}</SelectItem>
+              <SelectItem value="profit">{t("reports.profitLoss")}</SelectItem>
+              <SelectItem value="customer">{t("reports.customerLedger")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className="gap-2">
             <FileText className="h-4 w-4" />
-            Export PDF
+            {t("reports.exportPdf")}
           </Button>
           <Button variant="outline" className="gap-2">
             <FileSpreadsheet className="h-4 w-4" />
-            Export Excel
+            {t("reports.exportExcel")}
           </Button>
         </div>
       </div>
@@ -101,19 +111,19 @@ export default function Reports() {
       <Card>
         <CardContent className="p-6">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Sales Summary (Selected Period)
+            {t("reports.salesPeriod")}
           </p>
-          <p className="mt-2 text-3xl font-bold">Tsh 4,500,000</p>
+          <p className="mt-2 text-3xl font-bold">Tsh {formatNumber(totalSales)}</p>
           <div className="mt-3 flex items-center gap-6">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-primary" />
-              <span className="text-sm font-medium">2,800,000</span>
-              <span className="text-sm text-muted-foreground">Cash</span>
+              <span className="text-sm font-medium">{formatNumber(cashTotal)}</span>
+              <span className="text-sm text-muted-foreground">{t("sales.cash")}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-secondary" />
-              <span className="text-sm font-medium">1,700,000</span>
-              <span className="text-sm text-muted-foreground">M-Pesa</span>
+              <span className="text-sm font-medium">{formatNumber(mpesaTotal)}</span>
+              <span className="text-sm text-muted-foreground">{t("sales.mpesa")}</span>
             </div>
           </div>
         </CardContent>
@@ -124,32 +134,40 @@ export default function Reports() {
         {/* Best Selling Products */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">Best Selling Products</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t("reports.bestSelling")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {bestSellingProducts.map((product) => (
-              <div key={product.name} className="flex items-center gap-4">
-                <span className="w-32 truncate text-sm">{product.name}</span>
-                <div className="flex-1">
-                  <div className="h-4 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${product.percentage}%` }}
-                    />
-                  </div>
-                </div>
-                <span className="w-16 text-right text-sm font-medium">
-                  {formatK(product.amount)}
-                </span>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
-            ))}
+            ) : bestSellingProducts.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No sales data yet</p>
+            ) : (
+              bestSellingProducts.map((product) => (
+                <div key={product.name} className="flex items-center gap-4">
+                  <span className="w-32 truncate text-sm">{product.name}</span>
+                  <div className="flex-1">
+                    <div className="h-4 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${product.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-16 text-right text-sm font-medium">
+                    {formatK(product.amount)}
+                  </span>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
         {/* Sales by Category */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">Sales by Category</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t("reports.salesByCategory")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center gap-8">
@@ -190,37 +208,51 @@ export default function Reports() {
       {/* Recent Transactions */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-semibold">Recent Transactions</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t("reports.recentTransactions")}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Amount (TSH)</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentTransactions.map((tx, index) => (
-                <TableRow key={index}>
-                  <TableCell className="text-muted-foreground">{tx.date}</TableCell>
-                  <TableCell className="font-medium">{tx.invoice}</TableCell>
-                  <TableCell>{tx.customer}</TableCell>
-                  <TableCell className="font-medium">{formatNumber(tx.amount)}</TableCell>
-                  <TableCell>{tx.payment}</TableCell>
-                  <TableCell>
-                    <Badge className="bg-success/10 text-success hover:bg-success/20">
-                      {tx.status}
-                    </Badge>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("expenses.date")}</TableHead>
+                  <TableHead>{t("sales.invoice")}</TableHead>
+                  <TableHead>{t("reports.customer")}</TableHead>
+                  <TableHead>Amount (TSH)</TableHead>
+                  <TableHead>{t("reports.payment")}</TableHead>
+                  <TableHead>{t("reports.status")}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No sales yet
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  recentTransactions.map((tx, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="text-muted-foreground">{tx.date}</TableCell>
+                      <TableCell className="font-medium">{tx.invoice}</TableCell>
+                      <TableCell>{tx.customer}</TableCell>
+                      <TableCell className="font-medium">{formatNumber(tx.amount)}</TableCell>
+                      <TableCell>{tx.payment}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-success/10 text-success hover:bg-success/20">
+                          {t("reports.completed")}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

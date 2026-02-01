@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,10 @@ import {
   Trash2,
   Download,
   Upload,
+  Loader2,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useShopSettings, useUpdateShopSettings } from "@/hooks/useShopSettings";
 
 const users = [
   { id: "1", name: "Alex Johnson", role: "Manager", phone: "0755 123 456", status: "Active" },
@@ -38,12 +42,39 @@ const users = [
 ];
 
 export default function Settings() {
+  const { t, language, setLanguage } = useLanguage();
+  const { data: shopSettings, isLoading } = useShopSettings();
+  const updateSettings = useUpdateShopSettings();
+
+  const [shopForm, setShopForm] = useState({
+    shop_name: "",
+    phone: "",
+    address: "",
+  });
+
+  // Update form when settings load
+  if (shopSettings && !shopForm.shop_name) {
+    setShopForm({
+      shop_name: shopSettings.shop_name || "",
+      phone: shopSettings.phone || "",
+      address: shopSettings.address || "",
+    });
+  }
+
+  const handleSaveShop = async () => {
+    if (!shopSettings?.id) return;
+    await updateSettings.mutateAsync({
+      id: shopSettings.id,
+      ...shopForm,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">Manage your shop settings, users, and preferences.</p>
+        <h1 className="text-2xl font-bold text-foreground">{t("settings.title")}</h1>
+        <p className="text-muted-foreground">{t("settings.subtitle")}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -52,23 +83,49 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Store className="h-5 w-5 text-primary" />
-              Shop Details
+              {t("settings.shopDetails")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Shop Name</Label>
-              <Input defaultValue="Colman Hardware" />
-            </div>
-            <div className="space-y-2">
-              <Label>Phone Number</Label>
-              <Input defaultValue="0622 123 456" />
-            </div>
-            <div className="space-y-2">
-              <Label>Location</Label>
-              <Input defaultValue="Soko Kuu, Dodoma" />
-            </div>
-            <Button className="mt-2">Save Changes</Button>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>{t("settings.shopName")}</Label>
+                  <Input 
+                    value={shopForm.shop_name}
+                    onChange={(e) => setShopForm({ ...shopForm, shop_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("settings.phoneNumber")}</Label>
+                  <Input 
+                    value={shopForm.phone}
+                    onChange={(e) => setShopForm({ ...shopForm, phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("settings.location")}</Label>
+                  <Input 
+                    value={shopForm.address}
+                    onChange={(e) => setShopForm({ ...shopForm, address: e.target.value })}
+                  />
+                </div>
+                <Button 
+                  className="mt-2" 
+                  onClick={handleSaveShop}
+                  disabled={updateSettings.isPending}
+                >
+                  {updateSettings.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  {t("settings.saveChanges")}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -77,33 +134,33 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-primary" />
-              Language & Preferences
+              {t("settings.languagePrefs")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label>Language</Label>
-              <Select defaultValue="en">
+              <Label>{t("settings.language")}</Label>
+              <Select value={language} onValueChange={(v: "en" | "sw") => setLanguage(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="sw">Swahili</SelectItem>
+                  <SelectItem value="en">🇬🇧 {t("settings.english")}</SelectItem>
+                  <SelectItem value="sw">🇹🇿 {t("settings.swahili")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Low Stock Alerts</p>
-                <p className="text-sm text-muted-foreground">Notify when items are low</p>
+                <p className="font-medium">{t("settings.lowStockAlerts")}</p>
+                <p className="text-sm text-muted-foreground">{t("settings.notifyLow")}</p>
               </div>
               <Switch defaultChecked />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Auto Print Receipt</p>
-                <p className="text-sm text-muted-foreground">Print after each sale</p>
+                <p className="font-medium">{t("settings.autoPrint")}</p>
+                <p className="text-sm text-muted-foreground">{t("settings.printAfterSale")}</p>
               </div>
               <Switch />
             </div>
@@ -115,25 +172,25 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5 text-primary" />
-              Backup & Restore
+              {t("settings.backupRestore")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Create a backup of your data or restore from a previous backup.
+              {t("settings.backupDesc")}
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="gap-2">
                 <Download className="h-4 w-4" />
-                Create Backup
+                {t("settings.createBackup")}
               </Button>
               <Button variant="outline" className="gap-2">
                 <Upload className="h-4 w-4" />
-                Restore Backup
+                {t("settings.restoreBackup")}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Last backup: 23 Oct 2024, 11:30 AM
+              {t("settings.lastBackup")}: 23 Oct 2024, 11:30 AM
             </p>
           </CardContent>
         </Card>
@@ -144,11 +201,11 @@ export default function Settings() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            User Management
+            {t("settings.userManagement")}
           </CardTitle>
           <Button size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
-            Add User
+            {t("settings.addUser")}
           </Button>
         </CardHeader>
         <CardContent className="p-0">
@@ -156,10 +213,10 @@ export default function Settings() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>{t("settings.role")}</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -177,7 +234,7 @@ export default function Settings() {
                           : ""
                       }
                     >
-                      {user.status}
+                      {user.status === "Active" ? t("settings.active") : t("settings.inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell>

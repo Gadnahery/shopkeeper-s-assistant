@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,163 +11,238 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Info, Tag, Save, ScanLine } from "lucide-react";
+import { ArrowLeft, Info, Tag, Save, ScanLine, Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useCategories } from "@/hooks/useCategories";
+import { useCreateProduct } from "@/hooks/useProducts";
 
 export default function AddProduct() {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const { data: categories } = useCategories();
+  const createProduct = useCreateProduct();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    name_sw: "",
+    category_id: "",
+    barcode: "",
+    unit_type: "piece",
+    buying_price: "",
+    selling_price: "",
+    stock: "",
+    low_stock_alert: "5",
+  });
+
+  const generateCode = () => {
+    const prefix = formData.name.substring(0, 3).toUpperCase() || "PRD";
+    const random = Math.floor(Math.random() * 9000) + 1000;
+    return `${prefix}${random}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    await createProduct.mutateAsync({
+      name: formData.name,
+      name_sw: formData.name_sw || null,
+      code: generateCode(),
+      category_id: formData.category_id || null,
+      barcode: formData.barcode || null,
+      unit_type: formData.unit_type,
+      buying_price: parseFloat(formData.buying_price) || 0,
+      selling_price: parseFloat(formData.selling_price) || 0,
+      stock: parseInt(formData.stock) || 0,
+      low_stock_alert: parseInt(formData.low_stock_alert) || 5,
+    });
+
+    navigate("/inventory");
+  };
+
+  const getCategoryName = (cat: typeof categories extends (infer T)[] ? T : never) => {
+    if (!cat) return "";
+    return language === "sw" && cat.name_sw ? cat.name_sw : cat.name;
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Add New Product</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("addProduct.title")}</h1>
         </div>
         <Button variant="outline" onClick={() => navigate("/inventory")} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
-          Back to Inventory
+          {t("addProduct.back")}
         </Button>
       </div>
 
       {/* Form */}
       <Card>
         <CardContent className="p-6">
-          {/* General Information Section */}
-          <div className="mb-8">
-            <div className="mb-6 flex items-center gap-2 text-primary">
-              <Info className="h-5 w-5" />
-              <h2 className="text-lg font-semibold">General Information</h2>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <Label htmlFor="name">Product Name</Label>
-                <Input
-                  id="name"
-                  placeholder="e.g. Paint Brush 4 inch"
-                  className="mt-2"
-                />
+          <form onSubmit={handleSubmit}>
+            {/* General Information Section */}
+            <div className="mb-8">
+              <div className="mb-6 flex items-center gap-2 text-primary">
+                <Info className="h-5 w-5" />
+                <h2 className="text-lg font-semibold">{t("addProduct.generalInfo")}</h2>
               </div>
 
-              <div>
-                <Label htmlFor="code">Product Code (SKU)</Label>
-                <Input
-                  id="code"
-                  value="AUTO-8392"
-                  disabled
-                  className="mt-2 bg-muted"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="building">Building Materials</SelectItem>
-                    <SelectItem value="tools">Tools</SelectItem>
-                    <SelectItem value="electrical">Electrical</SelectItem>
-                    <SelectItem value="plumbing">Plumbing</SelectItem>
-                    <SelectItem value="paint">Paints & Solvents</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="barcode">Barcode</Label>
-                <div className="relative mt-2">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <Label htmlFor="name">{t("addProduct.productName")} (English)</Label>
                   <Input
-                    id="barcode"
-                    placeholder="Scan or enter barcode"
-                    className="pr-10"
+                    id="name"
+                    placeholder={t("addProduct.productNamePlaceholder")}
+                    className="mt-2"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
                   />
-                  <ScanLine className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="name_sw">{t("addProduct.productName")} (Kiswahili)</Label>
+                  <Input
+                    id="name_sw"
+                    placeholder="mf. Brashi ya Rangi 4 inchi"
+                    className="mt-2"
+                    value={formData.name_sw}
+                    onChange={(e) => setFormData({ ...formData, name_sw: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="category">{t("addProduct.category")}</Label>
+                  <Select 
+                    value={formData.category_id} 
+                    onValueChange={(v) => setFormData({ ...formData, category_id: v })}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder={t("addProduct.selectCategory")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories?.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {getCategoryName(cat)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="barcode">{t("addProduct.barcode")}</Label>
+                  <div className="relative mt-2">
+                    <Input
+                      id="barcode"
+                      placeholder={t("addProduct.scanOrEnter")}
+                      className="pr-10"
+                      value={formData.barcode}
+                      onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                    />
+                    <ScanLine className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="unit">{t("addProduct.unitType")}</Label>
+                  <Select 
+                    value={formData.unit_type} 
+                    onValueChange={(v) => setFormData({ ...formData, unit_type: v })}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="piece">{t("unit.piece")}</SelectItem>
+                      <SelectItem value="kg">{t("unit.kg")}</SelectItem>
+                      <SelectItem value="meter">{t("unit.meter")}</SelectItem>
+                      <SelectItem value="liter">{t("unit.liter")}</SelectItem>
+                      <SelectItem value="box">{t("unit.box")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-
-              <div>
-                <Label htmlFor="unit">Unit Type</Label>
-                <Select defaultValue="piece">
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="piece">Piece (pc)</SelectItem>
-                    <SelectItem value="kg">Kilogram (kg)</SelectItem>
-                    <SelectItem value="meter">Meter (m)</SelectItem>
-                    <SelectItem value="liter">Liter (L)</SelectItem>
-                    <SelectItem value="box">Box</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Pricing & Stock Section */}
-          <div className="border-t pt-8">
-            <div className="mb-6 flex items-center gap-2 text-secondary">
-              <Tag className="h-5 w-5" />
-              <h2 className="text-lg font-semibold text-foreground">Pricing & Stock</h2>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <Label htmlFor="buyingPrice">Buying Price (Tsh)</Label>
-                <Input
-                  id="buyingPrice"
-                  type="number"
-                  placeholder="0.00"
-                  className="mt-2"
-                />
+            {/* Pricing & Stock Section */}
+            <div className="border-t pt-8">
+              <div className="mb-6 flex items-center gap-2 text-secondary">
+                <Tag className="h-5 w-5" />
+                <h2 className="text-lg font-semibold text-foreground">{t("addProduct.pricingStock")}</h2>
               </div>
 
-              <div>
-                <Label htmlFor="sellingPrice">Selling Price (Tsh)</Label>
-                <Input
-                  id="sellingPrice"
-                  type="number"
-                  placeholder="0.00"
-                  className="mt-2"
-                />
-              </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="buyingPrice">{t("addProduct.buyingPrice")}</Label>
+                  <Input
+                    id="buyingPrice"
+                    type="number"
+                    placeholder="0.00"
+                    className="mt-2"
+                    value={formData.buying_price}
+                    onChange={(e) => setFormData({ ...formData, buying_price: e.target.value })}
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="stock">Initial Stock Quantity</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  placeholder="0"
-                  className="mt-2"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="sellingPrice">{t("addProduct.sellingPrice")}</Label>
+                  <Input
+                    id="sellingPrice"
+                    type="number"
+                    placeholder="0.00"
+                    className="mt-2"
+                    value={formData.selling_price}
+                    onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
+                    required
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="lowStockAlert">Low Stock Alert Limit</Label>
-                <Input
-                  id="lowStockAlert"
-                  type="number"
-                  placeholder="e.g. 5"
-                  className="mt-2"
-                />
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Notifies when stock drops below this
-                </p>
+                <div>
+                  <Label htmlFor="stock">{t("addProduct.initialStock")}</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    placeholder="0"
+                    className="mt-2"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="lowStockAlert">{t("addProduct.lowStockAlert")}</Label>
+                  <Input
+                    id="lowStockAlert"
+                    type="number"
+                    placeholder="e.g. 5"
+                    className="mt-2"
+                    value={formData.low_stock_alert}
+                    onChange={(e) => setFormData({ ...formData, low_stock_alert: e.target.value })}
+                  />
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("addProduct.lowStockHint")}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="mt-8 flex justify-end gap-3 border-t pt-6">
-            <Button variant="outline" onClick={() => navigate("/inventory")}>
-              Cancel
-            </Button>
-            <Button className="gap-2">
-              <Save className="h-4 w-4" />
-              Save Product
-            </Button>
-          </div>
+            {/* Action Buttons */}
+            <div className="mt-8 flex justify-end gap-3 border-t pt-6">
+              <Button type="button" variant="outline" onClick={() => navigate("/inventory")}>
+                {t("addProduct.cancel")}
+              </Button>
+              <Button type="submit" className="gap-2" disabled={createProduct.isPending}>
+                {createProduct.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {t("addProduct.save")}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>

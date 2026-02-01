@@ -19,60 +19,84 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Plus, TrendingUp, MoreHorizontal } from "lucide-react";
-
-interface Expense {
-  id: string;
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
-  payMethod: string;
-}
-
-const mockExpenses: Expense[] = [
-  { id: "1", date: "24 Oct, 2024", description: "Shop Rent (Oct)", category: "Rent", amount: 250000, payMethod: "M-Pesa" },
-  { id: "2", date: "23 Oct, 2024", description: "Electricity Bill", category: "Utilities", amount: 45000, payMethod: "Cash" },
-  { id: "3", date: "22 Oct, 2024", description: "Transport for Stock", category: "Transport", amount: 25000, payMethod: "Cash" },
-  { id: "4", date: "21 Oct, 2024", description: "Staff Lunch (Weekly)", category: "Food", amount: 15000, payMethod: "Cash" },
-  { id: "5", date: "20 Oct, 2024", description: "Stationery & Pens", category: "Office", amount: 5000, payMethod: "Cash" },
-  { id: "6", date: "18 Oct, 2024", description: "Internet Bundle", category: "Utilities", amount: 50000, payMethod: "M-Pesa" },
-];
-
-const stats = [
-  { label: "TOTAL EXPENSES (OCT)", value: "Tsh 850,000", trend: "+12% vs last month", trendUp: true },
-  { label: "OPERATIONAL COSTS", value: "Tsh 320,000", subtitle: "Utilities & Rent" },
-  { label: "STOCK PURCHASES", value: "Tsh 530,000", subtitle: "5 pending invoices", subtitleColor: "text-destructive" },
-];
-
-const categoryBreakdown = [
-  { name: "Rent", amount: 250, color: "bg-primary" },
-  { name: "Utilities", amount: 95, color: "bg-secondary" },
-];
+import { Search, Plus, TrendingUp, MoreHorizontal, Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useExpenses, useExpenseCategories, useCreateExpense, useExpenseStats, useDeleteExpense } from "@/hooks/useExpenses";
+import { format } from "date-fns";
 
 export default function Expenses() {
+  const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
+  const [newExpense, setNewExpense] = useState({
+    description: "",
+    category: "Utilities",
+    amount: "",
+    payMethod: "Cash",
+  });
 
-  const filteredExpenses = mockExpenses.filter(
+  const { data: expenses, isLoading } = useExpenses();
+  const { data: categories } = useExpenseCategories();
+  const { data: stats } = useExpenseStats();
+  const createExpense = useCreateExpense();
+  const deleteExpense = useDeleteExpense();
+
+  const filteredExpenses = expenses?.filter(
     (expense) =>
       expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       expense.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
   const formatNumber = (num: number) => {
     return num.toLocaleString("en-US");
   };
 
+  const handleAddExpense = async () => {
+    if (!newExpense.description || !newExpense.amount) return;
+    
+    await createExpense.mutateAsync({
+      description: newExpense.description,
+      category: newExpense.category,
+      amount: parseFloat(newExpense.amount),
+    });
+    
+    setNewExpense({ description: "", category: "Utilities", amount: "", payMethod: "Cash" });
+  };
+
+  const getCategoryName = (cat: typeof categories extends (infer T)[] ? T : never) => {
+    if (!cat) return "";
+    return language === "sw" && cat.name_sw ? cat.name_sw : cat.name;
+  };
+
+  const statsCards = [
+    { 
+      label: t("expenses.totalExpenses"), 
+      value: `Tsh ${formatNumber(stats?.total || 0)}`, 
+      trend: "+12% vs last month", 
+      trendUp: true 
+    },
+    { 
+      label: t("expenses.operationalCosts"), 
+      value: `Tsh ${formatNumber((stats?.byCategory?.["Utilities"] || 0) + (stats?.byCategory?.["Rent"] || 0))}`, 
+      subtitle: t("expenses.utilitiesRent") 
+    },
+    { 
+      label: t("expenses.stockPurchases"), 
+      value: `Tsh ${formatNumber(stats?.byCategory?.["Stock Purchase"] || 0)}`, 
+      subtitle: `5 ${t("expenses.pendingInvoices")}`, 
+      subtitleColor: "text-destructive" 
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Expense Tracking</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("expenses.title")}</h1>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -100,11 +124,11 @@ export default function Expenses() {
         {/* Expenses Table */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recent Expenses</h2>
+            <h2 className="text-lg font-semibold">{t("expenses.recentExpenses")}</h2>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search expenses..."
+                placeholder={t("expenses.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -114,36 +138,55 @@ export default function Expenses() {
 
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Pay Method</TableHead>
-                    <TableHead className="w-10">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredExpenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell className="text-muted-foreground">{expense.date}</TableCell>
-                      <TableCell className="font-medium">{expense.description}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{expense.category}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{formatNumber(expense.amount)}</TableCell>
-                      <TableCell>{expense.payMethod}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("expenses.date")}</TableHead>
+                      <TableHead>{t("expenses.description")}</TableHead>
+                      <TableHead>{t("expenses.category")}</TableHead>
+                      <TableHead>{t("expenses.amount")}</TableHead>
+                      <TableHead className="w-10">{t("common.actions")}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredExpenses.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          {expenses?.length === 0 ? "No expenses yet. Record your first expense!" : "No expenses match your search."}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredExpenses.map((expense) => (
+                        <TableRow key={expense.id}>
+                          <TableCell className="text-muted-foreground">
+                            {format(new Date(expense.date), "dd MMM, yyyy")}
+                          </TableCell>
+                          <TableCell className="font-medium">{expense.description}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{expense.category}</Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">{formatNumber(expense.amount)}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => deleteExpense.mutate(expense.id)}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -153,48 +196,79 @@ export default function Expenses() {
           {/* Add New Expense */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-base">Add New Expense</CardTitle>
+              <CardTitle className="text-base">{t("expenses.addNewExpense")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Expense Title</Label>
-                <Input placeholder="e.g. Electric Bill" />
+                <Label>{t("expenses.expenseTitle")}</Label>
+                <Input 
+                  placeholder={t("expenses.expensePlaceholder")}
+                  value={newExpense.description}
+                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
-                <Select defaultValue="utilities">
+                <Label>{t("expenses.category")}</Label>
+                <Select 
+                  value={newExpense.category}
+                  onValueChange={(v) => setNewExpense({ ...newExpense, category: v })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="utilities">Utilities</SelectItem>
-                    <SelectItem value="rent">Rent</SelectItem>
-                    <SelectItem value="transport">Transport</SelectItem>
-                    <SelectItem value="food">Food</SelectItem>
-                    <SelectItem value="office">Office</SelectItem>
-                    <SelectItem value="stock">Stock Purchase</SelectItem>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {getCategoryName(cat)}
+                      </SelectItem>
+                    )) || (
+                      <>
+                        <SelectItem value="Utilities">{t("expenseCategory.utilities")}</SelectItem>
+                        <SelectItem value="Rent">{t("expenseCategory.rent")}</SelectItem>
+                        <SelectItem value="Transport">{t("expenseCategory.transport")}</SelectItem>
+                        <SelectItem value="Food">{t("expenseCategory.food")}</SelectItem>
+                        <SelectItem value="Office">{t("expenseCategory.office")}</SelectItem>
+                        <SelectItem value="Stock Purchase">{t("expenseCategory.stock")}</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Amount (Tsh)</Label>
-                <Input type="number" placeholder="0.00" />
+                <Label>{t("expenses.amountTsh")}</Label>
+                <Input 
+                  type="number" 
+                  placeholder="0.00"
+                  value={newExpense.amount}
+                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <Select defaultValue="cash">
+                <Label>{t("expenses.paymentMethod")}</Label>
+                <Select 
+                  value={newExpense.payMethod}
+                  onValueChange={(v) => setNewExpense({ ...newExpense, payMethod: v })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="mpesa">M-Pesa</SelectItem>
+                    <SelectItem value="Cash">{t("sales.cash")}</SelectItem>
+                    <SelectItem value="M-Pesa">{t("sales.mpesa")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full gap-2 bg-secondary hover:bg-secondary/90">
-                <Plus className="h-4 w-4" />
-                Save Expense
+              <Button 
+                className="w-full gap-2 bg-secondary hover:bg-secondary/90"
+                onClick={handleAddExpense}
+                disabled={!newExpense.description || !newExpense.amount || createExpense.isPending}
+              >
+                {createExpense.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                {t("expenses.saveExpense")}
               </Button>
             </CardContent>
           </Card>
@@ -202,16 +276,16 @@ export default function Expenses() {
           {/* Category Breakdown */}
           <Card>
             <CardHeader className="pb-4">
-              <CardTitle className="text-base">Category Breakdown</CardTitle>
+              <CardTitle className="text-base">{t("expenses.categoryBreakdown")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {categoryBreakdown.map((cat) => (
-                <div key={cat.name} className="flex items-center justify-between">
+              {stats?.byCategory && Object.entries(stats.byCategory).map(([name, amount]) => (
+                <div key={name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className={`h-3 w-3 rounded-sm ${cat.color}`} />
-                    <span className="text-sm">{cat.name}</span>
+                    <span className="h-3 w-3 rounded-sm bg-primary" />
+                    <span className="text-sm">{name}</span>
                   </div>
-                  <span className="text-sm font-medium">{cat.amount}k</span>
+                  <span className="text-sm font-medium">{formatNumber(amount)}</span>
                 </div>
               ))}
             </CardContent>
