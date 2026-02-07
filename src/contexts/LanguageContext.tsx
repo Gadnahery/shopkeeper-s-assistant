@@ -19,6 +19,8 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.expenses": "Expenses",
     "nav.reports": "Reports",
     "nav.settings": "Settings",
+    "nav.hrm": "HRM",
+    "nav.assets": "Assets",
     "nav.main": "Main",
 
     // Dashboard
@@ -258,6 +260,8 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.expenses": "Matumizi",
     "nav.reports": "Ripoti",
     "nav.settings": "Mipangilio",
+    "nav.hrm": "Rasilimali Watu",
+    "nav.assets": "Mali",
     "nav.main": "Kuu",
 
     // Dashboard
