@@ -1,10 +1,11 @@
-import { Bell, Globe, Menu } from "lucide-react";
+import { Bell, Globe, Menu, Moon, Sun } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/hooks/useTheme";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -15,6 +16,7 @@ export function Header() {
   const { language, setLanguage, t } = useLanguage();
   const { profile } = useAuth();
   const isMobile = useIsMobile();
+  const { theme, toggleTheme } = useTheme();
 
   const userName = profile?.full_name || "User";
   const shopName = profile?.shops?.name || "Smart Money";
@@ -26,7 +28,7 @@ export function Header() {
   });
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card/80 backdrop-blur-sm px-4 md:px-6">
       <div className="flex items-center gap-3">
         {isMobile && (
           <Button variant="ghost" size="icon" onClick={() => setCollapsed(false)} className="h-9 w-9 md:hidden">
@@ -39,7 +41,13 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        {/* Theme toggle */}
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
+
+        {/* Language */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-9 w-9">
@@ -59,11 +67,13 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Notifications */}
         <button className="relative rounded-full p-2 hover:bg-muted">
           <Bell className="h-4 w-4 text-muted-foreground" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
         </button>
 
+        {/* User */}
         <div className="flex items-center gap-2">
           <div className="hidden text-right md:block">
             <p className="text-sm font-medium text-foreground">{userName}</p>
