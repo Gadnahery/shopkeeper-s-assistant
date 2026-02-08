@@ -8,10 +8,11 @@ interface BarcodeGeneratorProps {
   price?: number;
   width?: number;
   height?: number;
+  format?: "code128" | "qr";
 }
 
 /** Simple Code 128 barcode renderer using canvas */
-export function BarcodeGenerator({ value, productName, price, width = 200, height = 80 }: BarcodeGeneratorProps) {
+export function BarcodeGenerator({ value, productName, price, width = 200, height = 80, format = "code128" }: BarcodeGeneratorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const draw = useCallback(() => {
