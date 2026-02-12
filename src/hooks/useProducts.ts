@@ -7,6 +7,13 @@ export type Product = Tables<"products">;
 export type ProductInsert = TablesInsert<"products">;
 export type ProductUpdate = TablesUpdate<"products">;
 
+async function getUserShopId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from("profiles").select("shop_id").eq("user_id", user.id).maybeSingle();
+  return data?.shop_id || null;
+}
+
 export function useProducts() {
   return useQuery({
     queryKey: ["products"],
@@ -42,9 +49,15 @@ export function useCreateProduct() {
   
   return useMutation({
     mutationFn: async (product: ProductInsert) => {
+      // Ensure shop_id is set
+      let finalProduct = { ...product };
+      if (!finalProduct.shop_id) {
+        const shopId = await getUserShopId();
+        if (shopId) finalProduct.shop_id = shopId;
+      }
       const { data, error } = await supabase
         .from("products")
-        .insert(product)
+        .insert(finalProduct)
         .select()
         .single();
       if (error) throw error;
@@ -111,17 +124,9 @@ export function useLowStockProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
-        .filter("stock", "lte", supabase.rpc ? 0 : 0);
-      
-      // Get products where stock <= low_stock_alert
-      const { data: allProducts, error: allError } = await supabase
-        .from("products")
         .select("*");
-      
-      if (allError) throw allError;
-      
-      return allProducts?.filter(p => p.stock <= p.low_stock_alert) || [];
+      if (error) throw error;
+      return data?.filter(p => p.stock <= p.low_stock_alert) || [];
     },
   });
 }

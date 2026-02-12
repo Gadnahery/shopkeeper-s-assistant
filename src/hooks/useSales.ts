@@ -24,6 +24,17 @@ interface CreateSaleInput {
   items: CartItem[];
 }
 
+async function getUserShopId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("profiles")
+    .select("shop_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return data?.shop_id || null;
+}
+
 export function useSales() {
   return useQuery({
     queryKey: ["sales"],
@@ -71,6 +82,10 @@ export function useCreateSale() {
   
   return useMutation({
     mutationFn: async (input: CreateSaleInput) => {
+      // Get shop_id first - this is REQUIRED for RLS
+      const shopId = await getUserShopId();
+      if (!shopId) throw new Error("No shop found for user. Please log out and log in again.");
+
       // Generate invoice number
       const { data: invoiceNum } = await supabase.rpc("generate_invoice_number");
       
@@ -78,7 +93,7 @@ export function useCreateSale() {
       const discountAmount = input.discount_amount || 0;
       const total = subtotal - discountAmount;
       
-      // Create sale
+      // Create sale with shop_id
       const { data: sale, error: saleError } = await supabase
         .from("sales")
         .insert({
@@ -91,13 +106,14 @@ export function useCreateSale() {
           discount_percent: input.discount_percent || 0,
           total,
           status: "completed",
+          shop_id: shopId,
         })
         .select()
         .single();
       
       if (saleError) throw saleError;
       
-      // Create sale items
+      // Create sale items with shop_id
       const saleItems: SaleItemInsert[] = input.items.map(item => ({
         sale_id: sale.id,
         product_id: item.product_id,
@@ -105,6 +121,7 @@ export function useCreateSale() {
         unit_price: item.unit_price,
         quantity: item.quantity,
         total: item.unit_price * item.quantity,
+        shop_id: shopId,
       }));
       
       const { error: itemsError } = await supabase
@@ -129,7 +146,7 @@ export function useCreateSale() {
             .update({ stock: newStock })
             .eq("id", item.product_id);
           
-          // Record stock history
+          // Record stock history with shop_id
           await supabase
             .from("stock_history")
             .insert({
@@ -139,6 +156,7 @@ export function useCreateSale() {
               quantity_change: -item.quantity,
               new_stock: newStock,
               notes: `Sale: ${sale.invoice_number}`,
+              shop_id: shopId,
             });
         }
       }
