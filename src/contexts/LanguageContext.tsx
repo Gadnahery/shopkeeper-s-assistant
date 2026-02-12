@@ -25,7 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dashboard
     "dashboard.title": "Dashboard",
-    "dashboard.subtitle": "At-a-glance view of Colman Hardware performance today.",
+    "dashboard.subtitle": "At-a-glance view of your shop performance today.",
     "dashboard.todaySales": "Today Sales",
     "dashboard.transactions": "Transactions",
     "dashboard.lowStock": "Low Stock",
@@ -266,7 +266,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dashboard
     "dashboard.title": "Dashibodi",
-    "dashboard.subtitle": "Muhtasari wa utendaji wa Colman Hardware leo.",
+    "dashboard.subtitle": "Muhtasari wa utendaji wa duka lako leo.",
     "dashboard.todaySales": "Mauzo ya Leo",
     "dashboard.transactions": "Miamala",
     "dashboard.lowStock": "Stoki Chini",
