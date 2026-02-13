@@ -5,15 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, CheckCircle, Printer, Minus, Plus, X, Loader2, Camera } from "lucide-react";
+import { Search, CheckCircle, Printer, Minus, Plus, X, Loader2, Camera, Monitor } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
-import { useCreateSale } from "@/hooks/useSales";
+import { useCreateSale, useDraftSales, useSaveDraftSale, useCompleteDraftSale, useDeleteDraftSale } from "@/hooks/useSales";
 import { useShopSettings } from "@/hooks/useShopSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import { Receipt } from "@/components/Receipt";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -27,6 +29,7 @@ interface CartItem {
 }
 
 export default function Sales() {
+  const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discountAmount, setDiscountAmount] = useState("0");
@@ -35,6 +38,7 @@ export default function Sales() {
   const [mpesaAmount, setMpesaAmount] = useState("");
   const [mpesaCode, setMpesaCode] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("walk-in");
+  const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
@@ -44,7 +48,12 @@ export default function Sales() {
   const { data: products } = useProducts();
   const { data: customers } = useCustomers();
   const { data: shopSettings } = useShopSettings();
+  const { profile } = useAuth();
+  const { data: drafts } = useDraftSales();
   const createSale = useCreateSale();
+  const saveDraft = useSaveDraftSale();
+  const completeDraft = useCompleteDraftSale();
+  const deleteDraft = useDeleteDraftSale();
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discount = parseInt(discountAmount) || Math.round(subtotal * (parseInt(discountPercent) || 0) / 100);
@@ -102,25 +111,27 @@ export default function Sales() {
     }
     const paymentMethod = parseFloat(mpesaAmount) > 0 ? "M-Pesa" : "Cash";
     const customerId = selectedCustomer === "walk-in" ? null : selectedCustomer;
+    const custName = selectedCustomer === "walk-in" ? (customerName.trim() || null) : (customers?.find(c => c.id === selectedCustomer)?.name || customerName || null);
 
     try {
       const sale = await createSale.mutateAsync({
-        customer_id: customerId, payment_method: paymentMethod,
+        customer_id: customerId, customer_name: custName, payment_method: paymentMethod,
         mpesa_code: mpesaCode || null, discount_amount: discount,
         discount_percent: parseInt(discountPercent) || 0,
         items: cartItems.map(item => ({ product_id: item.product_id, product_name: item.name, unit_price: item.price, quantity: item.quantity })),
       });
 
-      const customerName = selectedCustomer === "walk-in" ? t("sales.walkIn") : customers?.find(c => c.id === selectedCustomer)?.name || t("sales.walkIn");
+      const receiptCustomerName = custName || (selectedCustomer === "walk-in" ? t("sales.walkIn") : customers?.find(c => c.id === selectedCustomer)?.name || t("sales.walkIn"));
 
       setLastSale({
         invoiceNumber: sale.invoice_number,
         date: format(new Date(), "dd MMM yyyy, hh:mm a"),
-        customerName,
+        customerName: receiptCustomerName,
+        cashier: profile?.full_name || undefined,
         items: cartItems.map(item => ({ name: item.name, quantity: item.quantity, price: item.price, total: item.price * item.quantity })),
         subtotal, discount, total, paymentMethod,
         mpesaCode: mpesaCode || undefined,
-        shopName: shopSettings?.shop_name || "Smart Money",
+        shopName: shopSettings?.shop_name || "",
         shopPhone: shopSettings?.phone || undefined,
         shopAddress: shopSettings?.address || undefined,
       });
@@ -148,7 +159,7 @@ export default function Sales() {
         <div className="space-y-4 md:space-y-6 lg:col-span-3">
           <Card>
             <CardContent className="p-4 md:p-6">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>{t("sales.customer")}</Label>
                   <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
@@ -160,15 +171,52 @@ export default function Sales() {
                   </Select>
                 </div>
                 <div className="space-y-2">
+                  <Label>{t("sales.customerName")}</Label>
+                  <Input placeholder={language === "sw" ? "Jina la mteja (si lazima)" : "Customer name (optional)"} className="h-11 md:h-12" value={customerName} onChange={e => setCustomerName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
                   <Label>{t("sales.phone")}</Label>
                   <Input placeholder={t("sales.enterPhone")} className="h-11 md:h-12" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                 </div>
               </div>
+              {drafts && drafts.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <Label className="text-muted-foreground">{language === "sw" ? "Rasimu" : "Drafts"}</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {drafts.map((d: any) => (
+                      <div key={d.id} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                        <span>{d.invoice_number} - {formatNumber(Number(d.total))}</span>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          const items = (d.sale_items || []).map((si: any) => ({
+                            id: `cart-${Date.now()}-${si.product_id}`,
+                            product_id: si.product_id,
+                            name: si.product_name,
+                            price: si.unit_price,
+                            quantity: si.quantity,
+                            maxStock: products?.find(p => p.id === si.product_id)?.stock || 999,
+                          }));
+                          setCartItems(items);
+                          setSelectedCustomer("walk-in");
+                          setCustomerName(d.customer_name || "");
+                          deleteDraft.mutate(d.id);
+                        }}>{language === "sw" ? "Endelea" : "Resume"}</Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteDraft.mutate(d.id)}>{language === "sw" ? "Futa" : "Delete"}</Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowScanner(true)}>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/sales/terminal")}>
+            <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
+              <Monitor className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-primary">{language === "sw" ? "Hali ya Terminal" : "Terminal Mode"}</span>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowScanner(true)}>
               <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
                 <Camera className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium text-primary">{t("sales.scanBarcode")}</span>
@@ -263,6 +311,22 @@ export default function Sales() {
                 <Button className="flex-1 gap-2 bg-secondary hover:bg-secondary/90 md:flex-none md:px-8" onClick={handleCompleteSale} disabled={cartItems.length === 0 || createSale.isPending}>
                   {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                   {t("sales.completeSale")}
+                </Button>
+                <Button variant="outline" className="flex-1 gap-2 md:flex-none md:px-8" onClick={async () => {
+                  if (cartItems.length === 0) { toast.error(language === "sw" ? "Kikapu ni tupu" : "Cart is empty"); return; }
+                  await saveDraft.mutateAsync({
+                    customer_id: selectedCustomer === "walk-in" ? null : selectedCustomer,
+                    customer_name: customerName.trim() || null,
+                    payment_method: "Cash",
+                    discount_amount: discount,
+                    discount_percent: parseInt(discountPercent) || 0,
+                    items: cartItems.map(item => ({ product_id: item.product_id, product_name: item.name, unit_price: item.price, quantity: item.quantity })),
+                  });
+                  setCartItems([]);
+                  setCustomerName("");
+                }} disabled={cartItems.length === 0 || saveDraft.isPending}>
+                  {saveDraft.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t("sales.saveAsDraft")}
                 </Button>
                 <Button variant="outline" className="flex-1 gap-2 md:flex-none md:px-8" onClick={() => lastSale && setShowReceipt(true)} disabled={!lastSale}>
                   <Printer className="h-4 w-4" />{t("sales.printReceipt")}

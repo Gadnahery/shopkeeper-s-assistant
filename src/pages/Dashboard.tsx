@@ -37,10 +37,10 @@ export default function Dashboard() {
   ];
 
   const kpiData = [
-    { title: t("dashboard.todaySales"), value: salesLoading ? "..." : formatNumber(todaySales?.total || 0), subtitle: "TSH", icon: LayoutGrid, iconBg: "bg-primary/10", iconColor: "text-primary" },
-    { title: t("dashboard.transactions"), value: salesLoading ? "..." : (todaySales?.count || 0).toString(), subtitle: t("dashboard.receiptsIssued"), icon: FileText, iconBg: "bg-secondary/10", iconColor: "text-secondary" },
-    { title: t("dashboard.lowStock"), value: `${lowStockProducts?.length || 0} ${t("common.items")}`, subtitle: t("dashboard.checkInventory"), icon: AlertTriangle, iconBg: "bg-destructive/10", iconColor: "text-destructive", link: true },
-    { title: t("dashboard.cashVsMpesa"), value: `${cashPercent}% / ${mpesaPercent}%`, subtitle: t("dashboard.paymentSplit"), icon: CreditCard, iconBg: "bg-primary/10", iconColor: "text-primary" },
+    { title: t("dashboard.todaySales"), value: salesLoading ? "..." : formatNumber(todaySales?.total || 0), subtitle: "TSH", icon: LayoutGrid, iconBg: "bg-primary/10", iconColor: "text-primary", link: "/reports", linkDaily: true },
+    { title: t("dashboard.transactions"), value: salesLoading ? "..." : (todaySales?.count || 0).toString(), subtitle: t("dashboard.receiptsIssued"), icon: FileText, iconBg: "bg-secondary/10", iconColor: "text-secondary", link: "/reports", linkDaily: true },
+    { title: t("dashboard.lowStock"), value: `${lowStockProducts?.length || 0} ${t("common.items")}`, subtitle: t("dashboard.checkInventory"), icon: AlertTriangle, iconBg: "bg-destructive/10", iconColor: "text-destructive", link: "/inventory" },
+    { title: t("dashboard.cashVsMpesa"), value: `${cashPercent}% / ${mpesaPercent}%`, subtitle: t("dashboard.paymentSplit"), icon: CreditCard, iconBg: "bg-primary/10", iconColor: "text-primary", link: "/reports", linkDaily: true },
   ];
 
   const alerts = lowStockProducts?.slice(0, 3).map((p) => ({
@@ -62,7 +62,7 @@ export default function Dashboard() {
       <motion.div variants={container} className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {kpiData.map((kpi) => (
           <motion.div key={kpi.title} variants={item}>
-            <Card className="h-full hover:shadow-md transition-shadow">
+            <Card className={`h-full hover:shadow-md transition-shadow ${kpi.link ? "cursor-pointer" : ""}`} onClick={kpi.link ? () => navigate(kpi.link! + (kpi.linkDaily ? "?range=daily" : "")) : undefined}>
               <CardContent className="p-4 md:p-6">
                 <div className={`mb-3 inline-flex rounded-lg p-2 ${kpi.iconBg}`}>
                   <kpi.icon className={`h-4 w-4 md:h-5 md:w-5 ${kpi.iconColor}`} />
@@ -70,7 +70,7 @@ export default function Dashboard() {
                 <p className="text-xs md:text-sm text-muted-foreground">{kpi.title}</p>
                 <p className="mt-1 text-lg md:text-2xl font-bold text-foreground">{kpi.value}</p>
                 {kpi.link ? (
-                  <button className="mt-1 text-xs md:text-sm font-medium text-destructive hover:underline" onClick={() => navigate("/inventory")}>{kpi.subtitle}</button>
+                  <button className="mt-1 text-xs md:text-sm font-medium text-primary hover:underline" onClick={() => navigate(kpi.link! + (kpi.linkDaily ? "?range=daily" : ""))}>{kpi.subtitle}</button>
                 ) : (
                   <p className="mt-1 text-xs md:text-sm text-muted-foreground">{kpi.subtitle}</p>
                 )}

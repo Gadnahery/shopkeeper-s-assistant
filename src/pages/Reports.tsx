@@ -1,19 +1,63 @@
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useSales } from "@/hooks/useSales";
-import { format } from "date-fns";
+import { useSalesByDateRange } from "@/hooks/useSales";
+import { useExpensesByDateRange } from "@/hooks/useExpenses";
+import { useProducts } from "@/hooks/useProducts";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
 import { motion } from "framer-motion";
 
+type DateRangeType = "daily" | "weekly" | "monthly" | "custom";
+
+function getRangeForType(type: DateRangeType, customStart?: Date, customEnd?: Date): { start: string; end: string } {
+  const now = new Date();
+  switch (type) {
+    case "daily":
+      return { start: format(startOfDay(now), "yyyy-MM-dd"), end: format(endOfDay(now), "yyyy-MM-dd") };
+    case "weekly":
+      return { start: format(startOfWeek(now), "yyyy-MM-dd"), end: format(endOfWeek(now), "yyyy-MM-dd") };
+    case "monthly":
+      return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd") };
+    case "custom":
+      if (customStart && customEnd) {
+        return { start: format(customStart, "yyyy-MM-dd"), end: format(customEnd, "yyyy-MM-dd") };
+      }
+      return { start: format(subDays(now, 7), "yyyy-MM-dd"), end: format(now, "yyyy-MM-dd") };
+    default:
+      return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd") };
+  }
+}
+
 export default function Reports() {
-  const { t } = useLanguage();
-  const { data: sales, isLoading } = useSales();
+  const { t, language } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const rangeParam = searchParams.get("range") as DateRangeType | null;
+  const [rangeType, setRangeType] = useState<DateRangeType>(rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam) ? rangeParam : "monthly");
+  useEffect(() => {
+    if (rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam)) setRangeType(rangeParam);
+  }, [rangeParam]);
+  const [customStart, setCustomStart] = useState<Date | undefined>(subDays(new Date(), 7));
+  const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date());
+  const [customOpen, setCustomOpen] = useState(false);
+
+  const { start, end } = useMemo(
+    () => getRangeForType(rangeType, customStart, customEnd),
+    [rangeType, customStart, customEnd]
+  );
+
+  const { data: sales, isLoading } = useSalesByDateRange(start, end);
+  const { data: expenses } = useExpensesByDateRange(start, end);
+  const { data: products } = useProducts();
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
   const formatK = (num: number) => {
@@ -23,31 +67,38 @@ export default function Reports() {
   };
 
   const totalSales = sales?.reduce((sum, s) => sum + Number(s.total), 0) || 0;
-  const cashTotal = sales?.filter(s => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total), 0) || 0;
-  const mpesaTotal = sales?.filter(s => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total), 0) || 0;
+  const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+  const profit = totalSales - totalExpenses;
+  const stockValue = products?.reduce((sum, p) => sum + Number(p.buying_price) * Number(p.stock), 0) || 0;
+  const lowStockCount = products?.filter((p) => p.stock <= p.low_stock_alert).length || 0;
+  const cashTotal = sales?.filter((s) => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total), 0) || 0;
+  const mpesaTotal = sales?.filter((s) => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total), 0) || 0;
 
   const productSales: Record<string, number> = {};
-  sales?.forEach(sale => {
+  sales?.forEach((sale) => {
     (sale.sale_items as any[])?.forEach((item: any) => {
       productSales[item.product_name] = (productSales[item.product_name] || 0) + Number(item.total);
     });
   });
 
   const bestSellingProducts = Object.entries(productSales)
-    .sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
     .map(([name, amount], index) => ({
-      name, amount,
+      name,
+      amount,
       percentage: index === 0 ? 100 : Math.round((amount / (Object.values(productSales)[0] || 1)) * 100),
     }));
 
-  const recentTransactions = sales?.slice(0, 10).map(sale => ({
-    date: format(new Date(sale.created_at), "dd MMM, hh:mm a"),
-    invoice: sale.invoice_number,
-    customer: (sale.customers as any)?.name || t("sales.walkIn"),
-    amount: Number(sale.total),
-    payment: sale.payment_method,
-    status: sale.status,
-  })) || [];
+  const recentTransactions =
+    sales?.slice(0, 10).map((sale) => ({
+      date: format(new Date(sale.created_at), "dd MMM, hh:mm a"),
+      invoice: sale.invoice_number,
+      customer: (sale as any).customer_name || (sale.customers as any)?.name || t("sales.walkIn"),
+      amount: Number(sale.total),
+      payment: sale.payment_method,
+      status: sale.status,
+    })) || [];
 
   const handleExportCSV = () => {
     if (!recentTransactions.length) return;
@@ -57,25 +108,72 @@ export default function Reports() {
   const handleExportPDF = () => {
     if (!recentTransactions.length) return;
     exportToPrintablePDF(
-      "Sales Report - Smart Money",
+      "Sales Report",
       ["Date", "Invoice", "Customer", "Amount (TSH)", "Payment", "Status"],
-      recentTransactions.map(tx => [tx.date, tx.invoice, tx.customer, formatNumber(tx.amount), tx.payment, tx.status])
+      recentTransactions.map((tx) => [tx.date, tx.invoice, tx.customer, formatNumber(tx.amount), tx.payment, tx.status])
     );
   };
 
+  const rangeLabel =
+    rangeType === "daily"
+      ? format(new Date(), "dd MMM yyyy")
+      : rangeType === "weekly"
+        ? `${format(new Date(start), "dd MMM")} - ${format(new Date(end), "dd MMM yyyy")}`
+        : rangeType === "monthly"
+          ? format(new Date(start), "MMMM yyyy")
+          : `${format(customStart!, "dd MMM")} - ${format(customEnd!, "dd MMM yyyy")}`;
+
   const categoryColors = ["hsl(160, 65%, 50%)", "hsl(36, 100%, 50%)", "hsl(220, 13%, 25%)", "hsl(220, 14%, 80%)"];
-  const categoryData = Object.entries(productSales).slice(0, 4).map(([name, value], i) => ({
-    name, value, color: categoryColors[i % categoryColors.length],
-  }));
+  const categoryData = Object.entries(productSales)
+    .slice(0, 4)
+    .map(([name, value], i) => ({ name, value, color: categoryColors[i % categoryColors.length] }));
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-3">
-          <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">This Month</span>
-          </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={rangeType} onValueChange={(v: DateRangeType) => setRangeType(v)}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">{language === "sw" ? "Kila Siku" : "Daily"}</SelectItem>
+              <SelectItem value="weekly">{language === "sw" ? "Kila Wiki" : "Weekly"}</SelectItem>
+              <SelectItem value="monthly">{language === "sw" ? "Kila Mwezi" : "Monthly"}</SelectItem>
+              <SelectItem value="custom">{language === "sw" ? "Kipindi Maalum" : "Custom"}</SelectItem>
+            </SelectContent>
+          </Select>
+          {rangeType === "custom" && (
+            <Popover open={customOpen} onOpenChange={setCustomOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {rangeLabel}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto">
+                <div className="space-y-4">
+                  <div>
+                    <p className="mb-2 text-sm font-medium">{language === "sw" ? "Kuanzia" : "From"}</p>
+                    <Calendar mode="single" selected={customStart} onSelect={(d) => d && setCustomStart(d)} />
+                  </div>
+                  <div>
+                    <p className="mb-2 text-sm font-medium">{language === "sw" ? "Hadi" : "To"}</p>
+                    <Calendar mode="single" selected={customEnd} onSelect={(d) => d && setCustomEnd(d)} />
+                  </div>
+                  <Button className="w-full" onClick={() => setCustomOpen(false)}>
+                    {t("common.save")}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          {rangeType !== "custom" && (
+            <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{rangeLabel}</span>
+            </div>
+          )}
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className="gap-2" onClick={handleExportPDF}>
@@ -105,40 +203,83 @@ export default function Reports() {
               <span className="text-sm text-muted-foreground">{t("sales.mpesa")}</span>
             </div>
           </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">{language === "sw" ? "Matumizi" : "Expenses"}</p>
+              <p className="text-lg font-bold text-destructive">Tsh {formatNumber(totalExpenses)}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">{language === "sw" ? "Faida" : "Profit"}</p>
+              <p className={`text-lg font-bold ${profit >= 0 ? "text-green-600" : "text-destructive"}`}>Tsh {formatNumber(profit)}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">{language === "sw" ? "Thamani ya Stoki" : "Stock Value"}</p>
+              <p className="text-lg font-bold">Tsh {formatNumber(stockValue)}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">{language === "sw" ? "Tahadhari Stoki" : "Low Stock Alerts"}</p>
+              <p className="text-lg font-bold">{lowStockCount}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-lg font-semibold">{t("reports.bestSelling")}</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold">{t("reports.bestSelling")}</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
-            {isLoading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> :
-              bestSellingProducts.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">No sales data yet</p> :
-              bestSellingProducts.map(product => (
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : bestSellingProducts.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No sales data yet</p>
+            ) : (
+              bestSellingProducts.map((product) => (
                 <div key={product.name} className="flex items-center gap-4">
-                  <span className="w-28 md:w-32 truncate text-sm">{product.name}</span>
-                  <div className="flex-1"><div className="h-4 w-full overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${product.percentage}%` }} /></div></div>
+                  <span className="w-28 truncate text-sm md:w-32">{product.name}</span>
+                  <div className="flex-1">
+                    <div className="h-4 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${product.percentage}%` }} />
+                    </div>
+                  </div>
                   <span className="w-16 text-right text-sm font-medium">{formatK(product.amount)}</span>
                 </div>
-              ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-lg font-semibold">{t("reports.salesByCategory")}</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold">{t("reports.salesByCategory")}</CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+            <div className="flex flex-col items-center justify-center gap-8 md:flex-row">
               <div className="h-40 w-40">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart><Pie data={categoryData.length ? categoryData : [{ name: "No data", value: 1, color: "#ccc" }]} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value">
-                    {(categoryData.length ? categoryData : [{ color: "#ccc" }]).map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                  </Pie></PieChart>
+                  <PieChart>
+                    <Pie
+                      data={categoryData.length ? categoryData : [{ name: "No data", value: 1, color: "#ccc" }]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={70}
+                      dataKey="value"
+                    >
+                      {(categoryData.length ? categoryData : [{ color: "#ccc" }]).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
                 </ResponsiveContainer>
               </div>
               <div className="space-y-2">
-                {categoryData.map(cat => (
+                {categoryData.map((cat) => (
                   <div key={cat.name} className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: cat.color }} />
                     <span className="text-sm">{cat.name}</span>
                   </div>
                 ))}
@@ -149,31 +290,48 @@ export default function Reports() {
       </div>
 
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-lg font-semibold">{t("reports.recentTransactions")}</CardTitle></CardHeader>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold">{t("reports.recentTransactions")}</CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader><TableRow>
-                  <TableHead>{t("expenses.date")}</TableHead>
-                  <TableHead>{t("sales.invoice")}</TableHead>
-                  <TableHead className="hidden md:table-cell">{t("reports.customer")}</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead className="hidden md:table-cell">{t("reports.payment")}</TableHead>
-                  <TableHead>{t("reports.status")}</TableHead>
-                </TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("expenses.date")}</TableHead>
+                    <TableHead>{t("sales.invoice")}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t("reports.customer")}</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead className="hidden md:table-cell">{t("reports.payment")}</TableHead>
+                    <TableHead>{t("reports.status")}</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
-                  {recentTransactions.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No sales yet</TableCell></TableRow> :
+                  {recentTransactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                        No sales yet
+                      </TableCell>
+                    </TableRow>
+                  ) : (
                     recentTransactions.map((tx, index) => (
                       <TableRow key={index}>
-                        <TableCell className="text-muted-foreground whitespace-nowrap">{tx.date}</TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">{tx.date}</TableCell>
                         <TableCell className="font-medium">{tx.invoice}</TableCell>
                         <TableCell className="hidden md:table-cell">{tx.customer}</TableCell>
                         <TableCell className="font-medium">{formatNumber(tx.amount)}</TableCell>
                         <TableCell className="hidden md:table-cell">{tx.payment}</TableCell>
-                        <TableCell><Badge className="bg-success/10 text-success hover:bg-success/20">{t("reports.completed")}</Badge></TableCell>
+                        <TableCell>
+                          <Badge className="bg-success/10 text-success hover:bg-success/20">{t("reports.completed")}</Badge>
+                        </TableCell>
                       </TableRow>
-                    ))}
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

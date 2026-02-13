@@ -76,6 +76,24 @@ export function useDeleteExpense() {
   });
 }
 
+export function useExpensesByDateRange(startDate: string | null, endDate: string | null) {
+  return useQuery({
+    queryKey: ["expenses", "range", startDate, endDate],
+    queryFn: async () => {
+      if (!startDate || !endDate) return [];
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!startDate && !!endDate,
+  });
+}
+
 export function useExpenseStats() {
   return useQuery({
     queryKey: ["expenses", "stats"],

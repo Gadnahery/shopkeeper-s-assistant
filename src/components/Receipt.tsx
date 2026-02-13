@@ -14,6 +14,7 @@ interface ReceiptData {
   invoiceNumber: string;
   date: string;
   customerName: string;
+  cashier?: string;
   items: ReceiptItem[];
   subtotal: number;
   discount: number;
@@ -127,6 +128,12 @@ export function Receipt({ data, onClose }: ReceiptProps) {
               <span>{t("receipt.customer")}:</span>
               <span>{data.customerName}</span>
             </div>
+            {data.cashier && (
+              <div className="flex justify-between">
+                <span>{t("receipt.cashier")}:</span>
+                <span>{data.cashier}</span>
+              </div>
+            )}
           </div>
 
           <div className="divider my-2 border-t border-dashed border-gray-400" />

@@ -3,13 +3,15 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePendingOrdersCount } from "@/hooks/useOrders";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, ShoppingCart, Package, Users, Truck,
   Receipt, BarChart3, Settings, Store,
-  ChevronLeft, ChevronRight, X, UserCog, Building2, LogOut,
+  ChevronLeft, ChevronRight, X, UserCog, Building2, LogOut, Tags, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,6 +19,8 @@ const navItems = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { to: "/sales", labelKey: "nav.sales", icon: ShoppingCart },
   { to: "/inventory", labelKey: "nav.inventory", icon: Package },
+  { to: "/categories", labelKey: "nav.categories", icon: Tags },
+  { to: "/orders", labelKey: "nav.orders", icon: ClipboardList },
   { to: "/customers", labelKey: "nav.customers", icon: Users },
   { to: "/suppliers", labelKey: "nav.suppliers", icon: Truck },
   { to: "/expenses", labelKey: "nav.expenses", icon: Receipt },
@@ -30,6 +34,7 @@ export function Sidebar() {
   const { isCollapsed, toggleSidebar, setCollapsed } = useSidebar();
   const { t, language } = useLanguage();
   const { signOut, profile } = useAuth();
+  const { data: pendingOrdersCount = 0 } = usePendingOrdersCount();
   const isMobile = useIsMobile();
 
   const shopName = profile?.shops?.name || "Smart Money";
@@ -54,17 +59,20 @@ export function Sidebar() {
                 </Button>
               </div>
               <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-                <span className="mb-2 block px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                <span className="mb-2 block px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600 dark:text-muted-foreground">
                   {t("nav.main")}
                 </span>
                 {navItems.map((item) => (
                   <NavLink key={item.to} to={item.to} onClick={() => setCollapsed(true)}
                     className={({ isActive }) => cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                      isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all sidebar-nav-link",
+                      isActive ? "bg-primary !text-primary-foreground shadow-sm" : "!text-gray-900 hover:bg-sidebar-accent hover:!text-accent-foreground dark:!text-foreground dark:hover:!text-sidebar-accent-foreground"
                     )}>
                     <item.icon className="h-5 w-5 flex-shrink-0" />
                     {t(item.labelKey)}
+                    {item.to === "/orders" && pendingOrdersCount > 0 && (
+                      <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1.5 text-xs">{pendingOrdersCount}</Badge>
+                    )}
                   </NavLink>
                 ))}
               </nav>
@@ -102,7 +110,7 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
         {!isCollapsed && (
-          <span className="mb-2 block px-3 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="mb-2 block px-3 pt-1 text-[10px] font-semibold uppercase tracking-widest text-gray-600 dark:text-muted-foreground">
             {t("nav.main")}
           </span>
         )}
@@ -111,12 +119,19 @@ export function Sidebar() {
             <TooltipTrigger asChild>
               <NavLink to={item.to}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all sidebar-nav-link",
+                  isActive ? "bg-primary !text-primary-foreground shadow-sm" : "!text-gray-900 hover:bg-sidebar-accent hover:!text-accent-foreground dark:!text-foreground dark:hover:!text-sidebar-accent-foreground",
                   isCollapsed && "justify-center px-2"
                 )}>
                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                {!isCollapsed && t(item.labelKey)}
+                {!isCollapsed && (
+                  <>
+                    {t(item.labelKey)}
+                    {item.to === "/orders" && pendingOrdersCount > 0 && (
+                      <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1.5 text-xs">{pendingOrdersCount}</Badge>
+                    )}
+                  </>
+                )}
               </NavLink>
             </TooltipTrigger>
             {isCollapsed && <TooltipContent side="right" className="font-medium">{t(item.labelKey)}</TooltipContent>}

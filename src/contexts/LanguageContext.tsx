@@ -14,6 +14,8 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.dashboard": "Dashboard",
     "nav.sales": "Sales (POS)",
     "nav.inventory": "Inventory",
+    "nav.categories": "Categories",
+    "nav.orders": "Orders",
     "nav.customers": "Customers",
     "nav.suppliers": "Suppliers",
     "nav.expenses": "Expenses",
@@ -45,6 +47,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Sales
     "sales.customer": "Customer",
+    "sales.customerName": "Customer Name",
     "sales.phone": "Phone",
     "sales.walkIn": "Walk-in Customer",
     "sales.scanBarcode": "Scan Barcode",
@@ -224,6 +227,7 @@ const translations: Record<Language, Record<string, string>> = {
     "receipt.invoice": "Invoice",
     "receipt.date": "Date",
     "receipt.customer": "Customer",
+    "receipt.cashier": "Cashier",
     "receipt.qty": "Qty",
     "receipt.item": "Item",
     "receipt.price": "Price",
@@ -255,6 +259,8 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.dashboard": "Dashibodi",
     "nav.sales": "Mauzo (POS)",
     "nav.inventory": "Hesabu ya Bidhaa",
+    "nav.categories": "Kategoria",
+    "nav.orders": "Maagizo",
     "nav.customers": "Wateja",
     "nav.suppliers": "Wasambazaji",
     "nav.expenses": "Matumizi",
@@ -286,6 +292,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Sales
     "sales.customer": "Mteja",
+    "sales.customerName": "Jina la Mteja",
     "sales.phone": "Simu",
     "sales.walkIn": "Mteja wa Kawaida",
     "sales.scanBarcode": "Changanua Barcode",
@@ -465,6 +472,7 @@ const translations: Record<Language, Record<string, string>> = {
     "receipt.invoice": "Ankara",
     "receipt.date": "Tarehe",
     "receipt.customer": "Mteja",
+    "receipt.cashier": "Muuzaji",
     "receipt.qty": "Idadi",
     "receipt.item": "Bidhaa",
     "receipt.price": "Bei",

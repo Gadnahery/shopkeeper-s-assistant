@@ -20,6 +20,7 @@ export default function Inventory() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showBarcode, setShowBarcode] = useState<string | null>(null);
   const [barcodeType, setBarcodeType] = useState<"barcode" | "qr">("barcode");
   const [editProduct, setEditProduct] = useState<any>(null);
@@ -30,9 +31,11 @@ export default function Inventory() {
   const updateProduct = useUpdateProduct();
 
   const filteredProducts = products?.filter(
-    p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.name_sw && p.name_sw.toLowerCase().includes(searchTerm.toLowerCase()))
+    (p) =>
+      (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.name_sw && p.name_sw.toLowerCase().includes(searchTerm.toLowerCase()))) &&
+      (categoryFilter === "all" || p.category_id === categoryFilter)
   ) || [];
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
@@ -67,9 +70,18 @@ export default function Inventory() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={t("inventory.searchPlaceholder")} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+        <div className="flex flex-wrap gap-2 flex-1">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={t("inventory.searchPlaceholder")} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-44"><SelectValue placeholder={language === "sw" ? "Kategoria" : "Category"} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+              {categories?.map(c => <SelectItem key={c.id} value={c.id}>{language === "sw" && c.name_sw ? c.name_sw : c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex gap-2 md:gap-3">
           <Button variant="outline" className="gap-2" onClick={handleExport}>
@@ -126,7 +138,7 @@ export default function Inventory() {
                   <Button variant={barcodeType === "barcode" ? "default" : "outline"} size="sm" onClick={() => setBarcodeType("barcode")}>Barcode</Button>
                   <Button variant={barcodeType === "qr" ? "default" : "outline"} size="sm" onClick={() => setBarcodeType("qr")}><QrCode className="h-4 w-4 mr-1" />QR Code</Button>
                 </div>
-                <BarcodeGenerator value={product.barcode || product.code} productName={product.name} price={product.selling_price} format={barcodeType === "qr" ? "qr" : "code128"} />
+                <BarcodeGenerator value={product.barcode || product.code} productId={product.id} productName={getProductName(product)} price={product.selling_price} format={barcodeType === "qr" ? "qr" : "code128"} />
               </div>
             );
           })()}

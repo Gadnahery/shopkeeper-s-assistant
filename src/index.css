@@ -47,7 +47,9 @@
     --radius: 0.625rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 9% 46%;
+    --sidebar-foreground: 220 13% 18%;
+    /* Force readable nav text in light mode */
+    --sidebar-nav-text: 220 13% 18%;
     --sidebar-primary: 160 65% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 160 45% 96%;
@@ -99,7 +101,22 @@
     --sidebar-accent-foreground: 160 55% 65%;
     --sidebar-border: 220 14% 18%;
     --sidebar-ring: 160 65% 45%;
+    --sidebar-nav-text: 220 9% 60%;
   }
+}
+
+/* Sidebar nav links: ensure dark text in light mode for contrast */
+.sidebar-nav-link {
+  color: hsl(var(--sidebar-nav-text));
+}
+.sidebar-nav-link:hover {
+  color: hsl(var(--sidebar-accent-foreground));
+}
+.dark .sidebar-nav-link {
+  color: hsl(var(--sidebar-foreground));
+}
+.dark .sidebar-nav-link:hover {
+  color: hsl(var(--sidebar-accent-foreground));
 }
 
 @layer base {

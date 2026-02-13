@@ -9,6 +9,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
+import POSTerminal from "./pages/POSTerminal";
 import Inventory from "./pages/Inventory";
 import AddProduct from "./pages/AddProduct";
 import Customers from "./pages/Customers";
@@ -18,6 +19,8 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import HRM from "./pages/HRM";
 import Assets from "./pages/Assets";
+import Categories from "./pages/Categories";
+import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,8 +39,11 @@ const App = () => (
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/sales" element={<Sales />} />
+                <Route path="/sales/terminal" element={<POSTerminal />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/inventory/add" element={<AddProduct />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/orders" element={<Orders />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/suppliers" element={<Suppliers />} />
                 <Route path="/expenses" element={<Expenses />} />

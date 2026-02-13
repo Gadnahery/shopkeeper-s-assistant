@@ -33,12 +33,9 @@ export default function Settings() {
   }
 
   const handleSaveShop = async () => {
-    if (!shopSettings?.id) return;
-    // Also update the shops table name
-    if (shopId) {
-      await supabase.from("shops").update({ name: shopForm.shop_name, phone: shopForm.phone, address: shopForm.address }).eq("id", shopId);
-    }
-    await updateSettings.mutateAsync({ id: shopSettings.id, ...shopForm });
+    if (!shopId) return;
+    await supabase.from("shops").update({ name: shopForm.shop_name, phone: shopForm.phone, address: shopForm.address }).eq("id", shopId);
+    await updateSettings.mutateAsync({ id: shopSettings?.id || undefined, ...shopForm });
   };
 
   const handleProfileUpload = async (url: string) => {
