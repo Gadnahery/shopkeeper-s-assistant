@@ -225,7 +225,19 @@ export default function Sales() {
             <Card className="relative">
               <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
                 <Search className="h-5 w-5 text-muted-foreground" />
-                <Input placeholder={t("sales.searchProducts")} className="border-0 bg-transparent p-0 focus-visible:ring-0" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                <Input
+                  placeholder={t("sales.searchOrScan")}
+                  className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && searchTerm.trim()) {
+                      e.preventDefault();
+                      handleBarcodeScan(searchTerm.trim());
+                    }
+                  }}
+                  autoFocus
+                />
               </CardContent>
               {searchTerm && filteredProducts.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-lg border bg-card shadow-lg">

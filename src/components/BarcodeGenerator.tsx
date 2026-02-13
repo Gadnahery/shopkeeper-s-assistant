@@ -77,12 +77,9 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
   const handlePrint = () => {
     const canvas = canvasRef.current;
     const imgSrc = format === "qr" && qrUrl ? qrUrl : (canvas?.toDataURL() || "");
+    if (!imgSrc) return;
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
+    const html = `<!DOCTYPE html>
       <html>
       <head>
         <title>${format === "qr" ? "QR" : "Barcode"} - ${value}</title>
@@ -97,16 +94,36 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
       </head>
       <body>
         <div class="label">
-          ${productName ? `<div class="name">${productName}</div>` : ""}
+          ${productName ? `<div class="name">${productName.replace(/</g, "&lt;")}</div>` : ""}
           <img src="${imgSrc}" alt="${value}" />
           ${price ? `<div class="price">Tsh ${price.toLocaleString()}</div>` : ""}
         </div>
       </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-    printWindow.close();
+      </html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:absolute;width:0;height:0;border:none;left:-9999px;top:0;";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      document.body.removeChild(iframe);
+      return;
+    }
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const printDoc = iframe.contentWindow;
+    if (!printDoc) {
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    setTimeout(() => {
+      printDoc.focus();
+      printDoc.print();
+      setTimeout(() => document.body.removeChild(iframe), 500);
+    }, 100);
   };
 
   if (!value) return null;

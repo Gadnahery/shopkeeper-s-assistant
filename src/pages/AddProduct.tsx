@@ -105,7 +105,7 @@ export default function AddProduct() {
                   <div>
                     <Label>{t("addProduct.barcode")}</Label>
                     <div className="relative mt-2">
-                      <Input placeholder={t("addProduct.scanOrEnter")} className="pr-10" value={formData.barcode} onChange={e => setFormData({ ...formData, barcode: e.target.value })} />
+                      <Input placeholder={t("addProduct.scanOrEnter")} className="pr-10" value={formData.barcode} onChange={e => setFormData({ ...formData, barcode: e.target.value })} title={language === "sw" ? "Lenga hapa na uscan na skana ya USB" : "Focus here and scan with USB scanner"} />
                       <button type="button" onClick={() => setShowScanner(true)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary">
                         <Camera className="h-4 w-4" />
                       </button>

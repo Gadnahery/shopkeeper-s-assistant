@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, CheckCircle, Minus, Plus, X, Camera, ArrowLeft } from "lucide-react";
+import { Search, CheckCircle, Minus, Plus, X, Camera, ArrowLeft, ScanLine } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCreateSale } from "@/hooks/useSales";
@@ -33,8 +33,14 @@ export default function POSTerminal() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const scannerInputRef = useRef<HTMLInputElement>(null);
 
   const { data: products } = useProducts();
+
+  useEffect(() => {
+    const id = setTimeout(() => scannerInputRef.current?.focus(), 100);
+    return () => clearTimeout(id);
+  }, [cartItems.length]);
   const { data: shopSettings } = useShopSettings();
   const { profile } = useAuth();
   const createSale = useCreateSale();
@@ -90,6 +96,7 @@ export default function POSTerminal() {
       setSearchTerm(barcode);
       toast.error(language === "sw" ? "Bidhaa haipatikani" : "Product not found");
     }
+    scannerInputRef.current?.focus();
   };
 
   const filteredProducts =
@@ -144,26 +151,44 @@ export default function POSTerminal() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden p-4">
-          <div className="mb-4 flex gap-2">
-            <Card
-              className="flex-1 cursor-pointer border-2 border-primary/30 p-4"
-              onClick={() => setShowScanner(true)}
-            >
-              <CardContent className="flex items-center gap-3 p-0">
-                <Camera className="h-8 w-8 text-primary" />
-                <span className="text-lg font-semibold text-primary">{t("sales.scanBarcode")}</span>
-              </CardContent>
-            </Card>
-            <div className="flex flex-1 items-center rounded-lg border bg-muted/50 px-4">
-              <Search className="h-6 w-6 text-muted-foreground" />
-              <Input
-                placeholder={t("sales.searchProducts")}
-                className="border-0 bg-transparent text-lg focus-visible:ring-0"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+          {/* Scanner interface - dedicated zone for USB barcode scanner */}
+          <Card className="mb-4 border-2 border-primary/40 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex flex-1 flex-col gap-1">
+                  <div className="flex items-center gap-2 text-primary">
+                    <ScanLine className="h-6 w-6" />
+                    <span className="text-lg font-bold">
+                      {language === "sw" ? "Zona ya Kuskan" : "Scanner Zone"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {language === "sw"
+                      ? "Weka mstari hapa na uscan na skana ya USB"
+                      : "Focus here and scan with USB barcode scanner"}
+                  </p>
+                </div>
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <Input
+                    ref={scannerInputRef}
+                    placeholder={language === "sw" ? "Scan au andika barcode..." : "Scan or type barcode..."}
+                    className="h-14 flex-1 border-2 border-primary/30 bg-background text-lg font-mono focus:border-primary"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && searchTerm.trim()) {
+                        e.preventDefault();
+                        handleBarcodeScan(searchTerm.trim());
+                      }
+                    }}
+                  />
+                  <Button variant="outline" size="icon" className="h-14 w-14 shrink-0" onClick={() => setShowScanner(true)} title={language === "sw" ? "Skana na kamera" : "Scan with camera"}>
+                    <Camera className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="flex flex-1 flex-wrap gap-2 overflow-y-auto">
             {searchTerm && filteredProducts.length > 0

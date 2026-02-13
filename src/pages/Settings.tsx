@@ -45,37 +45,38 @@ export default function Settings() {
     else toast.success(language === "sw" ? "Picha imebadilishwa!" : "Profile photo updated!");
   };
 
-  const handleConnectPrinter = async () => {
-    try {
-      if ('serial' in navigator) {
-        const port = await (navigator as any).serial.requestPort();
-        await port.open({ baudRate: 9600 });
-        setPrinterConnected(true);
-        toast.success(language === "sw" ? "Printa imeunganishwa!" : "Printer connected!");
-      } else if ('usb' in navigator) {
-        const device = await (navigator as any).usb.requestDevice({ filters: [] });
-        setPrinterConnected(true);
-        toast.success(language === "sw" ? "Printa imeunganishwa kupitia USB!" : "Printer connected via USB!");
-      } else {
-        toast.error(language === "sw" ? "Kifaa hakitumiki" : "Web Serial/USB not supported in this browser");
-      }
-    } catch (err: any) {
-      if (err.name !== "NotFoundError") toast.error(err.message);
-    }
+  const handleConnectPrinter = () => {
+    setPrinterConnected(true);
+    toast.success(language === "sw" ? "Utatumia printa ya mfumo. Chagua printa yako pale utakapochapisha risiti." : "Using system printer. Select your printer when printing receipts.");
   };
 
   const handleConnectScanner = async () => {
     try {
       if ('serial' in navigator) {
         const port = await (navigator as any).serial.requestPort();
-        await port.open({ baudRate: 9600 });
-        setScannerConnected(true);
-        toast.success(language === "sw" ? "Skana imeunganishwa!" : "Barcode scanner connected!");
+        const baudRates = [9600, 115200, 19200, 38400, 57600];
+        let opened = false;
+        for (const rate of baudRates) {
+          try {
+            await port.open({ baudRate: rate });
+            opened = true;
+            break;
+          } catch {
+            try { await port.close(); } catch { /* ignore */ }
+          }
+        }
+        if (opened) {
+          setScannerConnected(true);
+          toast.success(language === "sw" ? "Skana imeunganishwa!" : "Barcode scanner connected!");
+        } else throw new Error("Could not open serial port");
       } else {
-        toast.error(language === "sw" ? "Kifaa hakitumiki" : "Web Serial not supported");
+        setScannerConnected(true);
+        toast.success(language === "sw" ? "Skana ya kibodi inafanya kazi. Weka mstari wa utafutaji ukiwa na uzani na uscan." : "Keyboard-mode scanners work automatically. Focus the search field and scan.");
       }
     } catch (err: any) {
-      if (err.name !== "NotFoundError") toast.error(err.message);
+      if (err.name === "NotFoundError") return;
+      setScannerConnected(true);
+      toast.success(language === "sw" ? "Skana ya kibodi inafanya kazi. Weka mstari wa utafutaji ukiwa na uzani na uscan." : "Using keyboard mode. Focus the search field and scan—most USB scanners work this way.");
     }
   };
 
@@ -207,7 +208,7 @@ export default function Settings() {
               </Card>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              {language === "sw" ? "Unganisha vifaa kupitia USB au Bluetooth. Hakikisha kivinjari chako kinatumia Web Serial API." : "Connect devices via USB or Bluetooth. Ensure your browser supports Web Serial API (Chrome/Edge recommended)."}
+              {language === "sw" ? "Printa ya risiti hutumia printa ya mfumo—chagua printa yako pale utakapochapisha. Skana nyingi za USB zinatumia kibodi—weka mstari wa utafutaji ukiwa na uzani na uscan." : "Receipt printing uses your system printer—select it in the print dialog. Most USB barcode scanners use keyboard mode—focus the search field and scan."}
             </p>
           </CardContent>
         </Card>
