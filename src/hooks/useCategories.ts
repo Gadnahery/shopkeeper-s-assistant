@@ -33,9 +33,10 @@ export function useCreateCategory() {
     mutationFn: async (input: { name: string; name_sw?: string | null; description?: string | null }) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
+      const payload: Record<string, unknown> = { name: input.name, name_sw: input.name_sw ?? null, shop_id: shopId };
       const { data, error } = await supabase
         .from("categories")
-        .insert({ ...input, shop_id: shopId })
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
@@ -53,9 +54,12 @@ export function useUpdateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; name?: string; name_sw?: string | null; description?: string | null }) => {
+      const payload: Record<string, unknown> = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.name_sw !== undefined) payload.name_sw = updates.name_sw;
       const { data, error } = await supabase
         .from("categories")
-        .update(updates)
+        .update(Object.keys(payload).length ? payload : { name: updates.name, name_sw: updates.name_sw })
         .eq("id", id)
         .select()
         .single();

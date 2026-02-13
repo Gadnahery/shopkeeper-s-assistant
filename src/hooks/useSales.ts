@@ -106,18 +106,20 @@ export function useCreateSale() {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found for user. Please log out and log in again.");
 
-      // Generate invoice number
+      // Generate invoice number (unique: timestamp + random to avoid duplicate key)
+      const fallbackInv = () => `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
       const { data: invoiceNum } = await supabase.rpc("generate_invoice_number");
-      
+      const invoiceNumber = invoiceNum || fallbackInv();
+
       const subtotal = input.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
       const discountAmount = input.discount_amount || 0;
       const total = subtotal - discountAmount;
-      
+
       // Create sale with shop_id
       const { data: sale, error: saleError } = await supabase
         .from("sales")
         .insert({
-          invoice_number: invoiceNum || `INV-${Date.now()}`,
+          invoice_number: invoiceNumber,
           customer_id: input.customer_id,
           customer_name: input.customer_name || null,
           payment_method: input.payment_method,
@@ -216,14 +218,16 @@ export function useSaveDraftSale() {
     mutationFn: async (input: CreateSaleInput) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
+      const fallbackInv = () => `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
       const { data: invoiceNum } = await supabase.rpc("generate_invoice_number");
+      const invoiceNumber = invoiceNum || fallbackInv();
       const subtotal = input.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
       const discountAmount = input.discount_amount || 0;
       const total = subtotal - discountAmount;
       const { data: sale, error: saleError } = await supabase
         .from("sales")
         .insert({
-          invoice_number: invoiceNum || `INV-${Date.now()}`,
+          invoice_number: invoiceNumber,
           customer_id: input.customer_id,
           customer_name: input.customer_name || null,
           payment_method: "Cash",

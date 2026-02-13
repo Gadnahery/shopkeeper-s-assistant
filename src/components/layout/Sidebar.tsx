@@ -65,10 +65,10 @@ export function Sidebar() {
                 {navItems.map((item) => (
                   <NavLink key={item.to} to={item.to} onClick={() => setCollapsed(true)}
                     className={({ isActive }) => cn(
-                      "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all sidebar-nav-link",
-                      isActive ? "bg-primary !text-primary-foreground shadow-sm" : "!text-gray-900 hover:bg-sidebar-accent hover:!text-accent-foreground dark:!text-foreground dark:hover:!text-sidebar-accent-foreground"
+                      "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                      isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-[#1a1a1a] hover:bg-sidebar-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-sidebar-accent-foreground"
                     )}>
-                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    <item.icon className="h-5 w-5 flex-shrink-0 [color:inherit]" strokeWidth={2} />
                     {t(item.labelKey)}
                     {item.to === "/orders" && pendingOrdersCount > 0 && (
                       <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1.5 text-xs">{pendingOrdersCount}</Badge>
@@ -90,7 +90,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className={cn("fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300", isCollapsed ? "w-[68px]" : "w-60")}>
+    <aside className={cn("fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 [color:var(--sidebar-nav-text,theme(colors.gray.900))]", isCollapsed ? "w-[68px]" : "w-60")}>
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-3">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary">
@@ -119,11 +119,11 @@ export function Sidebar() {
             <TooltipTrigger asChild>
               <NavLink to={item.to}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all sidebar-nav-link",
-                  isActive ? "bg-primary !text-primary-foreground shadow-sm" : "!text-gray-900 hover:bg-sidebar-accent hover:!text-accent-foreground dark:!text-foreground dark:hover:!text-sidebar-accent-foreground",
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                  isActive ? "bg-primary text-primary-foreground shadow-sm [color:white!important]" : "text-[#1a1a1a] hover:bg-sidebar-accent hover:text-accent-foreground dark:text-foreground dark:hover:text-sidebar-accent-foreground",
                   isCollapsed && "justify-center px-2"
                 )}>
-                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <item.icon className="h-5 w-5 flex-shrink-0 [color:inherit]" strokeWidth={2} />
                 {!isCollapsed && (
                   <>
                     {t(item.labelKey)}

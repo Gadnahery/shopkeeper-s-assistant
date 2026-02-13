@@ -105,18 +105,18 @@
   }
 }
 
-/* Sidebar nav links: ensure dark text in light mode for contrast */
-.sidebar-nav-link {
-  color: hsl(var(--sidebar-nav-text));
+/* Sidebar: always show nav text and icons in light mode (no hover needed) */
+aside.bg-sidebar nav a:not(.bg-primary) {
+  color: #1a1a1a;
 }
-.sidebar-nav-link:hover {
-  color: hsl(var(--sidebar-accent-foreground));
+aside.bg-sidebar nav a:not(.bg-primary) svg {
+  color: inherit;
 }
-.dark .sidebar-nav-link {
+.dark aside.bg-sidebar nav a:not(.bg-primary) {
   color: hsl(var(--sidebar-foreground));
 }
-.dark .sidebar-nav-link:hover {
-  color: hsl(var(--sidebar-accent-foreground));
+.dark aside.bg-sidebar nav a:not(.bg-primary) svg {
+  color: inherit;
 }
 
 @layer base {

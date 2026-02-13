@@ -9,22 +9,36 @@ async function getUserShopId(): Promise<string | null> {
   return data?.shop_id || null;
 }
 
+function isOrdersTableError(e: unknown): boolean {
+  const msg = (e as Error)?.message ?? "";
+  return /schema cache|table.*orders|relation.*orders/i.test(msg);
+}
+
 async function generateOrderNumber(): Promise<string> {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const { count } = await supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`);
-  return `ORD-${date}-${String((count || 0) + 1).padStart(3, "0")}`;
+  try {
+    const { count } = await supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`);
+    return `ORD-${date}-${String((count || 0) + 1).padStart(3, "0")}`;
+  } catch {
+    return `ORD-${date}-${Date.now().toString(36)}`;
+  }
 }
 
 export function useOrders() {
   return useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, order_items(*)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*, order_items(*)")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data ?? [];
+      } catch (e) {
+        if (isOrdersTableError(e)) return [];
+        throw e;
+      }
     },
   });
 }
@@ -34,13 +48,18 @@ export function useOrder(id: string | null) {
     queryKey: ["orders", id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, order_items(*), order_notes(*)")
-        .eq("id", id)
-        .single();
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*, order_items(*), order_notes(*)")
+          .eq("id", id)
+          .single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        if (isOrdersTableError(e)) return null;
+        throw e;
+      }
     },
     enabled: !!id,
   });
@@ -49,14 +68,17 @@ export function useOrder(id: string | null) {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { customer_name?: string; customer_phone?: string; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) => {
+    mutationFn: async (input: { customer_name?: string; customer_phone?: string; priority?: string; due_date?: string | null; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
       const orderNumber = await generateOrderNumber();
       const total = input.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+      const payload: Record<string, unknown> = { shop_id: shopId, order_number: orderNumber, customer_name: input.customer_name || null, customer_phone: input.customer_phone || null, status: "pending", total, notes: input.notes || null };
+      if (input.priority) payload.priority = input.priority;
+      if (input.due_date != null) payload.due_date = input.due_date || null;
       const { data: order, error: orderErr } = await supabase
         .from("orders")
-        .insert({ shop_id: shopId, order_number: orderNumber, customer_name: input.customer_name || null, customer_phone: input.customer_phone || null, status: "pending", total, notes: input.notes || null })
+        .insert(payload)
         .select()
         .single();
       if (orderErr) throw orderErr;
@@ -78,6 +100,28 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { data, error } = await supabase.from("orders").update({ status }).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("Order updated");
+    },
+    onError: (e) => toast.error("Failed: " + (e as Error).message),
+  });
+}
+
+export function useUpdateOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; status?: string; priority?: string; due_date?: string | null; notes?: string | null }) => {
+      const payload: Record<string, unknown> = {};
+      if (updates.status !== undefined) payload.status = updates.status;
+      if (updates.priority !== undefined) payload.priority = updates.priority;
+      if (updates.due_date !== undefined) payload.due_date = updates.due_date ?? null;
+      if (updates.notes !== undefined) payload.notes = updates.notes ?? null;
+      if (Object.keys(payload).length === 0) return null;
+      const { data, error } = await supabase.from("orders").update(payload).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },
@@ -140,15 +184,20 @@ export function usePendingOrdersCount() {
   return useQuery({
     queryKey: ["orders", "pending-count"],
     queryFn: async () => {
-      const shopId = await getUserShopId();
-      if (!shopId) return 0;
-      const { count, error } = await supabase
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .eq("shop_id", shopId)
-        .eq("status", "pending");
-      if (error) throw error;
-      return count || 0;
+      try {
+        const shopId = await getUserShopId();
+        if (!shopId) return 0;
+        const { count, error } = await supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("shop_id", shopId)
+          .eq("status", "pending");
+        if (error) throw error;
+        return count || 0;
+      } catch (e) {
+        if (isOrdersTableError(e)) return 0;
+        throw e;
+      }
     },
   });
 }
