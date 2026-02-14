@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   LayoutGrid, FileText, AlertTriangle, CreditCard,
-  Plus, Package, Receipt,
+  Plus, Package, Receipt, Calculator as CalculatorIcon,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, BarChart, Bar,
@@ -15,8 +15,11 @@ import { useTodaySales } from "@/hooks/useSales";
 import { useLowStockProducts, useProducts } from "@/hooks/useProducts";
 import { useWeeklySalesTrend, useStockByCategory } from "@/hooks/useShopData";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { Calculator } from "@/components/Calculator";
 
 export default function Dashboard() {
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { profile } = useAuth();
@@ -54,10 +57,17 @@ export default function Dashboard() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item}>
-        <h1 className="text-2xl font-bold text-foreground">{shopName} - {t("dashboard.title")}</h1>
-        <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
+      <motion.div variants={item} className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{shopName} - {t("dashboard.title")}</h1>
+          <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
+        </div>
+        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setCalculatorOpen(true)} title="Calculator">
+          <CalculatorIcon className="h-5 w-5" />
+        </Button>
       </motion.div>
+
+      <Calculator open={calculatorOpen} onOpenChange={setCalculatorOpen} />
 
       <motion.div variants={container} className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {kpiData.map((kpi) => (
