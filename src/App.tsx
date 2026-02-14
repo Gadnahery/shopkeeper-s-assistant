@@ -21,6 +21,8 @@ import HRM from "./pages/HRM";
 import Assets from "./pages/Assets";
 import Categories from "./pages/Categories";
 import Orders from "./pages/Orders";
+import Todo from "./pages/Todo";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,10 +46,12 @@ const App = () => (
                 <Route path="/inventory/add" element={<AddProduct />} />
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/orders" element={<Orders />} />
+                <Route path="/todo" element={<Todo />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/suppliers" element={<Suppliers />} />
                 <Route path="/expenses" element={<Expenses />} />
                 <Route path="/hrm" element={<HRM />} />
+                <Route path="/user-management" element={<UserManagement />} />
                 <Route path="/assets" element={<Assets />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/settings" element={<Settings />} />

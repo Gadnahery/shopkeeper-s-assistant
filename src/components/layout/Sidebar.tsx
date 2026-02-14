@@ -9,6 +9,7 @@ import {
   LayoutDashboard, ShoppingCart, Package, Users, Truck,
   Receipt, BarChart3, Settings, Store,
   ChevronLeft, ChevronRight, X, UserCog, Building2, LogOut, Tags, ClipboardList,
+  CheckSquare, UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,10 +22,12 @@ const navItems = [
   { to: "/inventory", labelKey: "nav.inventory", icon: Package },
   { to: "/categories", labelKey: "nav.categories", icon: Tags },
   { to: "/orders", labelKey: "nav.orders", icon: ClipboardList },
+  { to: "/todo", labelKey: "nav.todo", icon: CheckSquare },
   { to: "/customers", labelKey: "nav.customers", icon: Users },
   { to: "/suppliers", labelKey: "nav.suppliers", icon: Truck },
   { to: "/expenses", labelKey: "nav.expenses", icon: Receipt },
   { to: "/hrm", labelKey: "nav.hrm", icon: UserCog },
+  { to: "/user-management", labelKey: "nav.userManagement", icon: UserPlus },
   { to: "/assets", labelKey: "nav.assets", icon: Building2 },
   { to: "/reports", labelKey: "nav.reports", icon: BarChart3 },
   { to: "/settings", labelKey: "nav.settings", icon: Settings },
