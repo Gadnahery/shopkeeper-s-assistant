@@ -11,6 +11,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, shopName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,15 +49,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*, shops(*)")
-      .eq("id", userId)
-      .maybeSingle();
-    if (data) {
-      setProfile(data);
-      setShopId(data.shop_id);
+    try {
+      // Try id first (Lovable: profiles.id = auth.uid()), then user_id (original schema)
+      let { data } = await supabase
+        .from("profiles")
+        .select("*, shops(*)")
+        .eq("id", userId)
+        .maybeSingle();
+      if (!data) {
+        const res = await supabase
+          .from("profiles")
+          .select("*, shops(*)")
+          .eq("user_id", userId)
+          .maybeSingle();
+        data = res.data;
+      }
+      if (data) {
+        // Ensure shops is available (embed can fail or use different keys)
+        if (!(data as { shops?: unknown }).shops && data.shop_id) {
+          const { data: shop } = await supabase.from("shops").select("id, name").eq("id", data.shop_id).maybeSingle();
+          if (shop) data = { ...data, shops: shop };
+        }
+        setProfile(data);
+        setShopId(data.shop_id);
+      }
+    } catch (e) {
+      console.error("fetchProfile error:", e);
     }
+  };
+
+  const refreshProfile = async () => {
+    const { data: { session: s } } = await supabase.auth.getSession();
+    if (s?.user) await fetchProfile(s.user.id);
   };
 
   const signUp = async (email: string, password: string, fullName: string, shopName: string) => {
@@ -86,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, shopId, profile, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, shopId, profile, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

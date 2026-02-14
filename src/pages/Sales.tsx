@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, CheckCircle, Printer, Minus, Plus, X, Loader2, Camera, Monitor } from "lucide-react";
+import { Search, CheckCircle, Printer, Minus, Plus, X, Loader2, ScanLine, Monitor } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
@@ -13,10 +13,9 @@ import { useCreateSale, useDraftSales, useSaveDraftSale, useCompleteDraftSale, u
 import { useShopSettings } from "@/hooks/useShopSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt } from "@/components/Receipt";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 interface CartItem {
@@ -43,7 +42,7 @@ export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
-  const [showScanner, setShowScanner] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: products } = useProducts();
   const { data: customers } = useCustomers();
@@ -92,7 +91,6 @@ export default function Sales() {
   };
 
   const handleBarcodeScan = (barcode: string) => {
-    setShowScanner(false);
     const product = products?.find(p => p.barcode === barcode || p.code === barcode);
     if (product) addToCart(product);
     else { setSearchTerm(barcode); toast.error(language === "sw" ? "Bidhaa haipatikani" : "Product not found"); }
@@ -150,12 +148,7 @@ export default function Sales() {
   };
 
   return (
-    <>
-      <AnimatePresence>
-        {showScanner && <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />}
-      </AnimatePresence>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-4 md:gap-6 lg:grid-cols-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-4 md:gap-6 lg:grid-cols-4">
         <div className="space-y-4 md:space-y-6 lg:col-span-3">
           <Card>
             <CardContent className="p-4 md:p-6">
@@ -216,16 +209,17 @@ export default function Sales() {
               <span className="text-sm font-medium text-primary">{language === "sw" ? "Hali ya Terminal" : "Terminal Mode"}</span>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowScanner(true)}>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => searchInputRef.current?.focus()} title={language === "sw" ? "Lenga mstari wa utafutaji na uscan na skana ya USB" : "Focus search field to scan with USB barcode scanner"}>
               <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
-                <Camera className="h-5 w-5 text-primary" />
+                <ScanLine className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium text-primary">{t("sales.scanBarcode")}</span>
               </CardContent>
             </Card>
             <Card className="relative">
               <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
-                <Search className="h-5 w-5 text-muted-foreground" />
+                <Search className="h-5 w-5 text-muted-foreground shrink-0" />
                 <Input
+                  ref={searchInputRef}
                   placeholder={t("sales.searchOrScan")}
                   className="border-0 bg-transparent p-0 focus-visible:ring-0"
                   value={searchTerm}
@@ -237,6 +231,7 @@ export default function Sales() {
                     }
                   }}
                   autoFocus
+                  autoComplete="off"
                 />
               </CardContent>
               {searchTerm && filteredProducts.length > 0 && (
@@ -366,6 +361,5 @@ export default function Sales() {
 
         {showReceipt && lastSale && <Receipt data={lastSale} onClose={() => setShowReceipt(false)} />}
       </motion.div>
-    </>
   );
 }

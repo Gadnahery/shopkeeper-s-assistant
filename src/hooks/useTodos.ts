@@ -1,13 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-async function getUserShopId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase.from("profiles").select("shop_id").eq("id", user.id).maybeSingle();
-  return data?.shop_id || null;
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 function isTodosTableError(e: unknown): boolean {
   const msg = (e as Error)?.message ?? "";
@@ -15,11 +9,11 @@ function isTodosTableError(e: unknown): boolean {
 }
 
 export function useTodos() {
+  const { shopId } = useAuth();
   return useQuery({
-    queryKey: ["todos"],
+    queryKey: ["todos", shopId],
     queryFn: async () => {
       try {
-        const shopId = await getUserShopId();
         if (!shopId) return [];
         const { data, error } = await supabase
           .from("todos")
@@ -34,14 +28,15 @@ export function useTodos() {
         throw e;
       }
     },
+    enabled: !!shopId,
   });
 }
 
 export function useCreateTodo() {
   const queryClient = useQueryClient();
+  const { shopId } = useAuth();
   return useMutation({
     mutationFn: async (input: { title: string; description?: string; due_date?: string; due_time?: string; alert_at?: string }) => {
-      const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
       const { data, error } = await supabase
         .from("todos")

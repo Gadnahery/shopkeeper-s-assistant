@@ -5,14 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Info, Tag, Save, ScanLine, Loader2, Camera } from "lucide-react";
+import { ArrowLeft, Info, Tag, Save, Loader2, ScanLine } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCategories } from "@/hooks/useCategories";
 import { useCreateProduct } from "@/hooks/useProducts";
 import { useAuth } from "@/contexts/AuthContext";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { ImageUpload } from "@/components/ImageUpload";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 export default function AddProduct() {
   const navigate = useNavigate();
@@ -20,7 +19,6 @@ export default function AddProduct() {
   const { shopId } = useAuth();
   const { data: categories } = useCategories();
   const createProduct = useCreateProduct();
-  const [showScanner, setShowScanner] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "", name_sw: "", category_id: "", barcode: "",
@@ -57,17 +55,7 @@ export default function AddProduct() {
   };
 
   return (
-    <>
-      <AnimatePresence>
-        {showScanner && (
-          <BarcodeScanner
-            onScan={(code) => { setFormData({ ...formData, barcode: code }); setShowScanner(false); }}
-            onClose={() => setShowScanner(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">{t("addProduct.title")}</h1>
           <Button variant="outline" onClick={() => navigate("/inventory")} className="gap-2">
@@ -104,12 +92,20 @@ export default function AddProduct() {
                   </div>
                   <div>
                     <Label>{t("addProduct.barcode")}</Label>
-                    <div className="relative mt-2">
-                      <Input placeholder={t("addProduct.scanOrEnter")} className="pr-10" value={formData.barcode} onChange={e => setFormData({ ...formData, barcode: e.target.value })} title={language === "sw" ? "Lenga hapa na uscan na skana ya USB" : "Focus here and scan with USB scanner"} />
-                      <button type="button" onClick={() => setShowScanner(true)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary">
-                        <Camera className="h-4 w-4" />
-                      </button>
+                    <div className="mt-2 flex items-center gap-2">
+                      <ScanLine className="h-4 w-4 text-primary shrink-0" />
+                      <Input
+                        placeholder={t("addProduct.scanOrEnter")}
+                        className="flex-1"
+                        value={formData.barcode}
+                        onChange={e => setFormData({ ...formData, barcode: e.target.value })}
+                        title={language === "sw" ? "Lenga hapa na uscan na skana ya USB (external)" : "Focus here and scan with external USB barcode scanner"}
+                        autoComplete="off"
+                      />
                     </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {language === "sw" ? "Lenga sehemu hii, fungua skana ya USB, na uscan bidhaa" : "Focus this field, then scan with your USB barcode scanner"}
+                    </p>
                   </div>
                   <div>
                     <Label>{t("addProduct.unitType")}</Label>
@@ -164,6 +160,5 @@ export default function AddProduct() {
           </CardContent>
         </Card>
       </motion.div>
-    </>
   );
 }

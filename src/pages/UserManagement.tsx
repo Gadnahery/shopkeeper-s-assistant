@@ -10,7 +10,7 @@ import { UserPlus, Loader2, Shield } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -39,7 +39,8 @@ async function getShopUsers(shopId: string) {
 
 export default function UserManagement() {
   const { t, language } = useLanguage();
-  const { shopId } = useAuth();
+  const { shopId, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "staff" });
@@ -65,6 +66,8 @@ export default function UserManagement() {
     }
     setLoading(true);
     try {
+      // Capture current session so we can restore it after signUp (signUp can switch session to new user)
+      const { data: { session: prevSession } } = await supabase.auth.getSession();
       const { data, error } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,
@@ -77,6 +80,12 @@ export default function UserManagement() {
         },
       });
       if (error) throw error;
+      // Restore admin session so header keeps showing admin name (signUp can switch to new user)
+      if (prevSession?.access_token && prevSession?.refresh_token) {
+        await supabase.auth.setSession({ access_token: prevSession.access_token, refresh_token: prevSession.refresh_token });
+        await refreshProfile();
+      }
+      queryClient.invalidateQueries({ queryKey: ["shop-users", shopId] });
       toast.success(language === "sw" ? "Mtumiaji amesajiliwa. Atapokea barua pepe ya uthibitishaji." : "User registered. They will receive a verification email.");
       setAddOpen(false);
       setForm({ email: "", password: "", full_name: "", role: "staff" });

@@ -4,16 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, CheckCircle, Minus, Plus, X, Camera, ArrowLeft, ScanLine } from "lucide-react";
+import { CheckCircle, Minus, Plus, X, ArrowLeft, ScanLine } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCreateSale } from "@/hooks/useSales";
 import { useShopSettings } from "@/hooks/useShopSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt } from "@/components/Receipt";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { format } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
 interface CartItem {
@@ -32,7 +30,6 @@ export default function POSTerminal() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
-  const [showScanner, setShowScanner] = useState(false);
   const scannerInputRef = useRef<HTMLInputElement>(null);
 
   const { data: products } = useProducts();
@@ -89,7 +86,6 @@ export default function POSTerminal() {
   };
 
   const handleBarcodeScan = (barcode: string) => {
-    setShowScanner(false);
     const product = products?.find((p) => p.barcode === barcode || p.code === barcode);
     if (product) addToCart(product);
     else {
@@ -164,8 +160,8 @@ export default function POSTerminal() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {language === "sw"
-                      ? "Weka mstari hapa na uscan na skana ya USB"
-                      : "Focus here and scan with USB barcode scanner"}
+                      ? "Weka mstari hapa na uscan na skana ya USB (external)"
+                      : "Focus here and scan with external USB barcode scanner"}
                   </p>
                 </div>
                 <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -181,10 +177,8 @@ export default function POSTerminal() {
                         handleBarcodeScan(searchTerm.trim());
                       }
                     }}
+                    autoComplete="off"
                   />
-                  <Button variant="outline" size="icon" className="h-14 w-14 shrink-0" onClick={() => setShowScanner(true)} title={language === "sw" ? "Skana na kamera" : "Scan with camera"}>
-                    <Camera className="h-6 w-6" />
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -272,9 +266,6 @@ export default function POSTerminal() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showScanner && <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />}
-      </AnimatePresence>
       {showReceipt && lastSale && <Receipt data={lastSale} onClose={() => setShowReceipt(false)} />}
     </div>
   );

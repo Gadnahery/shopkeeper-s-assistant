@@ -134,6 +134,11 @@ aside.bg-sidebar nav a:not(.bg-primary) svg {
     scroll-behavior: smooth;
   }
 
+  /* Ensure input/textarea cursor (caret) is always visible */
+  input, textarea, [contenteditable="true"] {
+    caret-color: hsl(var(--foreground));
+  }
+
   /* Better scrollbar for dark mode */
   ::-webkit-scrollbar {
     width: 6px;
