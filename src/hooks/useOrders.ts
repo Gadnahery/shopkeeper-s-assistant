@@ -5,7 +5,7 @@ import { toast } from "sonner";
 async function getUserShopId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("profiles").select("shop_id").eq("user_id", user.id).maybeSingle();
+  const { data } = await supabase.from("profiles").select("shop_id").eq("id", user.id).maybeSingle();
   return data?.shop_id || null;
 }
 
