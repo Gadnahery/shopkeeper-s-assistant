@@ -1,3 +1,8 @@
+-- Ensure helper function exists (Lovable: profiles.id = auth.uid())
+CREATE OR REPLACE FUNCTION public.get_user_shop_id(_user_id UUID)
+RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT shop_id FROM public.profiles WHERE id = _user_id LIMIT 1 $$;
+
 -- Todos table for admin to-do list
 CREATE TABLE IF NOT EXISTS public.todos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

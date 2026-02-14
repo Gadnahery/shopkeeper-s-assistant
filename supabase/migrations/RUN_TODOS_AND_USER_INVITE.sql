@@ -3,9 +3,10 @@
 -- ============================================================
 
 -- 0. Ensure helper function exists (needed for RLS)
+-- Lovable schema: profiles.id = auth.uid() (no user_id column)
 CREATE OR REPLACE FUNCTION public.get_user_shop_id(_user_id UUID)
 RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
-AS $$ SELECT shop_id FROM public.profiles WHERE user_id = _user_id LIMIT 1 $$;
+AS $$ SELECT shop_id FROM public.profiles WHERE id = _user_id LIMIT 1 $$;
 
 -- 1. Todos table
 CREATE TABLE IF NOT EXISTS public.todos (
@@ -51,11 +52,11 @@ BEGIN
     new_shop_id := (NEW.raw_user_meta_data->>'invited_to_shop_id')::UUID;
     inv_role := COALESCE(NULLIF(TRIM(NEW.raw_user_meta_data->>'invited_role'), ''), 'staff')::TEXT;
     IF inv_role NOT IN ('owner','manager','cashier','staff','hr') THEN inv_role := 'staff'; END IF;
-    INSERT INTO public.profiles (user_id, shop_id, full_name, phone) VALUES (NEW.id, new_shop_id, COALESCE(NEW.raw_user_meta_data->>'full_name', 'Staff'), NEW.phone);
+    INSERT INTO public.profiles (id, shop_id, full_name, phone) VALUES (NEW.id, new_shop_id, COALESCE(NEW.raw_user_meta_data->>'full_name', 'Staff'), NEW.phone);
     INSERT INTO public.user_roles (user_id, shop_id, role) VALUES (NEW.id, new_shop_id, inv_role::app_role);
   ELSE
     INSERT INTO public.shops (name, phone) VALUES (COALESCE(NEW.raw_user_meta_data->>'shop_name', 'My Shop'), NEW.phone) RETURNING id INTO new_shop_id;
-    INSERT INTO public.profiles (user_id, shop_id, full_name, phone) VALUES (NEW.id, new_shop_id, COALESCE(NEW.raw_user_meta_data->>'full_name', 'Shop Owner'), NEW.phone);
+    INSERT INTO public.profiles (id, shop_id, full_name, phone) VALUES (NEW.id, new_shop_id, COALESCE(NEW.raw_user_meta_data->>'full_name', 'Shop Owner'), NEW.phone);
     INSERT INTO public.user_roles (user_id, shop_id, role) VALUES (NEW.id, new_shop_id, 'owner');
   END IF;
   RETURN NEW;
