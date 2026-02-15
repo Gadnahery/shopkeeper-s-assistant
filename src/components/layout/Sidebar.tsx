@@ -86,7 +86,7 @@ function NavSection({
       {!isCollapsed && (
         <span
           className="mb-1.5 block px-3 pt-2 text-[10px] font-semibold uppercase tracking-widest"
-          style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }}
+          style={{ color: isLightTheme ? "#2d1f14" : "#F9FAFB" }}
         >
           {title}
         </span>
