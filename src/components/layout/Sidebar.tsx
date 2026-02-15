@@ -69,12 +69,15 @@ function NavSection({
   isCollapsed: boolean;
   isLightTheme: boolean;
 }) {
+  const navLinkStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties =>
+    isActive ? { color: "white" } : isLightTheme ? { color: "#2d1f14" } : { color: "#F9FAFB" };
+
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-out [&_svg]:text-inherit",
       "hover:scale-[1.03] hover:bg-[#10B981] hover:text-white hover:shadow-md",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-      isActive ? "bg-[#10B981] text-white shadow-sm" : isLightTheme ? "text-[#2d1f14]" : "text-sidebar-foreground",
+      isActive && "bg-[#10B981] text-white shadow-sm",
       isCollapsed && "justify-center px-2"
     );
 
@@ -82,10 +85,8 @@ function NavSection({
     <div className="space-y-0.5">
       {!isCollapsed && (
         <span
-          className={cn(
-            "mb-1.5 block px-3 pt-2 text-[10px] font-semibold uppercase tracking-widest",
-            isLightTheme ? "text-[#3d2817]" : "text-sidebar-foreground"
-          )}
+          className="mb-1.5 block px-3 pt-2 text-[10px] font-semibold uppercase tracking-widest"
+          style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }}
         >
           {title}
         </span>
@@ -93,7 +94,7 @@ function NavSection({
       {items.map((item) => (
         <Tooltip key={item.to} delayDuration={0}>
           <TooltipTrigger asChild>
-            <NavLink to={item.to} className={navLinkClass}>
+            <NavLink to={item.to} className={navLinkClass} style={navLinkStyle}>
               {({ isActive }) => (
                 <>
                   {isActive && (
@@ -158,9 +159,9 @@ export function Sidebar() {
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/20">
                     <Store className="h-5 w-5 text-primary" strokeWidth={1.5} />
                   </div>
-                  <span className={cn("text-sm font-semibold truncate", isLightTheme ? "text-[#2d1f14]" : "text-sidebar-foreground")}>{shopName}</span>
+                  <span className="text-sm font-semibold truncate" style={{ color: isLightTheme ? "#2d1f14" : "#F9FAFB" }}>{shopName}</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setCollapsed(true)} className={cn("h-8 w-8", isLightTheme ? "text-[#3d2817] hover:text-[#2d1f14]" : "text-sidebar-foreground hover:text-sidebar-foreground")}>
+                <Button variant="ghost" size="icon" onClick={() => setCollapsed(true)} className="h-8 w-8" style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }}>
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               </div>
@@ -194,7 +195,7 @@ export function Sidebar() {
                 />
               </nav>
               <div className="border-t border-sidebar-border p-2">
-                <Button variant="ghost" className={cn("w-full justify-start gap-3 hover:text-destructive hover:bg-destructive/10", isLightTheme ? "text-[#3d2817]" : "text-sidebar-foreground")} onClick={signOut}>
+                <Button variant="ghost" className="w-full justify-start gap-3 hover:text-destructive hover:bg-destructive/10" style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }} onClick={signOut}>
                   <LogOut className="h-4 w-4" strokeWidth={1.5} />
                   {language === "sw" ? "Toka" : "Sign Out"}
                 </Button>
@@ -223,7 +224,7 @@ export function Sidebar() {
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className={cn("text-sm font-semibold truncate", isLightTheme ? "text-[#2d1f14]" : "text-sidebar-foreground")}
+              className="text-sm font-semibold truncate" style={{ color: isLightTheme ? "#2d1f14" : "#F9FAFB" }}
             >
               {shopName}
             </motion.span>
@@ -277,9 +278,9 @@ export function Sidebar() {
               variant="ghost"
               className={cn(
                 "w-full gap-3 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200",
-                isLightTheme ? "text-[#3d2817]" : "text-sidebar-foreground",
                 isCollapsed ? "justify-center px-2" : "justify-start"
               )}
+              style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }}
               onClick={signOut}
             >
               <LogOut className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
