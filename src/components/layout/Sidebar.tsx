@@ -92,31 +92,34 @@ function NavSection({
         </span>
       )}
       {items.map((item) => (
-        <Tooltip key={item.to} delayDuration={0}>
-          <TooltipTrigger asChild>
-            <NavLink to={item.to} className={navLinkClass} style={navLinkStyle}>
-              {({ isActive }) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          className={navLinkClass}
+          style={navLinkStyle}
+        >
+          {({ isActive }) => (
+            <span
+              className="flex items-center gap-3 w-full min-w-0"
+              style={{ color: "inherit" }}
+            >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r bg-white" />
+              )}
+              <item.icon className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.5} style={{ color: "currentColor" }} />
+              {!isCollapsed && (
                 <>
-                  {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r bg-white" />
-                  )}
-                  <item.icon className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.5} />
-                  {!isCollapsed && (
-                    <>
-                      <span className="flex-1 truncate">{t(item.labelKey)}</span>
-                      {item.to === "/orders" && pendingOrdersCount > 0 && (
-                        <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-[10px]">
-                          {pendingOrdersCount}
-                        </Badge>
-                      )}
-                    </>
+                  <span className="flex-1 truncate">{t(item.labelKey)}</span>
+                  {item.to === "/orders" && pendingOrdersCount > 0 && (
+                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-[10px]">
+                      {pendingOrdersCount}
+                    </Badge>
                   )}
                 </>
               )}
-            </NavLink>
-          </TooltipTrigger>
-          {isCollapsed && <TooltipContent side="right" className="font-medium">{t(item.labelKey)}</TooltipContent>}
-        </Tooltip>
+            </span>
+          )}
+        </NavLink>
       ))}
     </div>
   );

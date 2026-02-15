@@ -143,28 +143,27 @@
   }
 }
 
-/* Sidebar: force dark brown text in light theme (overrides any conflicting styles) */
-html.light [data-app-sidebar] nav a[href] {
-  color: #2d1f14 !important;
-}
-html.light [data-app-sidebar] nav a[href] svg {
-  color: #2d1f14 !important;
-}
-/* Active/hover emerald link keeps white text */
-html.light [data-app-sidebar] nav a[href][class*="10B981"] {
-  color: white !important;
-}
-html.light [data-app-sidebar] nav a[href][class*="10B981"] svg {
-  color: white !important;
-}
-html.light [data-app-sidebar] nav span.text-\[10px\] {
-  color: #3d2817 !important;
-}
-html.light [data-app-sidebar] > div:first-of-type span.truncate {
-  color: #2d1f14 !important;
-}
+/* Sidebar: force colors - MUST override any cached/cascade issues */
+/* Light theme: dark brown text on cream */
+html.light [data-app-sidebar] nav a:not([class*="10B981"]),
+html.light [data-app-sidebar] nav a:not([class*="10B981"]) svg,
+html.light [data-app-sidebar] nav span.uppercase,
+html.light [data-app-sidebar] span.truncate,
 html.light [data-app-sidebar] button.gap-3 {
-  color: #3d2817 !important;
+  color: #2d1f14 !important;
+}
+/* Dark theme: white text on dark */
+html.dark [data-app-sidebar] nav a:not([class*="10B981"]),
+html.dark [data-app-sidebar] nav a:not([class*="10B981"]) svg,
+html.dark [data-app-sidebar] nav span.uppercase,
+html.dark [data-app-sidebar] span.truncate,
+html.dark [data-app-sidebar] button.gap-3 {
+  color: #F9FAFB !important;
+}
+/* Active emerald link: always white */
+[data-app-sidebar] nav a[class*="10B981"],
+[data-app-sidebar] nav a[class*="10B981"] * {
+  color: white !important;
 }
 
 /* 8px spacing grid */
