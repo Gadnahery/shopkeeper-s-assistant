@@ -16,12 +16,12 @@ function LayoutContent() {
       <div
         className={cn(
           "transition-all duration-300",
-          isCollapsed ? "md:ml-16" : "md:ml-60",
+          isCollapsed ? "md:ml-[68px]" : "md:ml-56",
           "ml-0" // mobile: no margin
         )}
       >
         <Header />
-        <main className="p-4 md:p-6">
+        <main className="p-4 md:p-6 lg:p-6 min-h-[calc(100vh-3.5rem)]">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

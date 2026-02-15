@@ -2,12 +2,16 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   shopId: string | null;
   profile: any | null;
+  role: AppRole | null;
+  isOwner: boolean;
   signUp: (email: string, password: string, fullName: string, shopName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -22,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [shopId, setShopId] = useState<string | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -32,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setShopId(null);
         setProfile(null);
+        setRole(null);
       }
       setLoading(false);
     });
@@ -72,6 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setProfile(data);
         setShopId(data.shop_id);
+        // Fetch user role for this shop
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("shop_id", data.shop_id)
+          .maybeSingle();
+        setRole((roleData?.role as AppRole) ?? null);
       }
     } catch (e) {
       console.error("fetchProfile error:", e);
@@ -107,10 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setShopId(null);
     setProfile(null);
+    setRole(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, shopId, profile, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, shopId, profile, role, isOwner: role === "owner", signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

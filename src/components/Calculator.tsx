@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -49,6 +49,42 @@ export function Calculator({ open, onOpenChange }: CalculatorProps) {
       setDisplay(next);
     }
   };
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+
+      const key = e.key;
+      if (/^[0-9]$/.test(key)) {
+        e.preventDefault();
+        handleInput(key);
+        return;
+      }
+      if (["+", "-", "*", "/", "(", ")"].includes(key)) {
+        e.preventDefault();
+        handleInput(key);
+        return;
+      }
+      if (key === "Enter" || key === "=") {
+        e.preventDefault();
+        handleInput("=");
+        return;
+      }
+      if (key === "Backspace") {
+        e.preventDefault();
+        backspace();
+        return;
+      }
+      if (key === "c" || key === "C") {
+        e.preventDefault();
+        handleInput("C");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, fullExpr]);
 
   const buttons: { label: string; value: string; className?: string }[] = [
     { label: "7", value: "7" },
