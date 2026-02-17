@@ -4,10 +4,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Eye, EyeOff, Loader2, ArrowRight, Store, ShieldCheck, BarChart3, Smartphone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const features = [
   { icon: Store, label: "POS & Sales", labelSw: "Mauzo na POS" },
@@ -24,11 +32,25 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [updatePasswordLoading, setUpdatePasswordLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", fullName: "", shopName: "" });
 
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      setRecoveryMode(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && !recoveryMode) navigate("/dashboard", { replace: true });
+  }, [user, recoveryMode, navigate]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2200);
@@ -59,6 +81,55 @@ export default function Auth() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      toast.error(language === "sw" ? "Nenosiri lazima liwe angalau herufi 6" : "Password must be at least 6 characters");
+      return;
+    }
+    setUpdatePasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success(language === "sw" ? "Nenosiri limebadilishwa. Unaweza kuingia sasa." : "Password updated. You can sign in now.");
+        setRecoveryMode(false);
+        setNewPassword("");
+        navigate("/dashboard", { replace: true });
+      }
+    } finally {
+      setUpdatePasswordLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) {
+      toast.error(language === "sw" ? "Ingiza barua pepe" : "Enter your email");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success(
+          language === "sw"
+            ? "Angalia barua pepe yako kwa kiungo cha kubadilisha nenosiri."
+            : "Check your email for a link to reset your password."
+        );
+        setForgotOpen(false);
+        setResetEmail("");
+      }
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -133,13 +204,67 @@ export default function Auth() {
         <div className="w-full max-w-md">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-foreground">
-              {isLogin ? (language === "sw" ? "Ingia kwenye akaunti yako" : "Welcome back") : (language === "sw" ? "Fungua akaunti mpya" : "Create your account")}
+              {recoveryMode
+                ? (language === "sw" ? "Weka Nenosiri Jipya" : "Set New Password")
+                : isLogin
+                  ? (language === "sw" ? "Ingia kwenye akaunti yako" : "Welcome back")
+                  : (language === "sw" ? "Fungua akaunti mpya" : "Create your account")}
             </h2>
             <p className="mt-1 text-muted-foreground">
-              {isLogin ? (language === "sw" ? "Endelea na biashara yako" : "Sign in to continue") : (language === "sw" ? "Anza kusimamia biashara yako" : "Get started with your shop")}
+              {recoveryMode
+                ? (language === "sw" ? "Chagua nenosiri jipya" : "Choose a new password for your account")
+                : isLogin
+                  ? (language === "sw" ? "Endelea na biashara yako" : "Sign in to continue")
+                  : (language === "sw" ? "Anza kusimamia biashara yako" : "Get started with your shop")}
             </p>
           </div>
 
+          {/* Recovery: Set new password */}
+          {recoveryMode && (
+            <form onSubmit={handleUpdatePassword} className="space-y-5">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {language === "sw"
+                    ? "Chagua nenosiri jipya kwa akaunti yako."
+                    : "Choose a new password for your account."}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Nenosiri Jipya" : "New Password"}</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="h-12 rounded-xl pr-10"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+              <Button type="submit" className="h-12 w-full gap-2 rounded-xl" disabled={updatePasswordLoading}>
+                {updatePasswordLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (language === "sw" ? "Weka Nenosiri Jipya" : "Set new password")}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setRecoveryMode(false)}
+                className="text-sm text-muted-foreground hover:text-foreground w-full"
+              >
+                {language === "sw" ? "Rudi kwenye kuingia" : "Back to sign in"}
+              </button>
+            </form>
+          )}
+
+          {!recoveryMode && (
+          <>
           {/* Tab Toggle */}
           <div className="mb-6 flex rounded-xl bg-muted p-1">
             <button onClick={() => setIsLogin(true)}
@@ -181,6 +306,18 @@ export default function Auth() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetEmail(form.email);
+                    setForgotOpen(true);
+                  }}
+                  className="text-sm text-primary hover:text-primary/80"
+                >
+                  {language === "sw" ? "Umesahau nenosiri?" : "Forgot password?"}
+                </button>
+              )}
             </div>
 
             <Button type="submit" className="h-12 w-full gap-2 rounded-xl text-base font-semibold" disabled={loading}>
@@ -192,6 +329,37 @@ export default function Auth() {
               )}
             </Button>
           </form>
+
+          <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{language === "sw" ? "Badilisha Nenosiri" : "Reset Password"}</DialogTitle>
+                <DialogDescription>
+                  {language === "sw"
+                    ? "Ingiza barua pepe yako. Tutakutumia kiungo cha kubadilisha nenosiri."
+                    : "Enter your email. We'll send you a link to reset your password."}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleForgotPassword} className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label>{language === "sw" ? "Barua Pepe" : "Email"}</Label>
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="h-12 rounded-xl"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="h-12 w-full rounded-xl" disabled={resetLoading}>
+                  {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (language === "sw" ? "Tuma Kiungo" : "Send reset link")}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+          </>
+          )}
         </div>
       </motion.div>
     </div>

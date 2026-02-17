@@ -1,50 +1,127 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Plus, Pencil, Trash2, AlertTriangle, Loader2, QrCode } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Search, Download, Plus, Pencil, Trash2, AlertTriangle, Loader2, QrCode, Package, FolderTree } from "lucide-react";
 import { useProducts, useDeleteProduct, useUpdateProduct } from "@/hooks/useProducts";
 import { BarcodeGenerator } from "@/components/BarcodeGenerator";
 import { exportToCSV } from "@/utils/exportData";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/useCategories";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Inventory() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") ?? "");
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q !== null) setSearchTerm(q);
+  }, [searchParams]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [stockFilter, setStockFilter] = useState<"all" | "in-stock" | "low" | "out">("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBarcode, setShowBarcode] = useState<string | null>(null);
   const [barcodeType, setBarcodeType] = useState<"barcode" | "qr">("barcode");
-  const [editProduct, setEditProduct] = useState<any>(null);
+  const [editProduct, setEditProduct] = useState<Record<string, unknown> | null>(null);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [showBulkCategory, setShowBulkCategory] = useState(false);
+  const [bulkCategoryId, setBulkCategoryId] = useState<string>("");
 
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
   const deleteProduct = useDeleteProduct();
   const updateProduct = useUpdateProduct();
 
-  const filteredProducts = products?.filter(
-    (p) =>
-      (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredProducts =
+    products?.filter((p) => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.name_sw && p.name_sw.toLowerCase().includes(searchTerm.toLowerCase()))) &&
-      (categoryFilter === "all" || p.category_id === categoryFilter)
-  ) || [];
+        (p.name_sw && p.name_sw.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesCategory = categoryFilter === "all" || p.category_id === categoryFilter;
+      const lowAlert = p.low_stock_alert ?? 5;
+      const matchesStock =
+        stockFilter === "all" ||
+        (stockFilter === "in-stock" && p.stock > lowAlert) ||
+        (stockFilter === "low" && p.stock > 0 && p.stock <= lowAlert) ||
+        (stockFilter === "out" && p.stock <= 0);
+      return matchesSearch && matchesCategory && matchesStock;
+    }) ?? [];
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
   const isLowStock = (stock: number, alert: number) => stock <= alert;
   const getProductName = (product: typeof filteredProducts[0]) => language === "sw" && product.name_sw ? product.name_sw : product.name;
 
   const handleExport = () => {
-    if (!products?.length) return;
-    exportToCSV(products.map(p => ({ Code: p.code, Name: p.name, Stock: p.stock, "Buying Price": p.buying_price, "Selling Price": p.selling_price, Barcode: p.barcode || "" })), "inventory");
+    const toExport = selectedIds.size > 0
+      ? filteredProducts.filter((p) => selectedIds.has(p.id))
+      : filteredProducts;
+    if (!toExport.length) return;
+    exportToCSV(
+      toExport.map((p) => ({
+        Code: p.code,
+        Name: p.name,
+        Stock: p.stock,
+        "Buying Price": p.buying_price,
+        "Selling Price": p.selling_price,
+        Barcode: p.barcode ?? "",
+      })),
+      "inventory"
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredProducts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredProducts.map((p) => p.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    for (const id of selectedIds) {
+      await deleteProduct.mutateAsync(id);
+    }
+    setSelectedIds(new Set());
+    setShowBulkDelete(false);
+  };
+
+  const handleBulkChangeCategory = async () => {
+    if (!bulkCategoryId) return;
+    for (const id of selectedIds) {
+      await updateProduct.mutateAsync({ id, category_id: bulkCategoryId });
+    }
+    setSelectedIds(new Set());
+    setShowBulkCategory(false);
+    setBulkCategoryId("");
   };
 
   const handleSaveEdit = async () => {
@@ -58,7 +135,7 @@ export default function Inventory() {
     setEditProduct(null);
   };
 
-  const handleGenerateBarcode = (product: any) => {
+  const handleGenerateBarcode = (product: (typeof filteredProducts)[0]) => {
     if (!product.barcode) {
       // Auto-generate barcode from code
       const barcode = product.code;
@@ -72,7 +149,7 @@ export default function Inventory() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2 flex-1">
           <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             <Input placeholder={t("inventory.searchPlaceholder")} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" autoFocus />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -82,12 +159,39 @@ export default function Inventory() {
               {categories?.map(c => <SelectItem key={c.id} value={c.id}>{language === "sw" && c.name_sw ? c.name_sw : c.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={stockFilter} onValueChange={(v: "all" | "in-stock" | "low" | "out") => setStockFilter(v)}>
+            <SelectTrigger className="w-40"><SelectValue placeholder={language === "sw" ? "Stoki" : "Stock"} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+              <SelectItem value="in-stock">{language === "sw" ? "Ipo stoki" : "In Stock"}</SelectItem>
+              <SelectItem value="low">{language === "sw" ? "Stoki kidogo" : "Low Stock"}</SelectItem>
+              <SelectItem value="out">{language === "sw" ? "Hakuna stoki" : "Out of Stock"}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex gap-2 md:gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleExport}>
-            <Download className="h-4 w-4" /><span className="hidden md:inline">{t("inventory.export")}</span>
+          {selectedIds.size > 0 && (
+            <Badge variant="secondary" className="py-1.5 px-2 gap-1">
+              <Package className="h-3.5 w-3" />
+              {selectedIds.size} {language === "sw" ? "zimechaguliwa" : "selected"}
+            </Badge>
+          )}
+          {selectedIds.size > 0 && (
+            <>
+              <Button variant="outline" size="sm" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => setShowBulkCategory(true)} disabled={updateProduct.isPending}>
+                <FolderTree className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                {t("inventory.changeCategory")}
+              </Button>
+              <Button variant="destructive" size="sm" className="gap-2" onClick={() => setShowBulkDelete(true)} disabled={deleteProduct.isPending}>
+                <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
+                {t("inventory.deleteSelected")}
+              </Button>
+            </>
+          )}
+          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExport} disabled={filteredProducts.length === 0}>
+            <Download className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" /><span className="hidden md:inline">{selectedIds.size > 0 ? t("inventory.exportSelected") : t("inventory.export")}</span>
           </Button>
-          <Button className="gap-2" onClick={() => navigate("/inventory/add")}>
+          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => navigate("/inventory/add")}>
             <Plus className="h-4 w-4" />{t("inventory.addProduct")}
           </Button>
         </div>
@@ -117,13 +221,72 @@ export default function Inventory() {
                   <SelectContent>{categories?.map(c => <SelectItem key={c.id} value={c.id}>{language === "sw" && c.name_sw ? c.name_sw : c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <Button className="w-full" onClick={handleSaveEdit} disabled={updateProduct.isPending}>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleSaveEdit} 
+                disabled={updateProduct.isPending}
+              >
                 {updateProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
               </Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Change Category Dialog */}
+      <Dialog open={showBulkCategory} onOpenChange={setShowBulkCategory}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("inventory.changeCategory")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>{t("inventory.newCategory")}</Label>
+              <Select value={bulkCategoryId} onValueChange={setBulkCategoryId}>
+                <SelectTrigger><SelectValue placeholder={t("inventory.selectCategory")} /></SelectTrigger>
+                <SelectContent>
+                  {categories?.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{language === "sw" && c.name_sw ? c.name_sw : c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {selectedIds.size} {t("inventory.productsWillBeUpdated")}
+            </p>
+            <Button 
+              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              onClick={handleBulkChangeCategory} 
+              disabled={!bulkCategoryId || updateProduct.isPending}
+            >
+              {updateProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {t("inventory.applyCategory")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={showBulkDelete} onOpenChange={setShowBulkDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === "sw" ? "Futa bidhaa zilizochaguliwa?" : "Delete selected products?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === "sw"
+                ? `Una uhakika unataka kufuta bidhaa ${selectedIds.size}? Kitendo hiki hakiwezi kufutwa.`
+                : `Are you sure you want to delete ${selectedIds.size} products? This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === "sw" ? "Ghairi" : "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Futa" : "Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Barcode Dialog */}
       <Dialog open={!!showBarcode} onOpenChange={(o) => !o && setShowBarcode(null)}>
@@ -154,6 +317,13 @@ export default function Inventory() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>{t("inventory.code")}</TableHead>
                     <TableHead>{t("inventory.name")}</TableHead>
                     <TableHead>{t("inventory.stock")}</TableHead>
@@ -163,11 +333,18 @@ export default function Inventory() {
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       {products?.length === 0 ? (language === "sw" ? "Hakuna bidhaa bado." : "No products yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}
                     </TableCell></TableRow>
-                  ) : filteredProducts.map(product => (
+                  ) : filteredProducts.map((product) => (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(product.id)}
+                          onCheckedChange={() => toggleSelect(product.id)}
+                          aria-label={`Select ${product.name}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium text-muted-foreground">{product.code}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

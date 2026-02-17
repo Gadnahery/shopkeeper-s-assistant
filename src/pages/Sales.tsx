@@ -132,6 +132,9 @@ export default function Sales() {
         shopName: shopSettings?.shop_name || "",
         shopPhone: shopSettings?.phone || undefined,
         shopAddress: shopSettings?.address || undefined,
+        receiptHeader: (shopSettings as { receipt_header?: string | null })?.receipt_header,
+        receiptFooter: (shopSettings as { receipt_footer?: string | null })?.receipt_footer,
+        logoUrl: (shopSettings as { logo_url?: string | null })?.logo_url,
       });
 
       setShowReceipt(true);
@@ -174,7 +177,7 @@ export default function Sales() {
               </div>
               {drafts && drafts.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <Label className="text-muted-foreground">{language === "sw" ? "Rasimu" : "Drafts"}</Label>
+                  <Label className="text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Rasimu" : "Drafts"}</Label>
                   <div className="flex flex-wrap gap-2">
                     {drafts.map((d: any) => (
                       <div key={d.id} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
@@ -205,19 +208,19 @@ export default function Sales() {
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/sales/terminal")}>
             <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
-              <Monitor className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium text-primary">{language === "sw" ? "Hali ya Terminal" : "Terminal Mode"}</span>
+              <Monitor className="h-5 w-5 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{language === "sw" ? "Hali ya Terminal" : "Terminal Mode"}</span>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => searchInputRef.current?.focus()} title={language === "sw" ? "Lenga mstari wa utafutaji na uscan na skana ya USB" : "Focus search field to scan with USB barcode scanner"}>
               <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
-                <ScanLine className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-primary">{t("sales.scanBarcode")}</span>
+                <ScanLine className="h-5 w-5 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{t("sales.scanBarcode")}</span>
               </CardContent>
             </Card>
             <Card className="relative">
               <CardContent className="flex h-14 md:h-16 items-center gap-3 p-4">
-                <Search className="h-5 w-5 text-muted-foreground shrink-0" />
+                <Search className="h-5 w-5 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)] shrink-0" />
                 <Input
                   ref={searchInputRef}
                   placeholder={t("sales.searchOrScan")}
@@ -240,7 +243,7 @@ export default function Sales() {
                     <button key={product.id} className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted" onClick={() => addToCart(product)}>
                       <div>
                         <p className="font-medium">{language === "sw" && product.name_sw ? product.name_sw : product.name}</p>
-                        <p className="text-sm text-muted-foreground">{product.code}</p>
+                        <p className="text-sm text-foreground/70 dark:text-foreground/80">{product.code}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{formatNumber(product.selling_price)}</p>
@@ -257,7 +260,7 @@ export default function Sales() {
             <CardContent className="p-4 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold">{t("sales.cart")}</h3>
-                <span className="text-sm text-muted-foreground">{cartItems.length} items</span>
+                <span className="text-sm text-foreground/70 dark:text-foreground/80">{cartItems.length} items</span>
               </div>
               <div className="overflow-x-auto">
                 <Table>
@@ -270,7 +273,7 @@ export default function Sales() {
                   </TableRow></TableHeader>
                   <TableBody>
                     {cartItems.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{t("sales.barcodeOrSearch")}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-foreground/70 dark:text-foreground/80">{t("sales.barcodeOrSearch")}</TableCell></TableRow>
                     ) : cartItems.map(item => (
                       <TableRow key={item.id}>
                         <TableCell>
@@ -292,30 +295,34 @@ export default function Sales() {
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between"><span className="text-muted-foreground">{t("sales.subtotal")}</span><span className="font-medium">{formatNumber(subtotal)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-foreground/70 dark:text-foreground/80">{t("sales.subtotal")}</span><span className="font-medium text-foreground dark:text-foreground">{formatNumber(subtotal)}</span></div>
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground">{t("sales.discount")}</Label>
+                    <Label className="text-foreground/70 dark:text-foreground/80">{t("sales.discount")}</Label>
                     <div className="flex gap-2">
                       <div className="relative flex-1"><Input value={discountAmount} onChange={e => { setDiscountAmount(e.target.value); setDiscountPercent("0"); }} className="pr-12" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Tsh</span></div>
-                      <span className="flex items-center text-muted-foreground">{t("common.or")}</span>
+                      <span className="flex items-center text-foreground/70 dark:text-foreground/80">{t("common.or")}</span>
                       <div className="relative flex-1"><Input value={discountPercent} onChange={e => { setDiscountPercent(e.target.value); setDiscountAmount("0"); }} className="pr-8" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span></div>
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end justify-center">
-                  <span className="text-lg text-muted-foreground">{t("sales.total")}</span>
+                  <span className="text-lg text-foreground/70 dark:text-foreground/80">{t("sales.total")}</span>
                   <span className="text-3xl font-bold">{formatNumber(total)}</span>
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <div className="space-y-2"><Label className="text-muted-foreground">{t("sales.cash")}</Label><Input value={cashAmount} onChange={e => setCashAmount(e.target.value)} placeholder={formatNumber(total)} /></div>
-                <div className="space-y-2"><Label className="text-muted-foreground">{t("sales.mpesa")}</Label><Input value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} placeholder={t("sales.enterAmount")} /></div>
-                <div className="space-y-2"><Label className="text-muted-foreground">{t("sales.mpesaCode")}</Label><Input value={mpesaCode} onChange={e => setMpesaCode(e.target.value)} placeholder={t("sales.transactionCode")} /></div>
+                <div className="space-y-2"><Label className="text-foreground/70 dark:text-foreground/80">{t("sales.cash")}</Label><Input value={cashAmount} onChange={e => setCashAmount(e.target.value)} placeholder={formatNumber(total)} /></div>
+                <div className="space-y-2"><Label className="text-foreground/70 dark:text-foreground/80">{t("sales.mpesa")}</Label><Input value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} placeholder={t("sales.enterAmount")} /></div>
+                <div className="space-y-2"><Label className="text-foreground/70 dark:text-foreground/80">{t("sales.mpesaCode")}</Label><Input value={mpesaCode} onChange={e => setMpesaCode(e.target.value)} placeholder={t("sales.transactionCode")} /></div>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button className="flex-1 gap-2 bg-secondary hover:bg-secondary/90 md:flex-none md:px-8" onClick={handleCompleteSale} disabled={cartItems.length === 0 || createSale.isPending}>
+                <Button 
+                  className="flex-1 gap-2 md:flex-none md:px-8 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  onClick={handleCompleteSale} 
+                  disabled={cartItems.length === 0 || createSale.isPending}
+                >
                   {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                   {t("sales.completeSale")}
                 </Button>
@@ -347,12 +354,12 @@ export default function Sales() {
           <Card>
             <CardContent className="p-4 md:p-6 space-y-4">
               <div>
-                <Label className="text-muted-foreground">{t("sales.invoice")}</Label>
-                <p className="text-xl md:text-2xl font-bold">{`INV-${format(new Date(), "yyyyMMdd")}`}</p>
-                <p className="text-sm text-muted-foreground">{t("sales.autoGenerated")}</p>
+                <Label className="text-foreground/70 dark:text-foreground/80">{t("sales.invoice")}</Label>
+                <p className="text-xl md:text-2xl font-bold text-foreground dark:text-foreground">{`INV-${format(new Date(), "yyyyMMdd")}`}</p>
+                <p className="text-sm text-foreground/70 dark:text-foreground/80">{t("sales.autoGenerated")}</p>
               </div>
               <div>
-                <Label className="text-muted-foreground">{t("sales.dateTime")}</Label>
+                <Label className="text-foreground/70 dark:text-foreground/80">{t("sales.dateTime")}</Label>
                 <p className="font-medium">{format(new Date(), "dd MMM yyyy, hh:mm a")}</p>
               </div>
             </CardContent>

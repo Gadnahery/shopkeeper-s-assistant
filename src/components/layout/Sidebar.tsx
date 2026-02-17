@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMyPageAccess } from "@/hooks/useUserPageAccess";
 import { useTheme } from "@/hooks/useTheme";
 import { usePendingOrdersCount } from "@/hooks/useOrders";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -70,23 +71,23 @@ function NavSection({
   isLightTheme: boolean;
 }) {
   const navLinkStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties =>
-    isActive ? { color: "white" } : isLightTheme ? { color: "#2d1f14" } : { color: "#F9FAFB" };
+    isActive ? { color: "white" } : isLightTheme ? { color: "#1f2937" } : { color: "#f3f4f6" };
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ease-out [&_svg]:text-inherit",
-      "hover:scale-[1.03] hover:bg-[#10B981] hover:text-white hover:shadow-md",
+      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 [&_svg]:text-inherit",
+      "hover:bg-[#10B981] hover:text-white dark:hover:bg-[#10B981] dark:hover:shadow-[0_0_8px_rgba(16,185,129,0.3)]",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-      isActive && "bg-[#10B981] text-white shadow-sm",
+      isActive && "active bg-[#10B981] text-white dark:shadow-[0_0_12px_rgba(16,185,129,0.4)]",
       isCollapsed && "justify-center px-2"
     );
 
   return (
-    <div className="space-y-0.5">
+    <div className="space-y-1">
       {!isCollapsed && (
         <span
           className="mb-1.5 block px-3 pt-2 text-[10px] font-semibold uppercase tracking-widest"
-          style={{ color: isLightTheme ? "#2d1f14" : "#F9FAFB" }}
+          style={{ color: isLightTheme ? "#1f2937" : "#f3f4f6" }}
         >
           {title}
         </span>
@@ -106,7 +107,15 @@ function NavSection({
               {isActive && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r bg-white" />
               )}
-              <item.icon className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={1.5} style={{ color: "currentColor" }} />
+              <item.icon 
+                className={`h-[18px] w-[18px] flex-shrink-0 transition-all duration-200 ${
+                  isActive 
+                    ? "dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
+                    : "dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)] dark:hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]"
+                }`}
+                strokeWidth={isActive ? 2 : 1.5} 
+                style={{ color: "currentColor" }} 
+              />
               {!isCollapsed && (
                 <>
                   <span className="flex-1 truncate">{t(item.labelKey)}</span>
@@ -136,6 +145,14 @@ export function Sidebar() {
 
   const shopName = profile?.shops?.name || "Smart Money";
   const sectionTitles = language === "sw" ? SECTION_HEADERS_SW : SECTION_HEADERS;
+  const { data: allowedPages } = useMyPageAccess();
+  const filterByAccess = (items: typeof OPERATIONS) => {
+    if (!allowedPages || allowedPages.length === 0) return items;
+    return items.filter((item) => allowedPages.includes(item.to));
+  };
+  const operationsItems = filterByAccess(OPERATIONS);
+  const managementItems = filterByAccess(MANAGEMENT);
+  const adminItems = filterByAccess(ADMIN);
 
   if (isMobile) {
     return (
@@ -164,14 +181,14 @@ export function Sidebar() {
                   </div>
                   <span className="text-sm font-semibold truncate" style={{ color: isLightTheme ? "#2d1f14" : "#F9FAFB" }}>{shopName}</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setCollapsed(true)} className="h-8 w-8" style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }}>
+                <Button variant="ghost" size="icon" onClick={() => setCollapsed(true)} className="h-8 w-8" style={{ color: isLightTheme ? "#1f2937" : "#f3f4f6" }}>
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               </div>
               <nav className="flex-1 overflow-y-auto p-2 space-y-4">
                 <NavSection
                   title={sectionTitles.operations}
-                  items={OPERATIONS}
+                  items={operationsItems}
                   t={t}
                   language={language}
                   pendingOrdersCount={pendingOrdersCount}
@@ -180,7 +197,7 @@ export function Sidebar() {
                 />
                 <NavSection
                   title={sectionTitles.management}
-                  items={MANAGEMENT}
+                  items={managementItems}
                   t={t}
                   language={language}
                   pendingOrdersCount={pendingOrdersCount}
@@ -189,7 +206,7 @@ export function Sidebar() {
                 />
                 <NavSection
                   title={sectionTitles.admin}
-                  items={ADMIN}
+                  items={adminItems}
                   t={t}
                   language={language}
                   pendingOrdersCount={pendingOrdersCount}
@@ -198,7 +215,7 @@ export function Sidebar() {
                 />
               </nav>
               <div className="border-t border-sidebar-border p-2">
-                <Button variant="ghost" className="w-full justify-start gap-3 hover:text-destructive hover:bg-destructive/10" style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }} onClick={signOut}>
+                <Button variant="ghost" className="w-full justify-start gap-3 hover:text-destructive hover:bg-destructive/10" style={{ color: isLightTheme ? "#1f2937" : "#f3f4f6" }} onClick={signOut}>
                   <LogOut className="h-4 w-4" strokeWidth={1.5} />
                   {language === "sw" ? "Toka" : "Sign Out"}
                 </Button>
@@ -247,7 +264,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto p-2 space-y-4 mt-1">
         <NavSection
           title={sectionTitles.operations}
-          items={OPERATIONS}
+          items={operationsItems}
           t={t}
           language={language}
           pendingOrdersCount={pendingOrdersCount}
@@ -256,7 +273,7 @@ export function Sidebar() {
         />
         <NavSection
           title={sectionTitles.management}
-          items={MANAGEMENT}
+          items={managementItems}
           t={t}
           language={language}
           pendingOrdersCount={pendingOrdersCount}
@@ -265,7 +282,7 @@ export function Sidebar() {
         />
         <NavSection
           title={sectionTitles.admin}
-          items={ADMIN}
+          items={adminItems}
           t={t}
           language={language}
           pendingOrdersCount={pendingOrdersCount}
@@ -283,7 +300,7 @@ export function Sidebar() {
                 "w-full gap-3 hover:text-destructive hover:bg-destructive/10 transition-colors duration-200",
                 isCollapsed ? "justify-center px-2" : "justify-start"
               )}
-              style={{ color: isLightTheme ? "#3d2817" : "#F9FAFB" }}
+              style={{ color: isLightTheme ? "#1f2937" : "#f3f4f6" }}
               onClick={signOut}
             >
               <LogOut className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />

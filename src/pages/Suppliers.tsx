@@ -75,11 +75,11 @@ export default function Suppliers() {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
           <Input placeholder={t("suppliers.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" />{t("suppliers.addSupplier")}</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{t("suppliers.addSupplier")}</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{t("suppliers.addSupplier")}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-4">
@@ -90,7 +90,11 @@ export default function Suppliers() {
               </div>
               <div className="space-y-2"><Label>Contact Person</Label><Input value={newSupplier.contact_person} onChange={(e) => setNewSupplier({ ...newSupplier, contact_person: e.target.value })} /></div>
               <div className="space-y-2"><Label>Address</Label><Input value={newSupplier.address} onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })} /></div>
-              <Button className="w-full" onClick={handleAddSupplier} disabled={!newSupplier.name || createSupplier.isPending}>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleAddSupplier} 
+                disabled={!newSupplier.name || createSupplier.isPending}
+              >
                 {createSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
               </Button>
             </div>
@@ -111,7 +115,11 @@ export default function Suppliers() {
               </div>
               <div className="space-y-2"><Label>Contact Person</Label><Input value={editingSupplier.contact_person || ""} onChange={(e) => setEditingSupplier({ ...editingSupplier, contact_person: e.target.value })} /></div>
               <div className="space-y-2"><Label>{t("suppliers.pendingPayment")}</Label><Input type="number" value={editingSupplier.pending_payment} onChange={(e) => setEditingSupplier({ ...editingSupplier, pending_payment: e.target.value })} /></div>
-              <Button className="w-full" onClick={handleEditSupplier} disabled={updateSupplier.isPending}>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleEditSupplier} 
+                disabled={updateSupplier.isPending}
+              >
                 {updateSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
               </Button>
             </div>
@@ -127,7 +135,11 @@ export default function Suppliers() {
             <div className="space-y-4 pt-4">
               <p className="text-sm text-muted-foreground">{language === "sw" ? "Deni la sasa" : "Pending"}: <span className="font-bold text-destructive">Tsh {formatNumber(payDialog.pending_payment)}</span></p>
               <div className="space-y-2"><Label>{language === "sw" ? "Kiasi" : "Amount"}</Label><Input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} /></div>
-              <Button className="w-full" onClick={handlePaySupplier} disabled={!payAmount || updateSupplier.isPending}>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handlePaySupplier} 
+                disabled={!payAmount || updateSupplier.isPending}
+              >
                 {updateSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Lipa" : "Record Payment")}
               </Button>
             </div>

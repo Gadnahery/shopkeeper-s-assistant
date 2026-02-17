@@ -89,7 +89,7 @@ export default function HRM() {
           <Input placeholder={language === "sw" ? "Tafuta..." : "Search staff..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add Staff"}</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add Staff"}</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Mfanyakazi" : "Add New Staff"}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-4">
@@ -106,7 +106,13 @@ export default function HRM() {
                 <div className="space-y-2"><Label>Salary (Tsh)</Label><Input type="number" value={form.salary} onChange={e => setForm({...form, salary: e.target.value})} /></div>
                 <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={v => setForm({...form, status: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
               </div>
-              <Button className="w-full" onClick={handleAdd} disabled={!form.full_name || addStaff.isPending}>{addStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Staff")}</Button>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleAdd} 
+                disabled={!form.full_name || addStaff.isPending}
+              >
+                {addStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Staff")}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -128,7 +134,13 @@ export default function HRM() {
                 <div className="space-y-2"><Label>Salary (Tsh)</Label><Input type="number" value={editingStaff.salary} onChange={e => setEditingStaff({...editingStaff, salary: e.target.value})} /></div>
               </div>
               <div className="space-y-2"><Label>Status</Label><Select value={editingStaff.status || "active"} onValueChange={v => setEditingStaff({...editingStaff, status: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
-              <Button className="w-full" onClick={handleEditSave} disabled={updateStaff.isPending}>{updateStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}</Button>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleEditSave} 
+                disabled={updateStaff.isPending}
+              >
+                {updateStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
+              </Button>
             </div>
           )}
         </DialogContent>
@@ -138,7 +150,7 @@ export default function HRM() {
         {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
           <Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Position</TableHead><TableHead>Phone</TableHead><TableHead>Salary</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
-            {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No staff members yet</TableCell></TableRow> :
+            {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-foreground/70 dark:text-foreground/80">No staff members yet</TableCell></TableRow> :
             filtered.map(s => (
               <TableRow key={s.id}>
                 <TableCell className="font-medium">{s.full_name}</TableCell>
@@ -148,8 +160,12 @@ export default function HRM() {
                 <TableCell><Badge className={s.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}>{s.status}</Badge></TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingStaff({...s})}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteStaff.mutate(s.id)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingStaff({...s})}>
+                      <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteStaff.mutate(s.id)}>
+                      <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>

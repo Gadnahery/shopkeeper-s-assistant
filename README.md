@@ -1,73 +1,92 @@
-# Welcome to your Lovable project
+# Smart Money - Retail Management System
 
-## Project info
+A complete POS and retail management system with inventory, sales, orders, customers, expenses, HR, assets, and reporting.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
+## Tech Stack
 
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (auth, database, storage)
 
-## How can I deploy this project?
+## Setup
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+1. Clone the repository
+2. Install dependencies: `npm i`
+3. Copy `.env.example` to `.env` and set your Supabase credentials
+4. Run `001_schema.sql` and `002_extensions.sql` in your Supabase SQL Editor (see `supabase/migrations/`)
+5. Start dev server: `npm run dev`
 
-## Can I connect a custom domain to my Lovable project?
+## Supabase credentials
 
-Yes, you can!
+In `.env`:
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Get these from Supabase Dashboard → Project Settings → API.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Environment Variables
+
+**Required for deployment:**
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+
+The application will fail to start if these are missing. Get them from:
+Supabase Dashboard → Project Settings → API
+
+## Deploy
+
+### Quick Deploy to Vercel (Recommended)
+
+**See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for complete guide**
+
+1. Push code to GitHub
+2. Import project in Vercel dashboard
+3. Add environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Deploy!
+5. Purchase domain through Vercel (optional)
+
+### Other Hosting Options
+
+1. **Set environment variables** in your hosting platform:
+   - `VITE_SUPABASE_URL=https://your-project.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY=your-anon-key`
+
+2. **Build**: `npm run build`
+
+3. **Deploy** the `dist/` folder to any static host:
+   - Vercel (recommended) - See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
+   - Netlify
+   - Cloudflare Pages
+   - GitHub Pages
+   - AWS S3 + CloudFront
+
+4. **HTTPS required** – PWA and Supabase auth require HTTPS
+
+5. **Configure Supabase**:
+   - Add your deployment URL to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
+   - Example: `https://your-domain.com`, `https://your-domain.com/auth/callback`
+
+6. **Verify deployment**:
+   - Check browser console for errors
+   - Test authentication flow
+   - Verify PWA installation works
+
+## PWA (Progressive Web App)
+
+- Installable on phones, tablets, and desktops
+- Works offline (cached assets)
+- Add to home screen: browser menu → "Add to Home Screen" or "Install app"
+- Orientation: any (portrait & landscape supported)
+
+## Responsiveness
+
+- Mobile-first layout with collapsible sidebar
+- Breakpoints: `sm` 640px, `md` 768px, `lg` 1024px
+- Touch-friendly controls and viewport-fit for notched devices

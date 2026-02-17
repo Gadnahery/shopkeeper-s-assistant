@@ -114,6 +114,9 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100dvh;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
   }
 
   input,
@@ -143,27 +146,41 @@
   }
 }
 
-/* Sidebar: force colors - MUST override any cached/cascade issues */
-/* Light theme: dark brown text on cream */
+/* Sidebar: force colors - high-contrast for both light & dark modes */
+/* Light theme: dark brown text/icons on cream sidebar */
 html.light [data-app-sidebar] nav a:not([class*="10B981"]),
 html.light [data-app-sidebar] nav a:not([class*="10B981"]) svg,
 html.light [data-app-sidebar] nav span.uppercase,
 html.light [data-app-sidebar] span.truncate,
 html.light [data-app-sidebar] button.gap-3 {
-  color: #2d1f14 !important;
+  color: #1f2937 !important;  /* Dark gray - clear on cream */
 }
-/* Dark theme: white text on dark */
+/* Dark theme: bright white text/icons on dark sidebar */
 html.dark [data-app-sidebar] nav a:not([class*="10B981"]),
 html.dark [data-app-sidebar] nav a:not([class*="10B981"]) svg,
 html.dark [data-app-sidebar] nav span.uppercase,
 html.dark [data-app-sidebar] span.truncate,
 html.dark [data-app-sidebar] button.gap-3 {
-  color: #F9FAFB !important;
+  color: #f3f4f6 !important;  /* Bright gray-white - clear on dark */
 }
 /* Active emerald link: always white */
-[data-app-sidebar] nav a[class*="10B981"],
-[data-app-sidebar] nav a[class*="10B981"] * {
+[data-app-sidebar] nav a.active,
+[data-app-sidebar] nav a.active * {
   color: white !important;
+}
+
+/* Hover: only the hovered item gets emerald - active loses it when hovering elsewhere */
+[data-app-sidebar] nav:has(a:hover) a.active:not(:hover) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html.light [data-app-sidebar] nav:has(a:hover) a.active:not(:hover),
+html.light [data-app-sidebar] nav:has(a:hover) a.active:not(:hover) * {
+  color: #1f2937 !important;
+}
+html.dark [data-app-sidebar] nav:has(a:hover) a.active:not(:hover),
+html.dark [data-app-sidebar] nav:has(a:hover) a.active:not(:hover) * {
+  color: #f3f4f6 !important;
 }
 
 /* 8px spacing grid */

@@ -7,10 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Trash2, Bell, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Search, Plus, Trash2, Bell, Calendar as CalendarIcon, Loader2, Pencil } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo } from "@/hooks/useTodos";
+import { useShopUsers } from "@/hooks/useShopUsers";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, parseISO, isPast } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -26,16 +27,27 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 export default function Todo() {
   const { t, language } = useLanguage();
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [addOpen, setAddOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", due_date: "", due_time: "", alert_date: "", alert_time: "" });
+  const [editingTodo, setEditingTodo] = useState<any>(null);
+  const [form, setForm] = useState({ title: "", description: "", due_date: "", due_time: "", alert_date: "", alert_time: "", assigned_to_user_id: "" });
 
-  const { shopId } = useAuth();
+  const { shopId, user } = useAuth();
   const { data: todos, isLoading } = useTodos();
+  const { data: shopUsers } = useShopUsers(shopId ?? null);
   const createTodo = useCreateTodo();
   const updateTodo = useUpdateTodo();
   const deleteTodo = useDeleteTodo();
 
-  const filtered = todos?.filter((t) => t.title.toLowerCase().includes(search.toLowerCase())) ?? [];
+  const filtered = todos?.filter((t) => {
+    const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) || (t.description?.toLowerCase().includes(search.toLowerCase()) ?? false);
+    const matchesFilter = filter === "all" || (filter === "completed" && t.completed) || (filter === "active" && !t.completed);
+    return matchesSearch && matchesFilter;
+  }) ?? [];
+
+  const resetForm = () => {
+    setForm({ title: "", description: "", due_date: "", due_time: "", alert_date: "", alert_time: "", assigned_to_user_id: "" });
+  };
 
   const handleAdd = async () => {
     if (!form.title.trim()) {
@@ -54,9 +66,51 @@ export default function Todo() {
       due_date: form.due_date || undefined,
       due_time: form.due_time || undefined,
       alert_at,
+      assigned_to_user_id: form.assigned_to_user_id || undefined,
     });
     setAddOpen(false);
-    setForm({ title: "", description: "", due_date: "", due_time: "", alert_date: "", alert_time: "" });
+    resetForm();
+  };
+
+  const handleEdit = async () => {
+    if (!editingTodo || !form.title.trim()) {
+      toast.error(language === "sw" ? "Ingiza kichwa" : "Enter a title");
+      return;
+    }
+    let alert_at: string | undefined;
+    if (form.alert_date && form.alert_time) {
+      alert_at = `${form.alert_date}T${form.alert_time}:00`;
+    } else if (form.alert_date) {
+      alert_at = `${form.alert_date}T09:00:00`;
+    } else {
+      alert_at = null;
+    }
+    await updateTodo.mutateAsync({
+      id: editingTodo.id,
+      title: form.title.trim(),
+      description: form.description.trim() || null,
+      due_date: form.due_date || null,
+      due_time: form.due_time || null,
+      alert_at,
+      assigned_to_user_id: form.assigned_to_user_id || null,
+    });
+    setEditingTodo(null);
+    resetForm();
+  };
+
+  const openEditDialog = (todo: any) => {
+    setEditingTodo(todo);
+    const alertDate = todo.alert_at ? format(parseISO(todo.alert_at), "yyyy-MM-dd") : "";
+    const alertTime = todo.alert_at ? format(parseISO(todo.alert_at), "HH:mm") : "";
+    setForm({
+      title: todo.title || "",
+      description: todo.description || "",
+      due_date: todo.due_date || "",
+      due_time: todo.due_time || "",
+      alert_date: alertDate,
+      alert_time: alertTime,
+      assigned_to_user_id: (todo as any).assigned_to_user_id || "",
+    });
   };
 
   const toggleComplete = (id: string, completed: boolean) => {
@@ -68,20 +122,47 @@ export default function Todo() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{language === "sw" ? "Orodha ya Kazi" : "To-Do List"}</h1>
-          <p className="text-muted-foreground">{language === "sw" ? "Dhibitisha kazi na alerti" : "Manage tasks and set alerts"}</p>
+          <p className="text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Dhibitisha kazi na alerti" : "Manage tasks and set alerts"}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <div className="relative w-48 md:w-64">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             <Input placeholder={language === "sw" ? "Tafuta..." : "Search..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
           </div>
-          <Button className="gap-2" onClick={() => setAddOpen(true)} disabled={!shopId} title={!shopId ? (language === "sw" ? "Hakuna duka limetambuliwa" : "No shop identified") : undefined}>
+          <div className="flex gap-1 border rounded-lg p-1 bg-muted/30">
+            <Button
+              variant={filter === "all" ? "default" : "ghost"}
+              size="sm"
+              className={filter === "all" ? "bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white shadow-md" : ""}
+              onClick={() => setFilter("all")}
+            >
+              {language === "sw" ? "Zote" : "All"}
+            </Button>
+            <Button
+              variant={filter === "active" ? "default" : "ghost"}
+              size="sm"
+              className={filter === "active" ? "bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white shadow-md" : ""}
+              onClick={() => setFilter("active")}
+            >
+              {language === "sw" ? "Hazijakamilika" : "Active"}
+            </Button>
+            <Button
+              variant={filter === "completed" ? "default" : "ghost"}
+              size="sm"
+              className={filter === "completed" ? "bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white shadow-md" : ""}
+              onClick={() => setFilter("completed")}
+            >
+              {language === "sw" ? "Zimekamilika" : "Completed"}
+            </Button>
+          </div>
+          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddOpen(true)} disabled={!shopId} title={!shopId ? (language === "sw" ? "Hakuna duka limetambuliwa" : "No shop identified") : undefined}>
             <Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add"}
           </Button>
         </div>
       </div>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      {/* Add Dialog */}
+      <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Kazi" : "Add To-Do"}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-4">
@@ -118,11 +199,23 @@ export default function Todo() {
                 </Select>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Tuma kwa" : "Assign to"}</Label>
+              <Select value={form.assigned_to_user_id || "__none__"} onValueChange={(v) => setForm({ ...form, assigned_to_user_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder={language === "sw" ? "Mteja wa kawaida (si lazima)" : "Unassigned (optional)"} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{language === "sw" ? "Hakuna (kazi yangu)" : "None (my task)"}</SelectItem>
+                  {shopUsers?.map((u) => (
+                    <SelectItem key={(u as any).user_id} value={(u as any).user_id}>{(u as any).full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
               <Label className="flex items-center gap-1 text-primary"><Bell className="h-4 w-4" />{language === "sw" ? "Alerti" : "Alert"}</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{language === "sw" ? "Tarehe" : "Date"}</Label>
+                  <Label className="text-xs text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Tarehe" : "Date"}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal", !form.alert_date && "text-muted-foreground")}>
@@ -146,8 +239,101 @@ export default function Todo() {
                 </div>
               </div>
             </div>
-            <Button className="w-full" onClick={handleAdd} disabled={!form.title.trim() || createTodo.isPending}>
+            <Button 
+              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              onClick={handleAdd} 
+              disabled={!form.title.trim() || createTodo.isPending}
+            >
               {createTodo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingTodo} onOpenChange={(open) => { if (!open) { setEditingTodo(null); resetForm(); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{language === "sw" ? "Hariri Kazi" : "Edit To-Do"}</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Kichwa" : "Title"} *</Label>
+              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={language === "sw" ? "Kichwa cha kazi" : "Task title"} />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
+              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={language === "sw" ? "Maelezo mafupi" : "Brief description"} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" />{language === "sw" ? "Tarehe" : "Due date"}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.due_date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {form.due_date ? format(new Date(form.due_date), "PPP") : (language === "sw" ? "Chagua tarehe" : "Pick date")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={form.due_date ? new Date(form.due_date) : undefined} onSelect={(d) => setForm({ ...form, due_date: d ? format(d, "yyyy-MM-dd") : "" })} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Saa" : "Time"}</Label>
+                <Select value={form.due_time} onValueChange={(v) => setForm({ ...form, due_time: v })}>
+                  <SelectTrigger><SelectValue placeholder={language === "sw" ? "Chagua saa" : "Pick time"} /></SelectTrigger>
+                  <SelectContent>
+                    {TIME_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Tuma kwa" : "Assign to"}</Label>
+              <Select value={form.assigned_to_user_id || "__none__"} onValueChange={(v) => setForm({ ...form, assigned_to_user_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder={language === "sw" ? "Mteja wa kawaida (si lazima)" : "Unassigned (optional)"} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{language === "sw" ? "Hakuna (kazi yangu)" : "None (my task)"}</SelectItem>
+                  {shopUsers?.map((u) => (
+                    <SelectItem key={(u as any).user_id} value={(u as any).user_id}>{(u as any).full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+              <Label className="flex items-center gap-1 text-primary"><Bell className="h-4 w-4" />{language === "sw" ? "Alerti" : "Alert"}</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Tarehe" : "Date"}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal", !form.alert_date && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {form.alert_date ? format(new Date(form.alert_date), "PPP") : (language === "sw" ? "Chagua" : "Pick")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={form.alert_date ? new Date(form.alert_date) : undefined} onSelect={(d) => setForm({ ...form, alert_date: d ? format(d, "yyyy-MM-dd") : "" })} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{language === "sw" ? "Saa" : "Time"}</Label>
+                  <Select value={form.alert_time} onValueChange={(v) => setForm({ ...form, alert_time: v })}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder={language === "sw" ? "Saa" : "Time"} /></SelectTrigger>
+                    <SelectContent>
+                      {TIME_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <Button 
+              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              onClick={handleEdit} 
+              disabled={!form.title.trim() || updateTodo.isPending}
+            >
+              {updateTodo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi Mabadiliko" : "Save Changes")}
             </Button>
           </div>
         </DialogContent>
@@ -163,7 +349,7 @@ export default function Todo() {
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : filtered.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">{language === "sw" ? "Hakuna kazi bado. Ongeza kazi mpya." : "No tasks yet. Add a new to-do."}</div>
+            <div className="py-12 text-center text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Hakuna kazi bado. Ongeza kazi mpya." : "No tasks yet. Add a new to-do."}</div>
           ) : (
             <div className="divide-y">
               {filtered.map((todo) => (
@@ -174,24 +360,38 @@ export default function Todo() {
                 >
                   <Checkbox checked={!!todo.completed} onCheckedChange={() => toggleComplete(todo.id, !!todo.completed)} className="mt-1" />
                   <div className="flex-1 min-w-0">
-                    <p className={`font-medium ${todo.completed ? "line-through text-muted-foreground" : ""}`}>{todo.title}</p>
-                    {todo.description && <p className="text-sm text-muted-foreground mt-0.5">{todo.description}</p>}
-                    <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+                    <p className={`font-medium ${todo.completed ? "line-through text-foreground/50 dark:text-foreground/50" : "text-foreground dark:text-foreground"}`}>{todo.title}</p>
+                    {todo.description && <p className="text-sm text-foreground/70 dark:text-foreground/80 mt-0.5">{todo.description}</p>}
+                    {(todo as any).assigned_to_user_id && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        {language === "sw" ? "Imetumwa kwa: " : "Assigned to: "}
+                        {shopUsers?.find((u) => (u as any).user_id === (todo as any).assigned_to_user_id)?.full_name ?? (todo as any).assigned_to_user_id}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-3 mt-2 text-xs text-foreground/70 dark:text-foreground/80">
                       {todo.due_date && (
-                        <span className={`flex items-center gap-1 ${todo.due_date && isPast(parseISO(todo.due_date)) && !todo.completed ? "text-destructive font-medium" : ""}`}>
+                        <span className={`flex items-center gap-1 ${todo.due_date && isPast(parseISO(todo.due_date)) && !todo.completed ? "text-destructive font-medium dark:text-destructive" : ""}`}>
                           <CalendarIcon className="h-3 w-3" />
                           {format(parseISO(todo.due_date), "dd MMM yyyy")}
                           {todo.due_time && ` • ${todo.due_time.slice(0, 5)}`}
                         </span>
                       )}
                       {todo.alert_at && (
-                        <span className="flex items-center gap-1"><Bell className="h-3 w-3" />{format(parseISO(todo.alert_at), "dd MMM HH:mm")}</span>
+                        <span className="flex items-center gap-1">
+                          <Bell className="h-3 w-3 dark:drop-shadow-[0_0_3px_rgba(251,191,36,0.3)]" />
+                          {format(parseISO(todo.alert_at), "dd MMM HH:mm")}
+                        </span>
                       )}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => deleteTodo.mutate(todo.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => openEditDialog(todo)}>
+                      <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteTodo.mutate(todo.id)}>
+                      <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
+                    </Button>
+                  </div>
                 </motion.div>
               ))}
             </div>

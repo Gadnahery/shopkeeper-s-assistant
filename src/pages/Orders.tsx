@@ -187,14 +187,14 @@ export default function Orders() {
           <Button variant="outline" size="sm" className="gap-1" onClick={exportCsv} disabled={filteredOrders.length === 0}>
             <Download className="h-4 w-4" />{language === "sw" ? "Pakua CSV" : "Export CSV"}
           </Button>
-          <Button className="gap-2" onClick={() => setAddOpen(true)}>
+          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add"}
           </Button>
         </div>
       </div>
 
       {/* Status legend */}
-      <div className="flex flex-wrap gap-2 items-center text-sm text-muted-foreground">
+      <div className="flex flex-wrap gap-2 items-center text-sm text-foreground/70 dark:text-foreground/80">
         <span className="font-medium">{language === "sw" ? "Maana ya rangi:" : "Status colors:"}</span>
         {STATUS_LEGEND.map((s) => (
           <Badge key={s.key} variant="outline" className={statusColors[s.key]}>{language === "sw" ? s.sw : s.en}</Badge>
@@ -205,32 +205,32 @@ export default function Orders() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">{language === "sw" ? "Jumla ya maagizo" : "Total orders"}</p>
-            <p className="text-2xl font-bold">{stats.total}</p>
+            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Jumla ya maagizo" : "Total orders"}</p>
+            <p className="text-2xl font-bold text-foreground dark:text-foreground">{stats.total}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">{language === "sw" ? "Inasubiri" : "Pending"}</p>
+            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Inasubiri" : "Pending"}</p>
             <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">{language === "sw" ? "Inachakatwa" : "Processing"}</p>
+            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Inachakatwa" : "Processing"}</p>
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.processing}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">{language === "sw" ? "Imekamilika" : "Completed"}</p>
+            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Imekamilika" : "Completed"}</p>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.completed}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">{language === "sw" ? "Thamani (zisizofutwa)" : "Value (excl. cancelled)"}</p>
-            <p className="text-2xl font-bold">{formatNumber(stats.totalValue)}</p>
+            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Thamani (zisizofutwa)" : "Value (excl. cancelled)"}</p>
+            <p className="text-2xl font-bold text-foreground dark:text-foreground">{formatNumber(stats.totalValue)}</p>
           </CardContent>
         </Card>
       </div>
@@ -287,7 +287,11 @@ export default function Orders() {
               </div>
             )}
             <div className="space-y-2"><Label>{language === "sw" ? "Vidokezo" : "Notes"}</Label><Input value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} /></div>
-            <Button className="w-full" onClick={handleCreateOrder} disabled={addItems.length === 0 || createOrder.isPending}>
+            <Button 
+              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              onClick={handleCreateOrder} 
+              disabled={addItems.length === 0 || createOrder.isPending}
+            >
               {createOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
             </Button>
           </div>
@@ -300,7 +304,7 @@ export default function Orders() {
           <DialogHeader><DialogTitle>{editingOrder?.order_number}</DialogTitle></DialogHeader>
           {editing && editingOrder && (
             <div className="space-y-4 pt-4">
-              <p className="text-sm text-muted-foreground">{editingOrder.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}{(editingOrder as any).customer_phone ? ` • ${(editingOrder as any).customer_phone} • ` : " • "}{format(new Date(editingOrder.created_at), "dd MMM yyyy")}</p>
+              <p className="text-sm text-foreground/70 dark:text-foreground/80">{editingOrder.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}{(editingOrder as any).customer_phone ? ` • ${(editingOrder as any).customer_phone} • ` : " • "}{format(new Date(editingOrder.created_at), "dd MMM yyyy")}</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{language === "sw" ? "Hali" : "Status"}</Label>
@@ -326,16 +330,23 @@ export default function Orders() {
                 </div>
               </div>
               {(editingOrder as any).due_date && (
-                <p className="text-sm text-muted-foreground">{language === "sw" ? "Tarehe ya kukamilika:" : "Due date:"} {format(new Date((editingOrder as any).due_date), "dd MMM yyyy")}</p>
+                <p className="text-sm text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Tarehe ya kukamilika:" : "Due date:"} {format(new Date((editingOrder as any).due_date), "dd MMM yyyy")}</p>
               )}
               <div className="flex gap-2">
                 <Input value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder={language === "sw" ? "Ongeza kidokezo" : "Add note"} />
-                <Button size="sm" onClick={() => { addNote.mutate({ order_id: editing.id, note: noteText }); setNoteText(""); }} disabled={!noteText.trim()}>+</Button>
+                <Button 
+                  size="sm" 
+                  className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white shadow-md shadow-teal-500/20" 
+                  onClick={() => { addNote.mutate({ order_id: editing.id, note: noteText }); setNoteText(""); }} 
+                  disabled={!noteText.trim()}
+                >
+                  +
+                </Button>
               </div>
               {editingOrder.order_notes?.length > 0 && (
                 <div className="space-y-1">
                   <Label className="text-xs">{language === "sw" ? "Vidokezo" : "Notes"}</Label>
-                  <ul className="text-sm text-muted-foreground space-y-1">
+                  <ul className="text-sm text-foreground/70 dark:text-foreground/80 space-y-1">
                     {(editingOrder as any).order_notes.map((n: any) => (
                       <li key={n.id}>{n.note} — {format(new Date(n.created_at), "dd MMM HH:mm")}</li>
                     ))}
@@ -375,19 +386,21 @@ export default function Orders() {
               </TableRow></TableHeader>
               <TableBody>
                 {filteredOrders.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{language === "sw" ? "Hakuna maagizo" : "No orders"}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Hakuna maagizo" : "No orders"}</TableCell></TableRow>
                 ) : (
                   filteredOrders.map((o) => (
                     <TableRow key={o.id}>
                       <TableCell className="font-medium">{o.order_number}</TableCell>
                       <TableCell>{o.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}</TableCell>
-                      <TableCell className="text-muted-foreground">{format(new Date(o.created_at), "dd MMM yyyy")}</TableCell>
+                      <TableCell className="text-foreground/70 dark:text-foreground/80">{format(new Date(o.created_at), "dd MMM yyyy")}</TableCell>
                       <TableCell>{formatNumber(Number(o.total))}</TableCell>
                       <TableCell><Badge variant="outline" className={statusColors[o.status] || ""}>{language === "sw" ? STATUS_LEGEND.find((s) => s.key === o.status)?.sw ?? o.status : o.status}</Badge></TableCell>
                       <TableCell><Badge className={priorityColors[(o as any).priority ?? "medium"] || ""}>{(o as any).priority ?? "medium"}</Badge></TableCell>
                       <TableCell>{(o as any).due_date ? format(new Date((o as any).due_date), "dd MMM") : "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditing(o)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditing(o)}>
+                          <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))

@@ -8,7 +8,7 @@ export type ShopSettings = Tables<"shop_settings">;
 async function getUserShopId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("profiles").select("shop_id").eq("id", user.id).maybeSingle();
+  const { data } = await supabase.from("profiles").select("shop_id").eq("user_id", user.id).maybeSingle();
   return data?.shop_id || null;
 }
 
@@ -24,12 +24,60 @@ export function useShopSettings() {
         .eq("shop_id", shopId)
         .maybeSingle();
       if (error) throw error;
+      const { data: shops } = await supabase
+        .from("shops")
+        .select("name, phone, address, receipt_header, receipt_footer, logo_url, tax_rate")
+        .eq("id", shopId)
+        .maybeSingle();
+      const shopBase = shops
+        ? {
+            shop_name: shops.name,
+            phone: shops.phone,
+            address: shops.address,
+            receipt_header: shops.receipt_header,
+            receipt_footer: shops.receipt_footer,
+            logo_url: shops.logo_url,
+            tax_rate: shops.tax_rate ?? 0,
+          }
+        : null;
       if (!data) {
-        const { data: shops } = await supabase.from("shops").select("name, phone, address").eq("id", shopId).single();
-        return shops ? { id: null, shop_id: shopId, shop_name: shops.name, phone: shops.phone, address: shops.address, language: "en" } : null;
+        return shopBase ? { id: null, shop_id: shopId, ...shopBase, language: "en" } : null;
       }
+      return { ...data, ...shopBase };
+    },
+  });
+}
+
+export function useUpdatePreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (prefs: { enable_low_stock_alerts?: boolean; auto_print_receipt?: boolean }) => {
+      const shopId = await getUserShopId();
+      if (!shopId) throw new Error("No shop found");
+      const { data: existing } = await supabase.from("shop_settings").select("id").eq("shop_id", shopId).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase
+          .from("shop_settings")
+          .update(prefs)
+          .eq("shop_id", shopId)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+      const { data, error } = await supabase
+        .from("shop_settings")
+        .insert({ shop_id: shopId, shop_name: "", ...prefs })
+        .select()
+        .single();
+      if (error) throw error;
       return data;
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shop_settings"] });
+      toast.success("Preferences saved");
+    },
+    onError: (e) => toast.error(e.message),
   });
 }
 

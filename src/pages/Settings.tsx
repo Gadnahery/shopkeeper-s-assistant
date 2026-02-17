@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store, Globe, Printer, Barcode as BarcodeIcon, Loader2, Camera, Usb, Wifi, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useShopSettings, useUpdateShopSettings } from "@/hooks/useShopSettings";
+import { useShopSettings, useUpdateShopSettings, useUpdatePreferences } from "@/hooks/useShopSettings";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,24 +20,53 @@ export default function Settings() {
   const { t, language, setLanguage } = useLanguage();
   const { data: shopSettings, isLoading } = useShopSettings();
   const updateSettings = useUpdateShopSettings();
+  const updatePrefs = useUpdatePreferences();
+  const queryClient = useQueryClient();
   const { profile, shopId } = useAuth();
 
   const [shopForm, setShopForm] = useState({ shop_name: "", phone: "", address: "" });
+  const [enableLowStockAlerts, setEnableLowStockAlerts] = useState(true);
+  const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
+  const [receiptForm, setReceiptForm] = useState({ receipt_header: "", receipt_footer: "", logo_url: "", tax_rate: "" });
   const [printerConnected, setPrinterConnected] = useState(false);
   const [scannerConnected, setScannerConnected] = useState(false);
 
-  if (shopSettings && !shopForm.shop_name) {
-    setShopForm({
-      shop_name: shopSettings.shop_name || "",
-      phone: shopSettings.phone || "",
-      address: shopSettings.address || "",
+  useEffect(() => {
+    if (!shopSettings) return;
+    setShopForm({ shop_name: shopSettings.shop_name || "", phone: shopSettings.phone || "", address: shopSettings.address || "" });
+    const s = shopSettings as { receipt_header?: string; receipt_footer?: string; logo_url?: string; tax_rate?: number; enable_low_stock_alerts?: boolean; auto_print_receipt?: boolean };
+    setReceiptForm({
+      receipt_header: s.receipt_header ?? "",
+      receipt_footer: s.receipt_footer ?? "",
+      logo_url: s.logo_url ?? "",
+      tax_rate: String(s.tax_rate ?? 0),
     });
-  }
+    setEnableLowStockAlerts(s.enable_low_stock_alerts ?? true);
+    setAutoPrintReceipt(s.auto_print_receipt ?? false);
+  }, [shopSettings]);
 
   const handleSaveShop = async () => {
     if (!shopId) return;
     await supabase.from("shops").update({ name: shopForm.shop_name, phone: shopForm.phone, address: shopForm.address }).eq("id", shopId);
     await updateSettings.mutateAsync({ id: shopSettings?.id || undefined, ...shopForm });
+  };
+
+  const handleSaveReceipt = async () => {
+    if (!shopId) return;
+    const { error } = await supabase
+      .from("shops")
+      .update({
+        receipt_header: receiptForm.receipt_header || null,
+        receipt_footer: receiptForm.receipt_footer || null,
+        logo_url: receiptForm.logo_url || null,
+        tax_rate: parseFloat(receiptForm.tax_rate) || 0,
+      })
+      .eq("id", shopId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(language === "sw" ? "Mipangilio ya risiti imehifadhiwa" : "Receipt settings saved");
+      queryClient.invalidateQueries({ queryKey: ["shop_settings"] });
+    }
   };
 
   const handleProfileUpload = async (url: string) => {
@@ -84,7 +115,7 @@ export default function Settings() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">{t("settings.title")}</h1>
-        <p className="text-muted-foreground">{t("settings.subtitle")}</p>
+        <p className="text-foreground/70 dark:text-foreground/80">{t("settings.subtitle")}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -94,7 +125,7 @@ export default function Settings() {
           <CardContent className="flex flex-col items-center gap-4">
             <ImageUpload currentUrl={profile?.avatar_url} bucket="avatars" folder={shopId || "default"} onUpload={handleProfileUpload} variant="avatar" />
             <p className="font-medium">{profile?.full_name}</p>
-            <p className="text-sm text-muted-foreground">{language === "sw" ? "Mmiliki" : "Owner"}</p>
+            <p className="text-sm text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Mmiliki" : "Owner"}</p>
           </CardContent>
         </Card>
 
@@ -107,7 +138,11 @@ export default function Settings() {
                 <div className="space-y-2"><Label>{t("settings.shopName")}</Label><Input value={shopForm.shop_name} onChange={e => setShopForm({ ...shopForm, shop_name: e.target.value })} /></div>
                 <div className="space-y-2"><Label>{t("settings.phoneNumber")}</Label><Input value={shopForm.phone} onChange={e => setShopForm({ ...shopForm, phone: e.target.value })} /></div>
                 <div className="space-y-2"><Label>{t("settings.location")}</Label><Input value={shopForm.address} onChange={e => setShopForm({ ...shopForm, address: e.target.value })} /></div>
-                <Button onClick={handleSaveShop} disabled={updateSettings.isPending}>
+                <Button 
+                  className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  onClick={handleSaveShop} 
+                  disabled={updateSettings.isPending}
+                >
                   {updateSettings.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {t("settings.saveChanges")}
                 </Button>
@@ -131,13 +166,57 @@ export default function Settings() {
               </Select>
             </div>
             <div className="flex items-center justify-between">
-              <div><p className="font-medium">{t("settings.lowStockAlerts")}</p><p className="text-sm text-muted-foreground">{t("settings.notifyLow")}</p></div>
-              <Switch defaultChecked />
+              <div><p className="font-medium">{t("settings.lowStockAlerts")}</p><p className="text-sm text-foreground/70 dark:text-foreground/80">{t("settings.notifyLow")}</p></div>
+              <Switch checked={enableLowStockAlerts} onCheckedChange={(v) => { setEnableLowStockAlerts(v); updatePrefs.mutate({ enable_low_stock_alerts: v }); }} />
             </div>
             <div className="flex items-center justify-between">
-              <div><p className="font-medium">{t("settings.autoPrint")}</p><p className="text-sm text-muted-foreground">{t("settings.printAfterSale")}</p></div>
-              <Switch />
+              <div><p className="font-medium">{t("settings.autoPrint")}</p><p className="text-sm text-foreground/70 dark:text-foreground/80">{t("settings.printAfterSale")}</p></div>
+              <Switch checked={autoPrintReceipt} onCheckedChange={(v) => { setAutoPrintReceipt(v); updatePrefs.mutate({ auto_print_receipt: v }); }} />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Receipt Customization */}
+        <Card className="shadow-sm hover:shadow-md transition-shadow lg:col-span-2">
+          <CardHeader><CardTitle className="flex items-center gap-2"><Printer className="h-5 w-5 text-primary" />{t("settings.receiptCustomization")}</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{t("settings.receiptHeader")}</Label>
+                <Textarea placeholder={language === "sw" ? "Maandishi yatakayojulikana juu ya risiti" : "Custom text shown at top of receipt"} rows={3} value={receiptForm.receipt_header} onChange={e => setReceiptForm({ ...receiptForm, receipt_header: e.target.value })} className="resize-none" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("settings.receiptFooter")}</Label>
+                <Textarea placeholder={language === "sw" ? "Asante kwa kununua! Karibu tena." : "Thank you for shopping! Come again."} rows={3} value={receiptForm.receipt_footer} onChange={e => setReceiptForm({ ...receiptForm, receipt_footer: e.target.value })} className="resize-none" />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{t("settings.logo")}</Label>
+                <div className="flex items-center gap-2">
+                  <ImageUpload
+                    currentUrl={receiptForm.logo_url || null}
+                    bucket="avatars"
+                    folder={shopId ? `shops/${shopId}` : "shops"}
+                    onUpload={(url) => setReceiptForm((f) => ({ ...f, logo_url: url }))}
+                    variant="product"
+                  />
+                  <Input placeholder="Or paste URL" value={receiptForm.logo_url} onChange={e => setReceiptForm({ ...receiptForm, logo_url: e.target.value })} className="flex-1" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("settings.taxRate")}</Label>
+                <Input type="number" min={0} max={100} step={0.1} placeholder="0" value={receiptForm.tax_rate} onChange={e => setReceiptForm({ ...receiptForm, tax_rate: e.target.value })} />
+              </div>
+            </div>
+            <Button 
+              className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              onClick={handleSaveReceipt} 
+              disabled={updateSettings.isPending}
+            >
+              {updateSettings.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("settings.saveReceiptSettings")}
+            </Button>
           </CardContent>
         </Card>
 
@@ -169,7 +248,7 @@ export default function Settings() {
                   </div>
                   <div className="text-center">
                     <p className="font-medium">{language === "sw" ? "Printa ya Risiti" : "Receipt Printer"}</p>
-                    <p className="text-sm text-muted-foreground">{printerConnected ? (language === "sw" ? "Imeunganishwa" : "Connected") : (language === "sw" ? "Haijaunganishwa" : "Not connected")}</p>
+                    <p className="text-sm text-foreground/70 dark:text-foreground/80">{printerConnected ? (language === "sw" ? "Imeunganishwa" : "Connected") : (language === "sw" ? "Haijaunganishwa" : "Not connected")}</p>
                   </div>
                   <Button variant={printerConnected ? "outline" : "default"} size="sm" onClick={handleConnectPrinter} className="gap-2">
                     <Wifi className="h-4 w-4" />{printerConnected ? (language === "sw" ? "Ondoa" : "Disconnect") : (language === "sw" ? "Unganisha" : "Connect")}
@@ -207,7 +286,7 @@ export default function Settings() {
                 </CardContent>
               </Card>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-foreground/70 dark:text-foreground/80">
               {language === "sw" ? "Printa ya risiti hutumia printa ya mfumo—chagua printa yako pale utakapochapisha. Skana nyingi za USB zinatumia kibodi—weka mstari wa utafutaji ukiwa na uzani na uscan." : "Receipt printing uses your system printer—select it in the print dialog. Most USB barcode scanners use keyboard mode—focus the search field and scan."}
             </p>
           </CardContent>

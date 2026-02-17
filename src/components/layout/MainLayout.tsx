@@ -1,17 +1,42 @@
+import { useState, useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, WifiOff } from "lucide-react";
+
+function OfflineBanner() {
+  const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const { language } = useLanguage();
+  useEffect(() => {
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+  if (online) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 bg-amber-500/90 text-amber-950 px-4 py-1.5 text-sm font-medium">
+      <WifiOff className="h-4 w-4" />
+      {language === "sw" ? "Hauna muunganisho. Data itahifadhiwa inapounganishwa tena." : "You're offline. Data will sync when you reconnect."}
+    </div>
+  );
+}
 
 function LayoutContent() {
   const { isCollapsed } = useSidebar();
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineBanner />
       <Sidebar />
       <div
         className={cn(
@@ -47,7 +72,7 @@ export function MainLayout() {
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/login" replace />;
 
   return (
     <SidebarProvider>

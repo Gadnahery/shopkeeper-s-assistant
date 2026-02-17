@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => ({
@@ -12,12 +11,25 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  build: {
+    outDir: "dist",
+    sourcemap: mode === "development",
+    minify: "esbuild",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-select"],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
     mode === "production" && VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "icon-192.png", "icon-512.png"],
+      includeAssets: ["icon-192.png", "icon-512.png"],
       manifest: {
         name: "Smart Money - Retail Management System",
         short_name: "Smart Money",
@@ -25,9 +37,9 @@ export default defineConfig(({ mode }) => ({
         theme_color: "#26a17b",
         background_color: "#f7f7f7",
         display: "standalone",
-        orientation: "portrait",
+        orientation: "any",
         scope: "/",
-        start_url: "/dashboard",
+        start_url: "/",
         icons: [
           {
             src: "/icon-192.png",

@@ -32,6 +32,31 @@ export default function Expenses() {
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
   const getCategoryName = (cat: any) => language === "sw" && cat?.name_sw ? cat.name_sw : cat?.name || "";
+  
+  // Get translated category name
+  const getCategoryLabel = (categoryName: string) => {
+    const categoryMap: Record<string, string> = {
+      "Utilities": language === "sw" ? "Huduma" : "Utilities",
+      "Rent": language === "sw" ? "Kodi" : "Rent",
+      "Transport": language === "sw" ? "Usafiri" : "Transport",
+      "Food": language === "sw" ? "Chakula" : "Food",
+      "Office": language === "sw" ? "Ofisi" : "Office",
+      "Stock Purchase": language === "sw" ? "Ununuzi wa Stoki" : "Stock Purchase",
+    };
+    return categoryMap[categoryName] || categoryName;
+  };
+  
+  // Calculate category breakdown with percentages
+  const categoryBreakdown = stats?.byCategory 
+    ? Object.entries(stats.byCategory)
+        .map(([name, amount]) => ({
+          name,
+          label: getCategoryLabel(name),
+          amount: Number(amount),
+          percentage: stats.total > 0 ? (Number(amount) / stats.total) * 100 : 0,
+        }))
+        .sort((a, b) => b.amount - a.amount)
+    : [];
 
   const handleAddExpense = async () => {
     if (!newExpense.description || !newExpense.amount) return;
@@ -46,9 +71,9 @@ export default function Expenses() {
   };
 
   const statsCards = [
-    { label: t("expenses.totalExpenses"), value: `Tsh ${formatNumber(stats?.total || 0)}`, trend: "+12% vs last month", trendUp: true },
+    { label: t("expenses.totalExpenses"), value: `Tsh ${formatNumber(stats?.total || 0)}` },
     { label: t("expenses.operationalCosts"), value: `Tsh ${formatNumber((stats?.byCategory?.["Utilities"] || 0) + (stats?.byCategory?.["Rent"] || 0))}`, subtitle: t("expenses.utilitiesRent") },
-    { label: t("expenses.stockPurchases"), value: `Tsh ${formatNumber(stats?.byCategory?.["Stock Purchase"] || 0)}`, subtitle: `5 ${t("expenses.pendingInvoices")}`, subtitleColor: "text-destructive" },
+    { label: t("expenses.stockPurchases"), value: `Tsh ${formatNumber(stats?.byCategory?.["Stock Purchase"] || 0)}` },
   ];
 
   return (
@@ -59,10 +84,9 @@ export default function Expenses() {
         {statsCards.map((stat, index) => (
           <Card key={index} className="shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{stat.label}</p>
-              <p className="mt-2 text-2xl font-bold">{stat.value}</p>
-              {stat.trend && <p className="mt-1 flex items-center gap-1 text-sm text-destructive"><TrendingUp className="h-3 w-3" />{stat.trend}</p>}
-              {stat.subtitle && <p className={`mt-1 text-sm ${stat.subtitleColor || "text-primary"}`}>{stat.subtitle}</p>}
+              <p className="text-xs font-semibold uppercase tracking-wider text-foreground/70 dark:text-foreground/80">{stat.label}</p>
+              <p className="mt-2 text-2xl font-bold text-foreground dark:text-foreground">{stat.value}</p>
+              {stat.subtitle && <p className="mt-1 text-sm text-foreground/70 dark:text-foreground/80">{stat.subtitle}</p>}
             </CardContent>
           </Card>
         ))}
@@ -77,7 +101,11 @@ export default function Expenses() {
               <div className="space-y-2"><Label>{t("expenses.description")}</Label><Input value={editingExpense.description} onChange={(e) => setEditingExpense({ ...editingExpense, description: e.target.value })} /></div>
               <div className="space-y-2"><Label>{t("expenses.category")}</Label><Input value={editingExpense.category} onChange={(e) => setEditingExpense({ ...editingExpense, category: e.target.value })} /></div>
               <div className="space-y-2"><Label>{t("expenses.amount")}</Label><Input type="number" value={editingExpense.amount} onChange={(e) => setEditingExpense({ ...editingExpense, amount: e.target.value })} /></div>
-              <Button className="w-full" onClick={handleEditExpense} disabled={updateExpense.isPending}>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" 
+                onClick={handleEditExpense} 
+                disabled={updateExpense.isPending}
+              >
                 {updateExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
               </Button>
             </div>
@@ -90,7 +118,7 @@ export default function Expenses() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t("expenses.recentExpenses")}</h2>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
               <Input placeholder={t("expenses.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
           </div>
@@ -112,17 +140,21 @@ export default function Expenses() {
                   </TableHeader>
                   <TableBody>
                     {filteredExpenses.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{expenses?.length === 0 ? "No expenses yet." : "No match."}</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-foreground/70 dark:text-foreground/80">{expenses?.length === 0 ? (language === "sw" ? "Hakuna matumizi bado." : "No expenses yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}</TableCell></TableRow>
                     ) : filteredExpenses.map((expense) => (
                       <TableRow key={expense.id}>
-                        <TableCell className="text-muted-foreground">{format(new Date(expense.date), "dd MMM, yyyy")}</TableCell>
+                        <TableCell className="text-foreground/70 dark:text-foreground/80">{format(new Date(expense.date), "dd MMM, yyyy")}</TableCell>
                         <TableCell className="font-medium">{expense.description}</TableCell>
                         <TableCell><Badge variant="secondary">{expense.category}</Badge></TableCell>
                         <TableCell className="font-medium">{formatNumber(expense.amount)}</TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingExpense({ ...expense })}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteExpense.mutate(expense.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingExpense({ ...expense })}>
+                              <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteExpense.mutate(expense.id)}>
+                              <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -150,24 +182,64 @@ export default function Expenses() {
                 </Select>
               </div>
               <div className="space-y-2"><Label>{t("expenses.amountTsh")}</Label><Input type="number" placeholder="0.00" value={newExpense.amount} onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })} /></div>
-              <Button className="w-full gap-2 bg-secondary hover:bg-secondary/90" onClick={handleAddExpense} disabled={!newExpense.description || !newExpense.amount || createExpense.isPending}>
-                {createExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              <Button 
+                className="w-full gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleAddExpense} 
+                disabled={!newExpense.description || !newExpense.amount || createExpense.isPending}
+              >
+                {createExpense.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
                 {t("expenses.saveExpense")}
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4"><CardTitle className="text-base">{t("expenses.categoryBreakdown")}</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {stats?.byCategory && Object.entries(stats.byCategory).map(([name, amount]) => (
-                <div key={name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-primary" /><span className="text-sm">{name}</span></div>
-                  <span className="text-sm font-medium">{formatNumber(amount)}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          {categoryBreakdown.length > 0 && (
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                  {t("expenses.categoryBreakdown")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {categoryBreakdown.map((item, index) => {
+                  const colors = [
+                    "bg-teal-500",
+                    "bg-blue-500",
+                    "bg-purple-500",
+                    "bg-orange-500",
+                    "bg-pink-500",
+                    "bg-indigo-500",
+                  ];
+                  const color = colors[index % colors.length];
+                  return (
+                    <div key={item.name} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2.5 w-2.5 rounded-full ${color} dark:shadow-[0_0_4px_rgba(59,130,246,0.3)]`} />
+                          <span className="text-sm font-medium text-foreground dark:text-foreground">{item.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-foreground/60 dark:text-foreground/70">{item.percentage.toFixed(1)}%</span>
+                          <span className="text-sm font-semibold text-foreground dark:text-foreground">{formatNumber(item.amount)}</span>
+                        </div>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full ${color} transition-all duration-500 rounded-full`}
+                          style={{ width: `${item.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </motion.div>

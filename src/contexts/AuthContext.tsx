@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // Try id first (Lovable: profiles.id = auth.uid()), then user_id (original schema)
+      // Try profiles.id (auth.uid()) first, then user_id
       let { data } = await supabase
         .from("profiles")
         .select("*, shops(*)")
@@ -88,7 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole((roleData?.role as AppRole) ?? null);
       }
     } catch (e) {
-      console.error("fetchProfile error:", e);
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.error("fetchProfile error:", e);
+      }
+      // In production, silently handle error - user will see loading state
     }
   };
 

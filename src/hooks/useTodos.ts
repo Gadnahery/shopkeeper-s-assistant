@@ -34,20 +34,33 @@ export function useTodos() {
 
 export function useCreateTodo() {
   const queryClient = useQueryClient();
-  const { shopId } = useAuth();
+  const { shopId, user } = useAuth();
   return useMutation({
-    mutationFn: async (input: { title: string; description?: string; due_date?: string; due_time?: string; alert_at?: string }) => {
+    mutationFn: async (input: {
+      title: string;
+      description?: string;
+      due_date?: string;
+      due_time?: string;
+      alert_at?: string;
+      assigned_to_user_id?: string | null;
+    }) => {
       if (!shopId) throw new Error("No shop found");
+      const payload: Record<string, unknown> = {
+        shop_id: shopId,
+        title: input.title,
+        description: input.description || null,
+        due_date: input.due_date || null,
+        due_time: input.due_time || null,
+        alert_at: input.alert_at || null,
+      };
+      if (user?.id) payload.created_by_user_id = user.id;
+      if (input.assigned_to_user_id) {
+        payload.assigned_to_user_id = input.assigned_to_user_id;
+        if (user?.id) payload.assigned_by_user_id = user.id;
+      }
       const { data, error } = await supabase
         .from("todos")
-        .insert({
-          shop_id: shopId,
-          title: input.title,
-          description: input.description || null,
-          due_date: input.due_date || null,
-          due_time: input.due_time || null,
-          alert_at: input.alert_at || null,
-        })
+        .insert(payload as any)
         .select()
         .single();
       if (error) throw error;
@@ -64,7 +77,7 @@ export function useCreateTodo() {
 export function useUpdateTodo() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; title?: string; description?: string; due_date?: string | null; due_time?: string | null; alert_at?: string | null; completed?: boolean }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; title?: string; description?: string; due_date?: string | null; due_time?: string | null; alert_at?: string | null; completed?: boolean; assigned_to_user_id?: string | null }) => {
       const { data, error } = await supabase.from("todos").update(updates).eq("id", id).select().single();
       if (error) throw error;
       return data;

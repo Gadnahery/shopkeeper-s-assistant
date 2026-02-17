@@ -24,6 +24,12 @@ interface ReceiptData {
   shopName: string;
   shopPhone?: string;
   shopAddress?: string;
+  /** Custom header text (from shop settings) */
+  receiptHeader?: string | null;
+  /** Custom footer text (from shop settings) */
+  receiptFooter?: string | null;
+  /** Shop logo URL (from shop settings) */
+  logoUrl?: string | null;
 }
 
 interface ReceiptProps {
@@ -104,6 +110,18 @@ export function Receipt({ data, onClose }: ReceiptProps) {
         <div ref={receiptRef} className="receipt font-mono text-sm">
           {/* Header */}
           <div className="header mb-4 text-center">
+            {data.receiptHeader && (
+              <div className="receipt-custom-header mb-2 whitespace-pre-wrap text-xs text-gray-700">
+                {data.receiptHeader}
+              </div>
+            )}
+            {data.logoUrl && (
+              <img
+                src={data.logoUrl}
+                alt="Logo"
+                className="mx-auto mb-2 max-h-16 w-auto object-contain"
+              />
+            )}
             <div className="shop-name text-lg font-bold">{data.shopName}</div>
             {data.shopPhone && <div className="text-xs text-gray-600">{data.shopPhone}</div>}
             {data.shopAddress && <div className="text-xs text-gray-600">{data.shopAddress}</div>}
@@ -200,8 +218,14 @@ export function Receipt({ data, onClose }: ReceiptProps) {
 
           {/* Footer */}
           <div className="mt-4 text-center text-xs">
-            <div className="font-bold">{t("receipt.thankYou")}</div>
-            <div className="mt-1 text-gray-600">{t("receipt.comeAgain")}</div>
+            {data.receiptFooter ? (
+              <div className="whitespace-pre-wrap text-gray-700">{data.receiptFooter}</div>
+            ) : (
+              <>
+                <div className="font-bold">{t("receipt.thankYou")}</div>
+                <div className="mt-1 text-gray-600">{t("receipt.comeAgain")}</div>
+              </>
+            )}
           </div>
         </div>
 

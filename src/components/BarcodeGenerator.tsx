@@ -79,24 +79,26 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
     const imgSrc = format === "qr" && qrUrl ? qrUrl : (canvas?.toDataURL() || "");
     if (!imgSrc) return;
 
+    const displayName = (productName || value).replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const html = `<!DOCTYPE html>
       <html>
       <head>
-        <title>${format === "qr" ? "QR" : "Barcode"} - ${value}</title>
+        <title>${format === "qr" ? "QR" : "Barcode"} - ${displayName}</title>
         <style>
-          @page { margin: 2mm; size: 50mm 30mm; }
-          body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
-          .label { text-align: center; }
-          .name { font-size: 10px; font-weight: bold; margin-bottom: 2px; }
-          .price { font-size: 9px; margin-top: 2px; }
-          img { max-width: 45mm; max-height: 25mm; }
+          @page { margin: 3mm; size: 80mm 50mm; }
+          body { margin: 0; padding: 0; font-family: sans-serif; }
+          .label { display: flex; flex-direction: column; align-items: center; justify-content: space-between; width: 74mm; min-height: 44mm; text-align: center; }
+          .name { font-size: 11px; font-weight: bold; line-height: 1.2; margin-bottom: 4px; max-width: 100%; overflow-wrap: break-word; }
+          .code-wrap { flex: 1; display: flex; align-items: center; justify-content: center; margin: 4px 0; }
+          .code-wrap img { max-width: 60mm; max-height: 22mm; object-fit: contain; }
+          .price { font-size: 12px; font-weight: bold; margin-top: 4px; }
         </style>
       </head>
       <body>
         <div class="label">
-          ${productName ? `<div class="name">${productName.replace(/</g, "&lt;")}</div>` : ""}
-          <img src="${imgSrc}" alt="${value}" />
-          ${price ? `<div class="price">Tsh ${price.toLocaleString()}</div>` : ""}
+          <div class="name">${displayName}</div>
+          <div class="code-wrap"><img src="${imgSrc}" alt="${value}" /></div>
+          <div class="price">${price != null ? `Tsh ${price.toLocaleString()}` : value}</div>
         </div>
       </body>
       </html>`;

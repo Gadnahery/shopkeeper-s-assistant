@@ -21,7 +21,7 @@ export default function AddProduct() {
   const createProduct = useCreateProduct();
 
   const [formData, setFormData] = useState({
-    name: "", name_sw: "", category_id: "", barcode: "",
+    name: "", name_sw: "", category_id: "", barcode: "", image_url: "",
     unit_type: "piece", buying_price: "", selling_price: "",
     stock: "", low_stock_alert: "5",
   });
@@ -40,6 +40,7 @@ export default function AddProduct() {
       code: generateCode(),
       category_id: formData.category_id || null,
       barcode: formData.barcode || null,
+      image_url: formData.image_url || null,
       unit_type: formData.unit_type,
       buying_price: parseFloat(formData.buying_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
@@ -90,6 +91,19 @@ export default function AddProduct() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="md:col-span-2">
+                    <Label>{t("addProduct.productImage")}</Label>
+                    <div className="mt-2 flex items-start gap-2">
+                      <ImageUpload
+                        currentUrl={formData.image_url || null}
+                        bucket="avatars"
+                        folder={shopId ? `products/${shopId}` : "products"}
+                        onUpload={(url) => setFormData((f) => ({ ...f, image_url: url }))}
+                        variant="product"
+                      />
+                      <Input placeholder={language === "sw" ? "Au bandika URL" : "Or paste image URL"} value={formData.image_url} onChange={e => setFormData({ ...formData, image_url: e.target.value })} className="flex-1" />
+                    </div>
+                  </div>
                   <div>
                     <Label>{t("addProduct.barcode")}</Label>
                     <div className="mt-2 flex items-center gap-2">
@@ -103,7 +117,7 @@ export default function AddProduct() {
                         autoComplete="off"
                       />
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-foreground/70 dark:text-foreground/80">
                       {language === "sw" ? "Lenga sehemu hii, fungua skana ya USB, na uscan bidhaa" : "Focus this field, then scan with your USB barcode scanner"}
                     </p>
                   </div>
@@ -144,14 +158,18 @@ export default function AddProduct() {
                   <div>
                     <Label>{t("addProduct.lowStockAlert")}</Label>
                     <Input type="number" placeholder="5" className="mt-2" value={formData.low_stock_alert} onChange={e => setFormData({ ...formData, low_stock_alert: e.target.value })} />
-                    <p className="mt-1 text-sm text-muted-foreground">{t("addProduct.lowStockHint")}</p>
+                    <p className="mt-1 text-sm text-foreground/70 dark:text-foreground/80">{t("addProduct.lowStockHint")}</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-8 flex justify-end gap-3 border-t pt-6">
                 <Button type="button" variant="outline" onClick={() => navigate("/inventory")}>{t("addProduct.cancel")}</Button>
-                <Button type="submit" className="gap-2" disabled={createProduct.isPending}>
+                <Button 
+                  type="submit" 
+                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  disabled={createProduct.isPending}
+                >
                   {createProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {t("addProduct.save")}
                 </Button>

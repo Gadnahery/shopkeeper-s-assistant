@@ -31,7 +31,7 @@ async function getUserShopId(): Promise<string | null> {
   const { data } = await supabase
     .from("profiles")
     .select("shop_id")
-    .eq("id", user.id)
+    .eq("user_id", user.id)
     .maybeSingle();
   return data?.shop_id || null;
 }
@@ -47,6 +47,25 @@ export function useSales() {
       if (error) throw error;
       return data;
     },
+  });
+}
+
+export function useSalesByCustomer(customerId: string | null) {
+  return useQuery({
+    queryKey: ["sales", "customer", customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const { data, error } = await supabase
+        .from("sales")
+        .select("*, sale_items(*)")
+        .eq("customer_id", customerId)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId,
   });
 }
 
@@ -69,6 +88,30 @@ export function useSalesByDateRange(startDate: string | null, endDate: string | 
   });
 }
 
+function aggregateSales(data: any[]) {
+  const total = data?.reduce((sum, s) => sum + Number(s.total || 0), 0) || 0;
+  const cash = data?.filter((s) => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total || 0), 0) || 0;
+  const mpesa = data?.filter((s) => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total || 0), 0) || 0;
+  return { total, count: data?.length || 0, cash, mpesa };
+}
+
+export function useSalesSummaryByRange(start: string, end: string) {
+  return useQuery({
+    queryKey: ["sales", "summary", start, end],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sales")
+        .select("*")
+        .eq("status", "completed")
+        .gte("created_at", `${start}T00:00:00`)
+        .lte("created_at", `${end}T23:59:59`);
+      if (error) throw error;
+      return aggregateSales(data || []);
+    },
+    enabled: !!start && !!end,
+  });
+}
+
 export function useTodaySales() {
   return useQuery({
     queryKey: ["sales", "today"],
@@ -87,12 +130,7 @@ export function useTodaySales() {
       const cashSales = data?.filter(s => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total), 0) || 0;
       const mpesaSales = data?.filter(s => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total), 0) || 0;
       
-      return {
-        total: totalSales,
-        count: data?.length || 0,
-        cash: cashSales,
-        mpesa: mpesaSales,
-      };
+      return aggregateSales(data || []);
     },
   });
 }

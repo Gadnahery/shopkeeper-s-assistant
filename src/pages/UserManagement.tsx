@@ -1,55 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, Loader2, Shield } from "lucide-react";
+import { UserPlus, Loader2, Shield, Settings2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useShopUsers } from "@/hooks/useShopUsers";
+import { useUserPageAccess, useUpdateUserPageAccess, PAGE_PATHS } from "@/hooks/useUserPageAccess";
 
 const ROLES = [
+  { value: "owner", en: "Owner", sw: "Mmiliki" },
   { value: "cashier", en: "Cashier", sw: "Mkaguzi" },
   { value: "staff", en: "Staff", sw: "Mfanyakazi" },
   { value: "manager", en: "Manager", sw: "Meneja" },
   { value: "hr", en: "HR", sw: "Rasilimali" },
 ];
 
-async function getShopUsers(shopId: string) {
-  const { data: profiles, error: pe } = await supabase
-    .from("profiles")
-    .select("id, user_id, full_name, created_at")
-    .eq("shop_id", shopId)
-    .order("created_at", { ascending: false });
-  if (pe) throw pe;
-  const { data: roles, error: re } = await supabase
-    .from("user_roles")
-    .select("user_id, role")
-    .eq("shop_id", shopId);
-  if (re) throw re;
-  const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role]));
-  return (profiles ?? []).map((p) => ({ ...p, role: roleMap.get(p.user_id) ?? "staff" }));
-}
-
 export default function UserManagement() {
   const { t, language } = useLanguage();
   const { shopId, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
+  const [pageAccessOpen, setPageAccessOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ user_id: string; full_name: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "staff" });
+  const [pageAccessForm, setPageAccessForm] = useState<Set<string>>(new Set());
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["shop-users", shopId],
-    queryFn: () => getShopUsers(shopId!),
-    enabled: !!shopId,
-  });
+  const { data: users, isLoading } = useShopUsers(shopId);
+  const { data: currentAccess } = useUserPageAccess(selectedUser?.user_id ?? null, shopId);
+  const updatePageAccess = useUpdateUserPageAccess(selectedUser?.user_id ?? null, shopId);
+
+  useEffect(() => {
+    if (pageAccessOpen && selectedUser && currentAccess) {
+      setPageAccessForm(new Set(currentAccess));
+    }
+  }, [pageAccessOpen, selectedUser, currentAccess]);
 
   const handleRegister = async () => {
     if (!form.email.trim() || !form.password.trim() || !form.full_name.trim()) {
@@ -85,7 +80,7 @@ export default function UserManagement() {
         await supabase.auth.setSession({ access_token: prevSession.access_token, refresh_token: prevSession.refresh_token });
         await refreshProfile();
       }
-      queryClient.invalidateQueries({ queryKey: ["shop-users", shopId] });
+      queryClient.invalidateQueries({ queryKey: ["shop-users"] });
       toast.success(language === "sw" ? "Mtumiaji amesajiliwa. Atapokea barua pepe ya uthibitishaji." : "User registered. They will receive a verification email.");
       setAddOpen(false);
       setForm({ email: "", password: "", full_name: "", role: "staff" });
@@ -108,7 +103,7 @@ export default function UserManagement() {
           <h1 className="text-2xl font-bold text-foreground">{language === "sw" ? "Usimamizi wa Watumiaji" : "User Management"}</h1>
           <p className="text-muted-foreground">{language === "sw" ? "Sajili na udhibiti watumiaji wa duka lako" : "Register and manage users for your shop"}</p>
         </div>
-        <Button className="gap-2" onClick={() => setAddOpen(true)}>
+        <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddOpen(true)}>
           <UserPlus className="h-4 w-4" />{language === "sw" ? "Ongeza Mtumiaji" : "Add User"}
         </Button>
       </div>
@@ -145,7 +140,11 @@ export default function UserManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <Button className="w-full" onClick={handleRegister} disabled={loading}>
+            <Button 
+              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              onClick={handleRegister} 
+              disabled={loading}
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Sajili" : "Register")}
             </Button>
           </div>
@@ -157,7 +156,7 @@ export default function UserManagement() {
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : !users?.length ? (
-            <div className="py-12 text-center text-muted-foreground">{language === "sw" ? "Hakuna watumiaji bado. Ongeza mtumiaji mpya." : "No users yet. Add a new user."}</div>
+            <div className="py-12 text-center text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Hakuna watumiaji bado. Ongeza mtumiaji mpya." : "No users yet. Add a new user."}</div>
           ) : (
             <Table>
               <TableHeader>
@@ -165,21 +164,81 @@ export default function UserManagement() {
                   <TableHead>{language === "sw" ? "Jina" : "Name"}</TableHead>
                   <TableHead>{language === "sw" ? "Jukumu" : "Role"}</TableHead>
                   <TableHead>{language === "sw" ? "Ilioongezwa" : "Added"}</TableHead>
+                <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((u) => (
-                  <TableRow key={u.id}>
+                {users?.map((u) => (
+                  <TableRow key={(u as any).id}>
                     <TableCell className="font-medium">{(u as any).full_name}</TableCell>
                     <TableCell>{getRoleLabel((u as any).role ?? "staff")}</TableCell>
-                    <TableCell className="text-muted-foreground">{new Date((u as any).created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-foreground/70 dark:text-foreground/80">{new Date((u as any).created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => {
+                          setSelectedUser({ user_id: (u as any).user_id, full_name: (u as any).full_name });
+                          setPageAccessOpen(true);
+                        }}
+                      >
+                        <Settings2 className="h-4 w-4" />
+                        {language === "sw" ? "Vipengele" : "Pages"}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
-        </CardContent>
+          </CardContent>
       </Card>
+
+      <Dialog open={pageAccessOpen} onOpenChange={(open) => { setPageAccessOpen(open); if (!open) setSelectedUser(null); }}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{language === "sw" ? "Vipengele vinavyoruhusiwa" : "Allowed Pages"}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-foreground/70 dark:text-foreground/80">
+            {selectedUser?.full_name} – {language === "sw" ? "Chagua kurasa mtumiaji anazoweza kufikia." : "Select pages this user can access."}
+          </p>
+          <p className="text-xs text-foreground/60 dark:text-foreground/70">
+            {language === "sw" ? "Ukiwaacha tupu, mtumiaji atapata kurasa zote kulingana na jukumu lake." : "Leave empty for full access based on role."}
+          </p>
+          <div className="space-y-2 py-4">
+            {PAGE_PATHS.map((p) => (
+              <div key={p.path} className="flex items-center gap-2">
+                <Checkbox
+                  id={p.path}
+                  checked={pageAccessForm.has(p.path)}
+                  onCheckedChange={(c) => {
+                    setPageAccessForm((prev) => {
+                      const next = new Set(prev);
+                      if (c) next.add(p.path);
+                      else next.delete(p.path);
+                      return next;
+                    });
+                  }}
+                />
+                <Label htmlFor={p.path} className="font-normal cursor-pointer">{p.label}</Label>
+              </div>
+            ))}
+          </div>
+          <Button
+            className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all"
+            disabled={updatePageAccess.isPending}
+            onClick={async () => {
+              await updatePageAccess.mutateAsync(Array.from(pageAccessForm));
+              toast.success(language === "sw" ? "Vipengele vimehifadhiwa" : "Page access saved");
+              setPageAccessOpen(false);
+              setSelectedUser(null);
+            }}
+          >
+            {updatePageAccess.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

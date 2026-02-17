@@ -46,6 +46,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.recordExpense": "Record Expense",
     "dashboard.daily": "Daily",
     "dashboard.weekly": "Weekly",
+    "dashboard.monthly": "Monthly",
 
     // Sales
     "sales.customer": "Customer",
@@ -110,6 +111,7 @@ const translations: Record<Language, Record<string, string>> = {
     "addProduct.lowStockHint": "Notifies when stock drops below this",
     "addProduct.cancel": "Cancel",
     "addProduct.save": "Save Product",
+    "addProduct.productImage": "Product Image",
 
     // Categories
     "category.building": "Building Materials",
@@ -197,6 +199,37 @@ const translations: Record<Language, Record<string, string>> = {
     "reports.payment": "Payment",
     "reports.status": "Status",
     "reports.completed": "Completed",
+    "reports.salesTrend": "Sales Trend",
+    "reports.topCustomers": "Top Customers",
+    "reports.expenseBreakdown": "Expense Breakdown",
+    "reports.lowStockProducts": "Low Stock Products",
+    "reports.amount": "Amount",
+    "reports.amountTsh": "Amount (TSH)",
+    "reports.noSalesData": "No sales data yet",
+    "reports.noSalesYet": "No sales yet",
+    "reports.noData": "No data",
+    "reports.daily": "Daily",
+    "reports.weekly": "Weekly",
+    "reports.monthly": "Monthly",
+    "reports.custom": "Custom",
+    "reports.from": "From",
+    "reports.to": "To",
+    "reports.inventoryValuation": "Inventory Valuation",
+    "reports.totalValue": "Total Value",
+    "reports.totalProducts": "Total Products",
+    "reports.lowStock": "Low Stock",
+    "reports.outOfStock": "Out of Stock",
+    "reports.valueByProduct": "Value by Product",
+    "reports.product": "Product",
+    "reports.cost": "Cost",
+    "reports.value": "Value",
+    "reports.profitAndLoss": "Profit & Loss",
+    "reports.salesRevenue": "Sales Revenue",
+    "reports.expenses": "Expenses",
+    "reports.netProfit": "Net Profit",
+    "reports.profitMargin": "Profit Margin",
+    "reports.salesTab": "Sales",
+    "reports.inventoryTab": "Inventory",
 
     // Settings
     "settings.title": "Settings",
@@ -224,6 +257,12 @@ const translations: Record<Language, Record<string, string>> = {
     "settings.role": "Role",
     "settings.active": "Active",
     "settings.inactive": "Inactive",
+    "settings.receiptCustomization": "Receipt Customization",
+    "settings.receiptHeader": "Receipt Header",
+    "settings.receiptFooter": "Receipt Footer",
+    "settings.logo": "Logo",
+    "settings.taxRate": "Tax Rate (%)",
+    "settings.saveReceiptSettings": "Save Receipt Settings",
 
     // Receipt
     "receipt.title": "SALES RECEIPT",
@@ -256,6 +295,15 @@ const translations: Record<Language, Record<string, string>> = {
     "common.save": "Save",
     "common.close": "Close",
     "common.items": "Items",
+    "common.selected": "selected",
+    "common.apply": "Apply",
+    "inventory.changeCategory": "Change Category",
+    "inventory.deleteSelected": "Delete Selected",
+    "inventory.exportSelected": "Export Selected",
+    "inventory.newCategory": "New category",
+    "inventory.selectCategory": "Select category",
+    "inventory.applyCategory": "Apply Category",
+    "inventory.productsWillBeUpdated": "products will be updated.",
   },
   sw: {
     // Navigation
@@ -294,6 +342,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.recordExpense": "Rekodi Matumizi",
     "dashboard.daily": "Kila Siku",
     "dashboard.weekly": "Kila Wiki",
+    "dashboard.monthly": "Kila Mwezi",
 
     // Sales
     "sales.customer": "Mteja",
@@ -358,6 +407,7 @@ const translations: Record<Language, Record<string, string>> = {
     "addProduct.lowStockHint": "Juulisha stoki inaposhuka chini ya hii",
     "addProduct.cancel": "Ghairi",
     "addProduct.save": "Hifadhi Bidhaa",
+    "addProduct.productImage": "Picha ya Bidhaa",
 
     // Categories
     "category.building": "Vifaa vya Ujenzi",
@@ -445,6 +495,37 @@ const translations: Record<Language, Record<string, string>> = {
     "reports.payment": "Malipo",
     "reports.status": "Hali",
     "reports.completed": "Imekamilika",
+    "reports.salesTrend": "Mwenendo wa Mauzo",
+    "reports.topCustomers": "Wateja Wakuu",
+    "reports.expenseBreakdown": "Mgawanyo wa Matumizi",
+    "reports.lowStockProducts": "Bidhaa zenye Stoki Kidogo",
+    "reports.amount": "Kiasi",
+    "reports.amountTsh": "Kiasi (TSH)",
+    "reports.noSalesData": "Hakuna data ya mauzo bado",
+    "reports.noSalesYet": "Hakuna mauzo bado",
+    "reports.noData": "Hakuna data",
+    "reports.daily": "Kila Siku",
+    "reports.weekly": "Kila Wiki",
+    "reports.monthly": "Kila Mwezi",
+    "reports.custom": "Kipindi Maalum",
+    "reports.from": "Kuanzia",
+    "reports.to": "Hadi",
+    "reports.inventoryValuation": "Thamani ya Stoki",
+    "reports.totalValue": "Thamani ya Jumla",
+    "reports.totalProducts": "Idadi ya Bidhaa",
+    "reports.lowStock": "Stoki Kidogo",
+    "reports.outOfStock": "Hakuna Stoki",
+    "reports.valueByProduct": "Thamani kwa Bidhaa",
+    "reports.product": "Bidhaa",
+    "reports.cost": "Bei ya Ununuzi",
+    "reports.value": "Thamani",
+    "reports.profitAndLoss": "Faida na Hasara",
+    "reports.salesRevenue": "Mapato ya Mauzo",
+    "reports.expenses": "Matumizi",
+    "reports.netProfit": "Faida ya Mtiririko",
+    "reports.profitMargin": "Kiwango cha Faida",
+    "reports.salesTab": "Mauzo",
+    "reports.inventoryTab": "Stoki",
 
     // Settings
     "settings.title": "Mipangilio",
@@ -472,6 +553,12 @@ const translations: Record<Language, Record<string, string>> = {
     "settings.role": "Jukumu",
     "settings.active": "Hai",
     "settings.inactive": "Haipo Hai",
+    "settings.receiptCustomization": "Ubinafsishaji wa Risiti",
+    "settings.receiptHeader": "Kichwa cha Risiti",
+    "settings.receiptFooter": "Mgongo wa Risiti",
+    "settings.logo": "Logo",
+    "settings.taxRate": "Kiwango cha Kodi (%)",
+    "settings.saveReceiptSettings": "Hifadhi Mipangilio ya Risiti",
 
     // Receipt
     "receipt.title": "RISITI YA MAUZO",
@@ -504,6 +591,15 @@ const translations: Record<Language, Record<string, string>> = {
     "common.save": "Hifadhi",
     "common.close": "Funga",
     "common.items": "Bidhaa",
+    "common.selected": "zimechaguliwa",
+    "common.apply": "Tumia",
+    "inventory.changeCategory": "Badilisha Kategoria",
+    "inventory.deleteSelected": "Futa Zilizochaguliwa",
+    "inventory.exportSelected": "Pakua Zilizochaguliwa",
+    "inventory.newCategory": "Kategoria mpya",
+    "inventory.selectCategory": "Chagua kategoria",
+    "inventory.applyCategory": "Tumia Kategoria",
+    "inventory.productsWillBeUpdated": "bidhaa zitabadilishwa.",
   },
 };
 
@@ -541,7 +637,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error("useLanguage must be used within a LanguageProvider");
+    throw new Error("useLanguage must be used within LanguageProvider");
   }
   return context;
 }

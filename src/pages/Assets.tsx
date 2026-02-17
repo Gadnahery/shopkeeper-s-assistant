@@ -92,7 +92,7 @@ export default function Assets() {
           <Input placeholder={language === "sw" ? "Tafuta mali..." : "Search assets..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza Mali" : "Add Asset"}</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza Mali" : "Add Asset"}</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Mali Mpya" : "Add New Asset"}</DialogTitle></DialogHeader>
             <div className="space-y-4 pt-4">
@@ -110,7 +110,13 @@ export default function Assets() {
                 <div className="space-y-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} /></div>
               </div>
               <div className="space-y-2"><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
-              <Button className="w-full" onClick={handleAdd} disabled={!form.name || addAsset.isPending}>{addAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Asset")}</Button>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleAdd} 
+                disabled={!form.name || addAsset.isPending}
+              >
+                {addAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Asset")}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -132,7 +138,13 @@ export default function Assets() {
                 <div className="space-y-2"><Label>Current Value</Label><Input type="number" value={editingAsset.current_value} onChange={e => setEditingAsset({...editingAsset, current_value: e.target.value})} /></div>
               </div>
               <div className="space-y-2"><Label>Notes</Label><Input value={editingAsset.notes || ""} onChange={e => setEditingAsset({...editingAsset, notes: e.target.value})} /></div>
-              <Button className="w-full" onClick={handleEditSave} disabled={updateAsset.isPending}>{updateAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}</Button>
+              <Button 
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleEditSave} 
+                disabled={updateAsset.isPending}
+              >
+                {updateAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
+              </Button>
             </div>
           )}
         </DialogContent>
@@ -142,7 +154,7 @@ export default function Assets() {
         {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
           <Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>Purchase Price</TableHead><TableHead>Current Value</TableHead><TableHead>Condition</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
-            {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No assets yet</TableCell></TableRow> :
+            {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-foreground/70 dark:text-foreground/80">No assets yet</TableCell></TableRow> :
             filtered.map(a => (
               <TableRow key={a.id}>
                 <TableCell className="font-medium">{a.name}</TableCell>
@@ -152,8 +164,12 @@ export default function Assets() {
                 <TableCell><Badge className={a.condition === 'Good' || a.condition === 'New' ? 'bg-success/10 text-success' : a.condition === 'Fair' ? 'bg-warning/10 text-warning' : 'bg-destructive/10 text-destructive'}>{a.condition}</Badge></TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingAsset({...a})}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteAsset.mutate(a.id)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingAsset({...a})}>
+                      <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteAsset.mutate(a.id)}>
+                      <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>

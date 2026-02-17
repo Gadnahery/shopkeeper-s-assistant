@@ -7,6 +7,9 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Auth from "./pages/Auth";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import POSTerminal from "./pages/POSTerminal";
@@ -24,8 +27,20 @@ import Orders from "./pages/Orders";
 import Todo from "./pages/Todo";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
+import { CommandPalette } from "./components/CommandPalette";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -36,9 +51,12 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
               <Route path="/auth" element={<Auth />} />
               
-              <Route element={<MainLayout />}>
+              <Route element={<><CommandPalette /><MainLayout /></>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/sales" element={<Sales />} />
                 <Route path="/sales/terminal" element={<POSTerminal />} />
@@ -57,8 +75,6 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
               </Route>
 
-              <Route path="/" element={<Navigate to="/auth" replace />} />
-              <Route path="/login" element={<Navigate to="/auth" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
