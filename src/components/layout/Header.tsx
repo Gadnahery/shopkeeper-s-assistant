@@ -134,11 +134,16 @@ export function Header() {
           <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-2 py-2 border-b">
               <span className="font-medium text-sm">{language === "sw" ? "Arifa" : "Notifications"}</span>
-              {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markAllRead.mutate()}>
-                  {language === "sw" ? "Soma zote" : "Mark all read"}
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => navigate("/notifications")}>
+                  {language === "sw" ? "Ona zote" : "View all"}
                 </Button>
-              )}
+                {unreadCount > 0 && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => markAllRead.mutate()}>
+                    {language === "sw" ? "Soma zote" : "Mark all read"}
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="overflow-y-auto max-h-64">
               {!notifications?.length ? (

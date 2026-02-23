@@ -26,6 +26,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useShopUsers } from "@/hooks/useShopUsers";
 import { useUserPageAccess, useUpdateUserPageAccess, PAGE_PATHS } from "@/hooks/useUserPageAccess";
+import { logAudit } from "@/lib/audit";
 
 const ROLES = [
   { value: "owner", en: "Owner", sw: "Mmiliki" },
@@ -82,25 +83,41 @@ export default function UserManagement() {
     }
     setLoading(true);
     try {
-      // Capture current session so we can restore it after signUp (signUp can switch session to new user)
-      const { data: { session: prevSession } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email.trim(),
-        password: form.password,
-        options: {
-          data: {
-            full_name: form.full_name.trim(),
-            invited_to_shop_id: shopId,
-            invited_role: form.role,
-          },
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          email: form.email.trim(),
+          password: form.password,
+          full_name: form.full_name.trim(),
+          shop_id: shopId,
+          role: form.role,
         },
       });
-      if (error) throw error;
-      // Restore admin session so header keeps showing admin name (signUp can switch to new user)
-      if (prevSession?.access_token && prevSession?.refresh_token) {
-        await supabase.auth.setSession({ access_token: prevSession.access_token, refresh_token: prevSession.refresh_token });
-        await refreshProfile();
+      if (error) {
+        // Fallback for environments where edge function is not deployed yet.
+        const { data: { session: prevSession } } = await supabase.auth.getSession();
+        const signupRes = await supabase.auth.signUp({
+          email: form.email.trim(),
+          password: form.password,
+          options: {
+            data: {
+              full_name: form.full_name.trim(),
+              invited_to_shop_id: shopId,
+              invited_role: form.role,
+            },
+          },
+        });
+        if (signupRes.error) throw signupRes.error;
+        if (prevSession?.access_token && prevSession?.refresh_token) {
+          await supabase.auth.setSession({ access_token: prevSession.access_token, refresh_token: prevSession.refresh_token });
+          await refreshProfile();
+        }
       }
+      await logAudit({
+        action: "user_created",
+        entityType: "profiles",
+        entityId: data?.user_id ?? null,
+        metadata: { email: form.email.trim(), role: form.role },
+      });
       queryClient.invalidateQueries({ queryKey: ["shop-users"] });
       toast.success(language === "sw" ? "Mtumiaji amesajiliwa. Atapokea barua pepe ya uthibitishaji." : "User registered. They will receive a verification email.");
       setAddOpen(false);
@@ -138,6 +155,17 @@ export default function UserManagement() {
       if (pe) throw pe;
       const { error: re } = await supabase.from("user_roles").update({ role: editForm.role as any }).eq("user_id", editUser.user_id).eq("shop_id", shopId);
       if (re) throw re;
+      await logAudit({
+        action: "user_updated",
+        entityType: "profiles",
+        entityId: editUser.user_id,
+        metadata: {
+          role: editForm.role,
+          full_name: editForm.full_name.trim(),
+          email: editForm.email.trim() || null,
+          phone: editForm.phone.trim() || null,
+        },
+      });
       queryClient.invalidateQueries({ queryKey: ["shop-users"] });
       toast.success(language === "sw" ? "Mtumiaji imesasishwa" : "User updated");
       setEditOpen(false);
@@ -157,6 +185,12 @@ export default function UserManagement() {
       if (re) throw re;
       const { error: pe } = await supabase.from("profiles").delete().eq("user_id", userToDelete.user_id).eq("shop_id", shopId);
       if (pe) throw pe;
+      await logAudit({
+        action: "user_removed_from_shop",
+        entityType: "profiles",
+        entityId: userToDelete.user_id,
+        metadata: { full_name: userToDelete.full_name, email: userToDelete.email ?? null },
+      });
       queryClient.invalidateQueries({ queryKey: ["shop-users"] });
       toast.success(language === "sw" ? "Mtumiaji ameondolewa" : "User removed from shop");
       setDeleteOpen(false);
@@ -176,6 +210,11 @@ export default function UserManagement() {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/reset-password` });
       if (error) throw error;
+      await logAudit({
+        action: "user_password_reset_requested",
+        entityType: "profiles",
+        metadata: { email: email.trim() },
+      });
       toast.success(language === "sw" ? "Barua pepe ya kubadilisha neno la siri imetumwa" : "Password reset email sent");
     } catch (e: any) {
       toast.error(e?.message || "Failed to send reset email");

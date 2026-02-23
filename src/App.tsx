@@ -3,33 +3,46 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { Loader2 } from "lucide-react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { MainLayout } from "@/components/layout/MainLayout";
-import Auth from "./pages/Auth";
-import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import Dashboard from "./pages/Dashboard";
-import Sales from "./pages/Sales";
-import POSTerminal from "./pages/POSTerminal";
-import Inventory from "./pages/Inventory";
-import AddProduct from "./pages/AddProduct";
-import Customers from "./pages/Customers";
-import Suppliers from "./pages/Suppliers";
-import Expenses from "./pages/Expenses";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import HRM from "./pages/HRM";
-import Assets from "./pages/Assets";
-import Categories from "./pages/Categories";
-import Orders from "./pages/Orders";
-import Todo from "./pages/Todo";
-import UserManagement from "./pages/UserManagement";
-import NotFound from "./pages/NotFound";
 import { CommandPalette } from "./components/CommandPalette";
 import { hasValidSupabaseEnv } from "@/integrations/supabase/client";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+
+const Auth = lazy(() => import("./pages/Auth"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const SignupPage = lazy(() => import("./pages/SignupPage"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Sales = lazy(() => import("./pages/Sales"));
+const POSTerminal = lazy(() => import("./pages/POSTerminal"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const AddProduct = lazy(() => import("./pages/AddProduct"));
+const ReceiveStock = lazy(() => import("./pages/ReceiveStock"));
+const Customers = lazy(() => import("./pages/Customers"));
+const CustomerDetail = lazy(() => import("./pages/CustomerDetail"));
+const Suppliers = lazy(() => import("./pages/Suppliers"));
+const SupplierDetail = lazy(() => import("./pages/SupplierDetail"));
+const Expenses = lazy(() => import("./pages/Expenses"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Loyalty = lazy(() => import("./pages/Loyalty"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Settings = lazy(() => import("./pages/Settings"));
+const HRM = lazy(() => import("./pages/HRM"));
+const Assets = lazy(() => import("./pages/Assets"));
+const Categories = lazy(() => import("./pages/Categories"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Todo = lazy(() => import("./pages/Todo"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +73,14 @@ function EnvSetupMessage() {
   );
 }
 
+function AppLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+    </div>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     {!hasValidSupabaseEnv ? (
@@ -68,39 +89,50 @@ const App = () => (
     <AuthProvider>
       <LanguageProvider>
         <ThemeProvider>
+        <NotificationProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/auth" element={<Auth />} />
-              
-              <Route element={<><CommandPalette /><MainLayout /></>}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/sales" element={<Sales />} />
-                <Route path="/sales/terminal" element={<POSTerminal />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/inventory/add" element={<AddProduct />} />
-                <Route path="/categories" element={<Categories />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/todo" element={<Todo />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/suppliers" element={<Suppliers />} />
-                <Route path="/expenses" element={<Expenses />} />
-                <Route path="/hrm" element={<HRM />} />
-                <Route path="/user-management" element={<UserManagement />} />
-                <Route path="/assets" element={<Assets />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
+            <Suspense fallback={<AppLoader />}>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                
+                <Route element={<ProtectedRoute><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+                  <Route path="/sales/terminal" element={<ProtectedRoute><POSTerminal /></ProtectedRoute>} />
+                  <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+                  <Route path="/inventory/add" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><AddProduct /></ProtectedRoute>} />
+                  <Route path="/inventory/receive" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><ReceiveStock /></ProtectedRoute>} />
+                  <Route path="/categories" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Categories /></ProtectedRoute>} />
+                  <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                  <Route path="/todo" element={<ProtectedRoute><Todo /></ProtectedRoute>} />
+                  <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+                  <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
+                  <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+                  <Route path="/suppliers/:id" element={<ProtectedRoute><SupplierDetail /></ProtectedRoute>} />
+                  <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
+                  <Route path="/hrm" element={<ProtectedRoute allowedRoles={["owner", "manager", "hr"]}><HRM /></ProtectedRoute>} />
+                  <Route path="/user-management" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><UserManagement /></ProtectedRoute>} />
+                  <Route path="/assets" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Assets /></ProtectedRoute>} />
+                  <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                  <Route path="/loyalty" element={<ProtectedRoute><Loyalty /></ProtectedRoute>} />
+                  <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Settings /></ProtectedRoute>} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </TooltipProvider>
+        </NotificationProvider>
         </ThemeProvider>
       </LanguageProvider>
     </AuthProvider>

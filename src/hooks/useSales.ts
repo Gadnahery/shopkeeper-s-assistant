@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { logAudit } from "@/lib/audit";
 
 export type Sale = Tables<"sales">;
 export type SaleItem = Tables<"sale_items">;
@@ -22,6 +23,7 @@ interface CreateSaleInput {
   mpesa_code?: string | null;
   discount_amount?: number;
   discount_percent?: number;
+  tax_amount?: number;
   items: CartItem[];
 }
 
@@ -143,6 +145,8 @@ export function useCreateSale() {
       // Get shop_id first - this is REQUIRED for RLS
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found for user. Please log out and log in again.");
+      const { data: authData } = await supabase.auth.getUser();
+      const cashierId = authData.user?.id ?? null;
 
       // Generate invoice number (unique: timestamp + random to avoid duplicate key)
       const fallbackInv = () => `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -151,7 +155,8 @@ export function useCreateSale() {
 
       const subtotal = input.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
       const discountAmount = input.discount_amount || 0;
-      const total = subtotal - discountAmount;
+      const taxAmount = input.tax_amount || 0;
+      const total = subtotal - discountAmount + taxAmount;
 
       // Create sale with shop_id
       const { data: sale, error: saleError } = await supabase
@@ -165,6 +170,8 @@ export function useCreateSale() {
           subtotal,
           discount_amount: discountAmount,
           discount_percent: input.discount_percent || 0,
+          tax_amount: taxAmount,
+          cashier_id: cashierId,
           total,
           status: "completed",
           shop_id: shopId,
@@ -174,6 +181,19 @@ export function useCreateSale() {
       
       if (saleError) throw saleError;
       
+      // Load product buying prices to persist historical COGS
+      const buyingPriceByProduct = new Map<string, number>();
+      await Promise.all(
+        input.items.map(async (item) => {
+          const { data: product } = await supabase
+            .from("products")
+            .select("id, buying_price")
+            .eq("id", item.product_id)
+            .maybeSingle();
+          buyingPriceByProduct.set(item.product_id, Number(product?.buying_price || 0));
+        })
+      );
+
       // Create sale items with shop_id
       const saleItems: SaleItemInsert[] = input.items.map(item => ({
         sale_id: sale.id,
@@ -181,6 +201,8 @@ export function useCreateSale() {
         product_name: item.product_name,
         unit_price: item.unit_price,
         quantity: item.quantity,
+        buying_price_at_sale: buyingPriceByProduct.get(item.product_id) || 0,
+        discount_amount: 0,
         total: item.unit_price * item.quantity,
         shop_id: shopId,
       }));
@@ -221,6 +243,17 @@ export function useCreateSale() {
             });
         }
       }
+      await logAudit({
+        action: "sale_created",
+        entityType: "sales",
+        entityId: sale.id,
+        metadata: {
+          invoice_number: sale.invoice_number,
+          payment_method: input.payment_method,
+          items_count: input.items.length,
+          total,
+        },
+      });
       
       return sale;
     },
@@ -256,6 +289,7 @@ export function useSaveDraftSale() {
     mutationFn: async (input: CreateSaleInput) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
+      const { data: authData } = await supabase.auth.getUser();
       const fallbackInv = () => `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
       const { data: invoiceNum } = await supabase.rpc("generate_invoice_number");
       const invoiceNumber = invoiceNum || fallbackInv();
@@ -272,6 +306,8 @@ export function useSaveDraftSale() {
           subtotal,
           discount_amount: discountAmount,
           discount_percent: input.discount_percent || 0,
+          tax_amount: 0,
+          cashier_id: authData.user?.id ?? null,
           total,
           status: "draft",
           shop_id: shopId,
@@ -285,6 +321,8 @@ export function useSaveDraftSale() {
         product_name: item.product_name,
         unit_price: item.unit_price,
         quantity: item.quantity,
+        buying_price_at_sale: 0,
+        discount_amount: 0,
         total: item.unit_price * item.quantity,
         shop_id: shopId,
       }));
@@ -328,6 +366,14 @@ export function useCompleteDraftSale() {
       }
       const { data: updated, error } = await supabase.from("sales").update({ status: "completed" }).eq("id", saleId).select().single();
       if (error) throw error;
+      await logAudit({
+        action: "draft_sale_completed",
+        entityType: "sales",
+        entityId: updated.id,
+        metadata: {
+          invoice_number: updated.invoice_number,
+        },
+      });
       return updated;
     },
     onSuccess: () => {
@@ -347,6 +393,11 @@ export function useDeleteDraftSale() {
       await supabase.from("sale_items").delete().eq("sale_id", saleId);
       const { error } = await supabase.from("sales").delete().eq("id", saleId);
       if (error) throw error;
+      await logAudit({
+        action: "draft_sale_deleted",
+        entityType: "sales",
+        entityId: saleId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });

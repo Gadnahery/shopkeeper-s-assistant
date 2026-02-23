@@ -22,6 +22,8 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.suppliers": "Suppliers",
     "nav.expenses": "Expenses",
     "nav.reports": "Reports",
+    "nav.loyalty": "Loyalty",
+    "nav.notifications": "Notifications",
     "nav.settings": "Settings",
     "nav.hrm": "HRM",
     "nav.assets": "Assets",
@@ -91,6 +93,9 @@ const translations: Record<Language, Record<string, string>> = {
     "inventory.priceCol": "Price (Tsh)",
     "inventory.actions": "Actions",
     "inventory.low": "LOW",
+    "inventory.profit": "Profit",
+    "inventory.profitPercent": "Profit %",
+    "inventory.totalStockValue": "Total Stock Value",
 
     // Add Product
     "addProduct.title": "Add New Product",
@@ -322,6 +327,8 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.suppliers": "Wasambazaji",
     "nav.expenses": "Matumizi",
     "nav.reports": "Ripoti",
+    "nav.loyalty": "Uaminifu",
+    "nav.notifications": "Arifa",
     "nav.settings": "Mipangilio",
     "nav.hrm": "Rasilimali Watu",
     "nav.assets": "Mali",
@@ -391,6 +398,9 @@ const translations: Record<Language, Record<string, string>> = {
     "inventory.priceCol": "Bei (Tsh)",
     "inventory.actions": "Vitendo",
     "inventory.low": "CHINI",
+    "inventory.profit": "Faida",
+    "inventory.profitPercent": "Faida %",
+    "inventory.totalStockValue": "Thamani ya Stoki",
 
     // Add Product
     "addProduct.title": "Ongeza Bidhaa Mpya",

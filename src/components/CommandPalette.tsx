@@ -24,6 +24,8 @@ import {
   UserCog,
   Building2,
   UserPlus,
+  Gift,
+  Bell,
 } from "lucide-react";
 
 const PAGES = [
@@ -38,6 +40,8 @@ const PAGES = [
   { path: "/expenses", labelKey: "nav.expenses", icon: Receipt },
   { path: "/hrm", labelKey: "nav.hrm", icon: UserCog },
   { path: "/reports", labelKey: "nav.reports", icon: BarChart3 },
+  { path: "/loyalty", labelKey: "nav.loyalty", icon: Gift },
+  { path: "/notifications", labelKey: "nav.notifications", icon: Bell },
   { path: "/user-management", labelKey: "nav.userManagement", icon: UserPlus },
   { path: "/assets", labelKey: "nav.assets", icon: Building2 },
   { path: "/settings", labelKey: "nav.settings", icon: Settings },

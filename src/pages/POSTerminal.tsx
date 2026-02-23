@@ -47,6 +47,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/formatters";
 import { scannerManager } from "@/lib/hardware/barcode-scanner";
+import { playSound } from "@/lib/sounds";
 
 interface CartItem {
   id: string;
@@ -131,9 +132,11 @@ export default function POSTerminal() {
         (p as { sku?: string }).sku === barcode
     );
     if (product) {
+      playSound("add");
       addToCart(product as Parameters<typeof addToCart>[0]);
     } else {
       setSearchTerm(barcode);
+      playSound("error");
       toast.error(language === "sw" ? "Bidhaa haipatikani" : "Product not found");
     }
     scannerInputRef.current?.focus();
@@ -142,12 +145,14 @@ export default function POSTerminal() {
 
   const addToCart = (product: { id: string; name: string; name_sw?: string | null; selling_price: number; stock: number }, _variant?: unknown) => {
     if (product.stock <= 0) {
+      playSound("error");
       toast.error(language === "sw" ? "Bidhaa haina stoki" : "Out of stock");
       return;
     }
     const existing = cartItems.find((i) => i.product_id === product.id && !i.variant_id);
     if (existing) {
       if (existing.quantity >= product.stock) {
+        playSound("error");
         toast.error(language === "sw" ? "Stoki haitoshi" : "Not enough stock");
         return;
       }
@@ -169,6 +174,7 @@ export default function POSTerminal() {
         },
       ]);
     }
+    playSound("add");
     setSearchTerm("");
   };
 
@@ -232,6 +238,7 @@ export default function POSTerminal() {
         payment_method: paymentMethod,
         discount_amount: discountAmount,
         discount_percent: discountType === "percentage" ? discountValue : 0,
+        tax_amount: taxAmount,
         items: cartItems.map((item) => ({
           product_id: item.product_id,
           product_name: item.name,
@@ -271,10 +278,12 @@ export default function POSTerminal() {
       setDiscountType("none");
       setDiscountValue(0);
       setPayments([]);
+      playSound("success");
       toast.success(
         language === "sw" ? "Mauzo yamehifadhiwa" : "Sale completed"
       );
     } catch (err: unknown) {
+      playSound("error");
       toast.error(
         err instanceof Error ? err.message : "Failed to complete sale"
       );

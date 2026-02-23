@@ -2,12 +2,23 @@ import { useState, useEffect } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { GlobalProgressBar } from "@/components/GlobalProgressBar";
+import { FloatingActions } from "@/components/FloatingActions";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Loader2, WifiOff } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function OfflineBanner() {
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -36,6 +47,7 @@ function LayoutContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <GlobalProgressBar />
       <OfflineBanner />
       <Sidebar />
       <div
@@ -57,12 +69,13 @@ function LayoutContent() {
           </motion.div>
         </main>
       </div>
+      <FloatingActions />
     </div>
   );
 }
 
 export function MainLayout() {
-  const { user, loading } = useAuth();
+  const { user, loading, sessionExpired } = useAuth();
 
   if (loading) {
     return (
@@ -76,7 +89,24 @@ export function MainLayout() {
 
   return (
     <SidebarProvider>
-      <LayoutContent />
+      <>
+        <LayoutContent />
+        <AlertDialog open={sessionExpired}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Session expired</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your session expired. Please log in again to continue.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => (window.location.href = "/login")}>
+                Go to login
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     </SidebarProvider>
   );
 }

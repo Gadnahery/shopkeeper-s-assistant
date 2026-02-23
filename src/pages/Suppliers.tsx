@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Truck, Clock, Calendar, CreditCard, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, Truck, Clock, Calendar, CreditCard, Pencil, Trash2, Loader2, Eye } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from "@/hooks/useSuppliers";
 import { useDraftForm } from "@/hooks/useDraftForm";
@@ -23,6 +24,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 export default function Suppliers() {
+  const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -192,6 +194,9 @@ export default function Suppliers() {
                             <CreditCard className="h-3 w-3" />{t("customers.pay")}
                           </Button>
                         )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/suppliers/${supplier.id}`)} title={language === "sw" ? "Tazama" : "View"}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingSupplier({ ...supplier })}><Pencil className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSupplierToDeleteId(supplier.id)} disabled={deleteSupplier.isPending}><Trash2 className="h-4 w-4" /></Button>
                       </div>

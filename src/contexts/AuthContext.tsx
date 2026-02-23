@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  sessionExpired: boolean;
   shopId: string | null;
   profile: any | null;
   role: AppRole | null;
@@ -24,12 +25,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [shopId, setShopId] = useState<string | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" && user) {
+        setSessionExpired(true);
+      }
+      if (event === "SIGNED_IN") {
+        setSessionExpired(false);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -129,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, shopId, profile, role, isOwner: role === "owner", signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, sessionExpired, shopId, profile, role, isOwner: role === "owner", signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

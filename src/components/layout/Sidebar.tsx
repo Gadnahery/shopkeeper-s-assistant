@@ -12,7 +12,7 @@ import {
   LayoutDashboard, ShoppingCart, Package, Users, Truck,
   Receipt, BarChart3, Settings, Store,
   ChevronLeft, ChevronRight, X, UserCog, Building2, LogOut, Tags, ClipboardList,
-  CheckSquare, UserPlus,
+  CheckSquare, UserPlus, Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,7 @@ const MANAGEMENT = [
   { to: "/expenses", labelKey: "nav.expenses", icon: Receipt },
   { to: "/hrm", labelKey: "nav.hrm", icon: UserCog },
   { to: "/reports", labelKey: "nav.reports", icon: BarChart3 },
+  { to: "/loyalty", labelKey: "nav.loyalty", icon: Gift },
 ];
 
 const ADMIN = [

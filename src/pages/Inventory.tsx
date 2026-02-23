@@ -21,11 +21,13 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Download, Plus, Pencil, Trash2, AlertTriangle, Loader2, QrCode, Package, FolderTree } from "lucide-react";
 import { useProducts, useDeleteProduct, useUpdateProduct } from "@/hooks/useProducts";
 import { BarcodeGenerator } from "@/components/BarcodeGenerator";
+import { EmptyState } from "@/components/EmptyState";
 import { exportToCSV } from "@/utils/exportData";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { playSound } from "@/lib/sounds";
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -72,6 +74,18 @@ export default function Inventory() {
   const isLowStock = (stock: number, alert: number) => stock <= alert;
   const getProductName = (product: typeof filteredProducts[0]) => language === "sw" && product.name_sw ? product.name_sw : product.name;
 
+  const totalStockValue = filteredProducts.reduce(
+    (sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0),
+    0
+  );
+  const profitFor = (p: typeof filteredProducts[0]) => {
+    const buy = Number(p.buying_price) || 0;
+    const sell = Number(p.selling_price) || 0;
+    const profit = sell - buy;
+    const pct = buy > 0 ? (profit / buy) * 100 : 0;
+    return { profit, pct };
+  };
+
   const handleExport = () => {
     const toExport = selectedIds.size > 0
       ? filteredProducts.filter((p) => selectedIds.has(p.id))
@@ -111,6 +125,7 @@ export default function Inventory() {
     for (const id of selectedIds) {
       await deleteProduct.mutateAsync(id);
     }
+    playSound("success");
     setSelectedIds(new Set());
     setShowBulkDelete(false);
   };
@@ -120,6 +135,7 @@ export default function Inventory() {
     for (const id of selectedIds) {
       await updateProduct.mutateAsync({ id, category_id: bulkCategoryId });
     }
+    playSound("success");
     setSelectedIds(new Set());
     setShowBulkCategory(false);
     setBulkCategoryId("");
@@ -133,6 +149,7 @@ export default function Inventory() {
       stock: parseInt(editProduct.stock) || 0, low_stock_alert: parseInt(editProduct.low_stock_alert) || 5,
       category_id: editProduct.category_id || null, barcode: editProduct.barcode || null,
     });
+    playSound("success");
     setEditProduct(null);
   };
 
@@ -192,11 +209,23 @@ export default function Inventory() {
           <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExport} disabled={filteredProducts.length === 0}>
             <Download className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" /><span className="hidden md:inline">{selectedIds.size > 0 ? t("inventory.exportSelected") : t("inventory.export")}</span>
           </Button>
-          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => navigate("/inventory/add")}>
+          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => { playSound("click"); navigate("/inventory/add"); }}>
             <Plus className="h-4 w-4" />{t("inventory.addProduct")}
+          </Button>
+          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => { playSound("click"); navigate("/inventory/receive"); }}>
+            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            {language === "sw" ? "Pokea Stoki" : "Receive Stock"}
           </Button>
         </div>
       </div>
+
+      {/* Total stock value card */}
+      <Card className="glass-card border-primary/20">
+        <CardContent className="p-4 flex items-center justify-between">
+          <span className="text-sm font-medium text-muted-foreground">{t("inventory.totalStockValue")}</span>
+          <span className="text-xl font-bold text-foreground tabular-nums">Tsh {formatNumber(totalStockValue)}</span>
+        </CardContent>
+      </Card>
 
       {/* Edit Product Dialog */}
       <Dialog open={!!editProduct} onOpenChange={(o) => !o && setEditProduct(null)}>
@@ -347,14 +376,24 @@ export default function Inventory() {
                     <TableHead>{t("inventory.name")}</TableHead>
                     <TableHead>{t("inventory.stock")}</TableHead>
                     <TableHead className="hidden md:table-cell">{t("inventory.priceCol")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("inventory.profitPercent")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("inventory.profit")}</TableHead>
                     <TableHead className="text-right">{t("inventory.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {products?.length === 0 ? (language === "sw" ? "Hakuna bidhaa bado." : "No products yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}
-                    </TableCell></TableRow>
+                    <TableRow>
+                      <TableCell colSpan={8} className="py-8">
+                        <EmptyState
+                          title={products?.length === 0 ? (language === "sw" ? "Hakuna bidhaa bado" : "No products yet") : (language === "sw" ? "Hakuna matokeo" : "No matching products")}
+                          description={products?.length === 0 ? (language === "sw" ? "Ongeza bidhaa mpya ili kuanza kusimamia stoki." : "Add your first product to start managing stock.") : (language === "sw" ? "Badilisha vichujio au tafuta kwa jina/kodi nyingine." : "Try changing filters or searching another product name/code.")}
+                          icon={<Package className="h-8 w-8" />}
+                          actionLabel={products?.length === 0 ? t("inventory.addProduct") : undefined}
+                          onAction={products?.length === 0 ? () => navigate("/inventory/add") : undefined}
+                        />
+                      </TableCell>
+                    </TableRow>
                   ) : filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell>
@@ -375,6 +414,12 @@ export default function Inventory() {
                       </TableCell>
                       <TableCell className={isLowStock(product.stock, product.low_stock_alert) ? "text-destructive font-medium" : ""}>{product.stock}</TableCell>
                       <TableCell className="hidden md:table-cell">{formatNumber(product.selling_price)}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
+                        {profitFor(product).pct.toFixed(1)}%
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
+                        {formatNumber(profitFor(product).profit)}
+                      </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleGenerateBarcode(product)} title="Barcode">

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { playSound } from "@/lib/sounds";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,8 @@ import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 import { Calculator } from "@/components/Calculator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/EmptyState";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 const PRIMARY_TEAL = "#0D9488";
@@ -168,11 +171,14 @@ export default function Dashboard() {
               }`}
               onClick={
                 kpi.link
-                  ? () => navigate(kpi.link! + (kpi.linkRange ? `?range=${kpi.linkRange === "today" ? "daily" : kpi.linkRange === "week" ? "weekly" : "monthly"}` : ""))
+                  ? () => {
+                      playSound("click");
+                      navigate(kpi.link! + (kpi.linkRange ? `?range=${kpi.linkRange === "today" ? "daily" : kpi.linkRange === "week" ? "weekly" : "monthly"}` : ""));
+                    }
                   : undefined
               }
             >
-              <CardContent className="p-5">
+              <CardContent className="p-5 glass-card">
                 <kpi.icon
                   className={`absolute right-4 top-4 h-8 w-8 transition-all duration-200 group-hover:scale-110 ${
                     kpi.title.includes("Sales") || kpi.title.includes("Mauzo")
@@ -188,14 +194,19 @@ export default function Dashboard() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-foreground/70 dark:text-foreground/80">
                   {kpi.title}
                 </p>
-                <p className="mt-2 text-2xl font-bold tracking-tight text-foreground dark:text-foreground">
-                  {kpi.value}
-                </p>
+                {salesLoading && (kpi.title === t("dashboard.todaySales") || kpi.title === t("dashboard.transactions") || kpi.title === t("dashboard.cashVsMpesa")) ? (
+                  <Skeleton className="mt-2 h-8 w-28" />
+                ) : (
+                  <p className="mt-2 text-2xl font-bold tracking-tight text-foreground dark:text-foreground">
+                    {kpi.value}
+                  </p>
+                )}
                 {kpi.link ? (
                   <button
                     className="mt-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
+                      playSound("click");
                       navigate(kpi.link! + (kpi.linkRange ? `?range=${kpi.linkRange === "today" ? "daily" : kpi.linkRange === "week" ? "weekly" : "monthly"}` : ""));
                     }}
                   >
@@ -211,13 +222,16 @@ export default function Dashboard() {
       </motion.div>
 
       <motion.div variants={item} className="grid gap-6 lg:grid-cols-5">
-        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-span-3 transition-colors hover:bg-muted hover:border-blue-500/20">
+        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-span-3 transition-colors hover:bg-muted hover:border-blue-500/20 glass-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
               {t("dashboard.salesTrend")}
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {salesLoading ? (
+              <Skeleton className="h-[220px] w-full rounded-xl" />
+            ) : (
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={weeklyTrend || []} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>
                 <defs>
@@ -253,16 +267,20 @@ export default function Dashboard() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-span-2 transition-colors hover:bg-muted hover:border-teal-500/20">
+        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-span-2 transition-colors hover:bg-muted hover:border-teal-500/20 glass-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
               {t("dashboard.stockByCategory")}
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {salesLoading ? (
+              <Skeleton className="h-[220px] w-full rounded-xl" />
+            ) : (
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative h-40 w-40 flex-shrink-0 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
@@ -310,12 +328,13 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
 
       <motion.div variants={item}>
-        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm glass-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
               {t("dashboard.alerts")}
@@ -324,7 +343,11 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {alerts.length === 0 ? (
-                <p className="text-sm text-foreground/60 dark:text-foreground/70">No alerts at this time.</p>
+                <EmptyState
+                  title={t("dashboard.alerts")}
+                  description={t("dashboard.checkInventory")}
+                  icon={<AlertTriangle className="h-8 w-8" />}
+                />
               ) : (
                 alerts.map((alert, index) => (
                   <div
@@ -349,24 +372,24 @@ export default function Dashboard() {
 
       <motion.div variants={item} className="flex flex-wrap gap-3">
         <Button
-          className="gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 font-medium shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all"
-          onClick={() => navigate("/sales")}
+          className="gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 font-medium shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] duration-200"
+          onClick={() => { playSound("click"); navigate("/sales"); }}
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           {t("dashboard.newSale")}
         </Button>
         <Button
           variant="outline"
-          className="gap-2 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-colors"
-          onClick={() => navigate("/inventory/add")}
+          className="gap-2 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          onClick={() => { playSound("click"); navigate("/inventory/add"); }}
         >
           <Package className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
           {t("dashboard.addProduct")}
         </Button>
         <Button
           variant="outline"
-          className="gap-2 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-colors"
-          onClick={() => navigate("/expenses")}
+          className="gap-2 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          onClick={() => { playSound("click"); navigate("/expenses"); }}
         >
           <Receipt className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
           {t("dashboard.recordExpense")}

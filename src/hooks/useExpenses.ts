@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { logAudit } from "@/lib/audit";
 
 export type Expense = Tables<"expenses">;
 export type ExpenseInsert = TablesInsert<"expenses">;
@@ -44,6 +45,16 @@ export function useCreateExpense() {
       if (!final.shop_id) { final.shop_id = await getUserShopId(); }
       const { data, error } = await supabase.from("expenses").insert(final).select().single();
       if (error) throw error;
+      await logAudit({
+        action: "expense_created",
+        entityType: "expenses",
+        entityId: data.id,
+        metadata: {
+          category: data.category,
+          amount: Number(data.amount || 0),
+          description: data.description,
+        },
+      });
       return data;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); toast.success("Expense recorded"); },
@@ -57,6 +68,16 @@ export function useUpdateExpense() {
     mutationFn: async ({ id, ...updates }: ExpenseUpdate & { id: string }) => {
       const { data, error } = await supabase.from("expenses").update(updates).eq("id", id).select().single();
       if (error) throw error;
+      await logAudit({
+        action: "expense_updated",
+        entityType: "expenses",
+        entityId: data.id,
+        metadata: {
+          category: data.category,
+          amount: Number(data.amount || 0),
+          description: data.description,
+        },
+      });
       return data;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); toast.success("Expense updated"); },
@@ -70,6 +91,11 @@ export function useDeleteExpense() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("expenses").delete().eq("id", id);
       if (error) throw error;
+      await logAudit({
+        action: "expense_deleted",
+        entityType: "expenses",
+        entityId: id,
+      });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); toast.success("Expense deleted"); },
     onError: (error) => { toast.error("Failed: " + error.message); },

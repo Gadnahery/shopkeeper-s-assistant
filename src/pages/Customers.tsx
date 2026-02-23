@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, CreditCard, Pencil, Trash2, Loader2, Mail, History } from "lucide-react";
+import { Search, Plus, CreditCard, Pencil, Trash2, Loader2, Mail, History, Eye } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
 import { useDraftForm } from "@/hooks/useDraftForm";
@@ -26,6 +27,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 export default function Customers() {
+  const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -267,6 +269,9 @@ export default function Customers() {
                             <CreditCard className="h-3 w-3" />{t("customers.pay")}
                           </Button>
                         )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" title={language === "sw" ? "Tazama" : "View"} onClick={() => navigate(`/customers/${customer.id}`)}>
+                          <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" title={language === "sw" ? "Historia" : "History"} onClick={() => setDetailCustomer(customer)}>
                           <History className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
                         </Button>
