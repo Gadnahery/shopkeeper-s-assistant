@@ -1,6 +1,6 @@
 const { chromium } = require("playwright");
 
-const baseUrl = "http://localhost:8080";
+const baseUrl = process.env.BASE_URL || "http://localhost:8080";
 const routes = ["/", "/login", "/signup", "/forgot-password", "/reset-password"];
 const viewports = [
   { width: 375, height: 812, label: "mobile" },
@@ -10,10 +10,10 @@ const viewports = [
 ];
 
 async function run() {
-  const browser = await chromium.launch({
-    headless: true,
-    channel: "msedge",
-  });
+  const launchOptions = { headless: true };
+  const channel = process.env.PW_CHANNEL;
+  if (channel) launchOptions.channel = channel;
+  const browser = await chromium.launch(launchOptions);
 
   const results = [];
 
