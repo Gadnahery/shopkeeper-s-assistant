@@ -1,7 +1,8 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import QRCode from "qrcode";
+import JsBarcode from "jsbarcode";
 
 interface BarcodeGeneratorProps {
   value: string;
@@ -13,10 +14,11 @@ interface BarcodeGeneratorProps {
   format?: "code128" | "qr";
 }
 
-/** Barcode (Code 128) or QR Code generator - contains product ID and name, printable */
+/** Barcode (Code 128) or QR Code generator - uses JsBarcode for scannable Code 128 */
 export function BarcodeGenerator({ value, productId, productName, price, width = 200, height = 80, format = "code128" }: BarcodeGeneratorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [barcodeError, setBarcodeError] = useState<string | null>(null);
 
   const qrData = JSON.stringify({ id: productId || value, name: productName || value, code: value });
 
@@ -28,51 +30,30 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
     }
   }, [format, value, qrData, width]);
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !value || format !== "code128") return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = width;
-    canvas.height = height + 30;
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const barWidth = Math.max(1, Math.floor(width / (value.length * 11 + 35)));
-    let x = 10;
-
-    [2, 1, 1, 1].forEach(w => {
-      ctx.fillStyle = ctx.fillStyle === "#000000" ? "#ffffff" : "#000000";
-      ctx.fillRect(x, 5, barWidth * w, height);
-      x += barWidth * w;
-    });
-
-    ctx.fillStyle = "#000000";
-    for (let i = 0; i < value.length; i++) {
-      const code = value.charCodeAt(i);
-      const widths = [((code >> 6) & 1) + 1, ((code >> 5) & 1) + 1, ((code >> 4) & 1) + 1, ((code >> 3) & 1) + 1, ((code >> 2) & 1) + 1, ((code >> 1) & 1) + 1];
-      widths.forEach((w, j) => {
-        ctx.fillStyle = j % 2 === 0 ? "#000000" : "#ffffff";
-        ctx.fillRect(x, 5, barWidth * w, height);
-        x += barWidth * w;
-      });
+  useEffect(() => {
+    if (format !== "code128" || !value || !canvasRef.current) {
+      setBarcodeError(null);
+      return;
     }
-
-    [2, 1, 1, 2].forEach((w, i) => {
-      ctx.fillStyle = i % 2 === 0 ? "#000000" : "#ffffff";
-      ctx.fillRect(x, 5, barWidth * w, height);
-      x += barWidth * w;
-    });
-
-    ctx.fillStyle = "#000000";
-    ctx.font = "12px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(value, width / 2, height + 20);
-  }, [value, width, height, format]);
-
-  useEffect(() => { draw(); }, [draw]);
+    setBarcodeError(null);
+    try {
+      JsBarcode(canvasRef.current, value, {
+        format: "CODE128",
+        width: 2,
+        height: Math.max(40, height - 20),
+        displayValue: true,
+        margin: 12,
+        marginTop: 4,
+        marginBottom: 4,
+        fontOptions: "bold",
+        fontSize: 12,
+        background: "#ffffff",
+        lineColor: "#000000",
+      });
+    } catch (e) {
+      setBarcodeError(e instanceof Error ? e.message : "Invalid barcode value");
+    }
+  }, [format, value, height]);
 
   const handlePrint = () => {
     const canvas = canvasRef.current;
@@ -134,10 +115,16 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
     <div className="flex flex-col items-center gap-2">
       {format === "qr" && qrUrl ? (
         <img src={qrUrl} alt="QR Code" className="rounded border max-w-[200px]" />
-      ) : (
-        <canvas ref={canvasRef} className="rounded border" />
-      )}
-      <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
+      ) : format === "code128" ? (
+        <div className="rounded border bg-white overflow-hidden max-w-full flex justify-center">
+          {barcodeError ? (
+            <p className="text-sm text-destructive px-4 py-2">{barcodeError}</p>
+          ) : (
+            <canvas ref={canvasRef} className="max-w-full h-auto" />
+          )}
+        </div>
+      ) : null}
+      <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2" disabled={!!barcodeError}>
         <Printer className="h-3 w-3" />
         Print
       </Button>

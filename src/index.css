@@ -111,6 +111,35 @@
     scroll-behavior: smooth;
   }
 
+  /* Asymmetric theme transition – text fast, background slower to avoid ghosting. Details: “pops” in/out */
+  /* Asymmetric theme transition: text snaps fast (200ms), background eases over 400ms to avoid low-contrast ghosting */
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition:
+      color 200ms ease-in-out 0ms,
+      background-color 400ms ease-in-out 0ms,
+      border-color 400ms ease-in-out 0ms,
+      fill 400ms ease-in-out 0ms,
+      stroke 400ms ease-in-out 0ms,
+      box-shadow 400ms ease-in-out 0ms,
+      outline-color 400ms ease-in-out 0ms !important;
+  }
+
+  /* Text elements: fast color only so they stay high-contrast against the shifting background */
+  html.theme-transition p,
+  html.theme-transition h1,
+  html.theme-transition h2,
+  html.theme-transition h3,
+  html.theme-transition h4,
+  html.theme-transition h5,
+  html.theme-transition h6,
+  html.theme-transition span,
+  html.theme-transition a {
+    transition: color 200ms ease-in-out 0ms !important;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -147,7 +176,7 @@
 }
 
 /* Sidebar: force colors - high-contrast for both light & dark modes */
-/* Light theme: dark brown text/icons on cream sidebar */
+/* Light theme: dark text/icons on cream sidebar - icons match text */
 html.light [data-app-sidebar] nav a:not([class*="10B981"]),
 html.light [data-app-sidebar] nav a:not([class*="10B981"]) svg,
 html.light [data-app-sidebar] nav span.uppercase,
@@ -155,13 +184,19 @@ html.light [data-app-sidebar] span.truncate,
 html.light [data-app-sidebar] button.gap-3 {
   color: #1f2937 !important;  /* Dark gray - clear on cream */
 }
-/* Dark theme: bright white text/icons on dark sidebar */
+html.light [data-app-sidebar] nav a:not([class*="10B981"]) svg {
+  stroke: currentColor;
+}
+/* Dark theme: bright white text/icons on dark sidebar - icons match text */
 html.dark [data-app-sidebar] nav a:not([class*="10B981"]),
 html.dark [data-app-sidebar] nav a:not([class*="10B981"]) svg,
 html.dark [data-app-sidebar] nav span.uppercase,
 html.dark [data-app-sidebar] span.truncate,
 html.dark [data-app-sidebar] button.gap-3 {
   color: #f3f4f6 !important;  /* Bright gray-white - clear on dark */
+}
+html.dark [data-app-sidebar] nav a:not([class*="10B981"]) svg {
+  stroke: currentColor;
 }
 /* Active emerald link: always white */
 [data-app-sidebar] nav a.active,

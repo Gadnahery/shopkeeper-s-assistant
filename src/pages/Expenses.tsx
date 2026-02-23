@@ -7,9 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Search, Plus, TrendingUp, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useExpenses, useExpenseCategories, useCreateExpense, useUpdateExpense, useExpenseStats, useDeleteExpense } from "@/hooks/useExpenses";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
@@ -17,7 +28,10 @@ export default function Expenses() {
   const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingExpense, setEditingExpense] = useState<any>(null);
-  const [newExpense, setNewExpense] = useState({ description: "", category: "Utilities", amount: "", payMethod: "Cash" });
+  const [expenseToDeleteId, setExpenseToDeleteId] = useState<string | null>(null);
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const initialNewExpense = { description: "", category: "", amount: "", payMethod: "Cash" };
+  const [newExpense, setNewExpense, clearAddExpenseDraft] = useDraftForm("add-expense", initialNewExpense);
 
   const { data: expenses, isLoading } = useExpenses();
   const { data: categories } = useExpenseCategories();
@@ -59,9 +73,10 @@ export default function Expenses() {
     : [];
 
   const handleAddExpense = async () => {
-    if (!newExpense.description || !newExpense.amount) return;
-    await createExpense.mutateAsync({ description: newExpense.description, category: newExpense.category, amount: parseFloat(newExpense.amount) });
-    setNewExpense({ description: "", category: "Utilities", amount: "", payMethod: "Cash" });
+    if (!newExpense.description || !newExpense.category.trim() || !newExpense.amount) return;
+    await createExpense.mutateAsync({ description: newExpense.description, category: newExpense.category.trim(), amount: parseFloat(newExpense.amount) });
+    clearAddExpenseDraft();
+    setAddExpenseOpen(false);
   };
 
   const handleEditExpense = async () => {
@@ -78,7 +93,12 @@ export default function Expenses() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div><h1 className="text-2xl font-bold text-foreground">{t("expenses.title")}</h1></div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-foreground">{t("expenses.title")}</h1>
+        <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddExpenseOpen(true)}>
+          <Plus className="h-4 w-4" />{t("expenses.addNewExpense")}
+        </Button>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {statsCards.map((stat, index) => (
@@ -99,7 +119,7 @@ export default function Expenses() {
           {editingExpense && (
             <div className="space-y-4 pt-4">
               <div className="space-y-2"><Label>{t("expenses.description")}</Label><Input value={editingExpense.description} onChange={(e) => setEditingExpense({ ...editingExpense, description: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{t("expenses.category")}</Label><Input value={editingExpense.category} onChange={(e) => setEditingExpense({ ...editingExpense, category: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("expenses.category")}</Label><Input placeholder={language === "sw" ? "Kategoria" : "Category"} value={editingExpense.category} onChange={(e) => setEditingExpense({ ...editingExpense, category: e.target.value })} list="edit-expense-category-list" /><datalist id="edit-expense-category-list">{categories?.map((cat) => <option key={cat.id} value={cat.name} />)}</datalist></div>
               <div className="space-y-2"><Label>{t("expenses.amount")}</Label><Input type="number" value={editingExpense.amount} onChange={(e) => setEditingExpense({ ...editingExpense, amount: e.target.value })} /></div>
               <Button 
                 className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" 
@@ -152,7 +172,7 @@ export default function Expenses() {
                             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingExpense({ ...expense })}>
                               <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteExpense.mutate(expense.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setExpenseToDeleteId(expense.id)}>
                               <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
                             </Button>
                           </div>
@@ -166,38 +186,59 @@ export default function Expenses() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-4"><CardTitle className="text-base">{t("expenses.addNewExpense")}</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
+        <AlertDialog open={!!expenseToDeleteId} onOpenChange={(open) => !open && setExpenseToDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("common.confirmDeleteTitle")}</AlertDialogTitle>
+              <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => expenseToDeleteId && deleteExpense.mutate(expenseToDeleteId, { onSettled: () => setExpenseToDeleteId(null) })}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <Dialog open={addExpenseOpen} onOpenChange={(open) => { setAddExpenseOpen(open); if (!open) clearAddExpenseDraft(); }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{t("expenses.addNewExpense")}</DialogTitle></DialogHeader>
+            <div className="space-y-4 pt-4">
               <div className="space-y-2"><Label>{t("expenses.expenseTitle")}</Label><Input placeholder={t("expenses.expensePlaceholder")} value={newExpense.description} onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })} /></div>
               <div className="space-y-2"><Label>{t("expenses.category")}</Label>
-                <Select value={newExpense.category} onValueChange={(v) => setNewExpense({ ...newExpense, category: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {categories?.map((cat) => <SelectItem key={cat.id} value={cat.name}>{getCategoryName(cat)}</SelectItem>) || (
-                      <><SelectItem value="Utilities">{t("expenseCategory.utilities")}</SelectItem><SelectItem value="Rent">{t("expenseCategory.rent")}</SelectItem><SelectItem value="Transport">{t("expenseCategory.transport")}</SelectItem><SelectItem value="Food">{t("expenseCategory.food")}</SelectItem><SelectItem value="Stock Purchase">{t("expenseCategory.stock")}</SelectItem></>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Input
+                  placeholder={language === "sw" ? "Andika kategoria yako (mf. Huduma, Kodi, Chakula)" : "Type your own category (e.g. Utilities, Rent, Food)"}
+                  value={newExpense.category}
+                  onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                  list="expense-category-suggestions"
+                />
+                <datalist id="expense-category-suggestions">
+                  {categories?.map((cat) => <option key={cat.id} value={cat.name} />) || (
+                    <><option value="Utilities" /><option value="Rent" /><option value="Transport" /><option value="Food" /><option value="Stock Purchase" /><option value="Office" /></>
+                  )}
+                </datalist>
               </div>
               <div className="space-y-2"><Label>{t("expenses.amountTsh")}</Label><Input type="number" placeholder="0.00" value={newExpense.amount} onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })} /></div>
-              <Button 
-                className="w-full gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                onClick={handleAddExpense} 
-                disabled={!newExpense.description || !newExpense.amount || createExpense.isPending}
-              >
-                {createExpense.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-                {t("expenses.saveExpense")}
-              </Button>
-            </CardContent>
-          </Card>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => { clearAddExpenseDraft(); setAddExpenseOpen(false); }}>{t("common.cancel")}</Button>
+                <Button 
+                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  onClick={handleAddExpense} 
+                  disabled={!newExpense.description || !newExpense.category.trim() || !newExpense.amount || createExpense.isPending}
+                >
+                  {createExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {t("expenses.saveExpense")}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-          {categoryBreakdown.length > 0 && (
+        {categoryBreakdown.length > 0 && (
             <Card className="shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -240,7 +281,6 @@ export default function Expenses() {
               </CardContent>
             </Card>
           )}
-        </div>
       </div>
     </motion.div>
   );

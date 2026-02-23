@@ -2,9 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MainLayout } from "@/components/layout/MainLayout";
 import Auth from "./pages/Auth";
 import LandingPage from "./pages/LandingPage";
@@ -28,6 +29,7 @@ import Todo from "./pages/Todo";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "./components/CommandPalette";
+import { hasValidSupabaseEnv } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,10 +44,30 @@ const queryClient = new QueryClient({
   },
 });
 
+function EnvSetupMessage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-center">
+      <h1 className="text-xl font-semibold text-foreground">Setup required</h1>
+      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+        Add <code className="rounded bg-muted px-1.5 py-0.5">VITE_SUPABASE_URL</code> and{" "}
+        <code className="rounded bg-muted px-1.5 py-0.5">VITE_SUPABASE_ANON_KEY</code> to your{" "}
+        <code className="rounded bg-muted px-1.5 py-0.5">.env</code> file, then restart the dev server.
+      </p>
+      <p className="mt-4 text-xs text-muted-foreground">
+        Copy <code className="rounded bg-muted px-1 py-0.5">.env.example</code> to <code className="rounded bg-muted px-1 py-0.5">.env</code> and fill in your Supabase credentials.
+      </p>
+    </div>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    {!hasValidSupabaseEnv ? (
+      <EnvSetupMessage />
+    ) : (
     <AuthProvider>
       <LanguageProvider>
+        <ThemeProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -79,8 +101,10 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </ThemeProvider>
       </LanguageProvider>
     </AuthProvider>
+    )}
   </QueryClientProvider>
 );
 

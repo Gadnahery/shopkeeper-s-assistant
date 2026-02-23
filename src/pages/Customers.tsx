@@ -5,11 +5,22 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, CreditCard, Pencil, Trash2, Loader2, Mail, History } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -21,7 +32,9 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [payDialog, setPayDialog] = useState<any>(null);
   const [payAmount, setPayAmount] = useState("");
-  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "", email: "", customer_type: "Retail", credit_balance: "0" });
+  const [customerToDeleteId, setCustomerToDeleteId] = useState<string | null>(null);
+  const initialNewCustomer = { name: "", phone: "", email: "", customer_type: "Retail", credit_balance: "0" };
+  const [newCustomer, setNewCustomer, clearAddCustomerDraft] = useDraftForm("add-customer", initialNewCustomer);
   const [detailCustomer, setDetailCustomer] = useState<(typeof customers)[0] | null>(null);
 
   const { data: customers, isLoading } = useCustomers();
@@ -48,7 +61,7 @@ export default function Customers() {
       customer_type: newCustomer.customer_type,
       credit_balance: parseFloat(newCustomer.credit_balance) || 0,
     } as Parameters<typeof createCustomer.mutateAsync>[0]);
-    setNewCustomer({ name: "", phone: "", email: "", customer_type: "Retail", credit_balance: "0" });
+    clearAddCustomerDraft();
     setIsAddOpen(false);
   };
 
@@ -101,13 +114,16 @@ export default function Customers() {
                 </Select>
               </div>
               <div className="space-y-2"><Label>{t("customers.creditBalance")}</Label><Input type="number" value={newCustomer.credit_balance} onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })} /></div>
-              <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                onClick={handleAddCustomer} 
-                disabled={!newCustomer.name || createCustomer.isPending}
-              >
-                {createCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-              </Button>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => { clearAddCustomerDraft(); setIsAddOpen(false); }}>{t("common.cancel")}</Button>
+                <Button 
+                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  onClick={handleAddCustomer} 
+                  disabled={!newCustomer.name || createCustomer.isPending}
+                >
+                  {createCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -257,7 +273,7 @@ export default function Customers() {
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingCustomer({ ...customer })}>
                           <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteCustomer.mutate(customer.id)} disabled={deleteCustomer.isPending}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setCustomerToDeleteId(customer.id)} disabled={deleteCustomer.isPending}>
                           <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
                         </Button>
                       </div>
@@ -269,6 +285,24 @@ export default function Customers() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!customerToDeleteId} onOpenChange={(open) => !open && setCustomerToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Futa mteja huyu?" : "Delete this customer?"}</AlertDialogTitle>
+            <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => customerToDeleteId && deleteCustomer.mutate(customerToDeleteId, { onSettled: () => setCustomerToDeleteId(null) })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

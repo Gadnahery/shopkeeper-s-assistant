@@ -148,12 +148,13 @@ export default function Dashboard() {
           </Select>
         <Button
           variant="outline"
-          size="icon"
-          className="h-10 w-10 shrink-0 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-colors"
+          size="default"
+          className="h-10 gap-2 shrink-0 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-colors"
           onClick={() => setCalculatorOpen(true)}
           title="Calculator"
         >
           <CalculatorIcon className="h-5 w-5 text-foreground/70 dark:text-foreground/80 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
+          <span className="hidden sm:inline font-medium">{t("dashboard.calculator")}</span>
         </Button>
         </div>
       </motion.div>
@@ -218,7 +219,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={weeklyTrend || []} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <AreaChart data={weeklyTrend || []} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>
                 <defs>
                   <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.4} />
@@ -227,6 +228,8 @@ export default function Dashboard() {
                 </defs>
                 <XAxis
                   dataKey="day"
+                  interval={0}
+                  padding={{ left: 12, right: 12 }}
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}

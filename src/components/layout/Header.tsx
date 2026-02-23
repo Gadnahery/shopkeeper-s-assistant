@@ -13,6 +13,16 @@ import { useNotifications } from "@/hooks/useNotifications";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -24,6 +34,7 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
   const { data: notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
   const [searchQuery, setSearchQuery] = useState("");
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,7 +193,7 @@ export function Header() {
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem
-              onClick={() => signOut()}
+              onClick={() => setSignOutConfirmOpen(true)}
               className="focus:bg-destructive/10 focus:text-destructive gap-2"
             >
               <LogOut className="h-4 w-4 dark:drop-shadow-[0_0_3px_rgba(239,68,68,0.3)]" strokeWidth={1.5} />
@@ -190,6 +201,26 @@ export function Header() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <AlertDialog open={signOutConfirmOpen} onOpenChange={setSignOutConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{language === "sw" ? "Thibitisha kutoka" : "Sign out?"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {language === "sw" ? "Una uhakika unataka kutoka kwa akaunti yako?" : "Are you sure you want to sign out?"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{language === "sw" ? "Ghairi" : "Cancel"}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => { signOut(); setSignOutConfirmOpen(false); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {language === "sw" ? "Toka" : "Sign Out"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </header>
   );

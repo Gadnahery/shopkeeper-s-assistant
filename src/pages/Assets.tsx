@@ -6,12 +6,23 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Building2, TrendingDown, DollarSign, Loader2, Trash2, Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -22,7 +33,9 @@ export default function Assets() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", category: "Equipment", purchase_price: "", current_value: "", depreciation_rate: "10", condition: "Good", location: "", notes: "" });
+  const [assetToDeleteId, setAssetToDeleteId] = useState<string | null>(null);
+  const initialAssetForm = { name: "", category: "Equipment", purchase_price: "", current_value: "", depreciation_rate: "10", condition: "Good", location: "", notes: "" };
+  const [form, setForm, clearAddAssetDraft] = useDraftForm("add-asset", initialAssetForm);
 
   const { data: assets, isLoading } = useQuery({
     queryKey: ["assets", shopId],
@@ -67,8 +80,10 @@ export default function Assets() {
 
   const handleAdd = () => {
     const price = parseFloat(form.purchase_price) || 0;
-    addAsset.mutate({ name: form.name, category: form.category, purchase_price: price, current_value: parseFloat(form.current_value) || price, depreciation_rate: parseFloat(form.depreciation_rate) || 10, condition: form.condition, location: form.location || null, notes: form.notes || null });
-    setForm({ name: "", category: "Equipment", purchase_price: "", current_value: "", depreciation_rate: "10", condition: "Good", location: "", notes: "" });
+    addAsset.mutate(
+      { name: form.name, category: form.category, purchase_price: price, current_value: parseFloat(form.current_value) || price, depreciation_rate: parseFloat(form.depreciation_rate) || 10, condition: form.condition, location: form.location || null, notes: form.notes || null },
+      { onSuccess: () => clearAddAssetDraft() }
+    );
   };
 
   const handleEditSave = () => {
@@ -110,13 +125,16 @@ export default function Assets() {
                 <div className="space-y-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} /></div>
               </div>
               <div className="space-y-2"><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
-              <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                onClick={handleAdd} 
-                disabled={!form.name || addAsset.isPending}
-              >
-                {addAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Asset")}
-              </Button>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => { clearAddAssetDraft(); setIsAddOpen(false); }}>{language === "sw" ? "Ghairi" : "Cancel"}</Button>
+                <Button 
+                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  onClick={handleAdd} 
+                  disabled={!form.name || addAsset.isPending}
+                >
+                  {addAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Asset")}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -167,7 +185,7 @@ export default function Assets() {
                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingAsset({...a})}>
                       <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteAsset.mutate(a.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setAssetToDeleteId(a.id)}>
                       <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
                     </Button>
                   </div>
@@ -177,6 +195,24 @@ export default function Assets() {
           </TableBody></Table>
         )}
       </CardContent></Card>
+
+      <AlertDialog open={!!assetToDeleteId} onOpenChange={(open) => !open && setAssetToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Futa mali hii?" : "Delete this asset?"}</AlertDialogTitle>
+            <AlertDialogDescription>{language === "sw" ? "Kitendo hiki hakiwezi kufutwa." : "This action cannot be undone."}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === "sw" ? "Ghairi" : "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => assetToDeleteId && deleteAsset.mutate(assetToDeleteId, { onSettled: () => setAssetToDeleteId(null) })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Futa" : "Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

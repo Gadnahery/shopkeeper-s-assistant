@@ -5,6 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, Trash2, Bell, Calendar as CalendarIcon, Loader2, Pencil } from "lucide-react";
@@ -12,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo } from "@/hooks/useTodos";
 import { useShopUsers } from "@/hooks/useShopUsers";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, parseISO, isPast } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -30,7 +41,10 @@ export default function Todo() {
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [addOpen, setAddOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<any>(null);
-  const [form, setForm] = useState({ title: "", description: "", due_date: "", due_time: "", alert_date: "", alert_time: "", assigned_to_user_id: "" });
+  const [todoToDeleteId, setTodoToDeleteId] = useState<string | null>(null);
+  const initialTodoForm = { title: "", description: "", due_date: "", due_time: "", alert_date: "", alert_time: "", assigned_to_user_id: "" };
+  const [addForm, setAddForm, clearAddTodoDraft] = useDraftForm("add-todo", initialTodoForm);
+  const [form, setForm] = useState(initialTodoForm);
 
   const { shopId, user } = useAuth();
   const { data: todos, isLoading } = useTodos();
@@ -50,26 +64,26 @@ export default function Todo() {
   };
 
   const handleAdd = async () => {
-    if (!form.title.trim()) {
+    if (!addForm.title.trim()) {
       toast.error(language === "sw" ? "Ingiza kichwa" : "Enter a title");
       return;
     }
     let alert_at: string | undefined;
-    if (form.alert_date && form.alert_time) {
-      alert_at = `${form.alert_date}T${form.alert_time}:00`;
-    } else if (form.alert_date) {
-      alert_at = `${form.alert_date}T09:00:00`;
+    if (addForm.alert_date && addForm.alert_time) {
+      alert_at = `${addForm.alert_date}T${addForm.alert_time}:00`;
+    } else if (addForm.alert_date) {
+      alert_at = `${addForm.alert_date}T09:00:00`;
     }
     await createTodo.mutateAsync({
-      title: form.title.trim(),
-      description: form.description.trim() || undefined,
-      due_date: form.due_date || undefined,
-      due_time: form.due_time || undefined,
+      title: addForm.title.trim(),
+      description: addForm.description.trim() || undefined,
+      due_date: addForm.due_date || undefined,
+      due_time: addForm.due_time || undefined,
       alert_at,
-      assigned_to_user_id: form.assigned_to_user_id || undefined,
+      assigned_to_user_id: addForm.assigned_to_user_id || undefined,
     });
+    clearAddTodoDraft();
     setAddOpen(false);
-    resetForm();
   };
 
   const handleEdit = async () => {
@@ -162,36 +176,36 @@ export default function Todo() {
       </div>
 
       {/* Add Dialog */}
-      <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Kazi" : "Add To-Do"}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label>{language === "sw" ? "Kichwa" : "Title"} *</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={language === "sw" ? "Kichwa cha kazi" : "Task title"} />
+              <Input value={addForm.title} onChange={(e) => setAddForm({ ...addForm, title: e.target.value })} placeholder={language === "sw" ? "Kichwa cha kazi" : "Task title"} />
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
-              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={language === "sw" ? "Maelezo mafupi" : "Brief description"} />
+              <Input value={addForm.description} onChange={(e) => setAddForm({ ...addForm, description: e.target.value })} placeholder={language === "sw" ? "Maelezo mafupi" : "Brief description"} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" />{language === "sw" ? "Tarehe" : "Due date"}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.due_date && "text-muted-foreground")}>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !addForm.due_date && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {form.due_date ? format(new Date(form.due_date), "PPP") : (language === "sw" ? "Chagua tarehe" : "Pick date")}
+                      {addForm.due_date ? format(new Date(addForm.due_date), "PPP") : (language === "sw" ? "Chagua tarehe" : "Pick date")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={form.due_date ? new Date(form.due_date) : undefined} onSelect={(d) => setForm({ ...form, due_date: d ? format(d, "yyyy-MM-dd") : "" })} />
+                    <Calendar mode="single" selected={addForm.due_date ? new Date(addForm.due_date) : undefined} onSelect={(d) => setAddForm({ ...addForm, due_date: d ? format(d, "yyyy-MM-dd") : "" })} />
                   </PopoverContent>
                 </Popover>
               </div>
               <div className="space-y-2">
                 <Label>{language === "sw" ? "Saa" : "Time"}</Label>
-                <Select value={form.due_time} onValueChange={(v) => setForm({ ...form, due_time: v })}>
+                <Select value={addForm.due_time} onValueChange={(v) => setAddForm({ ...addForm, due_time: v })}>
                   <SelectTrigger><SelectValue placeholder={language === "sw" ? "Chagua saa" : "Pick time"} /></SelectTrigger>
                   <SelectContent>
                     {TIME_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -201,7 +215,7 @@ export default function Todo() {
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Tuma kwa" : "Assign to"}</Label>
-              <Select value={form.assigned_to_user_id || "__none__"} onValueChange={(v) => setForm({ ...form, assigned_to_user_id: v === "__none__" ? "" : v })}>
+              <Select value={addForm.assigned_to_user_id || "__none__"} onValueChange={(v) => setAddForm({ ...addForm, assigned_to_user_id: v === "__none__" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder={language === "sw" ? "Mteja wa kawaida (si lazima)" : "Unassigned (optional)"} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">{language === "sw" ? "Hakuna (kazi yangu)" : "None (my task)"}</SelectItem>
@@ -218,19 +232,19 @@ export default function Todo() {
                   <Label className="text-xs text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Tarehe" : "Date"}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal", !form.alert_date && "text-muted-foreground")}>
+                      <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal", !addForm.alert_date && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {form.alert_date ? format(new Date(form.alert_date), "PPP") : (language === "sw" ? "Chagua" : "Pick")}
+                        {addForm.alert_date ? format(new Date(addForm.alert_date), "PPP") : (language === "sw" ? "Chagua" : "Pick")}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={form.alert_date ? new Date(form.alert_date) : undefined} onSelect={(d) => setForm({ ...form, alert_date: d ? format(d, "yyyy-MM-dd") : "" })} />
+                      <Calendar mode="single" selected={addForm.alert_date ? new Date(addForm.alert_date) : undefined} onSelect={(d) => setAddForm({ ...addForm, alert_date: d ? format(d, "yyyy-MM-dd") : "" })} />
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{language === "sw" ? "Saa" : "Time"}</Label>
-                  <Select value={form.alert_time} onValueChange={(v) => setForm({ ...form, alert_time: v })}>
+                  <Select value={addForm.alert_time} onValueChange={(v) => setAddForm({ ...addForm, alert_time: v })}>
                     <SelectTrigger className="h-9"><SelectValue placeholder={language === "sw" ? "Saa" : "Time"} /></SelectTrigger>
                     <SelectContent>
                       {TIME_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -239,13 +253,16 @@ export default function Todo() {
                 </div>
               </div>
             </div>
-            <Button 
-              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-              onClick={handleAdd} 
-              disabled={!form.title.trim() || createTodo.isPending}
-            >
-              {createTodo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
-            </Button>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => { clearAddTodoDraft(); setAddOpen(false); }}>{t("common.cancel")}</Button>
+              <Button 
+                className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleAdd} 
+                disabled={!addForm.title.trim() || createTodo.isPending}
+              >
+                {createTodo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -388,7 +405,7 @@ export default function Todo() {
                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => openEditDialog(todo)}>
                       <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteTodo.mutate(todo.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setTodoToDeleteId(todo.id)}>
                       <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
                     </Button>
                   </div>
@@ -398,6 +415,24 @@ export default function Todo() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!todoToDeleteId} onOpenChange={(open) => !open && setTodoToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("common.confirmDeleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => todoToDeleteId && deleteTodo.mutate(todoToDeleteId, { onSettled: () => setTodoToDeleteId(null) })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteTodo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

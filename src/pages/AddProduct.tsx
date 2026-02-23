@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Info, Tag, Save, Loader2, ScanLine } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, Info, Tag, Save, Loader2, ScanLine, Plus } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories, useCreateCategory } from "@/hooks/useCategories";
 import { useCreateProduct } from "@/hooks/useProducts";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageUpload } from "@/components/ImageUpload";
 import { motion } from "framer-motion";
@@ -19,12 +21,17 @@ export default function AddProduct() {
   const { shopId } = useAuth();
   const { data: categories } = useCategories();
   const createProduct = useCreateProduct();
+  const createCategory = useCreateCategory();
 
-  const [formData, setFormData] = useState({
+  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
+  const [categoryForm, setCategoryForm] = useState({ name: "", name_sw: "", description: "" });
+
+  const initialProductForm = {
     name: "", name_sw: "", category_id: "", barcode: "", image_url: "",
     unit_type: "piece", buying_price: "", selling_price: "",
     stock: "", low_stock_alert: "5",
-  });
+  };
+  const [formData, setFormData, clearProductDraft] = useDraftForm("add-product", initialProductForm);
 
   const generateCode = () => {
     const prefix = formData.name.substring(0, 3).toUpperCase() || "PRD";
@@ -48,11 +55,20 @@ export default function AddProduct() {
       low_stock_alert: parseInt(formData.low_stock_alert) || 5,
       shop_id: shopId!,
     });
+    clearProductDraft();
     navigate("/inventory");
   };
 
   const getCategoryName = (cat: NonNullable<typeof categories>[0]) => {
     return language === "sw" && cat.name_sw ? cat.name_sw : cat.name;
+  };
+
+  const handleAddCategory = async () => {
+    if (!categoryForm.name.trim()) return;
+    const created = await createCategory.mutateAsync({ name: categoryForm.name.trim(), name_sw: categoryForm.name_sw || null, description: categoryForm.description || null });
+    setFormData((f) => ({ ...f, category_id: created.id }));
+    setCategoryForm({ name: "", name_sw: "", description: "" });
+    setAddCategoryOpen(false);
   };
 
   return (
@@ -75,21 +91,23 @@ export default function AddProduct() {
                 </div>
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="md:col-span-2">
-                    <Label htmlFor="name">{t("addProduct.productName")} (English)</Label>
-                    <Input id="name" placeholder={t("addProduct.productNamePlaceholder")} className="mt-2" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="name_sw">{t("addProduct.productName")} (Kiswahili)</Label>
-                    <Input id="name_sw" placeholder="mf. Brashi ya Rangi 4 inchi" className="mt-2" value={formData.name_sw} onChange={e => setFormData({ ...formData, name_sw: e.target.value })} />
+                    <Label htmlFor="name">{t("addProduct.productName")}</Label>
+                    <Input id="name" placeholder={t("addProduct.productNamePlaceholder")} className="mt-2" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value, name_sw: e.target.value })} required />
                   </div>
                   <div>
                     <Label>{t("addProduct.category")}</Label>
-                    <Select value={formData.category_id} onValueChange={v => setFormData({ ...formData, category_id: v })}>
-                      <SelectTrigger className="mt-2"><SelectValue placeholder={t("addProduct.selectCategory")} /></SelectTrigger>
-                      <SelectContent>
-                        {categories?.map(cat => <SelectItem key={cat.id} value={cat.id}>{getCategoryName(cat)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Select value={formData.category_id} onValueChange={v => setFormData({ ...formData, category_id: v })}>
+                        <SelectTrigger className="min-w-[180px] flex-1"><SelectValue placeholder={t("addProduct.selectCategory")} /></SelectTrigger>
+                        <SelectContent>
+                          {categories?.map(cat => <SelectItem key={cat.id} value={cat.id}>{getCategoryName(cat)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="sm" className="gap-1 shrink-0" onClick={() => setAddCategoryOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                        {t("addProduct.addCategoryNow")}
+                      </Button>
+                    </div>
                   </div>
                   <div className="md:col-span-2">
                     <Label>{t("addProduct.productImage")}</Label>
@@ -164,7 +182,7 @@ export default function AddProduct() {
               </div>
 
               <div className="mt-8 flex justify-end gap-3 border-t pt-6">
-                <Button type="button" variant="outline" onClick={() => navigate("/inventory")}>{t("addProduct.cancel")}</Button>
+                <Button type="button" variant="outline" onClick={() => { clearProductDraft(); navigate("/inventory"); }}>{t("addProduct.cancel")}</Button>
                 <Button 
                   type="submit" 
                   className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
@@ -177,6 +195,32 @@ export default function AddProduct() {
             </form>
           </CardContent>
         </Card>
+
+        <Dialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{language === "sw" ? "Ongeza Kategoria Mpya" : "Add New Category"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Jina" : "Name"}</Label>
+                <Input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value, name_sw: e.target.value })} placeholder={language === "sw" ? "Jina la kategoria" : "Category name"} />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
+                <Input value={categoryForm.description} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} placeholder={language === "sw" ? "Si lazima" : "Optional"} />
+              </div>
+              <Button
+                type="button"
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold"
+                onClick={handleAddCategory}
+                disabled={!categoryForm.name.trim() || createCategory.isPending}
+              >
+                {createCategory.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </motion.div>
   );
 }

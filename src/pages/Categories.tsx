@@ -5,16 +5,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategories";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { motion } from "framer-motion";
+
+const initialCategoryForm = { name: "", name_sw: "", description: "" };
 
 export default function Categories() {
   const { t, language } = useLanguage();
   const [editing, setEditing] = useState<any>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", name_sw: "", description: "" });
+  const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState(initialCategoryForm);
+  const [addForm, setAddForm, clearAddCategoryDraft] = useDraftForm("add-category", initialCategoryForm);
 
   const { data: categories, isLoading } = useCategories();
   const createCat = useCreateCategory();
@@ -25,11 +40,12 @@ export default function Categories() {
     if (editing) {
       await updateCat.mutateAsync({ id: editing.id, name: form.name, name_sw: form.name_sw || null, description: form.description || null });
       setEditing(null);
+      setForm(initialCategoryForm);
     } else {
-      await createCat.mutateAsync({ name: form.name, name_sw: form.name_sw || null, description: form.description || null });
+      await createCat.mutateAsync({ name: addForm.name, name_sw: addForm.name_sw || null, description: addForm.description || null });
+      clearAddCategoryDraft();
       setIsAddOpen(false);
     }
-    setForm({ name: "", name_sw: "", description: "" });
   };
 
   const openEdit = (cat: any) => {
@@ -39,7 +55,6 @@ export default function Categories() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: "", name_sw: "", description: "" });
     setIsAddOpen(true);
   };
 
@@ -62,12 +77,8 @@ export default function Categories() {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label>{language === "sw" ? "Jina (Kiingereza)" : "Name (English)"}</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === "sw" ? "Jina (Kiswahili)" : "Name (Swahili)"}</Label>
-              <Input value={form.name_sw} onChange={(e) => setForm({ ...form, name_sw: e.target.value })} />
+              <Label>{language === "sw" ? "Jina" : "Name"}</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, name_sw: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
@@ -91,24 +102,25 @@ export default function Categories() {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label>{language === "sw" ? "Jina (Kiingereza)" : "Name (English)"}</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>{language === "sw" ? "Jina (Kiswahili)" : "Name (Swahili)"}</Label>
-              <Input value={form.name_sw} onChange={(e) => setForm({ ...form, name_sw: e.target.value })} />
+              <Label>{language === "sw" ? "Jina" : "Name"}</Label>
+              <Input value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value, name_sw: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
-              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={language === "sw" ? "Si lazima" : "Optional"} />
+              <Input value={addForm.description} onChange={(e) => setAddForm({ ...addForm, description: e.target.value })} placeholder={language === "sw" ? "Si lazima" : "Optional"} />
             </div>
-            <Button 
-              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-              onClick={handleSave} 
-              disabled={!form.name || createCat.isPending}
-            >
-              {createCat.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-            </Button>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => { clearAddCategoryDraft(); setIsAddOpen(false); }}>
+                {t("common.cancel")}
+              </Button>
+              <Button 
+                className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleSave} 
+                disabled={!addForm.name || createCat.isPending}
+              >
+                {createCat.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -147,7 +159,7 @@ export default function Categories() {
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => openEdit(cat)}>
                             <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteCat.mutate(cat.id)} disabled={deleteCat.isPending}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setCategoryToDeleteId(cat.id)} disabled={deleteCat.isPending}>
                             <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
                           </Button>
                         </div>
@@ -160,6 +172,24 @@ export default function Categories() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!categoryToDeleteId} onOpenChange={(open) => !open && setCategoryToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Futa kategoria?" : "Delete this category?"}</AlertDialogTitle>
+            <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => categoryToDeleteId && deleteCat.mutate(categoryToDeleteId, { onSettled: () => setCategoryToDeleteId(null) })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteCat.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

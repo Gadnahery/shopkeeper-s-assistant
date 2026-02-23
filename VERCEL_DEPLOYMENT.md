@@ -210,6 +210,31 @@ Vercel automatically deploys on every push to:
 - **Production:** `main` branch
 - **Preview:** Other branches (feature branches)
 
+### Your Workflow After Connecting to Vercel:
+
+**You can continue editing locally exactly as before:**
+
+1. **Edit files locally** in your IDE (VS Code, Cursor, etc.)
+2. **Test locally:** `npm run dev`
+3. **Commit changes:**
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push origin main
+   ```
+4. **Vercel automatically deploys** - No need to do anything in Vercel dashboard!
+5. **Check deployment status** in Vercel dashboard (optional)
+
+**That's it!** Your changes will be live in 1-2 minutes after pushing.
+
+### Preview Deployments for Feature Branches:
+
+- Create a feature branch: `git checkout -b feature/new-feature`
+- Push: `git push origin feature/new-feature`
+- Vercel creates a preview URL automatically
+- Test the preview URL before merging to main
+- Merge to main when ready → Production deployment happens automatically
+
 ### Manual Deployment:
 1. Go to Deployments tab
 2. Click "..." on any deployment

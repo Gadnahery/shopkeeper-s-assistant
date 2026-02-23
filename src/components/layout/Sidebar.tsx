@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -15,6 +16,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -75,10 +86,10 @@ function NavSection({
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 [&_svg]:text-inherit",
+      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-[background-color,color] duration-150 ease-out [&_svg]:text-inherit",
       "hover:bg-[#10B981] hover:text-white dark:hover:bg-[#10B981] dark:hover:shadow-[0_0_8px_rgba(16,185,129,0.3)]",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-      isActive && "active bg-[#10B981] text-white dark:shadow-[0_0_12px_rgba(16,185,129,0.4)]",
+      isActive && "bg-[#10B981] text-white dark:shadow-[0_0_12px_rgba(16,185,129,0.4)]",
       isCollapsed && "justify-center px-2"
     );
 
@@ -99,7 +110,9 @@ function NavSection({
           className={navLinkClass}
           style={navLinkStyle}
         >
-          {({ isActive }) => (
+          {({ isActive }) => {
+            const iconColor = isActive ? "#ffffff" : isLightTheme ? "#1f2937" : "#f3f4f6";
+            return (
             <span
               className="flex items-center gap-3 w-full min-w-0"
               style={{ color: "inherit" }}
@@ -107,14 +120,13 @@ function NavSection({
               {isActive && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r bg-white" />
               )}
-              <item.icon 
-                className={`h-[18px] w-[18px] flex-shrink-0 transition-all duration-200 ${
-                  isActive 
-                    ? "dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
-                    : "dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)] dark:hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]"
-                }`}
-                strokeWidth={isActive ? 2 : 1.5} 
-                style={{ color: "currentColor" }} 
+              <item.icon
+                className={cn(
+                  "h-[18px] w-[18px] flex-shrink-0 transition-colors duration-150",
+                  isActive && "drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                )}
+                strokeWidth={isActive ? 2 : 1.5}
+                style={{ color: iconColor, stroke: iconColor }}
               />
               {!isCollapsed && (
                 <>
@@ -127,7 +139,8 @@ function NavSection({
                 </>
               )}
             </span>
-          )}
+            );
+          }}
         </NavLink>
       ))}
     </div>
@@ -142,6 +155,7 @@ export function Sidebar() {
   const { data: pendingOrdersCount = 0 } = usePendingOrdersCount();
   const isMobile = useIsMobile();
   const isLightTheme = theme === "light";
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
   const shopName = profile?.shops?.name || "Smart Money";
   const sectionTitles = language === "sw" ? SECTION_HEADERS_SW : SECTION_HEADERS;
@@ -194,7 +208,7 @@ export function Sidebar() {
                   pendingOrdersCount={pendingOrdersCount}
                   isCollapsed={false}
                   isLightTheme={isLightTheme}
-                />
+                  />
                 <NavSection
                   title={sectionTitles.management}
                   items={managementItems}
@@ -215,7 +229,7 @@ export function Sidebar() {
                 />
               </nav>
               <div className="border-t border-sidebar-border p-2">
-                <Button variant="ghost" className="w-full justify-start gap-3 hover:text-destructive hover:bg-destructive/10" style={{ color: isLightTheme ? "#1f2937" : "#f3f4f6" }} onClick={signOut}>
+                <Button variant="ghost" className="w-full justify-start gap-3 hover:text-destructive hover:bg-destructive/10" style={{ color: isLightTheme ? "#1f2937" : "#f3f4f6" }} onClick={() => setSignOutConfirmOpen(true)}>
                   <LogOut className="h-4 w-4" strokeWidth={1.5} />
                   {language === "sw" ? "Toka" : "Sign Out"}
                 </Button>
@@ -270,7 +284,7 @@ export function Sidebar() {
           pendingOrdersCount={pendingOrdersCount}
           isCollapsed={isCollapsed}
           isLightTheme={isLightTheme}
-        />
+          />
         <NavSection
           title={sectionTitles.management}
           items={managementItems}
@@ -301,7 +315,7 @@ export function Sidebar() {
                 isCollapsed ? "justify-center px-2" : "justify-start"
               )}
               style={{ color: isLightTheme ? "#1f2937" : "#f3f4f6" }}
-              onClick={signOut}
+              onClick={() => setSignOutConfirmOpen(true)}
             >
               <LogOut className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
               {!isCollapsed && (language === "sw" ? "Toka" : "Sign Out")}
@@ -310,6 +324,26 @@ export function Sidebar() {
           {isCollapsed && <TooltipContent side="right">{language === "sw" ? "Toka" : "Sign Out"}</TooltipContent>}
         </Tooltip>
       </div>
+
+      <AlertDialog open={signOutConfirmOpen} onOpenChange={setSignOutConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Thibitisha kutoka" : "Sign out?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === "sw" ? "Una uhakika unataka kutoka kwa akaunti yako?" : "Are you sure you want to sign out?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { signOut(); setSignOutConfirmOpen(false); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {language === "sw" ? "Toka" : "Sign Out"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }

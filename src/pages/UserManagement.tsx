@@ -7,7 +7,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, Loader2, Shield, Settings2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { UserPlus, Loader2, Shield, Settings2, Eye, Pencil, Trash2, Mail } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,12 +39,23 @@ export default function UserManagement() {
   const { t, language } = useLanguage();
   const { shopId, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
+  type ShopUser = { id: string; user_id: string; full_name: string; email?: string | null; phone?: string | null; role: string; created_at: string };
   const [addOpen, setAddOpen] = useState(false);
   const [pageAccessOpen, setPageAccessOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [detailsUser, setDetailsUser] = useState<ShopUser | null>(null);
+  const [editUser, setEditUser] = useState<ShopUser | null>(null);
+  const [userToDelete, setUserToDelete] = useState<ShopUser | null>(null);
   const [selectedUser, setSelectedUser] = useState<{ user_id: string; full_name: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "staff" });
+  const [editForm, setEditForm] = useState({ full_name: "", email: "", phone: "", role: "staff" });
   const [pageAccessForm, setPageAccessForm] = useState<Set<string>>(new Set());
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const { data: users, isLoading } = useShopUsers(shopId);
   const { data: currentAccess } = useUserPageAccess(selectedUser?.user_id ?? null, shopId);
@@ -94,6 +115,73 @@ export default function UserManagement() {
   const getRoleLabel = (role: string) => {
     const r = ROLES.find((x) => x.value === role);
     return r ? (language === "sw" ? r.sw : r.en) : role;
+  };
+
+  const openDetails = (u: ShopUser) => {
+    setDetailsUser(u);
+    setDetailsOpen(true);
+  };
+  const openEdit = (u: ShopUser) => {
+    setEditUser(u);
+    setEditForm({ full_name: u.full_name, email: u.email ?? "", phone: u.phone ?? "", role: u.role ?? "staff" });
+    setEditOpen(true);
+  };
+  const handleUpdateUser = async () => {
+    if (!editUser || !shopId) return;
+    setUpdating(true);
+    try {
+      const { error: pe } = await supabase.from("profiles").update({
+        full_name: editForm.full_name.trim(),
+        email: editForm.email.trim() || null,
+        phone: editForm.phone.trim() || null,
+      }).eq("user_id", editUser.user_id).eq("shop_id", shopId);
+      if (pe) throw pe;
+      const { error: re } = await supabase.from("user_roles").update({ role: editForm.role as any }).eq("user_id", editUser.user_id).eq("shop_id", shopId);
+      if (re) throw re;
+      queryClient.invalidateQueries({ queryKey: ["shop-users"] });
+      toast.success(language === "sw" ? "Mtumiaji imesasishwa" : "User updated");
+      setEditOpen(false);
+      setEditUser(null);
+      setDetailsUser((prev) => (prev?.user_id === editUser.user_id ? { ...prev, ...editForm } : prev));
+    } catch (e: any) {
+      toast.error(e?.message || "Update failed");
+    } finally {
+      setUpdating(false);
+    }
+  };
+  const handleRemoveUser = async () => {
+    if (!userToDelete || !shopId) return;
+    setDeleting(true);
+    try {
+      const { error: re } = await supabase.from("user_roles").delete().eq("user_id", userToDelete.user_id).eq("shop_id", shopId);
+      if (re) throw re;
+      const { error: pe } = await supabase.from("profiles").delete().eq("user_id", userToDelete.user_id).eq("shop_id", shopId);
+      if (pe) throw pe;
+      queryClient.invalidateQueries({ queryKey: ["shop-users"] });
+      toast.success(language === "sw" ? "Mtumiaji ameondolewa" : "User removed from shop");
+      setDeleteOpen(false);
+      setUserToDelete(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Remove failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+  const handleSendPasswordReset = async (email: string) => {
+    if (!email?.trim()) {
+      toast.error(language === "sw" ? "Barua pepe haipo" : "No email for this user");
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/reset-password` });
+      if (error) throw error;
+      toast.success(language === "sw" ? "Barua pepe ya kubadilisha neno la siri imetumwa" : "Password reset email sent");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to send reset email");
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   return (
@@ -162,33 +250,40 @@ export default function UserManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{language === "sw" ? "Jina" : "Name"}</TableHead>
+                  <TableHead>{language === "sw" ? "Barua pepe" : "Email"}</TableHead>
                   <TableHead>{language === "sw" ? "Jukumu" : "Role"}</TableHead>
                   <TableHead>{language === "sw" ? "Ilioongezwa" : "Added"}</TableHead>
-                <TableHead className="w-20"></TableHead>
+                  <TableHead className="text-right">{language === "sw" ? "Vitendo" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users?.map((u) => (
-                  <TableRow key={(u as any).id}>
-                    <TableCell className="font-medium">{(u as any).full_name}</TableCell>
-                    <TableCell>{getRoleLabel((u as any).role ?? "staff")}</TableCell>
-                    <TableCell className="text-foreground/70 dark:text-foreground/80">{new Date((u as any).created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => {
-                          setSelectedUser({ user_id: (u as any).user_id, full_name: (u as any).full_name });
-                          setPageAccessOpen(true);
-                        }}
-                      >
-                        <Settings2 className="h-4 w-4" />
-                        {language === "sw" ? "Vipengele" : "Pages"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {users?.map((u) => {
+                  const row = u as ShopUser;
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.full_name}</TableCell>
+                      <TableCell className="text-foreground/80">{row.email || "—"}</TableCell>
+                      <TableCell>{getRoleLabel(row.role ?? "staff")}</TableCell>
+                      <TableCell className="text-foreground/70 dark:text-foreground/80">{new Date(row.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1 flex-wrap">
+                          <Button variant="ghost" size="sm" className="gap-1" onClick={() => openDetails(row)} title={language === "sw" ? "Angalia maelezo" : "View details"}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="gap-1" onClick={() => openEdit(row)} title={language === "sw" ? "Hariri" : "Edit"}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="gap-1" onClick={() => { setSelectedUser({ user_id: row.user_id, full_name: row.full_name }); setPageAccessOpen(true); }} title={language === "sw" ? "Vipengele" : "Pages"}>
+                            <Settings2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="gap-1 text-destructive hover:text-destructive" onClick={() => { setUserToDelete(row); setDeleteOpen(true); }} title={language === "sw" ? "Ondoa" : "Remove"}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -239,6 +334,114 @@ export default function UserManagement() {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* User details dialog */}
+      <Dialog open={detailsOpen} onOpenChange={(o) => { setDetailsOpen(o); if (!o) setDetailsUser(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />{language === "sw" ? "Maelezo ya Mtumiaji" : "User Details"}
+            </DialogTitle>
+          </DialogHeader>
+          {detailsUser && (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Jina kamili" : "Full name"}</p>
+                <p className="text-foreground font-medium">{detailsUser.full_name}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Barua pepe" : "Email"}</p>
+                <p className="text-foreground">{detailsUser.email || "—"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Simu" : "Phone"}</p>
+                <p className="text-foreground">{detailsUser.phone || "—"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Jukumu" : "Role"}</p>
+                <p className="text-foreground">{getRoleLabel(detailsUser.role ?? "staff")}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Iliyoongezwa" : "Added"}</p>
+                <p className="text-foreground">{new Date(detailsUser.created_at).toLocaleString()}</p>
+              </div>
+              <p className="text-xs text-muted-foreground border-t pt-3 mt-3">
+                {language === "sw" ? "Neno la siri halionyeshwi kwa usalama. Tumia 'Tuma barua pepe ya neno la siri' ili mtumiaji aweze kuweka neno jipya." : "Password is not shown for security. Use 'Send password reset' to let this user set a new password."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setDetailsOpen(false); openEdit(detailsUser); setEditOpen(true); }}>
+                  <Pencil className="h-4 w-4 mr-1" />{language === "sw" ? "Hariri" : "Edit"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleSendPasswordReset(detailsUser.email ?? "")} disabled={resettingPassword || !detailsUser.email}>
+                  {resettingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Mail className="h-4 w-4 mr-1" />}
+                  {language === "sw" ? "Tuma barua pepe ya neno la siri" : "Send password reset"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setDetailsOpen(false); setSelectedUser({ user_id: detailsUser.user_id, full_name: detailsUser.full_name }); setPageAccessOpen(true); }}>
+                  <Settings2 className="h-4 w-4 mr-1" />{language === "sw" ? "Vipengele" : "Pages"}
+                </Button>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => { setDetailsOpen(false); setUserToDelete(detailsUser); setDeleteOpen(true); }}>
+                  <Trash2 className="h-4 w-4 mr-1" />{language === "sw" ? "Ondoa" : "Remove"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit user dialog */}
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditUser(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{language === "sw" ? "Hariri Mtumiaji" : "Edit User"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Jina kamili" : "Full name"}</Label>
+              <Input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} placeholder={language === "sw" ? "Jina" : "Full name"} />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Barua pepe" : "Email"}</Label>
+              <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="user@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Simu" : "Phone"}</Label>
+              <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder={language === "sw" ? "Nambari ya simu" : "Phone number"} />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === "sw" ? "Jukumu" : "Role"}</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{language === "sw" ? r.sw : r.en}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={handleUpdateUser} disabled={updating}>
+              {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove user confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={(o) => { if (!o) setUserToDelete(null); setDeleteOpen(o); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Ondoa mtumiaji?" : "Remove user from shop?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {userToDelete && (language === "sw" ? `"${userToDelete.full_name}" ataondolewa kwenye duka. Hawawezi tena kuingia kwenye duka hili.` : `"${userToDelete.full_name}" will be removed from this shop and will no longer have access.`)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === "sw" ? "Ghairi" : "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deleting}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Ondoa" : "Remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

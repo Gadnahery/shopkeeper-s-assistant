@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export async function getShopUsers(shopId: string) {
   const { data: profiles, error: pe } = await supabase
     .from("profiles")
-    .select("id, user_id, full_name, created_at")
+    .select("id, user_id, full_name, email, phone, created_at")
     .eq("shop_id", shopId)
     .order("created_at", { ascending: false });
   if (pe) throw pe;

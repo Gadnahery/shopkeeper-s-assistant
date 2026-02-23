@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, CheckCircle, Printer, Minus, Plus, X, Loader2, ScanLine, Monitor } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -42,6 +52,7 @@ export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
+  const [draftToDeleteId, setDraftToDeleteId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: products } = useProducts();
@@ -196,7 +207,7 @@ export default function Sales() {
                           setCustomerName(d.customer_name || "");
                           deleteDraft.mutate(d.id);
                         }}>{language === "sw" ? "Endelea" : "Resume"}</Button>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteDraft.mutate(d.id)}>{language === "sw" ? "Futa" : "Delete"}</Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDraftToDeleteId(d.id)}>{language === "sw" ? "Futa" : "Delete"}</Button>
                       </div>
                     ))}
                   </div>
@@ -204,6 +215,24 @@ export default function Sales() {
               )}
             </CardContent>
           </Card>
+
+          <AlertDialog open={!!draftToDeleteId} onOpenChange={(open) => !open && setDraftToDeleteId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{language === "sw" ? "Futa rasimu hii?" : "Delete this draft?"}</AlertDialogTitle>
+                <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => draftToDeleteId && deleteDraft.mutate(draftToDeleteId, { onSettled: () => setDraftToDeleteId(null) })}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleteDraft.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/sales/terminal")}>

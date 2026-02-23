@@ -6,11 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, Pencil, Trash2, Loader2, Download, Calendar, Package } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrders, useOrder, useCreateOrder, useUpdateOrderStatus, useUpdateOrder, useAddOrderNote, useDeleteOrder } from "@/hooks/useOrders";
 import { useProducts } from "@/hooks/useProducts";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { format, startOfDay, endOfDay, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -50,10 +61,21 @@ export default function Orders() {
   const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
   const [editing, setEditing] = useState<any>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [productSearch, setProductSearch] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [addQuantity, setAddQuantity] = useState("1");
   const [noteText, setNoteText] = useState("");
-  const [addForm, setAddForm] = useState({ customer_name: "", customer_phone: "", notes: "", priority: "medium", due_date: "" });
-  const [addItems, setAddItems] = useState<{ product_id: string; product_name: string; quantity: number; unit_price: number }[]>([]);
+  const initialOrderDraft = {
+    form: { customer_name: "", customer_phone: "", notes: "", priority: "medium", due_date: "" },
+    items: [] as { product_id: string; product_name: string; quantity: number; unit_price: number }[],
+  };
+  const [orderDraft, setOrderDraft, clearOrderDraft] = useDraftForm("add-order", initialOrderDraft);
+  const addForm = { ...initialOrderDraft.form, ...orderDraft.form };
+  const setAddForm = (updater: React.SetStateAction<typeof initialOrderDraft.form>) =>
+    setOrderDraft((prev) => ({ ...prev, form: typeof updater === "function" ? updater({ ...initialOrderDraft.form, ...prev.form }) : updater }));
+  const addItems = orderDraft.items ?? [];
+  const setAddItems = (updater: React.SetStateAction<typeof initialOrderDraft.items>) =>
+    setOrderDraft((prev) => ({ ...prev, items: typeof updater === "function" ? updater(prev.items ?? []) : updater }));
+  const [orderToDeleteId, setOrderToDeleteId] = useState<string | null>(null);
 
   const { data: orders, isLoading } = useOrders();
   const { data: orderDetail } = useOrder(editing?.id ?? null);
@@ -113,27 +135,39 @@ export default function Orders() {
       items: addItems.map((i) => ({ product_id: i.product_id, product_name: i.product_name, quantity: i.quantity, unit_price: i.unit_price })),
       notes: addForm.notes || undefined,
     });
+    clearOrderDraft();
     setAddOpen(false);
-    setAddForm({ customer_name: "", customer_phone: "", notes: "", priority: "medium", due_date: "" });
-    setAddItems([]);
   };
 
-  const addProductToOrder = (p: NonNullable<typeof products>[0]) => {
+  const selectedProduct = selectedProductId ? products?.find((p) => p.id === selectedProductId) : null;
+  const quantityInCartForSelected = selectedProductId
+    ? addItems.filter((i) => i.product_id === selectedProductId).reduce((sum, i) => sum + i.quantity, 0)
+    : 0;
+  const availableStock = selectedProduct != null ? Math.max(0, Number(selectedProduct.stock ?? 0) - quantityInCartForSelected) : 0;
+  const addQtyNum = parseInt(addQuantity, 10) || 0;
+  const quantityExceedsStock = selectedProduct != null && addQtyNum > availableStock;
+
+  const addProductToOrderWithQuantity = (p: NonNullable<typeof products>[0], qty: number) => {
     const name = language === "sw" && p.name_sw ? p.name_sw : p.name;
     const existing = addItems.find((i) => i.product_id === p.id);
     if (existing) {
-      setAddItems((prev) => prev.map((i) => (i.product_id === p.id ? { ...i, quantity: i.quantity + 1 } : i)));
+      setAddItems((prev) => prev.map((i) => (i.product_id === p.id ? { ...i, quantity: i.quantity + qty } : i)));
     } else {
-      setAddItems((prev) => [...prev, { product_id: p.id, product_name: name, quantity: 1, unit_price: p.selling_price }]);
+      setAddItems((prev) => [...prev, { product_id: p.id, product_name: name, quantity: qty, unit_price: p.selling_price }]);
     }
+    setSelectedProductId("");
+    setAddQuantity("1");
   };
 
-  const productListFiltered = useMemo(() => {
-    if (!products) return [];
-    const q = productSearch.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter((p) => (p.name?.toLowerCase().includes(q) || (p.name_sw?.toLowerCase().includes(q))));
-  }, [products, productSearch]);
+  const handleAddProductToCart = () => {
+    if (!selectedProduct || addQtyNum < 1 || quantityExceedsStock) return;
+    addProductToOrderWithQuantity(selectedProduct, addQtyNum);
+  };
+
+  const handleQuantityChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, "");
+    setAddQuantity(digitsOnly || "");
+  };
 
   const exportCsv = () => {
     const headers = [language === "sw" ? "Nambari" : "Order #", language === "sw" ? "Mteja" : "Customer", language === "sw" ? "Simu" : "Phone", language === "sw" ? "Hali" : "Status", language === "sw" ? "Kipaumbele" : "Priority", language === "sw" ? "Tarehe" : "Date", language === "sw" ? "Jumla" : "Total"];
@@ -263,14 +297,50 @@ export default function Orders() {
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Bidhaa" : "Products"}</Label>
-              <Input placeholder={language === "sw" ? "Tafuta bidhaa..." : "Search products..."} value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="mb-2" />
-              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto border rounded-lg p-2">
-                {productListFiltered.slice(0, 30).map((p) => (
-                  <Button key={p.id} type="button" variant="outline" size="sm" onClick={() => addProductToOrder(p)}>
-                    {language === "sw" && p.name_sw ? p.name_sw : p.name} - {formatNumber(p.selling_price)}
+              <Select value={selectedProductId || "__none__"} onValueChange={(v) => setSelectedProductId(v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder={language === "sw" ? "Chagua bidhaa..." : "Select product..."} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{language === "sw" ? "Chagua bidhaa..." : "Select product..."}</SelectItem>
+                  {products?.map((p) => {
+                    const name = language === "sw" && p.name_sw ? p.name_sw : p.name;
+                    return (
+                      <SelectItem key={p.id} value={p.id}>
+                        {name} - {formatNumber(p.selling_price)}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {selectedProductId && (
+                <>
+                  <div className="space-y-1">
+                    <Label>{language === "sw" ? "Idadi" : "Quantity"}</Label>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      min={1}
+                      value={addQuantity}
+                      onChange={(e) => handleQuantityChange(e.target.value)}
+                      placeholder="0"
+                    />
+                    {quantityExceedsStock && (
+                      <p className="text-sm text-destructive font-medium">
+                        {language === "sw" ? "Idadi ya hisa ni " : "The stock amount is "}{availableStock}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddProductToCart}
+                    disabled={addQtyNum < 1 || quantityExceedsStock}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    {language === "sw" ? "Ongeza kwenye kikapu" : "Add to cart"}
                   </Button>
-                ))}
-              </div>
+                </>
+              )}
             </div>
             {addItems.length > 0 && (
               <div className="space-y-2">
@@ -287,13 +357,16 @@ export default function Orders() {
               </div>
             )}
             <div className="space-y-2"><Label>{language === "sw" ? "Vidokezo" : "Notes"}</Label><Input value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} /></div>
-            <Button 
-              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-              onClick={handleCreateOrder} 
-              disabled={addItems.length === 0 || createOrder.isPending}
-            >
-              {createOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
-            </Button>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => { clearOrderDraft(); setAddOpen(false); }}>{t("common.cancel")}</Button>
+              <Button 
+                className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                onClick={handleCreateOrder} 
+                disabled={addItems.length === 0 || createOrder.isPending}
+              >
+                {createOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -362,11 +435,29 @@ export default function Orders() {
                 ))}
               </div>
               <div className="flex justify-between pt-2 font-bold">{language === "sw" ? "Jumla" : "Total"}: {formatNumber(Number(editingOrder.total))}</div>
-              <Button variant="destructive" className="w-full" onClick={() => { deleteOrder.mutate(editing.id); setEditing(null); }}>{language === "sw" ? "Futa" : "Delete"}</Button>
+              <Button variant="destructive" className="w-full" onClick={() => setOrderToDeleteId(editing.id)}>{language === "sw" ? "Futa" : "Delete"}</Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!orderToDeleteId} onOpenChange={(open) => !open && setOrderToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Futa agizo hili?" : "Delete this order?"}</AlertDialogTitle>
+            <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => orderToDeleteId && deleteOrder.mutate(orderToDeleteId, { onSettled: () => { setOrderToDeleteId(null); setEditing(null); } })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Card>
         <CardContent className="p-0">

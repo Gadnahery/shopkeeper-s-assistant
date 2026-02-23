@@ -45,6 +45,7 @@ export default function Inventory() {
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [showBulkCategory, setShowBulkCategory] = useState(false);
   const [bulkCategoryId, setBulkCategoryId] = useState<string>("");
+  const [productToDeleteId, setProductToDeleteId] = useState<string | null>(null);
 
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
@@ -203,8 +204,7 @@ export default function Inventory() {
           <DialogHeader><DialogTitle>{t("common.edit")} {language === "sw" ? "Bidhaa" : "Product"}</DialogTitle></DialogHeader>
           {editProduct && (
             <div className="space-y-4 pt-4">
-              <div className="space-y-2"><Label>{t("addProduct.productName")} (EN)</Label><Input value={editProduct.name} onChange={e => setEditProduct({ ...editProduct, name: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{t("addProduct.productName")} (SW)</Label><Input value={editProduct.name_sw || ""} onChange={e => setEditProduct({ ...editProduct, name_sw: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("addProduct.productName")}</Label><Input value={editProduct.name} onChange={e => setEditProduct({ ...editProduct, name: e.target.value, name_sw: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>{t("addProduct.buyingPrice")}</Label><Input type="number" value={editProduct.buying_price} onChange={e => setEditProduct({ ...editProduct, buying_price: e.target.value })} /></div>
                 <div className="space-y-2"><Label>{t("addProduct.sellingPrice")}</Label><Input type="number" value={editProduct.selling_price} onChange={e => setEditProduct({ ...editProduct, selling_price: e.target.value })} /></div>
@@ -288,6 +288,25 @@ export default function Inventory() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Single product delete confirmation */}
+      <AlertDialog open={!!productToDeleteId} onOpenChange={(open) => !open && setProductToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Futa bidhaa hii?" : "Delete this product?"}</AlertDialogTitle>
+            <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => productToDeleteId && deleteProduct.mutate(productToDeleteId, { onSettled: () => setProductToDeleteId(null) })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Barcode Dialog */}
       <Dialog open={!!showBarcode} onOpenChange={(o) => !o && setShowBarcode(null)}>
         <DialogContent>
@@ -364,7 +383,7 @@ export default function Inventory() {
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditProduct({ ...product })}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteProduct.mutate(product.id)} disabled={deleteProduct.isPending}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setProductToDeleteId(product.id)} disabled={deleteProduct.isPending}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

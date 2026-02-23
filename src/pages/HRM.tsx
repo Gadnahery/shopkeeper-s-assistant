@@ -6,12 +6,23 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Users, DollarSign, Calendar, Loader2, Trash2, Pencil } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -22,7 +33,9 @@ export default function HRM() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
-  const [form, setForm] = useState({ full_name: "", phone: "", email: "", position: "Staff", department: "", salary: "", status: "active" });
+  const [staffToDeleteId, setStaffToDeleteId] = useState<string | null>(null);
+  const initialStaffForm = { full_name: "", phone: "", email: "", position: "Staff", department: "", salary: "", status: "active" };
+  const [form, setForm, clearAddStaffDraft] = useDraftForm("add-staff", initialStaffForm);
 
   const { data: staffList, isLoading } = useQuery({
     queryKey: ["staff", shopId],
@@ -64,8 +77,10 @@ export default function HRM() {
   const totalSalary = staffList?.reduce((sum, s) => sum + Number(s.salary || 0), 0) || 0;
 
   const handleAdd = () => {
-    addStaff.mutate({ full_name: form.full_name, phone: form.phone || null, email: form.email || null, position: form.position, department: form.department || null, salary: parseFloat(form.salary) || 0, status: form.status });
-    setForm({ full_name: "", phone: "", email: "", position: "Staff", department: "", salary: "", status: "active" });
+    addStaff.mutate(
+      { full_name: form.full_name, phone: form.phone || null, email: form.email || null, position: form.position, department: form.department || null, salary: parseFloat(form.salary) || 0, status: form.status },
+      { onSuccess: () => clearAddStaffDraft() }
+    );
   };
 
   const handleEditSave = () => {
@@ -106,13 +121,16 @@ export default function HRM() {
                 <div className="space-y-2"><Label>Salary (Tsh)</Label><Input type="number" value={form.salary} onChange={e => setForm({...form, salary: e.target.value})} /></div>
                 <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={v => setForm({...form, status: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
               </div>
-              <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                onClick={handleAdd} 
-                disabled={!form.full_name || addStaff.isPending}
-              >
-                {addStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Staff")}
-              </Button>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => { clearAddStaffDraft(); setIsAddOpen(false); }}>{language === "sw" ? "Ghairi" : "Cancel"}</Button>
+                <Button 
+                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  onClick={handleAdd} 
+                  disabled={!form.full_name || addStaff.isPending}
+                >
+                  {addStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Staff")}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -163,7 +181,7 @@ export default function HRM() {
                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingStaff({...s})}>
                       <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => deleteStaff.mutate(s.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setStaffToDeleteId(s.id)}>
                       <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
                     </Button>
                   </div>
@@ -173,6 +191,24 @@ export default function HRM() {
           </TableBody></Table>
         )}
       </CardContent></Card>
+
+      <AlertDialog open={!!staffToDeleteId} onOpenChange={(open) => !open && setStaffToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Futa mfanyakazi huyu?" : "Delete this staff member?"}</AlertDialogTitle>
+            <AlertDialogDescription>{language === "sw" ? "Kitendo hiki hakiwezi kufutwa." : "This action cannot be undone."}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === "sw" ? "Ghairi" : "Cancel"}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => staffToDeleteId && deleteStaff.mutate(staffToDeleteId, { onSettled: () => setStaffToDeleteId(null) })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Futa" : "Delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

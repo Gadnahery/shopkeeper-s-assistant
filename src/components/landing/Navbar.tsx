@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Store, Menu, X, Globe } from "lucide-react";
+import { Store, Menu, X, Globe, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/hooks/useTheme";
 
 const navLinks = [
   { href: "#features", labelEn: "Features", labelSw: "Vipengele" },
@@ -15,6 +16,7 @@ const navLinks = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   const t = (en: string, sw: string) => (language === "sw" ? sw : en);
 
@@ -50,11 +52,22 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-2">
           <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            title={theme === "light" ? (language === "sw" ? "Badilisha kwa hali ya giza" : "Switch to dark mode") : (language === "sw" ? "Badilisha kwa hali ya mwanga" : "Switch to light mode")}
+          >
+            {theme === "light" ? (
+              <Moon className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+            ) : (
+              <Sun className="h-4 w-4 dark:drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
+            )}
+          </button>
+          <button
             onClick={() => setLanguage(language === "sw" ? "en" : "sw")}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
             title={language === "sw" ? "Switch to English" : "Badilisha kwa Kiswahili"}
           >
-            <Globe className="h-4 w-4" />
+            <Globe className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             <span>{language === "sw" ? "EN" : "SW"}</span>
           </button>
           <Button variant="ghost" asChild>
@@ -93,7 +106,27 @@ export function Navbar() {
                   {t(link.labelEn, link.labelSw)}
                 </a>
               ))}
-              <div className="mt-4 flex flex-col gap-2">
+              <div className="mt-4 flex items-center gap-2 px-4">
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                  title={theme === "light" ? (language === "sw" ? "Badilisha kwa hali ya giza" : "Switch to dark mode") : (language === "sw" ? "Badilisha kwa hali ya mwanga" : "Switch to light mode")}
+                >
+                  {theme === "light" ? (
+                    <Moon className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                  ) : (
+                    <Sun className="h-4 w-4 dark:drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setLanguage(language === "sw" ? "en" : "sw")}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all flex-1"
+                >
+                  <Globe className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                  <span>{language === "sw" ? "EN" : "SW"}</span>
+                </button>
+              </div>
+              <div className="mt-2 flex flex-col gap-2 px-4">
                 <Button variant="outline" asChild className="w-full">
                   <Link to="/login" onClick={() => setOpen(false)}>
                     {t("Login", "Ingia")}

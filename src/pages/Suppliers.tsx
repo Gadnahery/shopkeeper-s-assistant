@@ -4,10 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Search, Plus, Truck, Clock, Calendar, CreditCard, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from "@/hooks/useSuppliers";
+import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -18,7 +29,9 @@ export default function Suppliers() {
   const [editingSupplier, setEditingSupplier] = useState<any>(null);
   const [payDialog, setPayDialog] = useState<any>(null);
   const [payAmount, setPayAmount] = useState("");
-  const [newSupplier, setNewSupplier] = useState({ name: "", phone: "", email: "", contact_person: "", address: "" });
+  const [supplierToDeleteId, setSupplierToDeleteId] = useState<string | null>(null);
+  const initialNewSupplier = { name: "", phone: "", email: "", contact_person: "", address: "" };
+  const [newSupplier, setNewSupplier, clearAddSupplierDraft] = useDraftForm("add-supplier", initialNewSupplier);
 
   const { data: suppliers, isLoading } = useSuppliers();
   const createSupplier = useCreateSupplier();
@@ -34,7 +47,7 @@ export default function Suppliers() {
 
   const handleAddSupplier = async () => {
     await createSupplier.mutateAsync({ name: newSupplier.name, phone: newSupplier.phone || null, email: newSupplier.email || null, contact_person: newSupplier.contact_person || null, address: newSupplier.address || null, pending_payment: 0 });
-    setNewSupplier({ name: "", phone: "", email: "", contact_person: "", address: "" });
+    clearAddSupplierDraft();
     setIsAddOpen(false);
   };
 
@@ -90,13 +103,16 @@ export default function Suppliers() {
               </div>
               <div className="space-y-2"><Label>Contact Person</Label><Input value={newSupplier.contact_person} onChange={(e) => setNewSupplier({ ...newSupplier, contact_person: e.target.value })} /></div>
               <div className="space-y-2"><Label>Address</Label><Input value={newSupplier.address} onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })} /></div>
-              <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                onClick={handleAddSupplier} 
-                disabled={!newSupplier.name || createSupplier.isPending}
-              >
-                {createSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-              </Button>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => { clearAddSupplierDraft(); setIsAddOpen(false); }}>{t("common.cancel")}</Button>
+                <Button 
+                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                  onClick={handleAddSupplier} 
+                  disabled={!newSupplier.name || createSupplier.isPending}
+                >
+                  {createSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -177,7 +193,7 @@ export default function Suppliers() {
                           </Button>
                         )}
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingSupplier({ ...supplier })}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteSupplier.mutate(supplier.id)} disabled={deleteSupplier.isPending}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSupplierToDeleteId(supplier.id)} disabled={deleteSupplier.isPending}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -187,6 +203,24 @@ export default function Suppliers() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!supplierToDeleteId} onOpenChange={(open) => !open && setSupplierToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "sw" ? "Futa msaidizi huyu?" : "Delete this supplier?"}</AlertDialogTitle>
+            <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => supplierToDeleteId && deleteSupplier.mutate(supplierToDeleteId, { onSettled: () => setSupplierToDeleteId(null) })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
