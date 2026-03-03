@@ -28,17 +28,19 @@ The project is linked to Supabase project **oxkxzzlunfzyotbjmfxy**. To apply mig
 ### Link and push (from project root)
 
 ```bash
-# One-time: link this folder to your remote Supabase project (will prompt for database password)
+# One-time: link this folder to your remote Supabase project
+# Get your DB password from: Supabase Dashboard → Project Settings → Database
 npm run supabase:link
-# or: supabase link --project-ref oxkxzzlunfzyotbjmfxy
+# If you have the password in env (e.g. SUPABASE_DB_PASSWORD):
+# npx supabase link --project-ref oxkxzzlunfzyotbjmfxy -p $env:SUPABASE_DB_PASSWORD   # PowerShell
+# npx supabase link --project-ref oxkxzzlunfzyotbjmfxy -p "$SUPABASE_DB_PASSWORD"       # Bash
 
 # Apply all pending migrations to the linked project
 npm run supabase:push
-# or: supabase db push
 ```
 
-- **First time:** `supabase link` will ask for your database password (from Supabase Dashboard → Project Settings → Database).
-- **Later:** After link is done, only `supabase db push` (or `npm run supabase:push`) is needed to apply new migrations.
+- **First time:** Run `npm run supabase:link`; it will prompt for your database password (Supabase Dashboard → Project Settings → Database).
+- **Later:** After link is done, only `npm run supabase:push` is needed to apply new migrations.
 
 ### Check migration status
 
