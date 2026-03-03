@@ -11,7 +11,10 @@
     "preview": "vite preview",
     "responsive:check": "node scripts/responsive-check.cjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "supabase:link": "npx supabase link --project-ref oxkxzzlunfzyotbjmfxy",
+    "supabase:push": "npx supabase db push",
+    "supabase:status": "npx supabase db remote status"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
