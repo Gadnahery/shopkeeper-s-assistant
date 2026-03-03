@@ -119,6 +119,10 @@ export default function UserManagement() {
         metadata: { email: form.email.trim(), role: form.role },
       });
       queryClient.invalidateQueries({ queryKey: ["shop-users"] });
+      // Refetch again after a short delay so DB trigger has written profile (email, etc.)
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["shop-users"] });
+      }, 800);
       toast.success(language === "sw" ? "Mtumiaji amesajiliwa. Atapokea barua pepe ya uthibitishaji." : "User registered. They will receive a verification email.");
       setAddOpen(false);
       setForm({ email: "", password: "", full_name: "", role: "staff" });
@@ -135,7 +139,9 @@ export default function UserManagement() {
   };
 
   const openDetails = (u: ShopUser) => {
-    setDetailsUser(u);
+    // Use current user from list so we show latest data (e.g. after refetch)
+    const current = users?.find((x) => (x as ShopUser).user_id === u.user_id) as ShopUser | undefined;
+    setDetailsUser(current ?? u);
     setDetailsOpen(true);
   };
   const openEdit = (u: ShopUser) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { GlobalProgressBar } from "@/components/GlobalProgressBar";
@@ -44,6 +44,7 @@ function OfflineBanner() {
 
 function LayoutContent() {
   const { isCollapsed } = useSidebar();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,10 +61,11 @@ function LayoutContent() {
         <Header />
         <main className="p-4 md:p-6 lg:p-6 min-h-[calc(100vh-3.5rem)]">
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            key={location.pathname}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            key={window.location.pathname}
+            transition={{ duration: 0.2 }}
+            className="min-h-[200px]"
           >
             <Outlet />
           </motion.div>

@@ -57,6 +57,14 @@ const queryClient = new QueryClient({
   },
 });
 
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[280px] items-center justify-center bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
 function EnvSetupMessage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-center">
@@ -104,27 +112,27 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 
                 <Route element={<ProtectedRoute><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
-                  <Route path="/sales/terminal" element={<ProtectedRoute><POSTerminal /></ProtectedRoute>} />
-                  <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-                  <Route path="/inventory/add" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><AddProduct /></ProtectedRoute>} />
-                  <Route path="/inventory/receive" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><ReceiveStock /></ProtectedRoute>} />
-                  <Route path="/categories" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Categories /></ProtectedRoute>} />
-                  <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-                  <Route path="/todo" element={<ProtectedRoute><Todo /></ProtectedRoute>} />
-                  <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-                  <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
-                  <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
-                  <Route path="/suppliers/:id" element={<ProtectedRoute><SupplierDetail /></ProtectedRoute>} />
-                  <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
-                  <Route path="/hrm" element={<ProtectedRoute allowedRoles={["owner", "manager", "hr"]}><HRM /></ProtectedRoute>} />
-                  <Route path="/user-management" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><UserManagement /></ProtectedRoute>} />
-                  <Route path="/assets" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Assets /></ProtectedRoute>} />
-                  <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-                  <Route path="/loyalty" element={<ProtectedRoute><Loyalty /></ProtectedRoute>} />
-                  <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Settings /></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Dashboard /></Suspense></ProtectedRoute>} />
+                  <Route path="/sales" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Sales /></Suspense></ProtectedRoute>} />
+                  <Route path="/sales/terminal" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><POSTerminal /></Suspense></ProtectedRoute>} />
+                  <Route path="/inventory" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Inventory /></Suspense></ProtectedRoute>} />
+                  <Route path="/inventory/add" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><AddProduct /></Suspense></ProtectedRoute>} />
+                  <Route path="/inventory/receive" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><ReceiveStock /></Suspense></ProtectedRoute>} />
+                  <Route path="/categories" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><Categories /></Suspense></ProtectedRoute>} />
+                  <Route path="/orders" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Orders /></Suspense></ProtectedRoute>} />
+                  <Route path="/todo" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Todo /></Suspense></ProtectedRoute>} />
+                  <Route path="/customers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Customers /></Suspense></ProtectedRoute>} />
+                  <Route path="/customers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><CustomerDetail /></Suspense></ProtectedRoute>} />
+                  <Route path="/suppliers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Suppliers /></Suspense></ProtectedRoute>} />
+                  <Route path="/suppliers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><SupplierDetail /></Suspense></ProtectedRoute>} />
+                  <Route path="/expenses" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Expenses /></Suspense></ProtectedRoute>} />
+                  <Route path="/hrm" element={<ProtectedRoute allowedRoles={["owner", "manager", "hr"]}><Suspense fallback={<RouteFallback />}><HRM /></Suspense></ProtectedRoute>} />
+                  <Route path="/user-management" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><UserManagement /></Suspense></ProtectedRoute>} />
+                  <Route path="/assets" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><Assets /></Suspense></ProtectedRoute>} />
+                  <Route path="/reports" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Reports /></Suspense></ProtectedRoute>} />
+                  <Route path="/loyalty" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Loyalty /></Suspense></ProtectedRoute>} />
+                  <Route path="/notifications" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Notifications /></Suspense></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><Settings /></Suspense></ProtectedRoute>} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
