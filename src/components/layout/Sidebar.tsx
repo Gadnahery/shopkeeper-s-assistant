@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { preloadRoute } from "@/lib/routePreload";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -110,6 +111,7 @@ function NavSection({
           to={item.to}
           className={navLinkClass}
           style={navLinkStyle}
+          onMouseEnter={() => preloadRoute(item.to)}
         >
           {({ isActive }) => {
             const iconColor = isActive ? "#ffffff" : isLightTheme ? "#1f2937" : "#f3f4f6";
