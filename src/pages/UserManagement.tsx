@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { useShopUsers } from "@/hooks/useShopUsers";
 import { useUserPageAccess, useUpdateUserPageAccess, PAGE_PATHS } from "@/hooks/useUserPageAccess";
 import { logAudit } from "@/lib/audit";
+import { PageLoader } from "@/components/PageLoader";
 
 const ROLES = [
   { value: "owner", en: "Owner", sw: "Mmiliki" },
@@ -67,6 +68,10 @@ export default function UserManagement() {
       setPageAccessForm(new Set(currentAccess));
     }
   }, [pageAccessOpen, selectedUser, currentAccess]);
+
+  if (isLoading && users === undefined) {
+    return <PageLoader message="Loading users..." messageSw="Inapakia watumiaji..." language={language} />;
+  }
 
   const handleRegister = async () => {
     if (!form.email.trim() || !form.password.trim() || !form.full_name.trim()) {

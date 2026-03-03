@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { playSound } from "@/lib/sounds";
+import { PageLoader } from "@/components/PageLoader";
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -53,6 +54,10 @@ export default function Inventory() {
   const { data: categories } = useCategories();
   const deleteProduct = useDeleteProduct();
   const updateProduct = useUpdateProduct();
+
+  if (isLoading && !products) {
+    return <PageLoader message="Loading inventory..." messageSw="Inapakia hesabu..." language={language} />;
+  }
 
   const filteredProducts =
     products?.filter((p) => {

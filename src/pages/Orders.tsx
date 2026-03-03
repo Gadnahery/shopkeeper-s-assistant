@@ -25,6 +25,7 @@ import { useDraftForm } from "@/hooks/useDraftForm";
 import { format, startOfDay, endOfDay, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/PageLoader";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
@@ -94,6 +95,10 @@ export default function Orders() {
     if (dateRange === "week") return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
     return { from: startOfDay(subDays(now, 30)), to: endOfDay(now) };
   }, [dateRange]);
+
+  if (isLoading && !orders) {
+    return <PageLoader message="Loading orders..." messageSw="Inapakia maagizo..." language={language} />;
+  }
 
   const filteredOrders = useMemo(() => {
     let list = orders ?? [];

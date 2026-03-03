@@ -48,6 +48,7 @@ import { toast } from "sonner";
 import { formatCurrency } from "@/lib/formatters";
 import { scannerManager } from "@/lib/hardware/barcode-scanner";
 import { playSound } from "@/lib/sounds";
+import { PageLoader } from "@/components/PageLoader";
 
 interface CartItem {
   id: string;
@@ -70,9 +71,9 @@ export default function POSTerminal() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
 
-  const { data: products } = useProducts();
-  const { data: customers } = useCustomers();
-  const { data: shopSettings } = useShopSettings();
+  const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: customers, isLoading: customersLoading } = useCustomers();
+  const { data: shopSettings, isLoading: settingsLoading } = useShopSettings();
   const { profile } = useAuth();
   const createSale = useCreateSale();
 
@@ -123,6 +124,14 @@ export default function POSTerminal() {
       scannerManager.disconnect();
     };
   }, []);
+
+  const initialLoading =
+    (productsLoading && !products) ||
+    (customersLoading && !customers) ||
+    (settingsLoading && !shopSettings);
+  if (initialLoading) {
+    return <PageLoader message="Loading POS..." messageSw="Inapakia POS..." language={language} />;
+  }
 
   const handleBarcodeScan = (barcode: string) => {
     const product = products?.find(

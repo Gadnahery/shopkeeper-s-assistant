@@ -28,6 +28,7 @@ import { format, parseISO, isPast } from "date-fns";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/PageLoader";
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = Math.floor(i / 2);
@@ -52,6 +53,10 @@ export default function Todo() {
   const createTodo = useCreateTodo();
   const updateTodo = useUpdateTodo();
   const deleteTodo = useDeleteTodo();
+
+  if (isLoading && !todos) {
+    return <PageLoader message="Loading tasks..." messageSw="Inapakia kazi..." language={language} />;
+  }
 
   const filtered = todos?.filter((t) => {
     const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) || (t.description?.toLowerCase().includes(search.toLowerCase()) ?? false);

@@ -13,13 +13,14 @@ import { useCreateProduct } from "@/hooks/useProducts";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageUpload } from "@/components/ImageUpload";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 export default function AddProduct() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { shopId } = useAuth();
-  const { data: categories } = useCategories();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
   const createProduct = useCreateProduct();
   const createCategory = useCreateCategory();
 
@@ -32,6 +33,10 @@ export default function AddProduct() {
     stock: "", low_stock_alert: "5",
   };
   const [formData, setFormData, clearProductDraft] = useDraftForm("add-product", initialProductForm);
+
+  if (categoriesLoading && !categories) {
+    return <PageLoader message="Loading..." messageSw="Inapakia..." language={language} />;
+  }
 
   const generateCode = () => {
     const prefix = formData.name.substring(0, 3).toUpperCase() || "PRD";

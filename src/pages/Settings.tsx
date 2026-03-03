@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 export default function Settings() {
@@ -44,6 +45,10 @@ export default function Settings() {
     setEnableLowStockAlerts(s.enable_low_stock_alerts ?? true);
     setAutoPrintReceipt(s.auto_print_receipt ?? false);
   }, [shopSettings]);
+
+  if (isLoading && !shopSettings) {
+    return <PageLoader message="Loading settings..." messageSw="Inapakia mipangilio..." language={language} />;
+  }
 
   const handleSaveShop = async () => {
     if (!shopId) return;

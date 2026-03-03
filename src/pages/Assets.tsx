@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 export default function Assets() {
@@ -72,6 +73,10 @@ export default function Assets() {
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["assets"] }); toast.success("Asset removed"); },
   });
+
+  if (isLoading && !assets) {
+    return <PageLoader message="Loading assets..." messageSw="Inapakia mali..." language={language} />;
+  }
 
   const filtered = assets?.filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase())) || [];
   const totalValue = assets?.reduce((s, a) => s + Number(a.current_value || 0), 0) || 0;

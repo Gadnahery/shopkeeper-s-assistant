@@ -21,6 +21,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from "@/hooks/useSuppliers";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 export default function Suppliers() {
@@ -39,6 +40,10 @@ export default function Suppliers() {
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
+
+  if (isLoading && !suppliers) {
+    return <PageLoader message="Loading suppliers..." messageSw="Inapakia wasambazaji..." language={language} />;
+  }
 
   const filteredSuppliers = suppliers?.filter(
     (s) => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || (s.phone && s.phone.includes(searchTerm))

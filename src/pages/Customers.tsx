@@ -25,6 +25,7 @@ import { useDraftForm } from "@/hooks/useDraftForm";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { PageLoader } from "@/components/PageLoader";
 
 export default function Customers() {
   const navigate = useNavigate();
@@ -44,6 +45,10 @@ export default function Customers() {
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
+
+  if (isLoading && !customers) {
+    return <PageLoader message="Loading customers..." messageSw="Inapakia wateja..." language={language} />;
+  }
 
   const filteredCustomers =
     customers?.filter(

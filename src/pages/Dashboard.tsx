@@ -34,6 +34,7 @@ import { Calculator } from "@/components/Calculator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { PageLoader } from "@/components/PageLoader";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 const PRIMARY_TEAL = "#0D9488";
@@ -59,7 +60,7 @@ export default function Dashboard() {
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [kpiRange, setKpiRange] = useState<KpiRange>("today");
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { profile } = useAuth();
   const range = useMemo(() => getRange(kpiRange), [kpiRange]);
   const { data: rangeSales, isLoading: salesLoading } = useSalesSummaryByRange(range.start, range.end);
@@ -67,6 +68,11 @@ export default function Dashboard() {
   const { data: allProducts } = useProducts();
   const { data: weeklyTrend } = useWeeklySalesTrend();
   const { data: categoryData } = useStockByCategory();
+
+  const initialLoading = salesLoading && rangeSales === undefined;
+  if (initialLoading) {
+    return <PageLoader message="Loading dashboard..." messageSw="Inapakia dashibodi..." language={language} />;
+  }
 
   const shopName = profile?.shops?.name || "Smart Money";
   const formatNumber = (num: number) => num.toLocaleString("en-US");

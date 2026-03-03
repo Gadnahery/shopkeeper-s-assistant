@@ -23,6 +23,7 @@ import { useCreateSale, useDraftSales, useSaveDraftSale, useCompleteDraftSale, u
 import { useShopSettings } from "@/hooks/useShopSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt } from "@/components/Receipt";
+import { PageLoader } from "@/components/PageLoader";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -55,15 +56,26 @@ export default function Sales() {
   const [draftToDeleteId, setDraftToDeleteId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: products } = useProducts();
-  const { data: customers } = useCustomers();
-  const { data: shopSettings } = useShopSettings();
+  const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: customers, isLoading: customersLoading } = useCustomers();
+  const { data: shopSettings, isLoading: settingsLoading } = useShopSettings();
   const { profile } = useAuth();
-  const { data: drafts } = useDraftSales();
+  const { data: drafts, isLoading: draftsLoading } = useDraftSales();
+
+  const initialLoading =
+    (productsLoading && !products) ||
+    (customersLoading && !customers) ||
+    (settingsLoading && !shopSettings) ||
+    (draftsLoading && !drafts);
+
   const createSale = useCreateSale();
   const saveDraft = useSaveDraftSale();
   const completeDraft = useCompleteDraftSale();
   const deleteDraft = useDeleteDraftSale();
+
+  if (initialLoading) {
+    return <PageLoader message="Loading sales..." messageSw="Inapakia mauzo..." language={language} />;
+  }
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discount = parseInt(discountAmount) || Math.round(subtotal * (parseInt(discountPercent) || 0) / 100);

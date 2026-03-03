@@ -11,11 +11,14 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { logAudit } from "@/lib/audit";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { PageLoader } from "@/components/PageLoader";
 
 export default function ReceiveStock() {
   const navigate = useNavigate();
-  const { data: products } = useProducts();
-  const { data: suppliers } = useSuppliers();
+  const { language } = useLanguage();
+  const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: suppliers, isLoading: suppliersLoading } = useSuppliers();
   const updateProduct = useUpdateProduct();
   const [productId, setProductId] = useState("");
   const [supplierId, setSupplierId] = useState("none");
@@ -23,6 +26,10 @@ export default function ReceiveStock() {
   const [buyingPrice, setBuyingPrice] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  if ((productsLoading && !products) || (suppliersLoading && !suppliers)) {
+    return <PageLoader message="Loading..." messageSw="Inapakia..." language={language} />;
+  }
 
   const getShopId = async () => {
     const { data: auth } = await supabase.auth.getUser();

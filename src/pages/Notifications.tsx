@@ -1,9 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { PageLoader } from "@/components/PageLoader";
 
 export default function Notifications() {
-  const { data, markAsRead, markAllRead, unreadCount } = useNotifications();
+  const { language } = useLanguage();
+  const { data, isLoading, markAsRead, markAllRead, unreadCount } = useNotifications();
+
+  if (isLoading && data === undefined) {
+    return <PageLoader message="Loading notifications..." messageSw="Inapakia arifa..." language={language} />;
+  }
 
   return (
     <div className="space-y-6">

@@ -16,6 +16,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 type DateRangeType = "daily" | "weekly" | "monthly" | "custom";
@@ -60,6 +61,10 @@ export default function Reports() {
   const { data: sales, isLoading } = useSalesByDateRange(start, end);
   const { data: expenses } = useExpensesByDateRange(start, end);
   const { data: products } = useProducts();
+
+  if (isLoading && sales === undefined) {
+    return <PageLoader message="Loading reports..." messageSw="Inapakia ripoti..." language={language} />;
+  }
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
   const formatK = (num: number) => {

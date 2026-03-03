@@ -1,8 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { PageLoader } from "@/components/PageLoader";
 
 export default function Loyalty() {
-  const { data: customers } = useCustomers();
+  const { language } = useLanguage();
+  const { data: customers, isLoading } = useCustomers();
+  if (isLoading && !customers) {
+    return <PageLoader message="Loading loyalty..." messageSw="Inapakia uanachama..." language={language} />;
+  }
   const members = (customers || []).filter((c) => Number((c as any).loyalty_points || 0) > 0);
   const totalPoints = members.reduce((sum, c) => sum + Number((c as any).loyalty_points || 0), 0);
 

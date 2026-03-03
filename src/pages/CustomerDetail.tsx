@@ -5,13 +5,20 @@ import { Button } from "@/components/ui/button";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { PageLoader } from "@/components/PageLoader";
 
 export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: customers } = useCustomers();
+  const { language } = useLanguage();
+  const { data: customers, isLoading } = useCustomers();
   const customer = useMemo(() => (customers || []).find((c) => c.id === id), [customers, id]);
   const { data: sales } = useSalesByCustomer(id || null);
+
+  if (isLoading && !customers) {
+    return <PageLoader message="Loading customer..." messageSw="Inapakia mteja..." language={language} />;
+  }
 
   if (!customer) {
     return (

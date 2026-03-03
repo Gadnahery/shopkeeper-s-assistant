@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 export default function HRM() {
@@ -72,6 +73,10 @@ export default function HRM() {
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["staff"] }); toast.success("Staff removed"); },
   });
+
+  if (isLoading && !staffList) {
+    return <PageLoader message="Loading HRM..." messageSw="Inapakia wafanyakazi..." language={language} />;
+  }
 
   const filtered = staffList?.filter(s => s.full_name.toLowerCase().includes(searchTerm.toLowerCase())) || [];
   const totalSalary = staffList?.reduce((sum, s) => sum + Number(s.salary || 0), 0) || 0;

@@ -19,6 +19,7 @@ import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategories";
 import { useDraftForm } from "@/hooks/useDraftForm";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 const initialCategoryForm = { name: "", name_sw: "", description: "" };
@@ -57,6 +58,10 @@ export default function Categories() {
     setEditing(null);
     setIsAddOpen(true);
   };
+
+  if (isLoading && !categories) {
+    return <PageLoader message="Loading categories..." messageSw="Inapakia kategoria..." language={language} />;
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">

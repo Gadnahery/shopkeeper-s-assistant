@@ -22,6 +22,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useExpenses, useExpenseCategories, useCreateExpense, useUpdateExpense, useExpenseStats, useDeleteExpense } from "@/hooks/useExpenses";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { format } from "date-fns";
+import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 
 export default function Expenses() {
@@ -39,6 +40,10 @@ export default function Expenses() {
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
+
+  if (isLoading && !expenses) {
+    return <PageLoader message="Loading expenses..." messageSw="Inapakia matumizi..." language={language} />;
+  }
 
   const filteredExpenses = expenses?.filter(
     (e) => e.description.toLowerCase().includes(searchTerm.toLowerCase()) || e.category.toLowerCase().includes(searchTerm.toLowerCase())

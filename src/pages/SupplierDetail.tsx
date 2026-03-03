@@ -4,12 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { PageLoader } from "@/components/PageLoader";
 
 export default function SupplierDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: suppliers } = useSuppliers();
+  const { language } = useLanguage();
+  const { data: suppliers, isLoading } = useSuppliers();
   const supplier = useMemo(() => (suppliers || []).find((s) => s.id === id), [suppliers, id]);
+
+  if (isLoading && !suppliers) {
+    return <PageLoader message="Loading supplier..." messageSw="Inapakia msambazaji..." language={language} />;
+  }
 
   if (!supplier) {
     return (
