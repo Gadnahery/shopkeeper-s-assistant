@@ -27,7 +27,7 @@ export default function ReceiveStock() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if ((productsLoading && !products) || (suppliersLoading && !suppliers)) {
+  if (products === undefined || suppliers === undefined || productsLoading || suppliersLoading) {
     return <PageLoader message="Loading..." messageSw="Inapakia..." language={language} />;
   }
 

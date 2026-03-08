@@ -69,7 +69,7 @@ export default function UserManagement() {
     }
   }, [pageAccessOpen, selectedUser, currentAccess]);
 
-  if (isLoading && users === undefined) {
+  if (users === undefined || isLoading) {
     return <PageLoader message="Loading users..." messageSw="Inapakia watumiaji..." language={language} />;
   }
 

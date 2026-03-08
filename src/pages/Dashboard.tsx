@@ -69,8 +69,7 @@ export default function Dashboard() {
   const { data: weeklyTrend } = useWeeklySalesTrend();
   const { data: categoryData } = useStockByCategory();
 
-  const initialLoading = salesLoading && rangeSales === undefined;
-  if (initialLoading) {
+  if (rangeSales === undefined || salesLoading) {
     return <PageLoader message="Loading dashboard..." messageSw="Inapakia dashibodi..." language={language} />;
   }
 

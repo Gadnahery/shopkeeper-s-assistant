@@ -41,7 +41,7 @@ export default function Suppliers() {
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
 
-  if (isLoading && !suppliers) {
+  if (suppliers === undefined || isLoading) {
     return <PageLoader message="Loading suppliers..." messageSw="Inapakia wasambazaji..." language={language} />;
   }
 

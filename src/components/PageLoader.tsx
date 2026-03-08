@@ -12,7 +12,7 @@ export function PageLoader({
   language = "en",
 }: PageLoaderProps) {
   return (
-    <div className="flex min-h-[280px] items-center justify-center">
+    <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
       <div className="flex flex-col items-center gap-2 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
         <span className="text-sm">{language === "sw" ? messageSw : message}</span>

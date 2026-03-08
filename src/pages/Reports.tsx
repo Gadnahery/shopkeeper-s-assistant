@@ -62,7 +62,7 @@ export default function Reports() {
   const { data: expenses } = useExpensesByDateRange(start, end);
   const { data: products } = useProducts();
 
-  if (isLoading && sales === undefined) {
+  if (sales === undefined || isLoading) {
     return <PageLoader message="Loading reports..." messageSw="Inapakia ripoti..." language={language} />;
   }
 

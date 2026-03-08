@@ -46,7 +46,7 @@ export default function Settings() {
     setAutoPrintReceipt(s.auto_print_receipt ?? false);
   }, [shopSettings]);
 
-  if (isLoading && !shopSettings) {
+  if (shopSettings === undefined || isLoading) {
     return <PageLoader message="Loading settings..." messageSw="Inapakia mipangilio..." language={language} />;
   }
 

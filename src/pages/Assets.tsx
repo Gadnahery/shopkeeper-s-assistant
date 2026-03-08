@@ -74,7 +74,7 @@ export default function Assets() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["assets"] }); toast.success("Asset removed"); },
   });
 
-  if (isLoading && !assets) {
+  if (assets === undefined || isLoading) {
     return <PageLoader message="Loading assets..." messageSw="Inapakia mali..." language={language} />;
   }
 

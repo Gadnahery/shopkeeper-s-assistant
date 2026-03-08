@@ -54,7 +54,7 @@ export default function Todo() {
   const updateTodo = useUpdateTodo();
   const deleteTodo = useDeleteTodo();
 
-  if (isLoading && !todos) {
+  if (todos === undefined || isLoading) {
     return <PageLoader message="Loading tasks..." messageSw="Inapakia kazi..." language={language} />;
   }
 

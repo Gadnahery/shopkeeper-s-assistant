@@ -41,7 +41,7 @@ export default function Expenses() {
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
 
-  if (isLoading && !expenses) {
+  if (expenses === undefined || isLoading) {
     return <PageLoader message="Loading expenses..." messageSw="Inapakia matumizi..." language={language} />;
   }
 

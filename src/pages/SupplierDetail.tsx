@@ -14,7 +14,7 @@ export default function SupplierDetail() {
   const { data: suppliers, isLoading } = useSuppliers();
   const supplier = useMemo(() => (suppliers || []).find((s) => s.id === id), [suppliers, id]);
 
-  if (isLoading && !suppliers) {
+  if (suppliers === undefined || isLoading) {
     return <PageLoader message="Loading supplier..." messageSw="Inapakia msambazaji..." language={language} />;
   }
 

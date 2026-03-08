@@ -16,7 +16,7 @@ export default function CustomerDetail() {
   const customer = useMemo(() => (customers || []).find((c) => c.id === id), [customers, id]);
   const { data: sales } = useSalesByCustomer(id || null);
 
-  if (isLoading && !customers) {
+  if (customers === undefined || isLoading) {
     return <PageLoader message="Loading customer..." messageSw="Inapakia mteja..." language={language} />;
   }
 

@@ -96,10 +96,6 @@ export default function Orders() {
     return { from: startOfDay(subDays(now, 30)), to: endOfDay(now) };
   }, [dateRange]);
 
-  if (isLoading && !orders) {
-    return <PageLoader message="Loading orders..." messageSw="Inapakia maagizo..." language={language} />;
-  }
-
   const filteredOrders = useMemo(() => {
     let list = orders ?? [];
     if (search) {
@@ -124,6 +120,10 @@ export default function Orders() {
     const totalValue = list.filter((o) => o.status !== "cancelled").reduce((s, o) => s + Number(o.total || 0), 0);
     return { total: list.length, pending, processing, completed, totalValue };
   }, [filteredOrders]);
+
+  if (orders === undefined || isLoading) {
+    return <PageLoader message="Loading orders..." messageSw="Inapakia maagizo..." language={language} />;
+  }
 
   const formatNumber = (n: number) => n.toLocaleString("en-US");
 

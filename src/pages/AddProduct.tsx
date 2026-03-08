@@ -34,7 +34,7 @@ export default function AddProduct() {
   };
   const [formData, setFormData, clearProductDraft] = useDraftForm("add-product", initialProductForm);
 
-  if (categoriesLoading && !categories) {
+  if (categories === undefined || categoriesLoading) {
     return <PageLoader message="Loading..." messageSw="Inapakia..." language={language} />;
   }
 

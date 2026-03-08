@@ -59,7 +59,7 @@ export default function Categories() {
     setIsAddOpen(true);
   };
 
-  if (isLoading && !categories) {
+  if (categories === undefined || isLoading) {
     return <PageLoader message="Loading categories..." messageSw="Inapakia kategoria..." language={language} />;
   }
 

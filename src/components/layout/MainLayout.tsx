@@ -53,7 +53,7 @@ function LayoutContent() {
       <Sidebar />
       <div
         className={cn(
-          "transition-all duration-300",
+          "transition-all duration-300 w-full min-w-0",
           isCollapsed ? "md:ml-[68px]" : "md:ml-56",
           "ml-0" // mobile: no margin
         )}
@@ -62,10 +62,10 @@ function LayoutContent() {
         <main className="p-4 md:p-6 lg:p-6 min-h-[calc(100vh-3.5rem)]">
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 4 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="min-h-[200px]"
+            transition={{ duration: 0.15 }}
+            className="min-h-[200px] w-full"
           >
             <Outlet />
           </motion.div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,12 +126,10 @@ export default function POSTerminal() {
   }, []);
 
   const initialLoading =
-    (productsLoading && !products) ||
-    (customersLoading && !customers) ||
-    (settingsLoading && !shopSettings);
-  if (initialLoading) {
-    return <PageLoader message="Loading POS..." messageSw="Inapakia POS..." language={language} />;
-  }
+    products === undefined ||
+    shopSettings === undefined ||
+    productsLoading ||
+    settingsLoading;
 
   const handleBarcodeScan = (barcode: string) => {
     const product = products?.find(
@@ -299,7 +297,7 @@ export default function POSTerminal() {
     }
   };
 
-  const parkSale = () => {
+  const parkSale = useCallback(() => {
     if (cartItems.length === 0) return;
     setParkedSales((p) => [
       ...p,
@@ -314,7 +312,7 @@ export default function POSTerminal() {
     toast.success(
       language === "sw" ? "Mauzo yamehifadhiwa kwa muda" : "Sale parked"
     );
-  };
+  }, [cartItems, selectedCustomer, language]);
 
   const restoreSale = (
     parkedSale: (typeof parkedSales)[0]
@@ -355,7 +353,7 @@ export default function POSTerminal() {
     };
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [cartItems.length, selectedCustomer]);
+  }, [parkSale]);
 
   const filteredProducts =
     products?.filter(
@@ -364,6 +362,10 @@ export default function POSTerminal() {
         p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.barcode && p.barcode.includes(searchTerm))
     ) ?? [];
+
+  if (initialLoading) {
+    return <PageLoader message="Loading POS..." messageSw="Inapakia POS..." language={language} />;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">

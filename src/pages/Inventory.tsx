@@ -55,7 +55,7 @@ export default function Inventory() {
   const deleteProduct = useDeleteProduct();
   const updateProduct = useUpdateProduct();
 
-  if (isLoading && !products) {
+  if (products === undefined || isLoading) {
     return <PageLoader message="Loading inventory..." messageSw="Inapakia hesabu..." language={language} />;
   }
 

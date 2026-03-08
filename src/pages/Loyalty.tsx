@@ -6,7 +6,7 @@ import { PageLoader } from "@/components/PageLoader";
 export default function Loyalty() {
   const { language } = useLanguage();
   const { data: customers, isLoading } = useCustomers();
-  if (isLoading && !customers) {
+  if (customers === undefined || isLoading) {
     return <PageLoader message="Loading loyalty..." messageSw="Inapakia uanachama..." language={language} />;
   }
   const members = (customers || []).filter((c) => Number((c as any).loyalty_points || 0) > 0);

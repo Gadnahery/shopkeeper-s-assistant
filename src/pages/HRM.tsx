@@ -74,7 +74,7 @@ export default function HRM() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["staff"] }); toast.success("Staff removed"); },
   });
 
-  if (isLoading && !staffList) {
+  if (staffList === undefined || isLoading) {
     return <PageLoader message="Loading HRM..." messageSw="Inapakia wafanyakazi..." language={language} />;
   }
 

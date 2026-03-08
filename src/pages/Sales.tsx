@@ -63,10 +63,12 @@ export default function Sales() {
   const { data: drafts, isLoading: draftsLoading } = useDraftSales();
 
   const initialLoading =
-    (productsLoading && !products) ||
-    (customersLoading && !customers) ||
-    (settingsLoading && !shopSettings) ||
-    (draftsLoading && !drafts);
+    products === undefined ||
+    shopSettings === undefined ||
+    drafts === undefined ||
+    productsLoading ||
+    settingsLoading ||
+    draftsLoading;
 
   const createSale = useCreateSale();
   const saveDraft = useSaveDraftSale();

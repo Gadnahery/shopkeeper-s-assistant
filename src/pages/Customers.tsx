@@ -46,7 +46,7 @@ export default function Customers() {
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
 
-  if (isLoading && !customers) {
+  if (customers === undefined || isLoading) {
     return <PageLoader message="Loading customers..." messageSw="Inapakia wateja..." language={language} />;
   }
 

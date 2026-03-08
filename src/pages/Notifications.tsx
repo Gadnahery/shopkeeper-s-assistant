@@ -8,7 +8,7 @@ export default function Notifications() {
   const { language } = useLanguage();
   const { data, isLoading, markAsRead, markAllRead, unreadCount } = useNotifications();
 
-  if (isLoading && data === undefined) {
+  if (data === undefined || isLoading) {
     return <PageLoader message="Loading notifications..." messageSw="Inapakia arifa..." language={language} />;
   }
 
