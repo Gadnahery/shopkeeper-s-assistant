@@ -8,30 +8,27 @@ export function Hero() {
   const { language } = useLanguage();
 
   return (
-    <section className="relative min-h-[90vh] overflow-hidden pt-24 pb-16">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-white to-blue-50 dark:from-neutral-900 dark:via-neutral-900 dark:to-teal-950/30" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-200/30 via-transparent to-transparent dark:from-teal-500/10" />
+    <section className="relative min-h-[90vh] overflow-hidden pb-16 pt-24">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 dark:from-neutral-900 dark:via-neutral-900 dark:to-emerald-950/30" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-200/30 via-transparent to-transparent dark:from-emerald-500/10" />
 
-      {/* Floating decorative elements */}
       <motion.div
         animate={{ y: [0, -12, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-32 right-20 h-24 w-24 rounded-2xl bg-teal-400/20 blur-2xl"
+        className="absolute right-20 top-32 h-24 w-24 rounded-2xl bg-emerald-400/20 blur-2xl"
       />
       <motion.div
         animate={{ y: [0, 12, 0] }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        className="absolute bottom-20 left-10 h-32 w-32 rounded-full bg-blue-400/20 blur-3xl"
+        className="absolute bottom-20 left-10 h-32 w-32 rounded-full bg-cyan-400/20 blur-3xl"
       />
       <motion.div
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="absolute top-1/2 right-1/3 h-16 w-16 rounded-xl bg-violet-400/20 blur-xl"
+        className="absolute right-1/3 top-1/2 h-16 w-16 rounded-xl bg-cyan-400/20 blur-xl"
       />
 
       <div className="container relative mx-auto flex flex-col items-center gap-12 px-4 pt-8 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
-        {/* Left content */}
         <div className="flex-1 text-center lg:text-left">
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
@@ -42,19 +39,20 @@ export function Hero() {
             {language === "sw" ? (
               <>
                 Simamia Biashara Yako{" "}
-                <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-blue-400">
+                <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:to-cyan-400">
                   Kidigitali
                 </span>
               </>
             ) : (
               <>
                 Manage Your Business{" "}
-                <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-blue-400">
+                <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:to-cyan-400">
                   Digitally
                 </span>
               </>
             )}
           </motion.h1>
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -63,8 +61,9 @@ export function Hero() {
           >
             {language === "sw"
               ? "POS, Hesabu, Stoki, Ripoti na Udhibiti wote sehemu moja."
-              : "POS, accounting, stock, reports and control—all in one place."}
+              : "POS, accounting, stock, reports and control all in one place."}
           </motion.p>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -74,32 +73,23 @@ export function Hero() {
             <Button
               asChild
               size="lg"
-              className="h-12 rounded-xl bg-gradient-to-r from-teal-500 to-blue-600 px-8 text-base font-semibold shadow-lg shadow-teal-500/25 transition-all hover:shadow-xl hover:shadow-teal-500/30 hover:scale-[1.02]"
+              className="h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-600 px-8 text-base font-semibold shadow-lg shadow-emerald-500/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-emerald-500/30"
             >
-              <Link to="/signup">
-                {language === "sw" ? "Anza Bure" : "Start Free"}
-              </Link>
+              <Link to="/signup">{language === "sw" ? "Anza Bure" : "Start Free"}</Link>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="h-12 rounded-xl border-2 px-8 text-base font-semibold"
-            >
+            <Button asChild variant="outline" size="lg" className="h-12 rounded-xl border-2 px-8 text-base font-semibold">
               <Link to="/auth">{language === "sw" ? "Tazama Demo" : "View Demo"}</Link>
             </Button>
           </motion.div>
         </div>
 
-        {/* Right - animated illustration */}
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="relative flex-1 lg:max-w-md"
         >
-          <div className="relative rounded-3xl border border-white/20 bg-white/60 p-8 shadow-2xl shadow-teal-500/10 backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
-            {/* Phone mockup with floating cards */}
+          <div className="relative rounded-3xl border border-white/20 bg-white/60 p-8 shadow-2xl shadow-emerald-500/10 backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
             <motion.div
               animate={{ y: [0, -6, 0] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -110,27 +100,27 @@ export function Hero() {
                   initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="flex items-center gap-2 rounded-lg bg-teal-500/20 p-2"
+                  className="flex items-center gap-2 rounded-lg bg-emerald-500/20 p-2"
                 >
-                  <TrendingUp className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                  <span className="text-xs font-medium">Mauzo ↑ 24%</span>
+                  <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium">Mauzo +24%</span>
                 </motion.div>
                 <motion.div
                   initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.7 }}
-                  className="flex items-center gap-2 rounded-lg bg-blue-500/20 p-2"
+                  className="flex items-center gap-2 rounded-lg bg-cyan-500/20 p-2"
                 >
-                  <Receipt className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <Receipt className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                   <span className="text-xs font-medium">Risiti</span>
                 </motion.div>
                 <motion.div
                   initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.9 }}
-                  className="flex items-center gap-2 rounded-lg bg-violet-500/20 p-2"
+                  className="flex items-center gap-2 rounded-lg bg-sky-500/20 p-2"
                 >
-                  <ScanLine className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                  <ScanLine className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   <span className="text-xs font-medium">Skana Barcode</span>
                 </motion.div>
               </div>

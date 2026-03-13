@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { createShopNotification } from "@/lib/shopNotifications";
 
 async function getUserShopId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -85,6 +86,17 @@ export function useCreateOrder() {
       const items = input.items.map((i) => ({ order_id: order.id, product_id: i.product_id || null, product_name: i.product_name, quantity: i.quantity, unit_price: i.unit_price, total: i.quantity * i.unit_price }));
       const { error: itemsErr } = await supabase.from("order_items").insert(items);
       if (itemsErr) throw itemsErr;
+      try {
+        await createShopNotification({
+          shopId,
+          title: "New order created",
+          message: `Order ${order.order_number} was created${input.customer_name ? ` for ${input.customer_name}` : ""}.`,
+          type: "order",
+          url: "/orders",
+        });
+      } catch {
+        // keep order creation successful even if background push delivery fails
+      }
       return order;
     },
     onSuccess: () => {
@@ -101,6 +113,19 @@ export function useUpdateOrderStatus() {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { data, error } = await supabase.from("orders").update({ status }).eq("id", id).select().single();
       if (error) throw error;
+      if (data?.shop_id) {
+        try {
+          await createShopNotification({
+            shopId: data.shop_id,
+            title: "Order updated",
+            message: `Order ${data.order_number} is now ${status}.`,
+            type: "order",
+            url: "/orders",
+          });
+        } catch {
+          // keep order update successful even if background push delivery fails
+        }
+      }
       return data;
     },
     onSuccess: () => {

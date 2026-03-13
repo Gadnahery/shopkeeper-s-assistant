@@ -21,6 +21,7 @@ import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory 
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
+import { PageHeader } from "@/components/common/PageHeader";
 
 const initialCategoryForm = { name: "", name_sw: "", description: "" };
 
@@ -64,16 +65,17 @@ export default function Categories() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">
-          {language === "sw" ? "Kategoria za Bidhaa" : "Product Categories"}
-        </h1>
-        <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          {language === "sw" ? "Ongeza Kategoria" : "Add Category"}
-        </Button>
-      </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Kategoria za Bidhaa" : "Product Categories"}
+        subtitle={language === "sw" ? "Panga bidhaa zako kwa makundi safi na rahisi kutafuta." : "Organize inventory into clear categories that are easier to browse and manage."}
+        actions={
+          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={openAdd}>
+            <Plus className="h-4 w-4" />
+            {language === "sw" ? "Ongeza Kategoria" : "Add Category"}
+          </Button>
+        }
+      />
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
@@ -130,11 +132,12 @@ export default function Categories() {
         </DialogContent>
       </Dialog>
 
-      <Card>
+      <Card className="section-shell overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : (
+            <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -174,6 +177,7 @@ export default function Categories() {
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

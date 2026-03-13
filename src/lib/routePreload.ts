@@ -8,7 +8,6 @@ const preloaders: Record<string, () => Promise<unknown>> = {
   "/signup": () => import("@/pages/SignupPage"),
   "/dashboard": () => import("@/pages/Dashboard"),
   "/sales": () => import("@/pages/Sales"),
-  "/sales/terminal": () => import("@/pages/POSTerminal"),
   "/inventory": () => import("@/pages/Inventory"),
   "/inventory/add": () => import("@/pages/AddProduct"),
   "/inventory/receive": () => import("@/pages/ReceiveStock"),

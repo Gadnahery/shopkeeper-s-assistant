@@ -2,9 +2,11 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePWAContext } from "@/contexts/PWAContext";
 
 export function CTA() {
   const { language } = useLanguage();
+  const { canInstall, install, installHint, needsManualInstallHint } = usePWAContext();
 
   return (
     <section className="py-20">
@@ -30,24 +32,40 @@ export function CTA() {
                 ? "Fungua akaunti bila malipo na anza kusimamia biashara yako leo."
                 : "Create your free account and start managing your business today."}
             </p>
-            <motion.div
-              initial={{ scale: 0.95 }}
-              whileInView={{ scale: 1 }}
-              viewport={{ once: true }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-              className="mt-8"
-            >
-              <Button
-                asChild
-                size="lg"
-                className="h-14 rounded-xl bg-white px-10 text-lg font-semibold text-teal-600 shadow-xl transition-all hover:bg-white/95 hover:shadow-2xl"
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <motion.div
+                initial={{ scale: 0.95 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Link to="/signup">
-                  {language === "sw" ? "Fungua Akaunti Bure" : "Create Free Account"}
-                </Link>
-              </Button>
-            </motion.div>
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-14 rounded-xl bg-white px-10 text-lg font-semibold text-teal-600 shadow-xl transition-all hover:bg-white/95 hover:shadow-2xl"
+                >
+                  <Link to="/signup">
+                    {language === "sw" ? "Fungua Akaunti Bure" : "Create Free Account"}
+                  </Link>
+                </Button>
+              </motion.div>
+              {(canInstall || needsManualInstallHint) && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 rounded-xl border-white/35 bg-white/10 px-8 text-white hover:bg-white/15 hover:text-white"
+                  onClick={() => void install()}
+                >
+                  {language === "sw" ? "Sakinisha App" : "Install App"}
+                </Button>
+              )}
+            </div>
+            {installHint && (
+              <p className="mx-auto mt-4 max-w-2xl text-sm text-white/85">
+                {installHint}
+              </p>
+            )}
           </div>
         </motion.div>
       </div>

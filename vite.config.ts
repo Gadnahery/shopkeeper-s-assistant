@@ -27,38 +27,85 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === "production" && VitePWA({
+    VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icon-192.png", "icon-512.png"],
+      includeAssets: [
+        "icon-192.png",
+        "icon-512.png",
+        "icon-maskable-512.png",
+        "apple-touch-icon.png",
+        "badge-96.png",
+        "favicon.svg",
+        "mask-icon.svg",
+      ],
       manifest: {
+        id: "/",
         name: "Smart Money - Retail Management System",
         short_name: "Smart Money",
         description: "Complete Retail Management System - POS, Inventory, Sales and Reports",
+        lang: "en",
         theme_color: "#26a17b",
         background_color: "#f7f7f7",
         display: "standalone",
+        display_override: ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
         orientation: "any",
         scope: "/",
         start_url: "/",
+        categories: ["business", "finance", "productivity"],
+        prefer_related_applications: false,
+        shortcuts: [
+          {
+            name: "Open POS",
+            short_name: "POS",
+            description: "Start selling quickly from the checkout workspace.",
+            url: "/sales",
+            icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+          },
+          {
+            name: "View inventory",
+            short_name: "Inventory",
+            description: "Check products, stock, and pricing.",
+            url: "/inventory",
+            icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+          },
+        ],
         icons: [
           {
             src: "/icon-192.png",
             sizes: "192x192",
             type: "image/png",
-            purpose: "any maskable",
+            purpose: "any",
           },
           {
             src: "/icon-512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any maskable",
+            purpose: "any",
+          },
+          {
+            src: "/icon-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "/apple-touch-icon.png",
+            sizes: "180x180",
+            type: "image/png",
+            purpose: "any",
           },
         ],
+      },
+      devOptions: {
+        enabled: true,
+        type: "module",
       },
       workbox: {
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        navigateFallback: "/index.html",
+        importScripts: ["/sw-push.js"],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
@@ -72,6 +119,13 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "google-font-stylesheets",
+            },
+          },
+          {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: "CacheFirst",
             options: {
@@ -82,7 +136,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
-  ].filter(Boolean) as any,
+  ] as any,
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

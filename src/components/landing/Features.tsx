@@ -100,12 +100,12 @@ export function Features() {
             <motion.div
               key={f.titleEn}
               variants={item}
-              whileHover={{ scale: 1.03, boxShadow: "0 20px 40px -12px rgba(20, 184, 166, 0.2)" }}
+              whileHover={{ scale: 1.03, boxShadow: "0 20px 40px -12px rgba(16, 185, 129, 0.2)" }}
               className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-teal-500/30 hover:shadow-lg"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100" />
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 opacity-0 transition-opacity group-hover:opacity-100" />
               <div className="relative">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-blue-600 text-white shadow-lg shadow-teal-500/25">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 text-white shadow-lg shadow-emerald-500/25">
                   <f.icon className="h-6 w-6" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">

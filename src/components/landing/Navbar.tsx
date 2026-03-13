@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Store, Menu, X, Globe, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePWAContext } from "@/contexts/PWAContext";
 import { useTheme } from "@/hooks/useTheme";
 
 const navLinks = [
@@ -17,6 +18,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { canInstall, install, needsManualInstallHint } = usePWAContext();
 
   const t = (en: string, sw: string) => (language === "sw" ? sw : en);
 
@@ -25,14 +27,14 @@ export function Navbar() {
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-white/80 backdrop-blur-xl dark:bg-neutral-900/80"
+      className="safe-top fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-white/80 backdrop-blur-xl dark:bg-neutral-900/80"
     >
-      <nav className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+      <nav className="container mx-auto flex min-h-16 items-center justify-between px-4 md:px-6">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-blue-600 shadow-lg shadow-teal-500/25">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg shadow-emerald-500/25">
             <Store className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-blue-400">
+          <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-xl font-bold text-transparent dark:from-emerald-400 dark:to-cyan-400">
             Smart Money
           </span>
         </Link>
@@ -73,7 +75,12 @@ export function Navbar() {
           <Button variant="ghost" asChild>
             <Link to="/login">{t("Login", "Ingia")}</Link>
           </Button>
-          <Button asChild className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-md shadow-teal-500/25">
+          {(canInstall || needsManualInstallHint) && (
+            <Button variant="outline" onClick={() => void install()}>
+              {t("Install App", "Sakinisha App")}
+            </Button>
+          )}
+          <Button asChild className="bg-gradient-to-r from-emerald-500 to-cyan-600 shadow-md shadow-emerald-500/25 hover:from-emerald-600 hover:to-cyan-700">
             <Link to="/signup">{t("Signup", "Jisajili")}</Link>
           </Button>
         </div>
@@ -132,7 +139,12 @@ export function Navbar() {
                     {t("Login", "Ingia")}
                   </Link>
                 </Button>
-                <Button asChild className="w-full bg-gradient-to-r from-teal-500 to-blue-600">
+                {(canInstall || needsManualInstallHint) && (
+                  <Button variant="outline" className="w-full" onClick={() => void install()}>
+                    {t("Install App", "Sakinisha App")}
+                  </Button>
+                )}
+                <Button asChild className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700">
                   <Link to="/signup" onClick={() => setOpen(false)}>
                     {t("Signup", "Jisajili")}
                   </Link>

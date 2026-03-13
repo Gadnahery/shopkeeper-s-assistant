@@ -10,7 +10,7 @@ import { Footer } from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50/80 via-background to-slate-100/60 dark:from-neutral-950 dark:via-background dark:to-neutral-900/80">
+    <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.10),transparent_30%)] from-emerald-50/70 via-background to-cyan-50/60 dark:from-neutral-950 dark:via-background dark:to-neutral-900/80">
       <Navbar />
       <main>
         <Hero />

@@ -2,14 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Smart Money - Warm, Easy-on-the-Eyes Palette
-   Light: Cream base + sage teal accent
-   Dark: Soft charcoal + muted teal
-*/
+/* Smart Money design tokens */
 
 @layer base {
   :root {
-    /* Dark theme - softer charcoal, less harsh */
+    --font-sans: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-display: "Sora", "Manrope", system-ui, sans-serif;
+
     --background: 220 18% 14%;
     --foreground: 40 10% 96%;
 
@@ -19,7 +18,6 @@
     --popover: 220 16% 18%;
     --popover-foreground: 40 10% 96%;
 
-    /* Muted teal - calming, not harsh */
     --primary: 174 58% 39%;
     --primary-foreground: 0 0% 100%;
 
@@ -58,7 +56,6 @@
     --sidebar-ring: 174 58% 39%;
   }
 
-  /* Light theme - cream base + dark brown text */
   .light {
     --background: 36 33% 97%;
     --foreground: 25 30% 15%;
@@ -69,7 +66,6 @@
     --popover: 40 25% 99%;
     --popover-foreground: 25 30% 15%;
 
-    /* Sage teal - natural, calming */
     --primary: 174 45% 38%;
     --primary-foreground: 0 0% 100%;
 
@@ -111,8 +107,7 @@
     scroll-behavior: smooth;
   }
 
-  /* Asymmetric theme transition – text fast, background slower to avoid ghosting. Details: “pops” in/out */
-  /* Asymmetric theme transition: text snaps fast (200ms), background eases over 400ms to avoid low-contrast ghosting */
+  /* Text snaps fast, backgrounds ease slightly longer for cleaner theme transitions. */
   html.theme-transition,
   html.theme-transition *,
   html.theme-transition *::before,
@@ -127,7 +122,6 @@
       outline-color 400ms ease-in-out 0ms !important;
   }
 
-  /* Text elements: fast color only so they stay high-contrast against the shifting background */
   html.theme-transition p,
   html.theme-transition h1,
   html.theme-transition h2,
@@ -142,10 +136,34 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: var(--font-sans);
     min-height: 100dvh;
     min-height: 100vh;
+    overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
+    background-image:
+      radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.08), transparent 42%),
+      radial-gradient(circle at 100% 100%, hsl(var(--accent-foreground) / 0.08), transparent 38%);
+  }
+
+  #root {
+    min-height: 100dvh;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.24);
+    color: hsl(var(--foreground));
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 
   input,
@@ -158,12 +176,15 @@
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
+    @apply rounded-full bg-border;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
   }
@@ -174,7 +195,6 @@
     text-wrap: balance;
   }
 
-  /* Glass effect cards – modern, soft blur */
   .glass-card {
     @apply rounded-2xl border border-white/20 dark:border-white/10;
     background: hsl(var(--card) / 0.7);
@@ -182,68 +202,46 @@
     -webkit-backdrop-filter: blur(12px);
     transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
   }
+
   .glass-card:hover {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     border-color: hsl(var(--primary) / 0.25);
   }
+
   .dark .glass-card:hover {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
-  /* Smooth hover lift for buttons/cards */
   .hover-lift {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
+
   .hover-lift:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
+
   .dark .hover-lift:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   }
-}
 
-/* Sidebar: force colors - high-contrast for both light & dark modes */
-/* Light theme: dark text/icons on cream sidebar - icons match text */
-html.light [data-app-sidebar] nav a:not([class*="10B981"]),
-html.light [data-app-sidebar] nav a:not([class*="10B981"]) svg,
-html.light [data-app-sidebar] nav span.uppercase,
-html.light [data-app-sidebar] span.truncate,
-html.light [data-app-sidebar] button.gap-3 {
-  color: #1f2937 !important;  /* Dark gray - clear on cream */
-}
-html.light [data-app-sidebar] nav a:not([class*="10B981"]) svg {
-  stroke: currentColor;
-}
-/* Dark theme: bright white text/icons on dark sidebar - icons match text */
-html.dark [data-app-sidebar] nav a:not([class*="10B981"]),
-html.dark [data-app-sidebar] nav a:not([class*="10B981"]) svg,
-html.dark [data-app-sidebar] nav span.uppercase,
-html.dark [data-app-sidebar] span.truncate,
-html.dark [data-app-sidebar] button.gap-3 {
-  color: #f3f4f6 !important;  /* Bright gray-white - clear on dark */
-}
-html.dark [data-app-sidebar] nav a:not([class*="10B981"]) svg {
-  stroke: currentColor;
-}
-/* Active emerald link: always white */
-[data-app-sidebar] nav a.active,
-[data-app-sidebar] nav a.active * {
-  color: white !important;
-}
+  .section-shell {
+    @apply rounded-[1.5rem] border border-border/70 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.42)] backdrop-blur-xl;
+    background: hsl(var(--card) / 0.82);
+  }
 
-/* Hover: only the hovered item gets emerald - active loses it when hovering elsewhere */
-[data-app-sidebar] nav:has(a:hover) a.active:not(:hover) {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-html.light [data-app-sidebar] nav:has(a:hover) a.active:not(:hover),
-html.light [data-app-sidebar] nav:has(a:hover) a.active:not(:hover) * {
-  color: #1f2937 !important;
-}
-html.dark [data-app-sidebar] nav:has(a:hover) a.active:not(:hover),
-html.dark [data-app-sidebar] nav:has(a:hover) a.active:not(:hover) * {
-  color: #f3f4f6 !important;
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
 }
 
 /* 8px spacing grid */

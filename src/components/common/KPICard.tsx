@@ -12,8 +12,8 @@ type KPICardProps = {
 
 export function KPICard({ label, value, icon, trend, className }: KPICardProps) {
   return (
-    <Card className={cn("glass-card", className)}>
-      <CardContent className="p-4">
+    <Card className={cn("section-shell", className)}>
+      <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>

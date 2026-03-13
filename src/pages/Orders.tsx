@@ -26,6 +26,7 @@ import { format, startOfDay, endOfDay, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
+import { PageHeader } from "@/components/common/PageHeader";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
@@ -197,16 +198,18 @@ export default function Orders() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">{language === "sw" ? "Maagizo" : "Orders"}</h1>
-        <div className="flex flex-wrap gap-2">
-          <div className="relative w-48 md:w-64">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Maagizo" : "Orders"}
+        subtitle={language === "sw" ? "Fuatilia, hariri, na simamia maagizo ya wateja" : "Track, update, and manage customer orders"}
+        actions={
+        <div className="flex w-full min-w-0 flex-wrap gap-2 xl:w-auto xl:justify-end">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder={language === "sw" ? "Tafuta (nambari, mteja, simu)..." : "Search (order #, customer, phone)..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
           </div>
           <Select value={dateRange} onValueChange={(v: "all" | "today" | "week" | "month") => setDateRange(v)}>
-            <SelectTrigger className="w-36 gap-1"><Calendar className="h-4 w-4" /><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-36 gap-1"><Calendar className="h-4 w-4" /><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
               <SelectItem value="today">{language === "sw" ? "Leo" : "Today"}</SelectItem>
@@ -215,7 +218,7 @@ export default function Orders() {
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
               {STATUS_LEGEND.map((s) => (
@@ -230,43 +233,43 @@ export default function Orders() {
             <Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add"}
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {/* Status legend */}
-      <div className="flex flex-wrap gap-2 items-center text-sm text-foreground/70 dark:text-foreground/80">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-foreground/70 dark:text-foreground/80">
         <span className="font-medium">{language === "sw" ? "Maana ya rangi:" : "Status colors:"}</span>
         {STATUS_LEGEND.map((s) => (
           <Badge key={s.key} variant="outline" className={statusColors[s.key]}>{language === "sw" ? s.sw : s.en}</Badge>
         ))}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Card className="section-shell">
           <CardContent className="p-4">
             <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Jumla ya maagizo" : "Total orders"}</p>
             <p className="text-2xl font-bold text-foreground dark:text-foreground">{stats.total}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="section-shell">
           <CardContent className="p-4">
             <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Inasubiri" : "Pending"}</p>
             <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="section-shell">
           <CardContent className="p-4">
             <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Inachakatwa" : "Processing"}</p>
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.processing}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="section-shell">
           <CardContent className="p-4">
             <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Imekamilika" : "Completed"}</p>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.completed}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="section-shell">
           <CardContent className="p-4">
             <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Thamani (zisizofutwa)" : "Value (excl. cancelled)"}</p>
             <p className="text-2xl font-bold text-foreground dark:text-foreground">{formatNumber(stats.totalValue)}</p>
@@ -355,7 +358,7 @@ export default function Orders() {
                     <li key={idx} className="flex justify-between items-center">
                       <span>{i.product_name} x{i.quantity}</span>
                       <span>{formatNumber(i.quantity * i.unit_price)}</span>
-                      <Button variant="ghost" size="sm" onClick={() => setAddItems((prev) => prev.filter((_, i) => i !== idx))}>×</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setAddItems((prev) => prev.filter((_, i) => i !== idx))}>x</Button>
                     </li>
                   ))}
                 </ul>
@@ -382,7 +385,7 @@ export default function Orders() {
           <DialogHeader><DialogTitle>{editingOrder?.order_number}</DialogTitle></DialogHeader>
           {editing && editingOrder && (
             <div className="space-y-4 pt-4">
-              <p className="text-sm text-foreground/70 dark:text-foreground/80">{editingOrder.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}{(editingOrder as any).customer_phone ? ` • ${(editingOrder as any).customer_phone} • ` : " • "}{format(new Date(editingOrder.created_at), "dd MMM yyyy")}</p>
+              <p className="text-sm text-foreground/70 dark:text-foreground/80">{editingOrder.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}{(editingOrder as any).customer_phone ? ` | ${(editingOrder as any).customer_phone} | ` : " | "}{format(new Date(editingOrder.created_at), "dd MMM yyyy")}</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{language === "sw" ? "Hali" : "Status"}</Label>
@@ -426,7 +429,7 @@ export default function Orders() {
                   <Label className="text-xs">{language === "sw" ? "Vidokezo" : "Notes"}</Label>
                   <ul className="text-sm text-foreground/70 dark:text-foreground/80 space-y-1">
                     {(editingOrder as any).order_notes.map((n: any) => (
-                      <li key={n.id}>{n.note} — {format(new Date(n.created_at), "dd MMM HH:mm")}</li>
+                      <li key={n.id}>{n.note} - {format(new Date(n.created_at), "dd MMM HH:mm")}</li>
                     ))}
                   </ul>
                 </div>
@@ -464,11 +467,13 @@ export default function Orders() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card>
+      <Card className="section-shell overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : (
+            <>
+            <div className="hidden max-w-full overflow-x-auto md:block">
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{language === "sw" ? "Nambari" : "Order #"}</TableHead>
@@ -492,7 +497,7 @@ export default function Orders() {
                       <TableCell>{formatNumber(Number(o.total))}</TableCell>
                       <TableCell><Badge variant="outline" className={statusColors[o.status] || ""}>{language === "sw" ? STATUS_LEGEND.find((s) => s.key === o.status)?.sw ?? o.status : o.status}</Badge></TableCell>
                       <TableCell><Badge className={priorityColors[(o as any).priority ?? "medium"] || ""}>{(o as any).priority ?? "medium"}</Badge></TableCell>
-                      <TableCell>{(o as any).due_date ? format(new Date((o as any).due_date), "dd MMM") : "—"}</TableCell>
+                      <TableCell>{(o as any).due_date ? format(new Date((o as any).due_date), "dd MMM") : "-"}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditing(o)}>
                           <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
@@ -503,9 +508,44 @@ export default function Orders() {
                 )}
               </TableBody>
             </Table>
+            </div>
+            <div className="grid gap-3 p-4 md:hidden">
+              {filteredOrders.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">{language === "sw" ? "Hakuna maagizo" : "No orders"}</p>
+              ) : (
+                filteredOrders.map((o) => (
+                  <Card key={o.id} className="border-border/70 bg-background/60">
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-semibold">{o.order_number}</p>
+                          <p className="text-sm text-muted-foreground">{o.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}</p>
+                        </div>
+                        <Badge variant="outline" className={statusColors[o.status] || ""}>
+                          {language === "sw" ? STATUS_LEGEND.find((s) => s.key === o.status)?.sw ?? o.status : o.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{format(new Date(o.created_at), "dd MMM yyyy")}</span>
+                        <span className="font-semibold">{formatNumber(Number(o.total))}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Badge className={priorityColors[(o as any).priority ?? "medium"] || ""}>{(o as any).priority ?? "medium"}</Badge>
+                        <Button variant="outline" size="sm" className="gap-1" onClick={() => setEditing(o)}>
+                          <Pencil className="h-4 w-4" />
+                          {language === "sw" ? "Hariri" : "Edit"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
     </motion.div>
   );
 }
+

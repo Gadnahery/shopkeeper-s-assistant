@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ImageUpload } from "@/components/ImageUpload";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function AddProduct() {
   const navigate = useNavigate();
@@ -77,16 +78,19 @@ export default function AddProduct() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">{t("addProduct.title")}</h1>
-          <Button variant="outline" onClick={() => navigate("/inventory")} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            {t("addProduct.back")}
-          </Button>
-        </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+        <PageHeader
+          title={t("addProduct.title")}
+          subtitle={language === "sw" ? "Ongeza bidhaa mpya kwa maelezo safi ya bei, stoki, picha, na barcode." : "Create a new product with clean pricing, stock, image, and barcode details."}
+          actions={
+            <Button variant="outline" onClick={() => navigate("/inventory")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              {t("addProduct.back")}
+            </Button>
+          }
+        />
 
-        <Card>
+        <Card className="section-shell">
           <CardContent className="p-4 md:p-6">
             <form onSubmit={handleSubmit}>
               <div className="mb-8">

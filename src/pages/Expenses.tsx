@@ -24,6 +24,7 @@ import { useDraftForm } from "@/hooks/useDraftForm";
 import { format } from "date-fns";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function Expenses() {
   const { t, language } = useLanguage();
@@ -97,17 +98,20 @@ export default function Expenses() {
   ];
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">{t("expenses.title")}</h1>
-        <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddExpenseOpen(true)}>
-          <Plus className="h-4 w-4" />{t("expenses.addNewExpense")}
-        </Button>
-      </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={t("expenses.title")}
+        subtitle={language === "sw" ? "Fuatilia matumizi ya kila siku, makundi ya gharama, na mwenendo wa matumizi." : "Track day-to-day costs, spending categories, and expense trends in a cleaner layout."}
+        actions={
+          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddExpenseOpen(true)}>
+            <Plus className="h-4 w-4" />{t("expenses.addNewExpense")}
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         {statsCards.map((stat, index) => (
-          <Card key={index} className="shadow-sm hover:shadow-md transition-shadow">
+          <Card key={index} className="section-shell">
             <CardContent className="p-6">
               <p className="text-xs font-semibold uppercase tracking-wider text-foreground/70 dark:text-foreground/80">{stat.label}</p>
               <p className="mt-2 text-2xl font-bold text-foreground dark:text-foreground">{stat.value}</p>
@@ -140,19 +144,20 @@ export default function Expenses() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">{t("expenses.recentExpenses")}</h2>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
               <Input placeholder={t("expenses.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
           </div>
 
-          <Card className="shadow-sm">
+          <Card className="section-shell overflow-hidden">
             <CardContent className="p-0">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (
+                <div className="max-w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -186,6 +191,7 @@ export default function Expenses() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -244,7 +250,7 @@ export default function Expenses() {
         </Dialog>
 
         {categoryBreakdown.length > 0 && (
-            <Card className="shadow-sm">
+            <Card className="section-shell">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Loader2, ArrowRight, Store, BarChart3, Receipt } from "lucide-react";
+import { ArrowRight, BarChart3, Eye, EyeOff, Loader2, Receipt, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,9 +29,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
 
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard", { replace: true });
-    }
+    if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
 
   if (user) return null;
@@ -84,216 +82,154 @@ export default function LoginPage() {
     }
   };
 
-  const formVariants = {
-    hidden: { opacity: 0, y: 16 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: i * 0.08, duration: 0.4 },
-    }),
-  };
-
   return (
-    <div className="fixed inset-0 flex overflow-hidden">
-      {/* Left - Animation panel */}
-      <motion.div
-        initial={{ x: -80, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="hidden lg:flex lg:w-1/2 flex-col justify-center bg-gradient-to-br from-teal-500 via-teal-600 to-blue-600 p-12"
-      >
-        <div className="space-y-8">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Link to="/" className="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-sm transition-colors hover:bg-white/15">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
-                <Store className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">Smart Money</span>
-            </Link>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-          >
-            <h2 className="text-3xl font-bold text-white">
-              {language === "sw" ? "Karibu tena" : "Welcome Back"}
-            </h2>
-            <p className="mt-3 text-lg text-white/80">
-              {language === "sw"
-                ? "Ingia kuendelea na biashara yako."
-                : "Sign in to continue managing your business."}
-            </p>
-          </motion.div>
-          {/* Floating cards - more rounded */}
-          <div className="relative h-48">
-            <motion.div
-              animate={{ y: [0, -14, 0], rotate: [0, 2, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute left-0 top-0 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 shadow-lg backdrop-blur-sm"
-            >
-              <BarChart3 className="h-10 w-10 text-white" />
-            </motion.div>
-            <motion.div
-              animate={{ y: [0, 12, 0], rotate: [0, -1, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-              className="absolute right-8 top-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 shadow-lg backdrop-blur-sm"
-            >
-              <Receipt className="h-8 w-8 text-white" />
-            </motion.div>
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="absolute bottom-4 left-1/3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 shadow-lg backdrop-blur-sm"
-            >
-              <Store className="h-7 w-7 text-white" />
-            </motion.div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Right - Login form in rounded card */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
-        className="flex w-full lg:w-1/2 flex-col items-center justify-center bg-gradient-to-b from-slate-50/80 to-muted/30 p-4 md:p-8 dark:from-background dark:to-muted/20"
-      >
-        <div className="mb-6 flex flex-col items-center lg:hidden">
-          <Link to="/" className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-sm">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-blue-600">
-              <Store className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold">Smart Money</span>
-          </Link>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-md rounded-[2rem] border border-border/50 bg-card/80 p-8 shadow-xl shadow-black/5 backdrop-blur-sm md:p-10"
+    <div className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.14),transparent_32%)]">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        <motion.section
+          initial={{ x: -40, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-teal-500 via-teal-600 to-blue-700 p-12 text-white"
         >
-          <motion.h2
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className="text-2xl font-bold text-foreground"
-          >
-            {language === "sw" ? "Ingia kwenye akaunti yako" : "Welcome Back"}
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mt-1 text-muted-foreground"
-          >
-            {language === "sw" ? "Endelea na biashara yako" : "Continue with your business"}
-          </motion.p>
+          <Link to="/" className="inline-flex w-fit items-center gap-3 rounded-2xl bg-white/12 px-4 py-3 backdrop-blur-sm">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/18">
+              <Store className="h-5 w-5" />
+            </div>
+            <span className="text-xl font-bold">Smart Money</span>
+          </Link>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            <motion.div custom={0} variants={formVariants} initial="hidden" animate="visible" className="space-y-2">
-              <Label>{language === "sw" ? "Barua Pepe" : "Email"}</Label>
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="h-12 rounded-2xl border-2 border-border/50 transition-all focus-visible:ring-2 focus-visible:ring-teal-500/30"
-                required
-              />
-            </motion.div>
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <p className="text-sm uppercase tracking-[0.24em] text-white/70">
+                {language === "sw" ? "Mfumo wa Kisasa wa Biashara" : "Modern Retail Workspace"}
+              </p>
+              <h1 className="max-w-lg text-4xl font-bold leading-tight">
+                {language === "sw" ? "Karibu tena kwenye kituo chako cha biashara." : "Welcome back to your business command center."}
+              </h1>
+              <p className="max-w-lg text-lg text-white/78">
+                {language === "sw"
+                  ? "Endelea na mauzo, stoki, ripoti, na usimamizi wa duka lako katika muonekano mpya."
+                  : "Continue with sales, inventory, reports, and daily shop management in a cleaner modern workspace."}
+              </p>
+            </div>
 
-            <motion.div custom={1} variants={formVariants} initial="hidden" animate="visible" className="space-y-2">
-              <Label>{language === "sw" ? "Nenosiri" : "Password"}</Label>
-              <div className="relative">
+            <div className="grid max-w-xl grid-cols-2 gap-4">
+              {[
+                { icon: BarChart3, label: language === "sw" ? "Ripoti za haraka" : "Fast reporting" },
+                { icon: Receipt, label: language === "sw" ? "Mauzo ya kila siku" : "Daily sales flow" },
+                { icon: Store, label: language === "sw" ? "Udhibiti wa duka" : "Store control" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[1.6rem] border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+                  <item.icon className="h-5 w-5" />
+                  <p className="mt-6 text-sm font-medium">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-sm text-white/55">© 2026 Smart Money</p>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+          className="flex min-h-screen items-center justify-center overflow-y-auto px-4 py-10 md:px-8"
+        >
+          <div className="w-full max-w-md rounded-[2rem] border border-border/60 bg-card/88 p-8 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.55)] backdrop-blur-xl md:p-10">
+            <div className="mb-8 lg:hidden">
+              <Link to="/" className="inline-flex items-center gap-3 rounded-2xl bg-background/70 px-4 py-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-blue-600 text-white">
+                  <Store className="h-5 w-5" />
+                </div>
+                <span className="text-lg font-bold">Smart Money</span>
+              </Link>
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold text-foreground">
+                {language === "sw" ? "Ingia kwenye akaunti yako" : "Sign in to your workspace"}
+              </h2>
+              <p className="text-muted-foreground">
+                {language === "sw" ? "Endelea kusimamia biashara yako." : "Continue managing your business."}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Barua Pepe" : "Email"}</Label>
                 <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="h-12 rounded-2xl border-2 border-border/50 pr-10 transition-all focus-visible:ring-2 focus-visible:ring-teal-500/30"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="h-12 rounded-2xl"
                   required
-                  minLength={6}
                 />
-                <motion.button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </motion.button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setResetEmail(form.email);
-                  setForgotOpen(true);
-                }}
-                className="text-sm text-primary hover:text-primary/80 transition-colors"
-              >
-                {language === "sw" ? "Umesahau nenosiri?" : "Forgot password?"}
-              </button>
-            </motion.div>
 
-            <motion.div
-              custom={2}
-              variants={formVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Nenosiri" : "Password"}</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="********"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="h-12 rounded-2xl pr-11"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetEmail(form.email);
+                    setForgotOpen(true);
+                  }}
+                  className="text-sm text-primary transition-colors hover:text-primary/80"
+                >
+                  {language === "sw" ? "Umesahau nenosiri?" : "Forgot password?"}
+                </button>
+              </div>
+
               <Button
                 type="submit"
-                className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 text-base font-semibold shadow-lg shadow-teal-500/25 transition-all hover:shadow-xl hover:shadow-teal-500/30"
+                className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 text-base font-semibold"
                 disabled={loading}
               >
-                {loading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    {language === "sw" ? "Ingia" : "Login"}
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>
+                  {language === "sw" ? "Ingia" : "Login"}
+                  <ArrowRight className="h-4 w-4" />
+                </>}
               </Button>
-            </motion.div>
-          </form>
+            </form>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="mt-6 text-center text-sm text-muted-foreground"
-          >
-            {language === "sw" ? "Hauna akaunti?" : "Don't have an account?"}{" "}
-            <Link to="/signup" className="font-medium text-primary hover:underline">
-              {language === "sw" ? "Jisajili" : "Sign up"}
-            </Link>
-          </motion.p>
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              {language === "sw" ? "Hauna akaunti?" : "Don't have an account?"}{" "}
+              <Link to="/signup" className="font-medium text-primary hover:underline">
+                {language === "sw" ? "Jisajili" : "Sign up"}
+              </Link>
+            </p>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-4 text-center"
-          >
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              ← {language === "sw" ? "Rudi kwenye ukurasa wa kwanza" : "Back to home"}
-            </Link>
-          </motion.p>
-        </motion.div>
-      </motion.div>
+            <p className="mt-4 text-center">
+              <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                {"<-"} {language === "sw" ? "Rudi kwenye ukurasa wa kwanza" : "Back to home"}
+              </Link>
+            </p>
+          </div>
+        </motion.section>
+      </div>
 
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl border-2 shadow-2xl">
+        <DialogContent className="sm:max-w-md rounded-[1.75rem]">
           <DialogHeader>
             <DialogTitle>{language === "sw" ? "Badilisha Nenosiri" : "Reset Password"}</DialogTitle>
             <DialogDescription>
@@ -310,16 +246,12 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
-                className="h-12 rounded-2xl border-2"
+                className="h-12 rounded-2xl"
                 required
               />
             </div>
             <Button type="submit" className="h-12 w-full rounded-2xl" disabled={resetLoading}>
-              {resetLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                language === "sw" ? "Tuma Kiungo" : "Send reset link"
-              )}
+              {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : language === "sw" ? "Tuma Kiungo" : "Send reset link"}
             </Button>
           </form>
         </DialogContent>

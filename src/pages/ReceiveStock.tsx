@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { logAudit } from "@/lib/audit";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageLoader } from "@/components/PageLoader";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function ReceiveStock() {
   const navigate = useNavigate();
@@ -97,10 +98,14 @@ export default function ReceiveStock() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="glass-card">
+    <div className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Pokea Stoki" : "Receive Stock"}
+        subtitle={language === "sw" ? "Ongeza stoki mpya kwa bidhaa, msambazaji, na kumbukumbu ya mapokezi." : "Receive fresh stock with supplier details and a clear receiving record."}
+      />
+      <Card className="section-shell">
         <CardHeader>
-          <CardTitle>Receive Stock</CardTitle>
+          <CardTitle>{language === "sw" ? "Fomu ya kupokea stoki" : "Stock receiving form"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

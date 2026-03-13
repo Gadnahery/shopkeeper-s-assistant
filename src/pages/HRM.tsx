@@ -26,6 +26,7 @@ import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function HRM() {
   const { language } = useLanguage();
@@ -94,51 +95,51 @@ export default function HRM() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div><h1 className="text-2xl font-bold">{language === "sw" ? "Rasilimali Watu" : "Human Resources"}</h1><p className="text-muted-foreground">{language === "sw" ? "Simamia wafanyakazi, mahudhurio, na mishahara" : "Manage staff, attendance, and salaries"}</p></div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Rasilimali Watu" : "Human Resources"}
+        subtitle={language === "sw" ? "Simamia wafanyakazi, hali ya ajira, na gharama za mishahara kwa mtazamo wa kisasa." : "Manage staff records, employment status, and payroll costs in a modern workspace."}
+        actions={
+          <div className="flex w-full min-w-0 flex-wrap gap-2 xl:w-auto xl:justify-end">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder={language === "sw" ? "Tafuta..." : "Search staff..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+            </div>
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add Staff"}</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Mfanyakazi" : "Add New Staff"}</DialogTitle></DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2"><Label>Full Name</Label><Input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
+                    <div className="space-y-2"><Label>Email</Label><Input value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>Position</Label><Select value={form.position} onValueChange={v => setForm({...form, position: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Staff">Staff</SelectItem><SelectItem value="Manager">Manager</SelectItem><SelectItem value="Cashier">Cashier</SelectItem><SelectItem value="HR">HR</SelectItem><SelectItem value="Security">Security</SelectItem><SelectItem value="Cleaner">Cleaner</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Department</Label><Input value={form.department} onChange={e => setForm({...form, department: e.target.value})} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>Salary (Tsh)</Label><Input type="number" value={form.salary} onChange={e => setForm({...form, salary: e.target.value})} /></div>
+                    <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={v => setForm({...form, status: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button type="button" variant="outline" onClick={() => { clearAddStaffDraft(); setIsAddOpen(false); }}>{language === "sw" ? "Ghairi" : "Cancel"}</Button>
+                    <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" onClick={handleAdd} disabled={!form.full_name || addStaff.isPending}>
+                      {addStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Staff")}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="shadow-sm hover:shadow-md transition-shadow"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-primary/10 p-3"><Users className="h-6 w-6 text-primary" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Wafanyakazi Wote" : "Total Staff"}</p><p className="text-xl font-bold">{staffList?.length || 0}</p></div></CardContent></Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-secondary/10 p-3"><DollarSign className="h-6 w-6 text-secondary" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Mishahara ya Mwezi" : "Monthly Payroll"}</p><p className="text-xl font-bold">Tsh {totalSalary.toLocaleString()}</p></div></CardContent></Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-success/10 p-3"><Calendar className="h-6 w-6 text-success" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Wafanyakazi Hai" : "Active Staff"}</p><p className="text-xl font-bold">{staffList?.filter(s => s.status === 'active').length || 0}</p></div></CardContent></Card>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={language === "sw" ? "Tafuta..." : "Search staff..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-        </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add Staff"}</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Mfanyakazi" : "Add New Staff"}</DialogTitle></DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2"><Label>Full Name</Label><Input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
-                <div className="space-y-2"><Label>Email</Label><Input value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Position</Label><Select value={form.position} onValueChange={v => setForm({...form, position: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Staff">Staff</SelectItem><SelectItem value="Manager">Manager</SelectItem><SelectItem value="Cashier">Cashier</SelectItem><SelectItem value="HR">HR</SelectItem><SelectItem value="Security">Security</SelectItem><SelectItem value="Cleaner">Cleaner</SelectItem></SelectContent></Select></div>
-                <div className="space-y-2"><Label>Department</Label><Input value={form.department} onChange={e => setForm({...form, department: e.target.value})} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Salary (Tsh)</Label><Input type="number" value={form.salary} onChange={e => setForm({...form, salary: e.target.value})} /></div>
-                <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={v => setForm({...form, status: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => { clearAddStaffDraft(); setIsAddOpen(false); }}>{language === "sw" ? "Ghairi" : "Cancel"}</Button>
-                <Button 
-                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                  onClick={handleAdd} 
-                  disabled={!form.full_name || addStaff.isPending}
-                >
-                  {addStaff.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Staff")}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Card className="section-shell"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-primary/10 p-3"><Users className="h-6 w-6 text-primary" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Wafanyakazi Wote" : "Total Staff"}</p><p className="text-xl font-bold">{staffList?.length || 0}</p></div></CardContent></Card>
+        <Card className="section-shell"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-secondary/10 p-3"><DollarSign className="h-6 w-6 text-secondary" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Mishahara ya Mwezi" : "Monthly Payroll"}</p><p className="text-xl font-bold">Tsh {totalSalary.toLocaleString()}</p></div></CardContent></Card>
+        <Card className="section-shell"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-success/10 p-3"><Calendar className="h-6 w-6 text-success" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Wafanyakazi Hai" : "Active Staff"}</p><p className="text-xl font-bold">{staffList?.filter(s => s.status === 'active').length || 0}</p></div></CardContent></Card>
       </div>
 
       {/* Edit Dialog */}
@@ -169,9 +170,9 @@ export default function HRM() {
         </DialogContent>
       </Dialog>
 
-      <Card className="shadow-sm"><CardContent className="p-0">
+      <Card className="section-shell overflow-hidden"><CardContent className="p-0">
         {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
-          <Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Position</TableHead><TableHead>Phone</TableHead><TableHead>Salary</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+          <div className="max-w-full overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Position</TableHead><TableHead>Phone</TableHead><TableHead>Salary</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-foreground/70 dark:text-foreground/80">No staff members yet</TableCell></TableRow> :
             filtered.map(s => (
@@ -194,6 +195,7 @@ export default function HRM() {
               </TableRow>
             ))}
           </TableBody></Table>
+          </div>
         )}
       </CardContent></Card>
 

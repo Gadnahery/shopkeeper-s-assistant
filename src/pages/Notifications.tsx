@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageLoader } from "@/components/PageLoader";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function Notifications() {
   const { language } = useLanguage();
@@ -13,18 +14,21 @@ export default function Notifications() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Notifications</h1>
-        <Button variant="outline" onClick={() => markAllRead.mutate()} disabled={unreadCount === 0}>
-          Mark all read
-        </Button>
-      </div>
-      <Card className="glass-card">
-        <CardHeader><CardTitle>All notifications</CardTitle></CardHeader>
+    <div className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Arifa" : "Notifications"}
+        subtitle={language === "sw" ? "Fuatilia arifa mpya, zilizosomeka, na taarifa muhimu za duka lako." : "Review unread updates, activity alerts, and important store notifications in one clean feed."}
+        actions={
+          <Button variant="outline" onClick={() => markAllRead.mutate()} disabled={unreadCount === 0}>
+            {language === "sw" ? "Soma zote" : "Mark all read"}
+          </Button>
+        }
+      />
+      <Card className="section-shell">
+        <CardHeader><CardTitle>{language === "sw" ? "Arifa zote" : "All notifications"}</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           {!data?.length ? (
-            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            <p className="text-sm text-muted-foreground">{language === "sw" ? "Hakuna arifa bado." : "No notifications yet."}</p>
           ) : (
             data.map((n: any) => (
               <button

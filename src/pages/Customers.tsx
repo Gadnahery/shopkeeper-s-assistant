@@ -26,6 +26,7 @@ import { useSalesByCustomer } from "@/hooks/useSales";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { PageLoader } from "@/components/PageLoader";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function Customers() {
   const navigate = useNavigate();
@@ -59,6 +60,8 @@ export default function Customers() {
     ) ?? [];
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
+  const customersWithCredit = filteredCustomers.filter((customer) => customer.credit_balance > 0).length;
+  const totalCredit = filteredCustomers.reduce((sum, customer) => sum + Number(customer.credit_balance || 0), 0);
 
   const handleAddCustomer = async () => {
     await createCustomer.mutateAsync({
@@ -97,44 +100,67 @@ export default function Customers() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-          <Input placeholder={t("customers.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-        </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{t("customers.addCustomer")}</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{t("customers.addCustomer")}</DialogTitle></DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2"><Label>{t("customers.name")}</Label><Input value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{t("customers.phoneNumber")}</Label><Input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{language === "sw" ? "Barua pepe" : "Email"}</Label><Input type="email" value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} placeholder="email@example.com" /></div>
-              <div className="space-y-2"><Label>{t("customers.type")}</Label>
-                <Select value={newCustomer.customer_type} onValueChange={(v) => setNewCustomer({ ...newCustomer, customer_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Retail">{t("customers.retail")}</SelectItem>
-                    <SelectItem value="Contractor">{t("customers.contractor")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2"><Label>{t("customers.creditBalance")}</Label><Input type="number" value={newCustomer.credit_balance} onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })} /></div>
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => { clearAddCustomerDraft(); setIsAddOpen(false); }}>{t("common.cancel")}</Button>
-                <Button 
-                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                  onClick={handleAddCustomer} 
-                  disabled={!newCustomer.name || createCustomer.isPending}
-                >
-                  {createCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-                </Button>
-              </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Wateja" : "Customers"}
+        subtitle={language === "sw" ? "Simamia wateja, deni la mikopo, na historia ya ununuzi kwa mpangilio bora." : "Manage customer records, credit balances, and purchase history with a cleaner workspace."}
+        actions={
+          <div className="flex w-full min-w-0 flex-wrap gap-2 xl:w-auto xl:justify-end">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+              <Input placeholder={t("customers.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{t("customers.addCustomer")}</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{t("customers.addCustomer")}</DialogTitle></DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2"><Label>{t("customers.name")}</Label><Input value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} /></div>
+                  <div className="space-y-2"><Label>{t("customers.phoneNumber")}</Label><Input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} /></div>
+                  <div className="space-y-2"><Label>{language === "sw" ? "Barua pepe" : "Email"}</Label><Input type="email" value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} placeholder="email@example.com" /></div>
+                  <div className="space-y-2"><Label>{t("customers.type")}</Label>
+                    <Select value={newCustomer.customer_type} onValueChange={(v) => setNewCustomer({ ...newCustomer, customer_type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Retail">{t("customers.retail")}</SelectItem>
+                        <SelectItem value="Contractor">{t("customers.contractor")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2"><Label>{t("customers.creditBalance")}</Label><Input type="number" value={newCustomer.credit_balance} onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })} /></div>
+                  <div className="flex gap-2 justify-end">
+                    <Button type="button" variant="outline" onClick={() => { clearAddCustomerDraft(); setIsAddOpen(false); }}>{t("common.cancel")}</Button>
+                    <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" onClick={handleAddCustomer} disabled={!newCustomer.name || createCustomer.isPending}>
+                      {createCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        }
+      />
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <Card className="section-shell">
+          <CardContent className="p-5">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Wateja wote" : "Total customers"}</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{filteredCustomers.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="section-shell">
+          <CardContent className="p-5">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Wenye deni" : "Customers with credit"}</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{customersWithCredit}</p>
+          </CardContent>
+        </Card>
+        <Card className="section-shell">
+          <CardContent className="p-5">
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Jumla ya deni" : "Outstanding credit"}</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">Tsh {formatNumber(totalCredit)}</p>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingCustomer} onOpenChange={(o) => !o && setEditingCustomer(null)}>
@@ -225,11 +251,13 @@ export default function Customers() {
         </DialogContent>
       </Dialog>
 
-      <Card>
+      <Card className="section-shell overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : (
+            <>
+            <div className="hidden max-w-full overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -292,6 +320,44 @@ export default function Customers() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            <div className="grid gap-3 p-4 md:hidden">
+              {filteredCustomers.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">{customers?.length === 0 ? (language === "sw" ? "Hakuna wateja bado." : "No customers yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}</div>
+              ) : (
+                filteredCustomers.map((customer) => (
+                  <Card key={customer.id} className="border-border/70 bg-background/60">
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{customer.name}</p>
+                          <p className="text-sm text-muted-foreground">{customer.phone || "-"}</p>
+                        </div>
+                        <Badge variant="outline" className={customer.customer_type === "Contractor" ? "border-secondary bg-secondary/10 text-secondary" : "border-primary bg-primary/10 text-primary"}>
+                          {customer.customer_type === "Contractor" ? t("customers.contractor") : t("customers.retail")}
+                        </Badge>
+                      </div>
+                      {(customer as { email?: string }).email && <p className="text-sm text-muted-foreground">{(customer as { email?: string }).email}</p>}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t("customers.creditBalance")}</span>
+                        <span className={customer.credit_balance > 0 ? "font-semibold text-destructive" : "font-semibold"}>{formatNumber(customer.credit_balance)}</span>
+                      </div>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {customer.credit_balance > 0 && (
+                          <Button variant="outline" size="sm" className="gap-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setPayDialog(customer)}>
+                            <CreditCard className="h-3 w-3" />{t("customers.pay")}
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/customers/${customer.id}`)}><Eye className="mr-1 h-4 w-4" />{language === "sw" ? "Tazama" : "View"}</Button>
+                        <Button variant="outline" size="sm" onClick={() => setDetailCustomer(customer)}><History className="mr-1 h-4 w-4" />{language === "sw" ? "Historia" : "History"}</Button>
+                        <Button variant="outline" size="sm" onClick={() => setEditingCustomer({ ...customer })}><Pencil className="mr-1 h-4 w-4" />{language === "sw" ? "Hariri" : "Edit"}</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

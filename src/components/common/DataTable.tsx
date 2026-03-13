@@ -10,7 +10,7 @@ export function DataTable({ toolbar, table }: DataTableProps) {
   return (
     <div className="space-y-3">
       {toolbar}
-      <Card className="glass-card">
+      <Card className="section-shell overflow-hidden">
         <CardContent className="p-0">{table}</CardContent>
       </Card>
     </div>

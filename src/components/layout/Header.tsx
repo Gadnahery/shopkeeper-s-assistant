@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Globe, Menu, Moon, Sun, Search, LogOut, User, Settings } from "lucide-react";
+import { Bell, Download, Globe, Menu, Moon, Sun, Search, LogOut, User, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useNotificationContext } from "@/contexts/NotificationContext";
+import { usePWAContext } from "@/contexts/PWAContext";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -33,6 +35,8 @@ export function Header() {
   const isMobile = useIsMobile();
   const { theme, toggleTheme } = useTheme();
   const { data: notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
+  const { permission, requestPermission, supportsNativeNotifications } = useNotificationContext();
+  const { canInstall, install } = usePWAContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
@@ -53,7 +57,7 @@ export function Header() {
   });
 
   return (
-            <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/90 backdrop-blur-xl px-4 md:px-6">
+    <header className="safe-top sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-border/70 bg-background/85 px-3 backdrop-blur-xl sm:px-4 md:px-6">
       <div className="flex items-center gap-4 flex-1 min-w-0">
         {isMobile && (
           <Button
@@ -66,14 +70,14 @@ export function Header() {
           </Button>
         )}
 
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md">
+        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50 dark:text-foreground/60 dark:drop-shadow-[0_0_3px_rgba(59,130,246,0.2)] z-10" strokeWidth={1.5} />
             <Input
               placeholder={language === "sw" ? "Tafuta bidhaa..." : "Search products..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 pl-10 pr-4 bg-muted/40 backdrop-blur-sm border-border rounded-xl text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:border-primary/30 transition-all"
+              className="h-10 rounded-xl border-border/70 bg-muted/40 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all"
             />
           </div>
         </form>
@@ -82,6 +86,29 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-1">
+        {canInstall && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden h-9 gap-2 rounded-xl border-border/70 bg-background/70 sm:inline-flex"
+            onClick={() => void install()}
+          >
+            <Download className="h-4 w-4" />
+            {language === "sw" ? "Sakinisha" : "Install"}
+          </Button>
+        )}
+
+        {supportsNativeNotifications && permission !== "granted" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden h-9 rounded-xl px-3 text-xs sm:inline-flex"
+            onClick={() => void requestPermission()}
+          >
+            {language === "sw" ? "Washa arifa" : "Enable alerts"}
+          </Button>
+        )}
+
         <Button
           variant="ghost"
           size="icon"
@@ -169,7 +196,7 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-muted/50 transition-colors duration-200">
+            <button className="flex items-center gap-2 rounded-xl border border-transparent p-1 pr-2 transition-colors duration-200 hover:border-border/70 hover:bg-muted/50">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={avatarUrl || undefined} alt={userName} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">

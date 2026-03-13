@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
+import { PageHeader } from "@/components/common/PageHeader";
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = Math.floor(i / 2);
@@ -137,13 +138,12 @@ export default function Todo() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{language === "sw" ? "Orodha ya Kazi" : "To-Do List"}</h1>
-          <p className="text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Dhibitisha kazi na alerti" : "Manage tasks and set alerts"}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Orodha ya Kazi" : "To-Do List"}
+        subtitle={language === "sw" ? "Dhibiti kazi, tarehe za mwisho, na alerti kwa timu yako." : "Manage tasks, due dates, and alerts for yourself and your team."}
+        actions={
+        <div className="flex w-full min-w-0 flex-wrap gap-2 xl:w-auto xl:justify-end">
           <div className="relative w-48 md:w-64">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             <Input placeholder={language === "sw" ? "Tafuta..." : "Search..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
@@ -178,7 +178,8 @@ export default function Todo() {
             <Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add"}
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {/* Add Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -366,7 +367,7 @@ export default function Todo() {
           {language === "sw" ? "Hakuna duka limetambuliwa. Ingia au usajili duka lako kwanza." : "No shop identified. Sign in or set up your shop first."}
         </div>
       )}
-      <Card>
+      <Card className="section-shell overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>

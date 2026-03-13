@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 const PAGE_PATHS = [
   { path: "/dashboard", label: "Dashboard" },
   { path: "/sales", label: "Sales" },
-  { path: "/sales/terminal", label: "POS Terminal" },
   { path: "/inventory", label: "Inventory" },
   { path: "/inventory/add", label: "Add Product" },
   { path: "/inventory/receive", label: "Receive Stock" },
@@ -52,11 +51,12 @@ export function useUpdateUserPageAccess(userId: string | null, shopId: string | 
     mutationFn: async (allowedPaths: string[]) => {
       if (!userId || !shopId) throw new Error("Missing user or shop");
       // Delete existing and insert new
-      await supabase
+      const { error: deleteError } = await supabase
         .from("user_page_access")
         .delete()
         .eq("user_id", userId)
         .eq("shop_id", shopId);
+      if (deleteError) throw deleteError;
       if (allowedPaths.length > 0) {
         const rows = allowedPaths.map((page_path) => ({
           user_id: userId,

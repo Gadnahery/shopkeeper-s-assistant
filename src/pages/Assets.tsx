@@ -26,6 +26,7 @@ import { useDraftForm } from "@/hooks/useDraftForm";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function Assets() {
   const { shopId } = useAuth();
@@ -97,13 +98,46 @@ export default function Assets() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div><h1 className="text-2xl font-bold">{language === "sw" ? "Usimamizi wa Mali" : "Assets Management"}</h1><p className="text-muted-foreground">{language === "sw" ? "Fuatilia mali, thamani, na kushuka thamani" : "Track shop assets, value, and depreciation"}</p></div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Usimamizi wa Mali" : "Assets Management"}
+        subtitle={language === "sw" ? "Fuatilia mali, thamani ya sasa, na kushuka kwa thamani katika sehemu moja." : "Track business assets, current value, and depreciation in one cleaner view."}
+        actions={
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza Mali" : "Add Asset"}</Button></DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Mali Mpya" : "Add New Asset"}</DialogTitle></DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2"><Label>{language === "sw" ? "Jina" : "Asset Name"}</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>{language === "sw" ? "Kategoria" : "Category"}</Label><Select value={form.category} onValueChange={v => setForm({...form, category: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Equipment">Equipment</SelectItem><SelectItem value="Furniture">Furniture</SelectItem><SelectItem value="Vehicle">Vehicle</SelectItem><SelectItem value="Electronics">Electronics</SelectItem><SelectItem value="Building">Building</SelectItem></SelectContent></Select></div>
+                  <div className="space-y-2"><Label>{language === "sw" ? "Hali" : "Condition"}</Label><Select value={form.condition} onValueChange={v => setForm({...form, condition: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Fair">Fair</SelectItem><SelectItem value="Poor">Poor</SelectItem></SelectContent></Select></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Purchase Price</Label><Input type="number" value={form.purchase_price} onChange={e => setForm({...form, purchase_price: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Current Value</Label><Input type="number" value={form.current_value} onChange={e => setForm({...form, current_value: e.target.value})} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Depreciation %/yr</Label><Input type="number" value={form.depreciation_rate} onChange={e => setForm({...form, depreciation_rate: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} /></div>
+                </div>
+                <div className="space-y-2"><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" onClick={() => { clearAddAssetDraft(); setIsAddOpen(false); }}>{language === "sw" ? "Ghairi" : "Cancel"}</Button>
+                  <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" onClick={handleAdd} disabled={!form.name || addAsset.isPending}>
+                    {addAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Asset")}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="shadow-sm hover:shadow-md transition-shadow"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-primary/10 p-3"><Building2 className="h-6 w-6 text-primary" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Jumla ya Mali" : "Total Assets"}</p><p className="text-xl font-bold">{assets?.length || 0}</p></div></CardContent></Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-success/10 p-3"><DollarSign className="h-6 w-6 text-success" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Thamani ya Sasa" : "Current Value"}</p><p className="text-xl font-bold">Tsh {totalValue.toLocaleString()}</p></div></CardContent></Card>
-        <Card className="shadow-sm hover:shadow-md transition-shadow"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-destructive/10 p-3"><TrendingDown className="h-6 w-6 text-destructive" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Kushuka Thamani" : "Depreciation"}</p><p className="text-xl font-bold text-destructive">Tsh {totalDepreciation.toLocaleString()}</p></div></CardContent></Card>
+        <Card className="section-shell"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-primary/10 p-3"><Building2 className="h-6 w-6 text-primary" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Jumla ya Mali" : "Total Assets"}</p><p className="text-xl font-bold">{assets?.length || 0}</p></div></CardContent></Card>
+        <Card className="section-shell"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-success/10 p-3"><DollarSign className="h-6 w-6 text-success" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Thamani ya Sasa" : "Current Value"}</p><p className="text-xl font-bold">Tsh {totalValue.toLocaleString()}</p></div></CardContent></Card>
+        <Card className="section-shell"><CardContent className="flex items-center gap-4 p-6"><div className="rounded-xl bg-destructive/10 p-3"><TrendingDown className="h-6 w-6 text-destructive" /></div><div><p className="text-sm text-muted-foreground">{language === "sw" ? "Kushuka Thamani" : "Depreciation"}</p><p className="text-xl font-bold text-destructive">Tsh {totalDepreciation.toLocaleString()}</p></div></CardContent></Card>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -111,38 +145,6 @@ export default function Assets() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder={language === "sw" ? "Tafuta mali..." : "Search assets..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza Mali" : "Add Asset"}</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Mali Mpya" : "Add New Asset"}</DialogTitle></DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2"><Label>{language === "sw" ? "Jina" : "Asset Name"}</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>{language === "sw" ? "Kategoria" : "Category"}</Label><Select value={form.category} onValueChange={v => setForm({...form, category: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Equipment">Equipment</SelectItem><SelectItem value="Furniture">Furniture</SelectItem><SelectItem value="Vehicle">Vehicle</SelectItem><SelectItem value="Electronics">Electronics</SelectItem><SelectItem value="Building">Building</SelectItem></SelectContent></Select></div>
-                <div className="space-y-2"><Label>{language === "sw" ? "Hali" : "Condition"}</Label><Select value={form.condition} onValueChange={v => setForm({...form, condition: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Fair">Fair</SelectItem><SelectItem value="Poor">Poor</SelectItem></SelectContent></Select></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Purchase Price</Label><Input type="number" value={form.purchase_price} onChange={e => setForm({...form, purchase_price: e.target.value})} /></div>
-                <div className="space-y-2"><Label>Current Value</Label><Input type="number" value={form.current_value} onChange={e => setForm({...form, current_value: e.target.value})} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Depreciation %/yr</Label><Input type="number" value={form.depreciation_rate} onChange={e => setForm({...form, depreciation_rate: e.target.value})} /></div>
-                <div className="space-y-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} /></div>
-              </div>
-              <div className="space-y-2"><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => { clearAddAssetDraft(); setIsAddOpen(false); }}>{language === "sw" ? "Ghairi" : "Cancel"}</Button>
-                <Button 
-                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                  onClick={handleAdd} 
-                  disabled={!form.name || addAsset.isPending}
-                >
-                  {addAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Asset")}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Edit Dialog */}
@@ -173,9 +175,9 @@ export default function Assets() {
         </DialogContent>
       </Dialog>
 
-      <Card className="shadow-sm"><CardContent className="p-0">
+      <Card className="section-shell overflow-hidden"><CardContent className="p-0">
         {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
-          <Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>Purchase Price</TableHead><TableHead>Current Value</TableHead><TableHead>Condition</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+          <div className="max-w-full overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>Purchase Price</TableHead><TableHead>Current Value</TableHead><TableHead>Condition</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-foreground/70 dark:text-foreground/80">No assets yet</TableCell></TableRow> :
             filtered.map(a => (
@@ -198,6 +200,7 @@ export default function Assets() {
               </TableRow>
             ))}
           </TableBody></Table>
+          </div>
         )}
       </CardContent></Card>
 

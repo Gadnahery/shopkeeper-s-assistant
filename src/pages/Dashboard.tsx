@@ -11,6 +11,9 @@ import {
   Package,
   Receipt,
   Calculator as CalculatorIcon,
+  ArrowRight,
+  TrendingDown,
+  Store,
 } from "lucide-react";
 import {
   AreaChart,
@@ -36,6 +39,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { PageLoader } from "@/components/PageLoader";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const PRIMARY_TEAL = "#0D9488";
 const PRIMARY_GRADIENT = "url(#primaryGradient)";
@@ -78,11 +82,31 @@ export default function Dashboard() {
 
   const cashPercent = rangeSales?.total ? Math.round((rangeSales.cash / rangeSales.total) * 100) : 0;
   const mpesaPercent = 100 - cashPercent;
+  const inventoryCount = allProducts?.length || 0;
+  const lowStockCount = lowStockProducts?.length || 0;
 
   const donutColors = ["#0D9488", "#D97706", "#6366F1", "#DB2777", "#0D9488", "#7C3AED"];
   const fallbackCategoryData = categoryData?.length
     ? categoryData.map((c, i) => ({ ...c, color: donutColors[i % donutColors.length] }))
     : [{ name: "No data", value: 1, color: "#374151" }];
+
+  const spotlightStats = [
+    {
+      label: language === "sw" ? "Bidhaa zote" : "Products in catalog",
+      value: formatNumber(inventoryCount),
+      tone: "text-foreground",
+    },
+    {
+      label: language === "sw" ? "Zinahitaji uangalizi" : "Need attention",
+      value: formatNumber(lowStockCount),
+      tone: lowStockCount > 0 ? "text-orange-600 dark:text-orange-400" : "text-foreground",
+    },
+    {
+      label: language === "sw" ? "Mapato ya kipindi" : "Revenue in range",
+      value: `TSH ${formatNumber(rangeSales?.total || 0)}`,
+      tone: "text-primary",
+    },
+  ];
 
   const kpiData = [
     {
@@ -92,6 +116,7 @@ export default function Dashboard() {
       icon: LayoutGrid,
       link: "/reports",
       linkRange: kpiRange,
+      accent: "from-primary/20 to-primary/5",
     },
     {
       title: t("dashboard.transactions"),
@@ -100,6 +125,7 @@ export default function Dashboard() {
       icon: FileText,
       link: "/reports",
       linkRange: kpiRange,
+      accent: "from-blue-500/20 to-blue-500/5",
     },
     {
       title: t("dashboard.lowStock"),
@@ -107,6 +133,7 @@ export default function Dashboard() {
       subtitle: t("dashboard.checkInventory"),
       icon: AlertTriangle,
       link: "/inventory",
+      accent: "from-orange-500/20 to-orange-500/5",
     },
     {
       title: t("dashboard.cashVsMpesa"),
@@ -115,6 +142,7 @@ export default function Dashboard() {
       icon: CreditCard,
       link: "/reports",
       linkRange: kpiRange,
+      accent: "from-fuchsia-500/20 to-fuchsia-500/5",
     },
   ];
 
@@ -136,42 +164,118 @@ export default function Dashboard() {
     >
       <Calculator open={calculatorOpen} onOpenChange={setCalculatorOpen} />
 
-      <motion.div variants={item} className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {shopName}
-          </h1>
-          <p className="mt-0.5 text-sm text-foreground/70 dark:text-foreground/80">{t("dashboard.subtitle")}</p>
+      <motion.section variants={item} className="section-shell relative overflow-hidden p-5 sm:p-6">
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.2),transparent_55%)]" />
+        <div className="relative grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3">
+                <Badge variant="outline" className="rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-primary">
+                  <Store className="mr-1.5 h-3.5 w-3.5" />
+                  {language === "sw" ? "Muhtasari wa Leo" : "Daily command center"}
+                </Badge>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                    {shopName}
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-[15px]">
+                    {t("dashboard.subtitle")}
+                  </p>
+                </div>
+              </div>
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                <Select value={kpiRange} onValueChange={(v: KpiRange) => setKpiRange(v)}>
+                  <SelectTrigger className="h-11 w-full rounded-2xl border-border/70 bg-background/70 sm:w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">{t("dashboard.daily")}</SelectItem>
+                    <SelectItem value="week">{t("dashboard.weekly")}</SelectItem>
+                    <SelectItem value="month">{t("dashboard.monthly")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="h-11 w-full rounded-2xl border-border/70 bg-background/75 sm:w-auto"
+                  onClick={() => setCalculatorOpen(true)}
+                  title="Calculator"
+                >
+                  <CalculatorIcon className="h-5 w-5 text-foreground/70" strokeWidth={1.5} />
+                  <span className="font-medium">{t("dashboard.calculator")}</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {spotlightStats.map((stat) => (
+                <div key={stat.label} className="rounded-[1.25rem] border border-border/60 bg-background/60 p-4 backdrop-blur-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    {stat.label}
+                  </p>
+                  <p className={`mt-3 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <button
+              className="rounded-[1.35rem] border border-primary/20 bg-gradient-to-br from-primary to-cyan-500 p-5 text-left text-primary-foreground shadow-[0_20px_60px_-30px_rgba(13,148,136,0.85)] transition-transform hover:-translate-y-0.5"
+              onClick={() => { playSound("click"); navigate("/sales"); }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/75">
+                {language === "sw" ? "Mstari wa Haraka" : "Quick checkout"}
+              </p>
+              <p className="mt-4 text-xl font-bold">
+                {t("dashboard.newSale")}
+              </p>
+              <div className="mt-4 flex items-center text-sm font-medium text-white/85">
+                <span>{language === "sw" ? "Fungua mauzo" : "Open sales"}</span>
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </div>
+            </button>
+
+            <button
+              className="rounded-[1.35rem] border border-border/60 bg-background/70 p-5 text-left transition-colors hover:border-primary/20 hover:bg-background/90"
+              onClick={() => { playSound("click"); navigate("/inventory"); }}
+            >
+              <div className="flex items-center justify-between">
+                <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  {language === "sw" ? "Stoki" : "Inventory"}
+                </span>
+              </div>
+              <p className="mt-4 text-2xl font-bold text-foreground">{formatNumber(inventoryCount)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {language === "sw" ? "Bidhaa zinazofuatiliwa" : "Tracked items"}
+              </p>
+            </button>
+
+            <button
+              className="rounded-[1.35rem] border border-border/60 bg-background/70 p-5 text-left transition-colors hover:border-primary/20 hover:bg-background/90"
+              onClick={() => { playSound("click"); navigate("/reports"); }}
+            >
+              <div className="flex items-center justify-between">
+                <TrendingDown className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  {language === "sw" ? "Tahadhari" : "Alerts"}
+                </span>
+              </div>
+              <p className="mt-4 text-2xl font-bold text-foreground">{formatNumber(lowStockCount)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {language === "sw" ? "Bidhaa za kuangalia" : "Items to review"}
+              </p>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={kpiRange} onValueChange={(v: KpiRange) => setKpiRange(v)}>
-            <SelectTrigger className="w-36 h-10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">{t("dashboard.daily")}</SelectItem>
-              <SelectItem value="week">{t("dashboard.weekly")}</SelectItem>
-              <SelectItem value="month">{t("dashboard.monthly")}</SelectItem>
-            </SelectContent>
-          </Select>
-        <Button
-          variant="outline"
-          size="default"
-          className="h-10 gap-2 shrink-0 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-colors"
-          onClick={() => setCalculatorOpen(true)}
-          title="Calculator"
-        >
-          <CalculatorIcon className="h-5 w-5 text-foreground/70 dark:text-foreground/80 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
-          <span className="hidden sm:inline font-medium">{t("dashboard.calculator")}</span>
-        </Button>
-        </div>
-      </motion.div>
+      </motion.section>
 
       <motion.div variants={container} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {kpiData.map((kpi) => (
           <motion.div key={kpi.title} variants={item}>
             <Card
-              className={`group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-200 hover:bg-muted hover:shadow-md hover:border-primary/20 ${
+              className={`group relative overflow-hidden border-border/70 bg-card/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-card ${
                 kpi.link ? "cursor-pointer" : ""
               }`}
               onClick={
@@ -183,7 +287,8 @@ export default function Dashboard() {
                   : undefined
               }
             >
-              <CardContent className="p-5 glass-card">
+              <div className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-br ${kpi.accent} opacity-90`} />
+              <CardContent className="relative p-5">
                 <kpi.icon
                   className={`absolute right-4 top-4 h-8 w-8 transition-all duration-200 group-hover:scale-110 ${
                     kpi.title.includes("Sales") || kpi.title.includes("Mauzo")
@@ -227,7 +332,7 @@ export default function Dashboard() {
       </motion.div>
 
       <motion.div variants={item} className="grid gap-6 lg:grid-cols-5">
-        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-span-3 transition-colors hover:bg-muted hover:border-blue-500/20 glass-card">
+        <Card className="section-shell overflow-hidden lg:col-span-3">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
               {t("dashboard.salesTrend")}
@@ -276,7 +381,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-span-2 transition-colors hover:bg-muted hover:border-teal-500/20 glass-card">
+        <Card className="section-shell overflow-hidden lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
               {t("dashboard.stockByCategory")}
@@ -339,7 +444,7 @@ export default function Dashboard() {
       </motion.div>
 
       <motion.div variants={item}>
-        <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm glass-card">
+        <Card className="section-shell overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
               {t("dashboard.alerts")}
@@ -375,9 +480,9 @@ export default function Dashboard() {
         </Card>
       </motion.div>
 
-      <motion.div variants={item} className="flex flex-wrap gap-3">
+      <motion.div variants={item} className="grid gap-3 sm:grid-cols-3">
         <Button
-          className="gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 font-medium shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] duration-200"
+          className="h-12 gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 font-medium"
           onClick={() => { playSound("click"); navigate("/sales"); }}
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
@@ -385,18 +490,18 @@ export default function Dashboard() {
         </Button>
         <Button
           variant="outline"
-          className="gap-2 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          className="h-12 gap-2 rounded-2xl border-border/70 bg-background/70"
           onClick={() => { playSound("click"); navigate("/inventory/add"); }}
         >
-          <Package className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
+          <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
           {t("dashboard.addProduct")}
         </Button>
         <Button
           variant="outline"
-          className="gap-2 rounded-xl border-border bg-card hover:bg-muted hover:border-blue-500/30 dark:hover:border-blue-400/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          className="h-12 gap-2 rounded-2xl border-border/70 bg-background/70"
           onClick={() => { playSound("click"); navigate("/expenses"); }}
         >
-          <Receipt className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
+          <Receipt className="h-4 w-4 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
           {t("dashboard.recordExpense")}
         </Button>
       </motion.div>

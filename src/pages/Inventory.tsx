@@ -29,6 +29,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { playSound } from "@/lib/sounds";
 import { PageLoader } from "@/components/PageLoader";
+import { PageHeader } from "@/components/common/PageHeader";
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -83,6 +84,8 @@ export default function Inventory() {
     (sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0),
     0
   );
+  const lowStockCount = filteredProducts.filter((p) => p.stock > 0 && p.stock <= (p.low_stock_alert ?? 5)).length;
+  const outOfStockCount = filteredProducts.filter((p) => p.stock <= 0).length;
   const profitFor = (p: typeof filteredProducts[0]) => {
     const buy = Number(p.buying_price) || 0;
     const sell = Number(p.selling_price) || 0;
@@ -127,9 +130,7 @@ export default function Inventory() {
   };
 
   const handleBulkDelete = async () => {
-    for (const id of selectedIds) {
-      await deleteProduct.mutateAsync(id);
-    }
+    await Promise.all(Array.from(selectedIds).map((id) => deleteProduct.mutateAsync(id)));
     playSound("success");
     setSelectedIds(new Set());
     setShowBulkDelete(false);
@@ -137,9 +138,7 @@ export default function Inventory() {
 
   const handleBulkChangeCategory = async () => {
     if (!bulkCategoryId) return;
-    for (const id of selectedIds) {
-      await updateProduct.mutateAsync({ id, category_id: bulkCategoryId });
-    }
+    await Promise.all(Array.from(selectedIds).map((id) => updateProduct.mutateAsync({ id, category_id: bulkCategoryId })));
     playSound("success");
     setSelectedIds(new Set());
     setShowBulkCategory(false);
@@ -168,22 +167,26 @@ export default function Inventory() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-2 flex-1">
-          <div className="relative w-full md:w-64">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
+      <PageHeader
+        title={language === "sw" ? "Hesabu" : "Inventory"}
+        subtitle={language === "sw" ? "Dhibiti bidhaa, stoki, na bei kwa urahisi" : "Manage products, stock levels, and pricing"}
+        actions={
+        <>
+        <div className="flex min-w-0 w-full flex-wrap gap-2 xl:w-auto xl:flex-nowrap">
+          <div className="relative w-full sm:max-w-sm xl:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             <Input placeholder={t("inventory.searchPlaceholder")} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" autoFocus />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-44"><SelectValue placeholder={language === "sw" ? "Kategoria" : "Category"} /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder={language === "sw" ? "Kategoria" : "Category"} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
               {categories?.map(c => <SelectItem key={c.id} value={c.id}>{language === "sw" && c.name_sw ? c.name_sw : c.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={stockFilter} onValueChange={(v: "all" | "in-stock" | "low" | "out") => setStockFilter(v)}>
-            <SelectTrigger className="w-40"><SelectValue placeholder={language === "sw" ? "Stoki" : "Stock"} /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder={language === "sw" ? "Stoki" : "Stock"} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
               <SelectItem value="in-stock">{language === "sw" ? "Ipo stoki" : "In Stock"}</SelectItem>
@@ -192,7 +195,7 @@ export default function Inventory() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2 md:gap-3">
+        <div className="flex w-full flex-wrap gap-2 md:gap-3 xl:w-auto xl:justify-end">
           {selectedIds.size > 0 && (
             <Badge variant="secondary" className="py-1.5 px-2 gap-1">
               <Package className="h-3.5 w-3" />
@@ -222,15 +225,45 @@ export default function Inventory() {
             {language === "sw" ? "Pokea Stoki" : "Receive Stock"}
           </Button>
         </div>
-      </div>
+        </>
+        }
+      />
 
-      {/* Total stock value card */}
-      <Card className="glass-card border-primary/20">
-        <CardContent className="p-4 flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground">{t("inventory.totalStockValue")}</span>
-          <span className="text-xl font-bold text-foreground tabular-nums">Tsh {formatNumber(totalStockValue)}</span>
-        </CardContent>
-      </Card>
+      <section className="grid gap-4 lg:grid-cols-3">
+        <Card className="section-shell border-primary/20">
+          <CardContent className="flex items-center justify-between p-5">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{t("inventory.totalStockValue")}</p>
+              <p className="mt-2 text-3xl font-bold text-foreground tabular-nums">Tsh {formatNumber(totalStockValue)}</p>
+            </div>
+            <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
+              <Package className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="section-shell">
+          <CardContent className="flex items-center justify-between p-5">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Bidhaa za low stock" : "Low stock items"}</p>
+              <p className="mt-2 text-3xl font-bold text-foreground">{lowStockCount}</p>
+            </div>
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="section-shell">
+          <CardContent className="flex items-center justify-between p-5">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Hazina stoki" : "Out of stock"}</p>
+              <p className="mt-2 text-3xl font-bold text-foreground">{outOfStockCount}</p>
+            </div>
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-red-500">
+              <Trash2 className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Edit Product Dialog */}
       <Dialog open={!!editProduct} onOpenChange={(o) => !o && setEditProduct(null)}>
@@ -361,12 +394,13 @@ export default function Inventory() {
         </DialogContent>
       </Dialog>
 
-      <Card>
+      <Card className="section-shell overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="hidden max-w-full overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -443,6 +477,55 @@ export default function Inventory() {
                 </TableBody>
               </Table>
             </div>
+            <div className="grid gap-3 p-4 md:hidden">
+              {filteredProducts.length === 0 ? (
+                <EmptyState
+                  title={products?.length === 0 ? (language === "sw" ? "Hakuna bidhaa bado" : "No products yet") : (language === "sw" ? "Hakuna matokeo" : "No matching products")}
+                  description={products?.length === 0 ? (language === "sw" ? "Ongeza bidhaa mpya ili kuanza kusimamia stoki." : "Add your first product to start managing stock.") : (language === "sw" ? "Badilisha vichujio au tafuta kwa jina/kodi nyingine." : "Try changing filters or searching another product name/code.")}
+                  icon={<Package className="h-8 w-8" />}
+                  actionLabel={products?.length === 0 ? t("inventory.addProduct") : undefined}
+                  onAction={products?.length === 0 ? () => navigate("/inventory/add") : undefined}
+                />
+              ) : (
+                filteredProducts.map((product) => (
+                  <Card key={product.id} className="border-border/70 bg-background/60">
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{getProductName(product)}</p>
+                          <p className="text-xs text-muted-foreground">{product.code}</p>
+                        </div>
+                        <Checkbox
+                          checked={selectedIds.has(product.id)}
+                          onCheckedChange={() => toggleSelect(product.id)}
+                          aria-label={`Select ${product.name}`}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t("inventory.stock")}</span>
+                        <span className={isLowStock(product.stock, product.low_stock_alert) ? "font-semibold text-destructive" : "font-semibold"}>{product.stock}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t("inventory.priceCol")}</span>
+                        <span className="font-semibold">{formatNumber(product.selling_price)}</span>
+                      </div>
+                      <div className="flex flex-wrap justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleGenerateBarcode(product)} title="Barcode">
+                          <QrCode className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditProduct({ ...product })}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setProductToDeleteId(product.id)} disabled={deleteProduct.isPending}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -18,8 +18,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
+import { PageHeader } from "@/components/common/PageHeader";
 
 type DateRangeType = "daily" | "weekly" | "monthly" | "custom";
+
+const reportStatusTone: Record<string, string> = {
+  completed: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400",
+  draft: "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400",
+  cancelled: "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400",
+};
 
 function getRangeForType(type: DateRangeType, customStart?: Date, customEnd?: Date): { start: string; end: string } {
   const now = new Date();
@@ -174,8 +181,12 @@ export default function Reports() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-2">
+      <PageHeader
+        title={t("reports.title")}
+        subtitle={language === "sw" ? "Pata muhtasari wa mauzo, hesabu, na faida" : "Analyze sales, inventory, and profitability"}
+        actions={
+        <>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Select value={rangeType} onValueChange={(v: DateRangeType) => setRangeType(v)}>
             <SelectTrigger className="w-36">
               <SelectValue />
@@ -232,7 +243,9 @@ export default function Reports() {
             {t("reports.exportExcel")}
           </Button>
         </div>
-      </div>
+        </>
+        }
+      />
 
       <Tabs value={reportTab} onValueChange={(v) => setReportTab(v as "sales" | "inventory" | "profit")}>
         <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -251,7 +264,7 @@ export default function Reports() {
         </TabsList>
 
       <TabsContent value="sales" className="space-y-6 mt-6">
-      <Card>
+      <Card className="section-shell">
         <CardContent className="p-4 md:p-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-foreground/70 dark:text-foreground/80">{t("reports.salesPeriod")}</p>
           <p className="mt-2 text-2xl md:text-3xl font-bold text-foreground dark:text-foreground">Tsh {formatNumber(totalSales)}</p>
@@ -290,7 +303,7 @@ export default function Reports() {
 
       {/* Sales Trend Chart */}
       {trendData.length > 0 && (
-        <Card>
+        <Card className="section-shell">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">{t("reports.salesTrend")}</CardTitle>
           </CardHeader>
@@ -310,7 +323,7 @@ export default function Reports() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="section-shell">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">{t("reports.bestSelling")}</CardTitle>
           </CardHeader>
@@ -337,7 +350,7 @@ export default function Reports() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="section-shell">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">{t("reports.topCustomers")}</CardTitle>
           </CardHeader>
@@ -392,7 +405,7 @@ export default function Reports() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="section-shell">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold">{t("reports.recentTransactions")}</CardTitle>
         </CardHeader>
@@ -430,7 +443,9 @@ export default function Reports() {
                         <TableCell className="font-medium">{formatNumber(tx.amount)}</TableCell>
                         <TableCell className="hidden md:table-cell">{tx.payment}</TableCell>
                         <TableCell>
-                          <Badge className="bg-success/10 text-success hover:bg-success/20">{t("reports.completed")}</Badge>
+                          <Badge className={reportStatusTone[tx.status] || "bg-secondary text-secondary-foreground hover:bg-secondary/80"}>
+                            {tx.status === "completed" ? t("reports.completed") : tx.status}
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))
@@ -444,7 +459,7 @@ export default function Reports() {
       </TabsContent>
 
       <TabsContent value="inventory" className="space-y-6 mt-6">
-        <Card>
+        <Card className="section-shell">
           <CardHeader><CardTitle>{t("reports.inventoryValuation")}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -510,7 +525,7 @@ export default function Reports() {
 
       <TabsContent value="profit" className="space-y-6 mt-6">
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
+          <Card className="section-shell">
             <CardHeader><CardTitle>{t("reports.profitAndLoss")}</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -535,7 +550,7 @@ export default function Reports() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="section-shell">
             <CardHeader><CardTitle>{t("reports.expenseBreakdown")}</CardTitle></CardHeader>
             <CardContent>
               <div className="flex flex-col items-center justify-center gap-6 md:flex-row">
