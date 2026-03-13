@@ -15,14 +15,76 @@ function isOrdersTableError(e: unknown): boolean {
   return /schema cache|table.*orders|relation.*orders/i.test(msg);
 }
 
-async function generateOrderNumber(): Promise<string> {
+function isMissingRpcError(e: unknown, fnName: string): boolean {
+  const msg = (e as Error)?.message ?? "";
+  return msg.toLowerCase().includes(fnName.toLowerCase()) && /function|schema cache|does not exist|could not find/i.test(msg);
+}
+
+async function generateLegacyOrderNumber(): Promise<string> {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   try {
-    const { count } = await supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`);
+    const { count } = await supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`);
     return `ORD-${date}-${String((count || 0) + 1).padStart(3, "0")}`;
   } catch {
     return `ORD-${date}-${Date.now().toString(36)}`;
   }
+}
+
+async function createOrderLegacy(shopId: string, input: { customer_name?: string; customer_phone?: string; priority?: string; due_date?: string | null; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) {
+  const orderNumber = await generateLegacyOrderNumber();
+  const total = input.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+  const payload: Record<string, unknown> = {
+    shop_id: shopId,
+    order_number: orderNumber,
+    customer_name: input.customer_name || null,
+    customer_phone: input.customer_phone || null,
+    status: "pending",
+    total,
+    notes: input.notes || null,
+  };
+  if (input.priority) payload.priority = input.priority;
+  if (input.due_date != null) payload.due_date = input.due_date || null;
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .insert(payload)
+    .select()
+    .single();
+  if (orderErr) throw orderErr;
+
+  const items = input.items.map((i) => ({
+    order_id: order.id,
+    product_id: i.product_id || null,
+    product_name: i.product_name,
+    quantity: i.quantity,
+    unit_price: i.unit_price,
+    total: i.quantity * i.unit_price,
+  }));
+  const { error: itemsErr } = await supabase.from("order_items").insert(items);
+  if (itemsErr) throw itemsErr;
+
+  return order;
+}
+
+async function updateOrderLegacy(id: string, updates: { status?: string; priority?: string; due_date?: string | null; notes?: string | null }) {
+  const payload: Record<string, unknown> = {};
+  if (updates.status !== undefined) payload.status = updates.status;
+  if (updates.priority !== undefined) payload.priority = updates.priority;
+  if (updates.due_date !== undefined) payload.due_date = updates.due_date ?? null;
+  if (updates.notes !== undefined) payload.notes = updates.notes ?? null;
+  if (Object.keys(payload).length === 0) return null;
+
+  const { data, error } = await supabase.from("orders").update(payload).eq("id", id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function deleteOrderLegacy(id: string) {
+  const { error } = await supabase.from("orders").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export function useOrders() {
@@ -72,20 +134,22 @@ export function useCreateOrder() {
     mutationFn: async (input: { customer_name?: string; customer_phone?: string; priority?: string; due_date?: string | null; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
-      const orderNumber = await generateOrderNumber();
-      const total = input.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
-      const payload: Record<string, unknown> = { shop_id: shopId, order_number: orderNumber, customer_name: input.customer_name || null, customer_phone: input.customer_phone || null, status: "pending", total, notes: input.notes || null };
-      if (input.priority) payload.priority = input.priority;
-      if (input.due_date != null) payload.due_date = input.due_date || null;
-      const { data: order, error: orderErr } = await supabase
-        .from("orders")
-        .insert(payload)
-        .select()
-        .single();
-      if (orderErr) throw orderErr;
-      const items = input.items.map((i) => ({ order_id: order.id, product_id: i.product_id || null, product_name: i.product_name, quantity: i.quantity, unit_price: i.unit_price, total: i.quantity * i.unit_price }));
-      const { error: itemsErr } = await supabase.from("order_items").insert(items);
-      if (itemsErr) throw itemsErr;
+      let order: any;
+      try {
+        const { data, error } = await (supabase as any).rpc("create_order_transaction", {
+          p_customer_name: input.customer_name ?? null,
+          p_customer_phone: input.customer_phone ?? null,
+          p_priority: input.priority ?? "medium",
+          p_due_date: input.due_date ?? null,
+          p_notes: input.notes ?? null,
+          p_items: input.items,
+        });
+        if (error) throw error;
+        order = data;
+      } catch (error) {
+        if (!isMissingRpcError(error, "create_order_transaction")) throw error;
+        order = await createOrderLegacy(shopId, input);
+      }
       try {
         await createShopNotification({
           shopId,
@@ -111,8 +175,23 @@ export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data, error } = await supabase.from("orders").update({ status }).eq("id", id).select().single();
-      if (error) throw error;
+      let data: any;
+      try {
+        const result = await (supabase as any).rpc("update_order_transaction", {
+          p_order_id: id,
+          p_status: status,
+          p_priority: null,
+          p_due_date: null,
+          p_notes: null,
+          p_set_due_date: false,
+          p_set_notes: false,
+        });
+        if (result.error) throw result.error;
+        data = result.data;
+      } catch (error) {
+        if (!isMissingRpcError(error, "update_order_transaction")) throw error;
+        data = await updateOrderLegacy(id, { status });
+      }
       if (data?.shop_id) {
         try {
           await createShopNotification({
@@ -140,15 +219,30 @@ export function useUpdateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; status?: string; priority?: string; due_date?: string | null; notes?: string | null }) => {
-      const payload: Record<string, unknown> = {};
-      if (updates.status !== undefined) payload.status = updates.status;
-      if (updates.priority !== undefined) payload.priority = updates.priority;
-      if (updates.due_date !== undefined) payload.due_date = updates.due_date ?? null;
-      if (updates.notes !== undefined) payload.notes = updates.notes ?? null;
-      if (Object.keys(payload).length === 0) return null;
-      const { data, error } = await supabase.from("orders").update(payload).eq("id", id).select().single();
-      if (error) throw error;
-      return data;
+      if (
+        updates.status === undefined &&
+        updates.priority === undefined &&
+        updates.due_date === undefined &&
+        updates.notes === undefined
+      ) {
+        return null;
+      }
+      try {
+        const { data, error } = await (supabase as any).rpc("update_order_transaction", {
+          p_order_id: id,
+          p_status: updates.status ?? null,
+          p_priority: updates.priority ?? null,
+          p_due_date: updates.due_date === undefined ? null : updates.due_date,
+          p_notes: updates.notes === undefined ? null : updates.notes,
+          p_set_due_date: updates.due_date !== undefined,
+          p_set_notes: updates.notes !== undefined,
+        });
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        if (!isMissingRpcError(error, "update_order_transaction")) throw error;
+        return updateOrderLegacy(id, updates);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -178,8 +272,15 @@ export function useDeleteOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("orders").delete().eq("id", id);
-      if (error) throw error;
+      try {
+        const { error } = await (supabase as any).rpc("delete_order_transaction", {
+          p_order_id: id,
+        });
+        if (error) throw error;
+      } catch (error) {
+        if (!isMissingRpcError(error, "delete_order_transaction")) throw error;
+        await deleteOrderLegacy(id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });

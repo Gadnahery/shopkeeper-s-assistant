@@ -65,6 +65,7 @@ export default function Sales() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [draftToDeleteId, setDraftToDeleteId] = useState<string | null>(null);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const previousAutoCashRef = useRef("");
 
@@ -264,6 +265,16 @@ export default function Sales() {
       setCustomerName("");
       setCustomerPhone("");
       previousAutoCashRef.current = "";
+
+      if (activeDraftId) {
+        try {
+          await deleteDraft.mutateAsync(activeDraftId);
+        } catch {
+          toast.error(language === "sw" ? "Mauzo yamekamilika lakini rasimu ya zamani haikufutika." : "Sale completed, but the original draft could not be removed.");
+        } finally {
+          setActiveDraftId(null);
+        }
+      }
     } catch (error) {
       // Handled inside mutation.
     }
@@ -295,6 +306,16 @@ export default function Sales() {
     setMpesaAmount("");
     setMpesaCode("");
     previousAutoCashRef.current = "";
+
+    if (activeDraftId) {
+      try {
+        await deleteDraft.mutateAsync(activeDraftId);
+      } catch {
+        toast.error(language === "sw" ? "Rasimu mpya imehifadhiwa lakini rasimu ya zamani bado ipo." : "New draft saved, but the old draft is still there.");
+      } finally {
+        setActiveDraftId(null);
+      }
+    }
   };
 
   return (
@@ -456,9 +477,14 @@ export default function Sales() {
                                       maxStock: products?.find((p) => p.id === si.product_id)?.stock || 999,
                                     }));
                                     setCartItems(items);
+                                    setDiscountAmount(String(d.discount_amount || 0));
+                                    setDiscountPercent(String(d.discount_percent || 0));
+                                    setCashAmount("");
+                                    setMpesaAmount("");
+                                    setMpesaCode(d.mpesa_code || "");
                                     setSelectedCustomer("walk-in");
                                     setCustomerName(d.customer_name || "");
-                                    deleteDraft.mutate(d.id);
+                                    setActiveDraftId(d.id);
                                   }}
                                 >
                                   {language === "sw" ? "Endelea" : "Resume"}

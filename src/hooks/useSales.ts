@@ -1,13 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
-import { logAudit } from "@/lib/audit";
+import type { Tables } from "@/integrations/supabase/types";
 
 export type Sale = Tables<"sales">;
-export type SaleItem = Tables<"sale_items">;
-export type SaleInsert = TablesInsert<"sales">;
-export type SaleItemInsert = TablesInsert<"sale_items">;
 
 interface CartItem {
   product_id: string;
@@ -25,17 +21,6 @@ interface CreateSaleInput {
   discount_percent?: number;
   tax_amount?: number;
   items: CartItem[];
-}
-
-async function getUserShopId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase
-    .from("profiles")
-    .select("shop_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  return data?.shop_id || null;
 }
 
 export function useSales() {
@@ -142,120 +127,19 @@ export function useCreateSale() {
   
   return useMutation({
     mutationFn: async (input: CreateSaleInput) => {
-      // Get shop_id first - this is REQUIRED for RLS
-      const shopId = await getUserShopId();
-      if (!shopId) throw new Error("No shop found for user. Please log out and log in again.");
-      const { data: authData } = await supabase.auth.getUser();
-      const cashierId = authData.user?.id ?? null;
-
-      // Generate invoice number (unique: timestamp + random to avoid duplicate key)
-      const fallbackInv = () => `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-      const { data: invoiceNum } = await supabase.rpc("generate_invoice_number");
-      const invoiceNumber = invoiceNum || fallbackInv();
-
-      const subtotal = input.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-      const discountAmount = input.discount_amount || 0;
-      const taxAmount = input.tax_amount || 0;
-      const total = subtotal - discountAmount + taxAmount;
-
-      // Create sale with shop_id
-      const { data: sale, error: saleError } = await supabase
-        .from("sales")
-        .insert({
-          invoice_number: invoiceNumber,
-          customer_id: input.customer_id,
-          customer_name: input.customer_name || null,
-          payment_method: input.payment_method,
-          mpesa_code: input.mpesa_code,
-          subtotal,
-          discount_amount: discountAmount,
-          discount_percent: input.discount_percent || 0,
-          tax_amount: taxAmount,
-          cashier_id: cashierId,
-          total,
-          status: "completed",
-          shop_id: shopId,
-        })
-        .select()
-        .single();
-      
-      if (saleError) throw saleError;
-      
-      // Load product buying prices to persist historical COGS
-      const buyingPriceByProduct = new Map<string, number>();
-      await Promise.all(
-        input.items.map(async (item) => {
-          const { data: product } = await supabase
-            .from("products")
-            .select("id, buying_price")
-            .eq("id", item.product_id)
-            .maybeSingle();
-          buyingPriceByProduct.set(item.product_id, Number(product?.buying_price || 0));
-        })
-      );
-
-      // Create sale items with shop_id
-      const saleItems: SaleItemInsert[] = input.items.map(item => ({
-        sale_id: sale.id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        unit_price: item.unit_price,
-        quantity: item.quantity,
-        buying_price_at_sale: buyingPriceByProduct.get(item.product_id) || 0,
-        discount_amount: 0,
-        total: item.unit_price * item.quantity,
-        shop_id: shopId,
-      }));
-      
-      const { error: itemsError } = await supabase
-        .from("sale_items")
-        .insert(saleItems);
-      
-      if (itemsError) throw itemsError;
-      
-      // Update product stock
-      for (const item of input.items) {
-        const { data: product } = await supabase
-          .from("products")
-          .select("stock")
-          .eq("id", item.product_id)
-          .single();
-        
-        if (product) {
-          const newStock = product.stock - item.quantity;
-          
-          await supabase
-            .from("products")
-            .update({ stock: newStock })
-            .eq("id", item.product_id);
-          
-          // Record stock history with shop_id
-          await supabase
-            .from("stock_history")
-            .insert({
-              product_id: item.product_id,
-              change_type: "sale",
-              previous_stock: product.stock,
-              quantity_change: -item.quantity,
-              new_stock: newStock,
-              notes: `Sale: ${sale.invoice_number}`,
-              shop_id: shopId,
-            });
-        }
-      }
-      await logAudit({
-        action: "sale_created",
-        entityType: "sales",
-        entityId: sale.id,
-        metadata: {
-          invoice_number: sale.invoice_number,
-          payment_method: input.payment_method,
-          items_count: input.items.length,
-          total,
-        },
+      const { data: sale, error } = await (supabase as any).rpc("complete_sale_transaction", {
+        p_customer_id: input.customer_id ?? null,
+        p_customer_name: input.customer_name ?? null,
+        p_payment_method: input.payment_method,
+        p_mpesa_code: input.mpesa_code ?? null,
+        p_discount_amount: input.discount_amount || 0,
+        p_discount_percent: input.discount_percent || 0,
+        p_tax_amount: input.tax_amount || 0,
+        p_items: input.items,
       });
-      
-      return sale;
+
+      if (error) throw error;
+      return sale as Sale;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
@@ -287,48 +171,17 @@ export function useSaveDraftSale() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateSaleInput) => {
-      const shopId = await getUserShopId();
-      if (!shopId) throw new Error("No shop found");
-      const { data: authData } = await supabase.auth.getUser();
-      const fallbackInv = () => `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-      const { data: invoiceNum } = await supabase.rpc("generate_invoice_number");
-      const invoiceNumber = invoiceNum || fallbackInv();
-      const subtotal = input.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-      const discountAmount = input.discount_amount || 0;
-      const total = subtotal - discountAmount;
-      const { data: sale, error: saleError } = await supabase
-        .from("sales")
-        .insert({
-          invoice_number: invoiceNumber,
-          customer_id: input.customer_id,
-          customer_name: input.customer_name || null,
-          payment_method: "Cash",
-          subtotal,
-          discount_amount: discountAmount,
-          discount_percent: input.discount_percent || 0,
-          tax_amount: 0,
-          cashier_id: authData.user?.id ?? null,
-          total,
-          status: "draft",
-          shop_id: shopId,
-        })
-        .select()
-        .single();
-      if (saleError) throw saleError;
-      const saleItems: SaleItemInsert[] = input.items.map(item => ({
-        sale_id: sale.id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        unit_price: item.unit_price,
-        quantity: item.quantity,
-        buying_price_at_sale: 0,
-        discount_amount: 0,
-        total: item.unit_price * item.quantity,
-        shop_id: shopId,
-      }));
-      const { error: itemsError } = await supabase.from("sale_items").insert(saleItems);
-      if (itemsError) throw itemsError;
-      return sale;
+      const { data, error } = await (supabase as any).rpc("save_draft_sale_transaction", {
+        p_customer_id: input.customer_id ?? null,
+        p_customer_name: input.customer_name ?? null,
+        p_discount_amount: input.discount_amount || 0,
+        p_discount_percent: input.discount_percent || 0,
+        p_tax_amount: input.tax_amount || 0,
+        p_items: input.items,
+      });
+
+      if (error) throw error;
+      return data as Sale;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
@@ -343,38 +196,12 @@ export function useCompleteDraftSale() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (saleId: string) => {
-      const shopId = await getUserShopId();
-      if (!shopId) throw new Error("No shop found");
-      const { data: sale, error: saleErr } = await supabase.from("sales").select("*, sale_items(*)").eq("id", saleId).single();
-      if (saleErr || !sale) throw new Error("Draft not found");
-      const items = sale.sale_items || [];
-      for (const item of items) {
-        const { data: product } = await supabase.from("products").select("stock").eq("id", item.product_id).single();
-        if (product) {
-          const newStock = product.stock - item.quantity;
-          await supabase.from("products").update({ stock: newStock }).eq("id", item.product_id);
-          await supabase.from("stock_history").insert({
-            product_id: item.product_id,
-            change_type: "sale",
-            previous_stock: product.stock,
-            quantity_change: -item.quantity,
-            new_stock: newStock,
-            notes: `Sale: ${sale.invoice_number}`,
-            shop_id: shopId,
-          });
-        }
-      }
-      const { data: updated, error } = await supabase.from("sales").update({ status: "completed" }).eq("id", saleId).select().single();
-      if (error) throw error;
-      await logAudit({
-        action: "draft_sale_completed",
-        entityType: "sales",
-        entityId: updated.id,
-        metadata: {
-          invoice_number: updated.invoice_number,
-        },
+      const { data, error } = await (supabase as any).rpc("complete_draft_sale_transaction", {
+        p_sale_id: saleId,
       });
-      return updated;
+
+      if (error) throw error;
+      return data as Sale;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
@@ -390,14 +217,10 @@ export function useDeleteDraftSale() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (saleId: string) => {
-      await supabase.from("sale_items").delete().eq("sale_id", saleId);
-      const { error } = await supabase.from("sales").delete().eq("id", saleId);
-      if (error) throw error;
-      await logAudit({
-        action: "draft_sale_deleted",
-        entityType: "sales",
-        entityId: saleId,
+      const { error } = await (supabase as any).rpc("delete_draft_sale_transaction", {
+        p_sale_id: saleId,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });

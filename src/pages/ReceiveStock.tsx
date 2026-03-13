@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useProducts, useUpdateProduct } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/useProducts";
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { logAudit } from "@/lib/audit";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -20,7 +19,6 @@ export default function ReceiveStock() {
   const { language } = useLanguage();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: suppliers, isLoading: suppliersLoading } = useSuppliers();
-  const updateProduct = useUpdateProduct();
   const [productId, setProductId] = useState("");
   const [supplierId, setSupplierId] = useState("none");
   const [quantity, setQuantity] = useState("");
@@ -32,62 +30,21 @@ export default function ReceiveStock() {
     return <PageLoader message="Loading..." messageSw="Inapakia..." language={language} />;
   }
 
-  const getShopId = async () => {
-    const { data: auth } = await supabase.auth.getUser();
-    const userId = auth.user?.id;
-    if (!userId) return null;
-    const { data } = await supabase.from("profiles").select("shop_id").eq("user_id", userId).maybeSingle();
-    return data?.shop_id ?? null;
-  };
-
   const onSave = async () => {
     if (!productId || !quantity) return;
-    const product = products?.find((p) => p.id === productId);
-    if (!product) return;
     const qty = Math.max(1, Number(quantity) || 0);
-    const newStock = (product.stock || 0) + qty;
     setSaving(true);
     try {
-      const shopId = await getShopId();
-      if (!shopId) throw new Error("No shop found");
+      const { error } = await (supabase as any).rpc("receive_stock_transaction", {
+        p_product_id: productId,
+        p_supplier_id: supplierId === "none" ? null : supplierId,
+        p_quantity: qty,
+        p_buying_price: buyingPrice ? Number(buyingPrice) : null,
+        p_notes: notes || null,
+      });
 
-      await updateProduct.mutateAsync({
-        id: product.id,
-        stock: newStock,
-        buying_price: buyingPrice ? Number(buyingPrice) : product.buying_price,
-      });
-      const { data: received } = await (supabase as any)
-        .from("stock_received")
-        .insert({
-          shop_id: shopId,
-          supplier_id: supplierId === "none" ? null : supplierId,
-          notes: notes || null,
-        })
-        .select()
-        .single();
-      await (supabase as any).from("stock_received_items").insert({
-        stock_received_id: received?.id,
-        product_id: product.id,
-        quantity: qty,
-        buying_price: buyingPrice ? Number(buyingPrice) : Number(product.buying_price || 0),
-      });
-      await supabase.from("stock_history").insert({
-        product_id: product.id,
-        quantity_change: qty,
-        change_type: "restock",
-        notes: notes || `Stock received${supplierId !== "none" ? ` from supplier ${supplierId}` : ""}`,
-      } as any);
-      await logAudit({
-        action: "stock_received",
-        entityType: "stock_received",
-        entityId: received?.id ?? null,
-        metadata: {
-          product_id: product.id,
-          quantity: qty,
-          supplier_id: supplierId === "none" ? null : supplierId,
-          buying_price: buyingPrice ? Number(buyingPrice) : Number(product.buying_price || 0),
-        },
-      });
+      if (error) throw error;
+
       toast.success("Stock received successfully");
       navigate("/inventory");
     } catch (e: any) {
