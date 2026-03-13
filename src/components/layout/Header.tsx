@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Download, Globe, Menu, Moon, Sun, Search, LogOut, User, Settings } from "lucide-react";
+import { Bell, Check, Download, Globe, Menu, Moon, Sun, Search, LogOut, User, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,7 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
   const { data: notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
   const { permission, requestPermission, supportsNativeNotifications } = useNotificationContext();
-  const { canInstall, install } = usePWAContext();
+  const { canInstall, install, isInstalled, needsManualInstallHint } = usePWAContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
@@ -57,8 +57,8 @@ export function Header() {
   });
 
   return (
-    <header className="safe-top sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-border/70 bg-background/85 px-3 backdrop-blur-xl sm:px-4 md:px-6">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
+    <header className="safe-top sticky top-0 z-30 flex min-h-16 max-w-full flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-background/85 px-3 backdrop-blur-xl sm:px-4 md:flex-nowrap md:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
         {isMobile && (
           <Button
             variant="ghost"
@@ -70,7 +70,7 @@ export function Header() {
           </Button>
         )}
 
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl">
+        <form onSubmit={handleSearch} className="hidden min-w-0 flex-1 md:flex md:max-w-xl">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50 dark:text-foreground/60 dark:drop-shadow-[0_0_3px_rgba(59,130,246,0.2)] z-10" strokeWidth={1.5} />
             <Input
@@ -85,27 +85,53 @@ export function Header() {
         <div className="md:hidden text-sm text-muted-foreground truncate">{formattedDate}</div>
       </div>
 
-      <div className="flex items-center gap-1">
-        {canInstall && (
+      <div className="flex max-w-full flex-wrap items-center justify-end gap-1 sm:flex-nowrap">
+        {(canInstall || needsManualInstallHint || isInstalled) && (
           <Button
             variant="outline"
             size="sm"
-            className="hidden h-9 gap-2 rounded-xl border-border/70 bg-background/70 sm:inline-flex"
+            className="h-9 gap-2 rounded-xl border-border/70 bg-background/70 px-3"
             onClick={() => void install()}
+            disabled={isInstalled}
           >
-            <Download className="h-4 w-4" />
-            {language === "sw" ? "Sakinisha" : "Install"}
+            {isInstalled ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+            <span className="hidden sm:inline">
+              {isInstalled
+                ? language === "sw"
+                  ? "Imesakinishwa"
+                  : "Installed"
+                : language === "sw"
+                  ? "Sakinisha"
+                  : "Install"}
+            </span>
           </Button>
         )}
 
-        {supportsNativeNotifications && permission !== "granted" && (
+        {supportsNativeNotifications && (
           <Button
             variant="ghost"
             size="sm"
-            className="hidden h-9 rounded-xl px-3 text-xs sm:inline-flex"
-            onClick={() => void requestPermission()}
+            className="h-9 rounded-xl px-3 text-xs"
+            onClick={() => permission === "granted" ? navigate("/notifications") : void requestPermission()}
           >
-            {language === "sw" ? "Washa arifa" : "Enable alerts"}
+            <span className="hidden sm:inline">
+              {permission === "granted"
+                ? language === "sw"
+                  ? "Arifa zipo"
+                  : "Alerts on"
+                : language === "sw"
+                  ? "Washa arifa"
+                  : "Enable alerts"}
+            </span>
+            <span className="sm:hidden">
+              {permission === "granted"
+                ? language === "sw"
+                  ? "Arifa"
+                  : "Alerts"
+                : language === "sw"
+                  ? "Washa"
+                  : "Enable"}
+            </span>
           </Button>
         )}
 
@@ -196,16 +222,16 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-xl border border-transparent p-1 pr-2 transition-colors duration-200 hover:border-border/70 hover:bg-muted/50">
+            <button className="flex min-w-0 max-w-[220px] items-center gap-2 rounded-xl border border-transparent p-1 pr-2 transition-colors duration-200 hover:border-border/70 hover:bg-muted/50">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={avatarUrl || undefined} alt={userName} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
                   {userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-foreground leading-tight">{userName}</p>
-                <p className="text-xs text-muted-foreground">{formattedDate}</p>
+              <div className="hidden min-w-0 md:block text-left">
+                <p className="truncate text-sm font-medium leading-tight text-foreground">{userName}</p>
+                <p className="truncate text-xs text-muted-foreground">{formattedDate}</p>
               </div>
             </button>
           </DropdownMenuTrigger>

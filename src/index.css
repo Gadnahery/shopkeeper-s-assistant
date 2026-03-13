@@ -149,6 +149,7 @@
   #root {
     min-height: 100dvh;
     min-height: 100vh;
+    overflow-x: clip;
   }
 
   ::selection {
@@ -228,6 +229,18 @@
   .section-shell {
     @apply rounded-[1.5rem] border border-border/70 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.42)] backdrop-blur-xl;
     background: hsl(var(--card) / 0.82);
+  }
+
+  .responsive-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  }
+
+  .responsive-grid-wide {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   }
 
   .safe-top {

@@ -87,10 +87,6 @@ export default function Sales() {
   const saveDraft = useSaveDraftSale();
   const deleteDraft = useDeleteDraftSale();
 
-  if (initialLoading) {
-    return <PageLoader message="Loading sales..." messageSw="Inapakia mauzo..." language={language} />;
-  }
-
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discount = parseInt(discountAmount) || Math.round(subtotal * (parseInt(discountPercent) || 0) / 100);
   const total = subtotal - discount;
@@ -111,6 +107,10 @@ export default function Sales() {
 
     previousAutoCashRef.current = nextAutoCash;
   }, [total, cashAmount, mpesaAmount]);
+
+  if (initialLoading) {
+    return <PageLoader message="Loading sales..." messageSw="Inapakia mauzo..." language={language} />;
+  }
 
   const updateQuantity = (id: string, delta: number) => {
     setCartItems((items) =>

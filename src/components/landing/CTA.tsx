@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePWAContext } from "@/contexts/PWAContext";
 
 export function CTA() {
   const { language } = useLanguage();
-  const { canInstall, install, installHint, needsManualInstallHint } = usePWAContext();
+  const { install, installHint, isInstalled } = usePWAContext();
 
   return (
     <section className="py-20">
@@ -50,16 +51,22 @@ export function CTA() {
                   </Link>
                 </Button>
               </motion.div>
-              {(canInstall || needsManualInstallHint) && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-14 rounded-xl border-white/35 bg-white/10 px-8 text-white hover:bg-white/15 hover:text-white"
-                  onClick={() => void install()}
-                >
-                  {language === "sw" ? "Sakinisha App" : "Install App"}
-                </Button>
-              )}
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 rounded-xl border-white/35 bg-white/10 px-8 text-white hover:bg-white/15 hover:text-white"
+                onClick={() => void install()}
+                disabled={isInstalled}
+              >
+                {isInstalled ? <Check className="mr-2 h-5 w-5" /> : <Download className="mr-2 h-5 w-5" />}
+                {isInstalled
+                  ? language === "sw"
+                    ? "Imesakinishwa"
+                    : "Installed"
+                  : language === "sw"
+                    ? "Download the App"
+                    : "Download the App"}
+              </Button>
             </div>
             {installHint && (
               <p className="mx-auto mt-4 max-w-2xl text-sm text-white/85">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Plus, Pencil, Trash2, AlertTriangle, Loader2, QrCode, Package, FolderTree } from "lucide-react";
-import { useProducts, useDeleteProduct, useUpdateProduct } from "@/hooks/useProducts";
+import { Search, Download, Upload, Plus, Pencil, Trash2, AlertTriangle, Loader2, QrCode, Package, FolderTree } from "lucide-react";
+import { useProducts, useCreateProduct, useDeleteProduct, useUpdateProduct } from "@/hooks/useProducts";
 import { BarcodeGenerator } from "@/components/BarcodeGenerator";
 import { EmptyState } from "@/components/EmptyState";
-import { exportToCSV } from "@/utils/exportData";
+import { exportToCSV, parseCSV } from "@/utils/exportData";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/useCategories";
@@ -30,6 +30,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { playSound } from "@/lib/sounds";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -50,9 +51,12 @@ export default function Inventory() {
   const [showBulkCategory, setShowBulkCategory] = useState(false);
   const [bulkCategoryId, setBulkCategoryId] = useState<string>("");
   const [productToDeleteId, setProductToDeleteId] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
+  const createProduct = useCreateProduct();
   const deleteProduct = useDeleteProduct();
   const updateProduct = useUpdateProduct();
 
@@ -110,6 +114,69 @@ export default function Inventory() {
       })),
       "inventory"
     );
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const content = await file.text();
+      const rows = parseCSV(content);
+      if (!rows.length) throw new Error(language === "sw" ? "CSV haina data." : "CSV has no rows.");
+
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) throw new Error(language === "sw" ? "Ingia tena ili kuendelea." : "Please sign in again.");
+
+      const { data: profile } = await supabase.from("profiles").select("shop_id").eq("user_id", userId).maybeSingle();
+      const shopId = profile?.shop_id;
+      if (!shopId) throw new Error(language === "sw" ? "Duka halijapatikana." : "No shop found.");
+
+      const existingByCode = new Map(products.map((product) => [product.code.toLowerCase(), product]));
+      let created = 0;
+      let updated = 0;
+
+      for (const row of rows) {
+        const code = (row.Code || row.code || "").trim();
+        const name = (row.Name || row.name || "").trim();
+        if (!code || !name) continue;
+
+        const payload = {
+          code,
+          name,
+          name_sw: row["Name Sw"] || row.name_sw || name,
+          stock: Number(row.Stock || row.stock || 0),
+          buying_price: Number(row["Buying Price"] || row.buying_price || 0),
+          selling_price: Number(row["Selling Price"] || row.selling_price || 0),
+          barcode: (row.Barcode || row.barcode || "").trim() || null,
+          low_stock_alert: Number(row["Low Stock Alert"] || row.low_stock_alert || 5),
+          shop_id: shopId,
+        };
+
+        const existing = existingByCode.get(code.toLowerCase());
+        if (existing) {
+          await updateProduct.mutateAsync({ id: existing.id, ...payload });
+          updated += 1;
+        } else {
+          await createProduct.mutateAsync(payload);
+          created += 1;
+        }
+      }
+
+      toast.success(
+        language === "sw"
+          ? `Uingizaji umekamilika. Zimeongezwa ${created}, zimeboreshwa ${updated}.`
+          : `Import complete. Created ${created}, updated ${updated}.`
+      );
+      playSound("success");
+    } catch (error: any) {
+      toast.error(error?.message || (language === "sw" ? "Uingizaji umeshindikana." : "Import failed."));
+    } finally {
+      event.target.value = "";
+      setIsImporting(false);
+    }
   };
 
   const toggleSelectAll = () => {
@@ -217,6 +284,10 @@ export default function Inventory() {
           <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExport} disabled={filteredProducts.length === 0}>
             <Download className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" /><span className="hidden md:inline">{selectedIds.size > 0 ? t("inventory.exportSelected") : t("inventory.export")}</span>
           </Button>
+          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => importInputRef.current?.click()} disabled={isImporting}>
+            {isImporting ? <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" /> : <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+            <span className="hidden md:inline">{language === "sw" ? "Ingiza CSV" : "Import CSV"}</span>
+          </Button>
           <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => { playSound("click"); navigate("/inventory/add"); }}>
             <Plus className="h-4 w-4" />{t("inventory.addProduct")}
           </Button>
@@ -228,6 +299,7 @@ export default function Inventory() {
         </>
         }
       />
+      <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImport} />
 
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="section-shell border-primary/20">

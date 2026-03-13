@@ -79,6 +79,12 @@ export function PWAProvider({ children }: { children: ReactNode }) {
             ? "Fungua Share menu kisha chagua 'Add to Home Screen'."
             : "Open the Share menu and choose 'Add to Home Screen'.",
         );
+      } else if (!isInstalled) {
+        toast.message(
+          language === "sw"
+            ? "Tumia menyu ya browser yako kisha chagua 'Install app' au 'Add to Home Screen'."
+            : "Use your browser menu and choose 'Install app' or 'Add to Home Screen'.",
+        );
       }
       return false;
     }
@@ -92,7 +98,7 @@ export function PWAProvider({ children }: { children: ReactNode }) {
     }
 
     return false;
-  }, [deferredPrompt, language, needsManualInstallHint]);
+  }, [deferredPrompt, isInstalled, language, needsManualInstallHint]);
 
   const value = useMemo(
     () => ({

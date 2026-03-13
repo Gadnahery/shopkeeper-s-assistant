@@ -28,9 +28,9 @@ import {
 } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSalesSummaryByRange } from "@/hooks/useSales";
+import { useSalesByDateRange, useSalesSummaryByRange } from "@/hooks/useSales";
 import { useLowStockProducts, useProducts } from "@/hooks/useProducts";
-import { useWeeklySalesTrend, useStockByCategory } from "@/hooks/useShopData";
+import { useStockByCategory } from "@/hooks/useShopData";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 import { Calculator } from "@/components/Calculator";
@@ -38,15 +38,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { PageLoader } from "@/components/PageLoader";
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
 
 const PRIMARY_TEAL = "#0D9488";
 const PRIMARY_GRADIENT = "url(#primaryGradient)";
 
-type KpiRange = "today" | "week" | "month";
+type KpiRange = "today" | "week" | "month" | "custom";
 
-function getRange(r: KpiRange): { start: string; end: string; labelKey: string } {
+function getRange(r: KpiRange, customRange?: DateRange): { start: string; end: string; labelKey: string } {
   const now = new Date();
   switch (r) {
     case "today":
@@ -55,27 +58,34 @@ function getRange(r: KpiRange): { start: string; end: string; labelKey: string }
       return { start: format(startOfWeek(now), "yyyy-MM-dd"), end: format(endOfWeek(now), "yyyy-MM-dd"), labelKey: "dashboard.weekly" };
     case "month":
       return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd"), labelKey: "dashboard.monthly" };
+    case "custom":
+      if (customRange?.from && customRange?.to) {
+        return {
+          start: format(startOfDay(customRange.from), "yyyy-MM-dd"),
+          end: format(endOfDay(customRange.to), "yyyy-MM-dd"),
+          labelKey: "reports.custom",
+        };
+      }
+      return { start: format(startOfDay(now), "yyyy-MM-dd"), end: format(endOfDay(now), "yyyy-MM-dd"), labelKey: "reports.custom" };
     default:
-      return getRange("today");
+      return getRange("today", customRange);
   }
 }
 
 export default function Dashboard() {
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [kpiRange, setKpiRange] = useState<KpiRange>("today");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>({ from: new Date(), to: new Date() });
+  const [customOpen, setCustomOpen] = useState(false);
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { profile } = useAuth();
-  const range = useMemo(() => getRange(kpiRange), [kpiRange]);
+  const range = useMemo(() => getRange(kpiRange, customRange), [kpiRange, customRange]);
   const { data: rangeSales, isLoading: salesLoading } = useSalesSummaryByRange(range.start, range.end);
+  const { data: detailedSales, isLoading: detailedSalesLoading } = useSalesByDateRange(range.start, range.end);
   const { data: lowStockProducts } = useLowStockProducts();
   const { data: allProducts } = useProducts();
-  const { data: weeklyTrend } = useWeeklySalesTrend();
   const { data: categoryData } = useStockByCategory();
-
-  if (rangeSales === undefined || salesLoading) {
-    return <PageLoader message="Loading dashboard..." messageSw="Inapakia dashibodi..." language={language} />;
-  }
 
   const shopName = profile?.shops?.name || "Smart Money";
   const formatNumber = (num: number) => num.toLocaleString("en-US");
@@ -84,6 +94,28 @@ export default function Dashboard() {
   const mpesaPercent = 100 - cashPercent;
   const inventoryCount = allProducts?.length || 0;
   const lowStockCount = lowStockProducts?.length || 0;
+  const chartData = useMemo(() => {
+    const buckets: Record<string, number> = {};
+    const safeSales = detailedSales ?? [];
+
+    eachDayOfInterval({
+      start: new Date(range.start),
+      end: new Date(range.end),
+    }).forEach((date) => {
+      buckets[format(date, "dd MMM")] = 0;
+    });
+
+    safeSales.forEach((sale) => {
+      const key = format(new Date(sale.created_at), "dd MMM");
+      buckets[key] = (buckets[key] || 0) + Number(sale.total || 0);
+    });
+
+    return Object.entries(buckets).map(([day, sales]) => ({ day, sales }));
+  }, [detailedSales, range.end, range.start]);
+
+  if (rangeSales === undefined || detailedSales === undefined || salesLoading || detailedSalesLoading) {
+    return <PageLoader message="Loading dashboard..." messageSw="Inapakia dashibodi..." language={language} />;
+  }
 
   const donutColors = ["#0D9488", "#D97706", "#6366F1", "#DB2777", "#0D9488", "#7C3AED"];
   const fallbackCategoryData = categoryData?.length
@@ -154,6 +186,10 @@ export default function Dashboard() {
 
   const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
   const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+  const rangeLabel =
+    kpiRange === "custom" && customRange?.from && customRange?.to
+      ? `${format(customRange.from, "dd MMM")} - ${format(customRange.to, "dd MMM yyyy")}`
+      : t(range.labelKey);
 
   return (
     <motion.div
@@ -164,7 +200,7 @@ export default function Dashboard() {
     >
       <Calculator open={calculatorOpen} onOpenChange={setCalculatorOpen} />
 
-      <motion.section variants={item} className="section-shell relative overflow-hidden p-5 sm:p-6">
+      <motion.section variants={item} className="section-shell relative max-w-full overflow-hidden p-5 sm:p-6">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.2),transparent_55%)]" />
         <div className="relative grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
           <div className="space-y-5">
@@ -192,8 +228,32 @@ export default function Dashboard() {
                     <SelectItem value="today">{t("dashboard.daily")}</SelectItem>
                     <SelectItem value="week">{t("dashboard.weekly")}</SelectItem>
                     <SelectItem value="month">{t("dashboard.monthly")}</SelectItem>
+                    <SelectItem value="custom">{t("reports.custom")}</SelectItem>
                   </SelectContent>
                 </Select>
+                {kpiRange === "custom" ? (
+                  <Popover open={customOpen} onOpenChange={setCustomOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="h-11 w-full rounded-2xl border-border/70 bg-background/75 sm:w-auto">
+                        <LayoutGrid className="mr-2 h-4 w-4" />
+                        <span className="truncate">{rangeLabel}</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="range"
+                        numberOfMonths={2}
+                        selected={customRange}
+                        onSelect={(value) => {
+                          setCustomRange(value);
+                          if (value?.from && value?.to) {
+                            setCustomOpen(false);
+                          }
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : null}
                 <Button
                   variant="outline"
                   size="default"
@@ -271,7 +331,7 @@ export default function Dashboard() {
         </div>
       </motion.section>
 
-      <motion.div variants={container} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <motion.div variants={container} className="responsive-grid-wide">
         {kpiData.map((kpi) => (
           <motion.div key={kpi.title} variants={item}>
             <Card
@@ -287,7 +347,8 @@ export default function Dashboard() {
                   : undefined
               }
             >
-              <div className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-br ${kpi.accent} opacity-90`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${kpi.accent} opacity-100`} />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--card)/0.15),hsl(var(--card)/0.76))]" />
               <CardContent className="relative p-5">
                 <kpi.icon
                   className={`absolute right-4 top-4 h-8 w-8 transition-all duration-200 group-hover:scale-110 ${
@@ -343,7 +404,7 @@ export default function Dashboard() {
               <Skeleton className="h-[220px] w-full rounded-xl" />
             ) : (
             <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={weeklyTrend || []} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>
+              <AreaChart data={chartData} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>
                 <defs>
                   <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.4} />

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Store, Menu, X, Globe, Sun, Moon } from "lucide-react";
+import { Store, Menu, X, Globe, Sun, Moon, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePWAContext } from "@/contexts/PWAContext";
@@ -18,7 +18,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const { canInstall, install, needsManualInstallHint } = usePWAContext();
+  const { install, isInstalled } = usePWAContext();
 
   const t = (en: string, sw: string) => (language === "sw" ? sw : en);
 
@@ -75,11 +75,10 @@ export function Navbar() {
           <Button variant="ghost" asChild>
             <Link to="/login">{t("Login", "Ingia")}</Link>
           </Button>
-          {(canInstall || needsManualInstallHint) && (
-            <Button variant="outline" onClick={() => void install()}>
-              {t("Install App", "Sakinisha App")}
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => void install()} disabled={isInstalled} className="gap-2">
+              {isInstalled ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+              {isInstalled ? t("Installed", "Imesakinishwa") : t("Download App", "Pakua App")}
+          </Button>
           <Button asChild className="bg-gradient-to-r from-emerald-500 to-cyan-600 shadow-md shadow-emerald-500/25 hover:from-emerald-600 hover:to-cyan-700">
             <Link to="/signup">{t("Signup", "Jisajili")}</Link>
           </Button>
@@ -139,11 +138,10 @@ export function Navbar() {
                     {t("Login", "Ingia")}
                   </Link>
                 </Button>
-                {(canInstall || needsManualInstallHint) && (
-                  <Button variant="outline" className="w-full" onClick={() => void install()}>
-                    {t("Install App", "Sakinisha App")}
-                  </Button>
-                )}
+                <Button variant="outline" className="w-full gap-2" onClick={() => void install()} disabled={isInstalled}>
+                    {isInstalled ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                    {isInstalled ? t("Installed", "Imesakinishwa") : t("Download App", "Pakua App")}
+                </Button>
                 <Button asChild className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700">
                   <Link to="/signup" onClick={() => setOpen(false)}>
                     {t("Signup", "Jisajili")}

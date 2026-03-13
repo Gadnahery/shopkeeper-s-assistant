@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Printer, X } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 
 interface ReceiptItem {
   name: string;
@@ -39,6 +40,7 @@ interface ReceiptProps {
 
 export function Receipt({ data, onClose }: ReceiptProps) {
   const { t, language } = useLanguage();
+  const { theme } = useTheme();
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
@@ -96,8 +98,8 @@ export function Receipt({ data, onClose }: ReceiptProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative max-h-[90vh] w-full max-w-sm overflow-auto rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-auto rounded-[1.5rem] border border-border/70 bg-background/95 p-4 shadow-2xl sm:p-6">
         <Button
           variant="ghost"
           size="icon"
@@ -107,7 +109,11 @@ export function Receipt({ data, onClose }: ReceiptProps) {
           <X className="h-4 w-4" />
         </Button>
 
-        <div ref={receiptRef} className="receipt font-mono text-sm">
+        <div className={theme === "dark" ? "rounded-[1.35rem] border border-white/10 bg-slate-950/70 p-3" : "rounded-[1.35rem] border border-border/70 bg-muted/30 p-3"}>
+        <div
+          ref={receiptRef}
+          className="receipt rounded-[1.1rem] border border-slate-200 bg-white p-5 font-mono text-sm text-slate-900 shadow-[0_18px_50px_-30px_rgba(15,23,42,0.45)]"
+        >
           {/* Header */}
           <div className="header mb-4 text-center">
             {data.receiptHeader && (
@@ -228,9 +234,10 @@ export function Receipt({ data, onClose }: ReceiptProps) {
             )}
           </div>
         </div>
+        </div>
 
         {/* Print Button */}
-        <Button onClick={handlePrint} className="mt-4 w-full gap-2">
+        <Button onClick={handlePrint} className="mt-4 w-full gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white hover:from-teal-600 hover:to-blue-700">
           <Printer className="h-4 w-4" />
           {t("sales.printReceipt")}
         </Button>

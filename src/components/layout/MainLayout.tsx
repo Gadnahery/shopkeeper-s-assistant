@@ -46,26 +46,26 @@ function LayoutContent() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background">
+    <div className="min-h-screen max-w-full overflow-x-clip bg-background">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.12),transparent_30%),radial-gradient(circle_at_bottom_right,hsl(var(--accent-foreground)/0.08),transparent_26%)]" />
       <GlobalProgressBar />
       <OfflineBanner />
       <Sidebar />
       <div
         className={cn(
-          "w-full min-w-0 overflow-x-clip transition-all duration-300",
+          "w-full min-w-0 max-w-full overflow-x-clip transition-all duration-300",
           isCollapsed ? "md:ml-[68px]" : "md:ml-56",
           "ml-0"
         )}
       >
         <Header />
-        <main className="safe-bottom min-h-[calc(100vh-4rem)] min-w-0 overflow-x-hidden p-3 sm:p-4 md:p-6">
+        <main className="safe-bottom min-h-[calc(100vh-4rem)] min-w-0 max-w-full overflow-x-clip p-3 sm:p-4 md:p-6">
           <motion.div
             key={location.pathname}
             initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15 }}
-            className="mx-auto min-h-[200px] w-full min-w-0 max-w-[1700px]"
+            className="mx-auto min-h-[200px] w-full min-w-0 max-w-[1680px] overflow-x-clip"
           >
             <Outlet />
           </motion.div>

@@ -19,6 +19,7 @@ import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/common/PageHeader";
+import type { DateRange } from "react-day-picker";
 
 type DateRangeType = "daily" | "weekly" | "monthly" | "custom";
 
@@ -55,14 +56,13 @@ export default function Reports() {
   useEffect(() => {
     if (rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam)) setRangeType(rangeParam);
   }, [rangeParam]);
-  const [customStart, setCustomStart] = useState<Date | undefined>(subDays(new Date(), 7));
-  const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date());
+  const [customRange, setCustomRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 7), to: new Date() });
   const [customOpen, setCustomOpen] = useState(false);
   const [reportTab, setReportTab] = useState<"sales" | "inventory" | "profit">("sales");
 
   const { start, end } = useMemo(
-    () => getRangeForType(rangeType, customStart, customEnd),
-    [rangeType, customStart, customEnd]
+    () => getRangeForType(rangeType, customRange?.from, customRange?.to),
+    [rangeType, customRange]
   );
 
   const { data: sales, isLoading } = useSalesByDateRange(start, end);
@@ -135,7 +135,9 @@ export default function Reports() {
         ? `${format(new Date(start), "dd MMM")} - ${format(new Date(end), "dd MMM yyyy")}`
         : rangeType === "monthly"
           ? format(new Date(start), "MMMM yyyy")
-          : `${format(customStart!, "dd MMM")} - ${format(customEnd!, "dd MMM yyyy")}`;
+          : customRange?.from && customRange?.to
+            ? `${format(customRange.from, "dd MMM")} - ${format(customRange.to, "dd MMM yyyy")}`
+            : `${format(subDays(new Date(), 7), "dd MMM")} - ${format(new Date(), "dd MMM yyyy")}`;
 
   const categoryColors = ["hsl(160, 65%, 50%)", "hsl(36, 100%, 50%)", "hsl(220, 13%, 25%)", "hsl(220, 14%, 80%)"];
   const categoryData = Object.entries(productSales)
@@ -206,23 +208,18 @@ export default function Reports() {
                   {rangeLabel}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto">
-                <div className="space-y-4">
-                  <div>
-                    <p className="mb-2 text-sm font-medium">{t("reports.from")}</p>
-                    <Calendar mode="single" selected={customStart} onSelect={(d) => d && setCustomStart(d)} />
-                  </div>
-                  <div>
-                    <p className="mb-2 text-sm font-medium">{t("reports.to")}</p>
-                    <Calendar mode="single" selected={customEnd} onSelect={(d) => d && setCustomEnd(d)} />
-                  </div>
-                  <Button 
-                    className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                    onClick={() => setCustomOpen(false)}
-                  >
-                    {t("common.save")}
-                  </Button>
-                </div>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={customRange}
+                  onSelect={(value) => {
+                    setCustomRange(value);
+                    if (value?.from && value?.to) {
+                      setCustomOpen(false);
+                    }
+                  }}
+                />
               </PopoverContent>
             </Popover>
           )}
