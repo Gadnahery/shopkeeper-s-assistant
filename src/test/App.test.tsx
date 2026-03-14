@@ -1,8 +1,13 @@
 import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/integrations/supabase/client", () => ({
   hasValidSupabaseEnv: false,
+}));
+
+vi.mock("@/contexts/PWAContext", () => ({
+  PWAProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
 const { default: App } = await import("../App");

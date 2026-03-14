@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -21,7 +22,11 @@ type PWAContextValue = {
   isStandalone: boolean;
   needsManualInstallHint: boolean;
   installHint: string | null;
+  updateAvailable: boolean;
+  isUpdating: boolean;
   install: () => Promise<boolean>;
+  applyUpdate: () => Promise<void>;
+  dismissUpdate: () => void;
 };
 
 const PWAContext = createContext<PWAContextValue | null>(null);
@@ -32,6 +37,53 @@ export function PWAProvider({ children }: { children: ReactNode }) {
   const [isStandalone, setIsStandalone] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [needsManualInstallHint, setNeedsManualInstallHint] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const languageRef = useRef(language);
+  const updateSWRef = useRef<((reloadPage?: boolean) => Promise<void>) | null>(null);
+
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    let isActive = true;
+
+    void import(/* @vite-ignore */ "virtual:pwa-register")
+      .then(({ registerSW }) => {
+        if (!isActive) {
+          return;
+        }
+
+        updateSWRef.current = registerSW({
+          immediate: true,
+          onNeedRefresh() {
+            setUpdateAvailable(true);
+          },
+          onOfflineReady() {
+            toast.success(
+              languageRef.current === "sw"
+                ? "Programu iko tayari kutumika hata bila intaneti."
+                : "The app is ready to use offline.",
+            );
+          },
+          onRegisterError(error) {
+            console.error("PWA registration failed", error);
+          },
+        });
+      })
+      .catch((error: unknown) => {
+        console.warn("PWA registration is unavailable in this environment.", error);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const standaloneMedia = window.matchMedia("(display-mode: standalone)");
@@ -100,6 +152,30 @@ export function PWAProvider({ children }: { children: ReactNode }) {
     return false;
   }, [deferredPrompt, isInstalled, language, needsManualInstallHint]);
 
+  const applyUpdate = useCallback(async () => {
+    if (!updateSWRef.current) {
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try {
+      await updateSWRef.current(true);
+    } catch (error) {
+      console.error("Failed to apply app update", error);
+      setIsUpdating(false);
+      toast.error(
+        language === "sw"
+          ? "Imeshindikana kusasisha programu. Jaribu tena."
+          : "Failed to update the app. Please try again.",
+      );
+    }
+  }, [language]);
+
+  const dismissUpdate = useCallback(() => {
+    setUpdateAvailable(false);
+  }, []);
+
   const value = useMemo(
     () => ({
       canInstall: Boolean(deferredPrompt) && !isInstalled,
@@ -111,9 +187,24 @@ export function PWAProvider({ children }: { children: ReactNode }) {
           ? "Kwa iPhone au iPad, fungua Share menu kisha chagua 'Add to Home Screen'."
           : "On iPhone or iPad, open the Share menu and choose 'Add to Home Screen'."
         : null,
+      updateAvailable,
+      isUpdating,
       install,
+      applyUpdate,
+      dismissUpdate,
     }),
-    [deferredPrompt, install, isInstalled, isStandalone, language, needsManualInstallHint],
+    [
+      deferredPrompt,
+      install,
+      isInstalled,
+      isStandalone,
+      language,
+      needsManualInstallHint,
+      updateAvailable,
+      isUpdating,
+      applyUpdate,
+      dismissUpdate,
+    ],
   );
 
   return <PWAContext.Provider value={value}>{children}</PWAContext.Provider>;

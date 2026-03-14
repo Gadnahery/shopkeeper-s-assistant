@@ -10,6 +10,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { PWAProvider } from "@/contexts/PWAContext";
+import { PWAUpdateBanner } from "@/components/pwa/PWAUpdateBanner";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CommandPalette } from "./components/CommandPalette";
 import { hasValidSupabaseEnv } from "@/integrations/supabase/client";
@@ -102,6 +103,7 @@ const App = () => (
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
+                <PWAUpdateBanner />
                 <BrowserRouter>
                   <Suspense fallback={<AppLoader />}>
                     <Routes>
