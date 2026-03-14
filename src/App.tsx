@@ -20,6 +20,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const Auth = lazy(() => import("./pages/Auth"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
+const FeaturesPage = lazy(() => import("./pages/FeaturesPage"));
+const PricingPage = lazy(() => import("./pages/PricingPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -111,6 +115,10 @@ const App = () => (
                       <Suspense fallback={<AppLoader />}>
                         <Routes>
                           <Route path="/" element={<LandingPage />} />
+                          <Route path="/features" element={<FeaturesPage />} />
+                          <Route path="/pricing" element={<PricingPage />} />
+                          <Route path="/about" element={<AboutPage />} />
+                          <Route path="/contact" element={<ContactPage />} />
                           <Route path="/login" element={<LoginPage />} />
                           <Route path="/signup" element={<SignupPage />} />
                           <Route path="/auth" element={<Auth />} />
