@@ -19,6 +19,12 @@
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_VAPID_PUBLIC_KEY=your-web-push-vapid-public-key
+```
+
+**Optional observability:**
+```
+VITE_MONITORING_ENDPOINT=https://your-monitoring-endpoint.example.com
 ```
 
 **Supabase Edge Functions (required for secure admin user creation):**
@@ -54,17 +60,21 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 Run all checks before every production deploy:
 
 ```bash
+npm run vercel:sync-env
 npm run env:check
 npm run lint
 npm run test
+npm run test:e2e
 npm run build
 node scripts/responsive-check.cjs
 ```
 
 Expected status:
+- `vercel:sync-env`: Vercel production/development env vars match local `.env` and can optionally sync a preview branch via `VERCEL_PREVIEW_BRANCH`
 - `env:check`: required frontend env vars are present and not placeholders
 - `lint`: no errors (warnings are currently tolerated)
 - `test`: all tests pass
+- `test:e2e`: public route smoke tests pass against the production build
 - `build`: success
 - `responsive-check`: `failed: 0`
 

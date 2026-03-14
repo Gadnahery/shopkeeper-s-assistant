@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { StorageError } from "@supabase/storage-js";
 
 interface ImageUploadProps {
   currentUrl?: string | null;
@@ -44,8 +44,9 @@ export function ImageUpload({ currentUrl, bucket, folder, onUpload, variant = "a
 
       onUpload(publicUrl);
       toast.success("Image uploaded!");
-    } catch (err: any) {
-      toast.error("Upload failed: " + err.message);
+    } catch (err) {
+      const message = err instanceof StorageError || err instanceof Error ? err.message : "Unknown upload error";
+      toast.error("Upload failed: " + message);
     } finally {
       setUploading(false);
     }

@@ -1,8 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { type AuthError, type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ShopRow = Pick<Database["public"]["Tables"]["shops"]["Row"], "id" | "name">;
+type ProfileWithShop = ProfileRow & { shops?: ShopRow | null };
 
 interface AuthContextType {
   user: User | null;
@@ -10,11 +14,11 @@ interface AuthContextType {
   loading: boolean;
   sessionExpired: boolean;
   shopId: string | null;
-  profile: any | null;
+  profile: ProfileWithShop | null;
   role: AppRole | null;
   isOwner: boolean;
-  signUp: (email: string, password: string, fullName: string, shopName: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, shopName: string) => Promise<{ error: AuthError | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -27,86 +31,118 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [shopId, setShopId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<ProfileWithShop | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" && user) {
-        setSessionExpired(true);
-      }
-      if (event === "SIGNED_IN") {
-        setSessionExpired(false);
-      }
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setTimeout(() => fetchProfile(session.user.id), 0);
-      } else {
-        setShopId(null);
-        setProfile(null);
-        setRole(null);
-      }
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
-      // Try profiles.id (auth.uid()) first, then user_id
       let { data } = await supabase
         .from("profiles")
         .select("*, shops(*)")
         .eq("id", userId)
         .maybeSingle();
+
       if (!data) {
-        const res = await supabase
+        const response = await supabase
           .from("profiles")
           .select("*, shops(*)")
           .eq("user_id", userId)
           .maybeSingle();
-        data = res.data;
+        data = response.data;
       }
-      if (data) {
-        // Ensure shops is available (embed can fail or use different keys)
-        if (!(data as { shops?: unknown }).shops && data.shop_id) {
-          const { data: shop } = await supabase.from("shops").select("id, name").eq("id", data.shop_id).maybeSingle();
-          if (shop) data = { ...data, shops: shop };
-        }
-        setProfile(data);
-        setShopId(data.shop_id);
-        // Fetch user role for this shop
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .eq("shop_id", data.shop_id)
+
+      if (!data) {
+        setProfile(null);
+        setShopId(null);
+        setRole(null);
+        return;
+      }
+
+      let resolvedProfile = data as ProfileWithShop;
+      if (!resolvedProfile.shops && resolvedProfile.shop_id) {
+        const { data: shop } = await supabase
+          .from("shops")
+          .select("id, name")
+          .eq("id", resolvedProfile.shop_id)
           .maybeSingle();
-        setRole((roleData?.role as AppRole) ?? null);
+
+        if (shop) {
+          resolvedProfile = { ...resolvedProfile, shops: shop };
+        }
       }
-    } catch (e) {
-      // Only log in development
+
+      setProfile(resolvedProfile);
+      setShopId(resolvedProfile.shop_id);
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("shop_id", resolvedProfile.shop_id)
+        .maybeSingle();
+
+      setRole((roleData?.role as AppRole) ?? null);
+    } catch (error) {
       if (import.meta.env.DEV) {
-        console.error("fetchProfile error:", e);
+        console.error("fetchProfile error:", error);
       }
-      // In production, silently handle error - user will see loading state
     }
   };
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!isMounted) return;
+
+      if (event === "SIGNED_OUT") {
+        setSessionExpired(true);
+      }
+
+      if (event === "SIGNED_IN") {
+        setSessionExpired(false);
+      }
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (nextSession?.user) {
+        setTimeout(() => {
+          void fetchProfile(nextSession.user.id);
+        }, 0);
+      } else {
+        setShopId(null);
+        setProfile(null);
+        setRole(null);
+      }
+
+      setLoading(false);
+    });
+
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!isMounted) return;
+
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+
+      if (initialSession?.user) {
+        void fetchProfile(initialSession.user.id);
+      }
+
+      setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const refreshProfile = async () => {
-    const { data: { session: s } } = await supabase.auth.getSession();
-    if (s?.user) await fetchProfile(s.user.id);
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (currentSession?.user) {
+      await fetchProfile(currentSession.user.id);
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string, shopName: string) => {

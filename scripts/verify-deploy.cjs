@@ -50,6 +50,9 @@ async function run() {
 
   try {
     await waitForServer(baseUrl);
+    await runCommand("npm", ["run", "test:e2e"], {
+      env: { ...process.env, PLAYWRIGHT_TEST_BASE_URL: baseUrl },
+    });
     await runCommand("node", ["scripts/responsive-check.cjs"], {
       env: { ...process.env, BASE_URL: baseUrl },
     });
@@ -62,7 +65,7 @@ async function run() {
 
   console.log(JSON.stringify({
     ok: true,
-    checks: ["env", "lint", "test", "build", "responsive-check", "production-smoke"],
+    checks: ["env", "lint", "test", "build", "test:e2e", "responsive-check", "production-smoke"],
     baseUrl,
   }, null, 2));
 }

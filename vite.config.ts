@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import type { PluginOption } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => ({
@@ -136,7 +137,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
-  ] as any,
+  ] as PluginOption[],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

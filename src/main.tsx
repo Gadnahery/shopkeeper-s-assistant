@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { AppTelemetry } from "./components/AppTelemetry";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./index.css";
 
@@ -10,6 +11,7 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <ErrorBoundary>
+    <AppTelemetry />
     <App />
   </ErrorBoundary>
 );

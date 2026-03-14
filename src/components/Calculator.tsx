@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -17,11 +17,7 @@ function safeEval(expr: string): string {
       continue;
     }
     if (token in precedence) {
-      while (
-        ops.length &&
-        ops[ops.length - 1] in precedence &&
-        precedence[ops[ops.length - 1]] >= precedence[token]
-      ) {
+      while (ops.length && ops[ops.length - 1] in precedence && precedence[ops[ops.length - 1]] >= precedence[token]) {
         output.push(ops.pop()!);
       }
       ops.push(token);
@@ -74,7 +70,7 @@ export function Calculator({ open, onOpenChange }: CalculatorProps) {
   const [display, setDisplay] = useState("0");
   const [fullExpr, setFullExpr] = useState("");
 
-  const handleInput = (char: string) => {
+  const handleInput = useCallback((char: string) => {
     if (char === "C") {
       setDisplay("0");
       setFullExpr("");
@@ -90,68 +86,71 @@ export function Calculator({ open, onOpenChange }: CalculatorProps) {
     const newExpr = fullExpr + char;
     setFullExpr(newExpr);
     setDisplay(newExpr);
-  };
+  }, [fullExpr]);
 
-  const backspace = () => {
+  const backspace = useCallback(() => {
     if (fullExpr.length <= 1) {
       setDisplay("0");
       setFullExpr("");
-    } else {
-      const next = fullExpr.slice(0, -1);
-      setFullExpr(next);
-      setDisplay(next);
+      return;
     }
-  };
+
+    const next = fullExpr.slice(0, -1);
+    setFullExpr(next);
+    setDisplay(next);
+  }, [fullExpr]);
 
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
 
-      const key = e.key;
+      const { key } = event;
       if (/^[0-9]$/.test(key)) {
-        e.preventDefault();
+        event.preventDefault();
         handleInput(key);
         return;
       }
       if (["+", "-", "*", "/", "(", ")"].includes(key)) {
-        e.preventDefault();
+        event.preventDefault();
         handleInput(key);
         return;
       }
       if (key === "Enter" || key === "=") {
-        e.preventDefault();
+        event.preventDefault();
         handleInput("=");
         return;
       }
       if (key === "Backspace") {
-        e.preventDefault();
+        event.preventDefault();
         backspace();
         return;
       }
       if (key === "c" || key === "C") {
-        e.preventDefault();
+        event.preventDefault();
         handleInput("C");
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, fullExpr]);
+  }, [open, fullExpr, handleInput, backspace]);
 
-  const buttons: { label: string; value: string; className?: string }[] = [
+  const buttons = [
     { label: "7", value: "7" },
     { label: "8", value: "8" },
     { label: "9", value: "9" },
-    { label: "÷", value: "/" },
+    { label: "/", value: "/" },
     { label: "4", value: "4" },
     { label: "5", value: "5" },
     { label: "6", value: "6" },
-    { label: "×", value: "*" },
+    { label: "*", value: "*" },
     { label: "1", value: "1" },
     { label: "2", value: "2" },
     { label: "3", value: "3" },
-    { label: "−", value: "-" },
+    { label: "-", value: "-" },
     { label: "0", value: "0" },
     { label: "(", value: "(" },
     { label: ")", value: ")" },
@@ -165,7 +164,7 @@ export function Calculator({ open, onOpenChange }: CalculatorProps) {
           <DialogTitle>Calculator</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
-          <div className="rounded-lg border bg-muted/50 px-4 py-3 font-mono text-right text-2xl min-h-[48px] break-all">
+          <div className="min-h-[48px] break-all rounded-lg border bg-muted/50 px-4 py-3 text-right font-mono text-2xl">
             {display || "0"}
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -173,14 +172,14 @@ export function Calculator({ open, onOpenChange }: CalculatorProps) {
               Clear
             </Button>
             <Button variant="outline" className="h-12" onClick={backspace}>
-              ⌫
+              Back
             </Button>
             <Button className="h-12" onClick={() => handleInput("=")}>
               =
             </Button>
-            {buttons.map((b) => (
-              <Button key={b.value} variant="outline" className="h-12 text-lg" onClick={() => handleInput(b.value)}>
-                {b.label}
+            {buttons.map((button) => (
+              <Button key={`${button.label}-${button.value}`} variant="outline" className="h-12 text-lg" onClick={() => handleInput(button.value)}>
+                {button.label}
               </Button>
             ))}
           </div>
