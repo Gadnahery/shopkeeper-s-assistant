@@ -30,33 +30,92 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://wisecash.app/" />
     <meta property="og:site_name" content="WiseCash" />
-    <meta property="og:image" content="https://wisecash.app/icon-512.png" />
-    <meta property="og:image:alt" content="WiseCash logo" />
+    <meta property="og:image" content="https://wisecash.app/og-preview.svg" />
+    <meta property="og:image:alt" content="WiseCash retail management preview" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="WiseCash | POS, Inventory, Sales and Retail Management" />
     <meta name="twitter:description" content="WiseCash helps shops run sales, stock, reports, and team operations from one modern web app." />
-    <meta name="twitter:image" content="https://wisecash.app/icon-512.png" />
+    <meta name="twitter:image" content="https://wisecash.app/og-preview.svg" />
 
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "WiseCash",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web",
-        "url": "https://wisecash.app/",
-        "description": "WiseCash helps businesses manage POS, inventory, sales, staff, reports, and subscriptions in one app.",
-        "offers": {
-          "@type": "Offer",
-          "price": "10000",
-          "priceCurrency": "TZS"
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "WiseCash",
-          "url": "https://wisecash.app/"
-        }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://wisecash.app/#organization",
+            "name": "WiseCash",
+            "url": "https://wisecash.app/",
+            "logo": "https://wisecash.app/icon-512.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://wisecash.app/#website",
+            "url": "https://wisecash.app/",
+            "name": "WiseCash",
+            "publisher": {
+              "@id": "https://wisecash.app/#organization"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://wisecash.app/#software",
+            "name": "WiseCash",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "url": "https://wisecash.app/",
+            "description": "WiseCash helps businesses manage POS, inventory, sales, staff, reports, and subscriptions in one app.",
+            "offers": {
+              "@type": "Offer",
+              "price": "10000",
+              "priceCurrency": "TZS"
+            },
+            "publisher": {
+              "@id": "https://wisecash.app/#organization"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://wisecash.app/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is WiseCash?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "WiseCash is retail management software for shops and growing businesses. It combines POS, inventory management, sales tracking, reports, staff tools, and subscriptions in one web app."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Who should use WiseCash?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "WiseCash is built for shop owners, wholesalers, retailers, hardware stores, pharmacies, salons, and small businesses that need better sales and stock control."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does WiseCash work on phones and laptops?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. WiseCash works on phones, tablets, and laptops, and it can also be installed as a PWA app for easier daily use."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How much does WiseCash cost?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "New businesses get a 1-week free trial for onboarding and training. After that, the monthly subscription is 10,000 TZS."
+                }
+              }
+            ]
+          }
+        ]
       }
     </script>
   </head>

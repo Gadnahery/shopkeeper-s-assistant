@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "env:check": "node scripts/check-env.cjs",
     "deploy:check": "node scripts/verify-deploy.cjs",
+    "seo:indexnow": "node scripts/submit-indexnow.cjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "screenshots:capture": "node scripts/capture-screenshots.cjs",
