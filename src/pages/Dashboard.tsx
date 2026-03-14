@@ -40,11 +40,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
 import { PageLoader } from "@/components/PageLoader";
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
+import { buildCategoryChartData, buildSalesTrendData } from "@/pages/dashboard/chartData";
 
 type KpiRange = "today" | "week" | "month" | "custom";
 
@@ -82,9 +83,9 @@ export default function Dashboard() {
   const range = useMemo(() => getRange(kpiRange, customRange), [kpiRange, customRange]);
   const { data: rangeSales, isLoading: salesLoading } = useSalesSummaryByRange(range.start, range.end);
   const { data: detailedSales, isLoading: detailedSalesLoading } = useSalesByDateRange(range.start, range.end);
-  const { data: lowStockProducts } = useLowStockProducts();
-  const { data: allProducts } = useProducts();
-  const { data: categoryData } = useStockByCategory();
+  const { data: lowStockProducts, isLoading: lowStockLoading } = useLowStockProducts();
+  const { data: allProducts, isLoading: productsLoading } = useProducts();
+  const { data: categoryData, isLoading: categoryLoading } = useStockByCategory();
 
   const shopName = profile?.shops?.name || "Smart Money";
   const formatNumber = (num: number) => num.toLocaleString("en-US");
@@ -93,33 +94,27 @@ export default function Dashboard() {
   const mpesaPercent = 100 - cashPercent;
   const inventoryCount = allProducts?.length || 0;
   const lowStockCount = lowStockProducts?.length || 0;
-  const chartData = useMemo(() => {
-    const buckets: Record<string, number> = {};
-    const safeSales = detailedSales ?? [];
+  const chartData = useMemo(
+    () => buildSalesTrendData(detailedSales, range.start, range.end),
+    [detailedSales, range.end, range.start],
+  );
 
-    eachDayOfInterval({
-      start: new Date(range.start),
-      end: new Date(range.end),
-    }).forEach((date) => {
-      buckets[format(date, "dd MMM")] = 0;
-    });
-
-    safeSales.forEach((sale) => {
-      const key = format(new Date(sale.created_at), "dd MMM");
-      buckets[key] = (buckets[key] || 0) + Number(sale.total || 0);
-    });
-
-    return Object.entries(buckets).map(([day, sales]) => ({ day, sales }));
-  }, [detailedSales, range.end, range.start]);
-
-  if (rangeSales === undefined || detailedSales === undefined || salesLoading || detailedSalesLoading) {
+  if (
+    rangeSales === undefined ||
+    detailedSales === undefined ||
+    salesLoading ||
+    detailedSalesLoading ||
+    lowStockLoading ||
+    productsLoading ||
+    categoryLoading
+  ) {
     return <PageLoader message="Loading dashboard..." messageSw="Inapakia dashibodi..." language={language} />;
   }
 
   const donutColors = ["#0D9488", "#D97706", "#6366F1", "#DB2777", "#0D9488", "#7C3AED"];
-  const fallbackCategoryData = categoryData?.length
-    ? categoryData.map((c, i) => ({ ...c, color: donutColors[i % donutColors.length] }))
-    : [{ name: "No data", value: 1, color: "#374151" }];
+  const categoryChartData = buildCategoryChartData(categoryData, donutColors);
+  const hasSalesInRange = chartData.some((point) => point.sales > 0);
+  const hasCategoryData = categoryChartData.length > 0;
 
   const spotlightStats = [
     {
@@ -408,6 +403,12 @@ export default function Dashboard() {
           <CardContent>
             {salesLoading ? (
               <Skeleton className="h-[220px] w-full rounded-xl" />
+            ) : !hasSalesInRange ? (
+              <EmptyState
+                title={language === "sw" ? "Hakuna mauzo kwenye kipindi hiki" : "No sales in this range"}
+                description={language === "sw" ? "Jaribu kuchagua kipindi kingine au ongeza mauzo mapya." : "Try a different range or record new sales to populate the trend chart."}
+                icon={<LayoutGrid className="h-8 w-8" />}
+              />
             ) : (
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={chartData} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>
@@ -419,7 +420,7 @@ export default function Dashboard() {
                 </defs>
                 <XAxis
                   dataKey="day"
-                  interval={0}
+                  minTickGap={24}
                   padding={{ left: 12, right: 12 }}
                   axisLine={false}
                   tickLine={false}
@@ -457,13 +458,19 @@ export default function Dashboard() {
           <CardContent>
             {salesLoading ? (
               <Skeleton className="h-[220px] w-full rounded-xl" />
+            ) : !hasCategoryData ? (
+              <EmptyState
+                title={language === "sw" ? "Hakuna data ya makundi" : "No category data yet"}
+                description={language === "sw" ? "Ongeza bidhaa zenye makundi ili mchoro huu uonekane vizuri." : "Add categorized products to populate the stock distribution chart."}
+                icon={<Boxes className="h-8 w-8" />}
+              />
             ) : (
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative h-40 w-40 flex-shrink-0 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={fallbackCategoryData}
+                      data={categoryChartData}
                       cx="50%"
                       cy="50%"
                       innerRadius={48}
@@ -472,7 +479,7 @@ export default function Dashboard() {
                       dataKey="value"
                       stroke="transparent"
                     >
-                      {fallbackCategoryData.map((entry, index) => (
+                      {categoryChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -486,7 +493,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex-1 space-y-3 w-full min-w-0">
-                {fallbackCategoryData.slice(0, 5).map((cat) => (
+                {categoryChartData.slice(0, 5).map((cat) => (
                   <div
                     key={cat.name}
                     className="flex items-center gap-2"
