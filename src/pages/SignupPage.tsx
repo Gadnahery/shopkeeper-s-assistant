@@ -151,15 +151,15 @@ export default function SignupPage() {
                 <form onSubmit={handleSubmit} className="mt-8 space-y-4">
                   <div className="space-y-2">
                     <Label>{language === "sw" ? "Jina Kamili" : "Full Name"}</Label>
-                    <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="h-12 rounded-2xl" required />
+                    <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="h-12 rounded-2xl text-foreground" required />
                   </div>
                   <div className="space-y-2">
                     <Label>{language === "sw" ? "Jina la Duka" : "Shop Name"}</Label>
-                    <Input value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} className="h-12 rounded-2xl" required />
+                    <Input value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} className="h-12 rounded-2xl text-foreground" required />
                   </div>
                   <div className="space-y-2">
                     <Label>{language === "sw" ? "Barua Pepe" : "Email"}</Label>
-                    <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-2xl" required />
+                    <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-2xl text-foreground" required />
                   </div>
                   <div className="space-y-2">
                     <Label>{language === "sw" ? "Nenosiri" : "Password"}</Label>
@@ -169,7 +169,7 @@ export default function SignupPage() {
                         placeholder="********"
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="h-12 rounded-2xl pr-11"
+                        className="h-12 rounded-2xl pr-11 text-foreground"
                         required
                         minLength={6}
                       />
@@ -185,7 +185,7 @@ export default function SignupPage() {
                       placeholder="********"
                       value={form.confirmPassword}
                       onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                      className="h-12 rounded-2xl"
+                      className="h-12 rounded-2xl text-foreground"
                       required
                       minLength={6}
                     />

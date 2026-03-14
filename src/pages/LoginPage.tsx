@@ -163,7 +163,7 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="h-12 rounded-2xl"
+                  className="h-12 rounded-2xl text-foreground"
                   required
                 />
               </div>
@@ -176,7 +176,7 @@ export default function LoginPage() {
                     placeholder="********"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="h-12 rounded-2xl pr-11"
+                    className="h-12 rounded-2xl pr-11 text-foreground"
                     required
                     minLength={6}
                   />
@@ -246,7 +246,7 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
-                className="h-12 rounded-2xl"
+                className="h-12 rounded-2xl text-foreground"
                 required
               />
             </div>
