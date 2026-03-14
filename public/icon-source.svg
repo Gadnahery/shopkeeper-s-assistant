@@ -1,4 +1,4 @@
-<svg width="256" height="256" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="1024" height="1024" rx="280" fill="url(#bg)"/>
   <rect x="110" y="115" width="804" height="794" rx="176" fill="url(#panel)" fill-opacity="0.94"/>
   <path d="M308 455C355 311 499 251 623 274C704 289 758 330 804 394C721 338 627 320 550 340C457 365 392 422 361 512L308 455Z" fill="url(#arcShadow)" opacity="0.35"/>
