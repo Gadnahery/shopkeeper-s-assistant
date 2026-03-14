@@ -186,15 +186,24 @@
     caret-color: hsl(var(--foreground));
   }
 
+  input,
+  textarea,
+  select {
+    color: hsl(var(--foreground));
+  }
+
   .dark input,
   .dark textarea,
   .dark [role="combobox"] {
     color: hsl(var(--foreground));
+    -webkit-text-fill-color: hsl(var(--foreground));
+    color-scheme: dark;
   }
 
   .dark input::placeholder,
   .dark textarea::placeholder {
     color: hsl(var(--muted-foreground));
+    -webkit-text-fill-color: hsl(var(--muted-foreground));
   }
 
   ::-webkit-scrollbar {
