@@ -12,8 +12,10 @@ import {
   Receipt,
   Calculator as CalculatorIcon,
   ArrowRight,
-  TrendingDown,
   Store,
+  Sparkles,
+  ShieldAlert,
+  Boxes,
 } from "lucide-react";
 import {
   AreaChart,
@@ -43,9 +45,6 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
-
-const PRIMARY_TEAL = "#0D9488";
-const PRIMARY_GRADIENT = "url(#primaryGradient)";
 
 type KpiRange = "today" | "week" | "month" | "custom";
 
@@ -127,16 +126,52 @@ export default function Dashboard() {
       label: language === "sw" ? "Bidhaa zote" : "Products in catalog",
       value: formatNumber(inventoryCount),
       tone: "text-foreground",
+      hint: language === "sw" ? "Katalogi hai" : "Live catalog",
     },
     {
       label: language === "sw" ? "Zinahitaji uangalizi" : "Need attention",
       value: formatNumber(lowStockCount),
       tone: lowStockCount > 0 ? "text-orange-600 dark:text-orange-400" : "text-foreground",
+      hint: language === "sw" ? "Low stock" : "Low stock",
     },
     {
       label: language === "sw" ? "Mapato ya kipindi" : "Revenue in range",
       value: `TSH ${formatNumber(rangeSales?.total || 0)}`,
       tone: "text-primary",
+      hint: language === "sw" ? "Kipindi ulichochagua" : "Selected range",
+    },
+    {
+      label: language === "sw" ? "Fedha taslimu" : "Cash collected",
+      value: `TSH ${formatNumber(rangeSales?.cash || 0)}`,
+      tone: "text-foreground",
+      hint: language === "sw" ? "Leo hadi sasa" : "Cash share",
+    },
+  ];
+
+  const commandTiles = [
+    {
+      label: language === "sw" ? "Mauzo ya haraka" : "Fast checkout",
+      value: t("dashboard.newSale"),
+      caption: language === "sw" ? "Anza kuuza mara moja" : "Start a sale instantly",
+      icon: Sparkles,
+      className: "border-transparent bg-[linear-gradient(145deg,#0f766e,#0284c7)] text-white shadow-[0_28px_70px_-36px_rgba(2,132,199,0.65)]",
+      action: () => { playSound("click"); navigate("/sales"); },
+    },
+    {
+      label: language === "sw" ? "Afya ya stoki" : "Stock health",
+      value: `${formatNumber(lowStockCount)}`,
+      caption: language === "sw" ? "Bidhaa za kuangaliwa" : "Items needing review",
+      icon: ShieldAlert,
+      className: "border-border/70 bg-background/72 text-foreground",
+      action: () => { playSound("click"); navigate("/inventory"); },
+    },
+    {
+      label: language === "sw" ? "Makundi ya bidhaa" : "Category mix",
+      value: `${formatNumber(categoryData?.length || 0)}`,
+      caption: language === "sw" ? "Makundi yanayofuatiliwa" : "Tracked categories",
+      icon: Boxes,
+      className: "border-border/70 bg-background/72 text-foreground",
+      action: () => { playSound("click"); navigate("/reports"); },
     },
   ];
 
@@ -201,8 +236,8 @@ export default function Dashboard() {
       <Calculator open={calculatorOpen} onOpenChange={setCalculatorOpen} />
 
       <motion.section variants={item} className="section-shell relative max-w-full overflow-hidden p-5 sm:p-6">
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.2),transparent_55%)]" />
-        <div className="relative grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.22),transparent_34%),radial-gradient(circle_at_bottom_left,hsl(var(--accent-foreground)/0.08),transparent_28%)]" />
+        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.92fr)]">
           <div className="space-y-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-3">
@@ -214,7 +249,7 @@ export default function Dashboard() {
                   <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                     {shopName}
                   </h1>
-                  <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-[15px]">
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[15px]">
                     {t("dashboard.subtitle")}
                   </p>
                 </div>
@@ -267,66 +302,37 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
               {spotlightStats.map((stat) => (
-                <div key={stat.label} className="rounded-[1.25rem] border border-border/60 bg-background/60 p-4 backdrop-blur-sm">
+                <div key={stat.label} className="rounded-[1.3rem] border border-border/60 bg-background/68 p-4 backdrop-blur-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     {stat.label}
                   </p>
                   <p className={`mt-3 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <button
-              className="rounded-[1.35rem] border border-primary/20 bg-gradient-to-br from-primary to-cyan-500 p-5 text-left text-primary-foreground shadow-[0_20px_60px_-30px_rgba(13,148,136,0.85)] transition-transform hover:-translate-y-0.5"
-              onClick={() => { playSound("click"); navigate("/sales"); }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/75">
-                {language === "sw" ? "Mstari wa Haraka" : "Quick checkout"}
-              </p>
-              <p className="mt-4 text-xl font-bold">
-                {t("dashboard.newSale")}
-              </p>
-              <div className="mt-4 flex items-center text-sm font-medium text-white/85">
-                <span>{language === "sw" ? "Fungua mauzo" : "Open sales"}</span>
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </div>
-            </button>
-
-            <button
-              className="rounded-[1.35rem] border border-border/60 bg-background/70 p-5 text-left transition-colors hover:border-primary/20 hover:bg-background/90"
-              onClick={() => { playSound("click"); navigate("/inventory"); }}
-            >
-              <div className="flex items-center justify-between">
-                <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  {language === "sw" ? "Stoki" : "Inventory"}
-                </span>
-              </div>
-              <p className="mt-4 text-2xl font-bold text-foreground">{formatNumber(inventoryCount)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {language === "sw" ? "Bidhaa zinazofuatiliwa" : "Tracked items"}
-              </p>
-            </button>
-
-            <button
-              className="rounded-[1.35rem] border border-border/60 bg-background/70 p-5 text-left transition-colors hover:border-primary/20 hover:bg-background/90"
-              onClick={() => { playSound("click"); navigate("/reports"); }}
-            >
-              <div className="flex items-center justify-between">
-                <TrendingDown className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  {language === "sw" ? "Tahadhari" : "Alerts"}
-                </span>
-              </div>
-              <p className="mt-4 text-2xl font-bold text-foreground">{formatNumber(lowStockCount)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {language === "sw" ? "Bidhaa za kuangalia" : "Items to review"}
-              </p>
-            </button>
+            {commandTiles.map((tile) => (
+              <button
+                key={tile.label}
+                className={`rounded-[1.4rem] border p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/20 ${tile.className}`}
+                onClick={tile.action}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.22em] opacity-80">{tile.label}</span>
+                  <tile.icon className="h-5 w-5" />
+                </div>
+                <p className="mt-5 text-2xl font-bold">{tile.value}</p>
+                <div className="mt-2 flex items-center text-sm font-medium opacity-85">
+                  <span>{tile.caption}</span>
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </motion.section>

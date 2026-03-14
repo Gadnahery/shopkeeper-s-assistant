@@ -98,6 +98,37 @@ export default function Inventory() {
     return { profit, pct };
   };
 
+  const inventoryStats = [
+    {
+      label: t("inventory.totalStockValue"),
+      value: `Tsh ${formatNumber(totalStockValue)}`,
+      icon: Package,
+      iconClass: "text-primary",
+      shellClass: "border-primary/20",
+    },
+    {
+      label: language === "sw" ? "Bidhaa za low stock" : "Low stock items",
+      value: `${lowStockCount}`,
+      icon: AlertTriangle,
+      iconClass: "text-amber-600",
+      shellClass: "",
+    },
+    {
+      label: language === "sw" ? "Hazina stoki" : "Out of stock",
+      value: `${outOfStockCount}`,
+      icon: Trash2,
+      iconClass: "text-red-500",
+      shellClass: "",
+    },
+    {
+      label: language === "sw" ? "Bidhaa zinazoonekana" : "Visible products",
+      value: `${filteredProducts.length}`,
+      icon: FolderTree,
+      iconClass: "text-blue-600",
+      shellClass: "",
+    },
+  ];
+
   const handleExport = () => {
     const toExport = selectedIds.size > 0
       ? filteredProducts.filter((p) => selectedIds.has(p.id))
@@ -239,102 +270,84 @@ export default function Inventory() {
         title={language === "sw" ? "Hesabu" : "Inventory"}
         subtitle={language === "sw" ? "Dhibiti bidhaa, stoki, na bei kwa urahisi" : "Manage products, stock levels, and pricing"}
         actions={
-        <>
-        <div className="flex min-w-0 w-full flex-wrap gap-2 xl:w-auto xl:flex-nowrap">
-          <div className="relative w-full sm:max-w-sm xl:w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-            <Input placeholder={t("inventory.searchPlaceholder")} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" autoFocus />
-          </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder={language === "sw" ? "Kategoria" : "Category"} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
-              {categories?.map(c => <SelectItem key={c.id} value={c.id}>{language === "sw" && c.name_sw ? c.name_sw : c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={stockFilter} onValueChange={(v: "all" | "in-stock" | "low" | "out") => setStockFilter(v)}>
-            <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder={language === "sw" ? "Stoki" : "Stock"} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
-              <SelectItem value="in-stock">{language === "sw" ? "Ipo stoki" : "In Stock"}</SelectItem>
-              <SelectItem value="low">{language === "sw" ? "Stoki kidogo" : "Low Stock"}</SelectItem>
-              <SelectItem value="out">{language === "sw" ? "Hakuna stoki" : "Out of Stock"}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex w-full flex-wrap gap-2 md:gap-3 xl:w-auto xl:justify-end">
-          {selectedIds.size > 0 && (
-            <Badge variant="secondary" className="py-1.5 px-2 gap-1">
-              <Package className="h-3.5 w-3" />
-              {selectedIds.size} {language === "sw" ? "zimechaguliwa" : "selected"}
-            </Badge>
-          )}
-          {selectedIds.size > 0 && (
-            <>
-              <Button variant="outline" size="sm" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => setShowBulkCategory(true)} disabled={updateProduct.isPending}>
-                <FolderTree className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-                {t("inventory.changeCategory")}
+          <>
+            <div className="flex min-w-0 w-full flex-col gap-2 xl:w-auto">
+              <div className="relative w-full xl:w-[24rem]">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                <Input placeholder={t("inventory.searchPlaceholder")} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 h-11" autoFocus />
+              </div>
+              <div className="flex w-full flex-wrap gap-2">
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full sm:w-44 h-11"><SelectValue placeholder={language === "sw" ? "Kategoria" : "Category"} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+                    {categories?.map(c => <SelectItem key={c.id} value={c.id}>{language === "sw" && c.name_sw ? c.name_sw : c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={stockFilter} onValueChange={(v: "all" | "in-stock" | "low" | "out") => setStockFilter(v)}>
+                  <SelectTrigger className="w-full sm:w-40 h-11"><SelectValue placeholder={language === "sw" ? "Stoki" : "Stock"} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+                    <SelectItem value="in-stock">{language === "sw" ? "Ipo stoki" : "In Stock"}</SelectItem>
+                    <SelectItem value="low">{language === "sw" ? "Stoki kidogo" : "Low Stock"}</SelectItem>
+                    <SelectItem value="out">{language === "sw" ? "Hakuna stoki" : "Out of Stock"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex w-full flex-wrap gap-2 md:gap-3 xl:w-auto xl:justify-end">
+              {selectedIds.size > 0 && (
+                <Badge variant="secondary" className="py-1.5 px-2 gap-1">
+                  <Package className="h-3.5 w-3" />
+                  {selectedIds.size} {language === "sw" ? "zimechaguliwa" : "selected"}
+                </Badge>
+              )}
+              {selectedIds.size > 0 && (
+                <>
+                  <Button variant="outline" size="sm" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => setShowBulkCategory(true)} disabled={updateProduct.isPending}>
+                    <FolderTree className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+                    {t("inventory.changeCategory")}
+                  </Button>
+                  <Button variant="destructive" size="sm" className="gap-2" onClick={() => setShowBulkDelete(true)} disabled={deleteProduct.isPending}>
+                    <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
+                    {t("inventory.deleteSelected")}
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExport} disabled={filteredProducts.length === 0}>
+                <Download className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" /><span className="hidden md:inline">{selectedIds.size > 0 ? t("inventory.exportSelected") : t("inventory.export")}</span>
               </Button>
-              <Button variant="destructive" size="sm" className="gap-2" onClick={() => setShowBulkDelete(true)} disabled={deleteProduct.isPending}>
-                <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
-                {t("inventory.deleteSelected")}
+              <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => importInputRef.current?.click()} disabled={isImporting}>
+                {isImporting ? <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" /> : <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+                <span className="hidden md:inline">{language === "sw" ? "Ingiza CSV" : "Import CSV"}</span>
               </Button>
-            </>
-          )}
-          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExport} disabled={filteredProducts.length === 0}>
-            <Download className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" /><span className="hidden md:inline">{selectedIds.size > 0 ? t("inventory.exportSelected") : t("inventory.export")}</span>
-          </Button>
-          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => importInputRef.current?.click()} disabled={isImporting}>
-            {isImporting ? <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" /> : <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-            <span className="hidden md:inline">{language === "sw" ? "Ingiza CSV" : "Import CSV"}</span>
-          </Button>
-          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => { playSound("click"); navigate("/inventory/add"); }}>
-            <Plus className="h-4 w-4" />{t("inventory.addProduct")}
-          </Button>
-          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => { playSound("click"); navigate("/inventory/receive"); }}>
-            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            {language === "sw" ? "Pokea Stoki" : "Receive Stock"}
-          </Button>
-        </div>
-        </>
+              <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => { playSound("click"); navigate("/inventory/add"); }}>
+                <Plus className="h-4 w-4" />{t("inventory.addProduct")}
+              </Button>
+              <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={() => { playSound("click"); navigate("/inventory/receive"); }}>
+                <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                {language === "sw" ? "Pokea Stoki" : "Receive Stock"}
+              </Button>
+            </div>
+          </>
         }
       />
       <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImport} />
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <Card className="section-shell border-primary/20">
-          <CardContent className="flex items-center justify-between p-5">
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{t("inventory.totalStockValue")}</p>
-              <p className="mt-2 text-3xl font-bold text-foreground tabular-nums">Tsh {formatNumber(totalStockValue)}</p>
-            </div>
-            <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
-              <Package className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="flex items-center justify-between p-5">
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Bidhaa za low stock" : "Low stock items"}</p>
-              <p className="mt-2 text-3xl font-bold text-foreground">{lowStockCount}</p>
-            </div>
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-600">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="flex items-center justify-between p-5">
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Hazina stoki" : "Out of stock"}</p>
-              <p className="mt-2 text-3xl font-bold text-foreground">{outOfStockCount}</p>
-            </div>
-            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-red-500">
-              <Trash2 className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {inventoryStats.map((stat) => (
+          <Card key={stat.label} className={`section-shell ${stat.shellClass}`}>
+            <CardContent className="flex items-center justify-between p-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{stat.label}</p>
+                <p className="mt-2 text-3xl font-bold text-foreground tabular-nums">{stat.value}</p>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-background/65 p-3">
+                <stat.icon className={`h-5 w-5 ${stat.iconClass}`} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </section>
 
       {/* Edit Product Dialog */}

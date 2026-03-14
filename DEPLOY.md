@@ -17,7 +17,13 @@ git push origin main
 
 ## 2. Apply Supabase changes (migrations)
 
-The project is linked to Supabase project **oxkxzzlunfzyotbjmfxy**. To apply migrations from this repo to that project:
+Set `SUPABASE_PROJECT_REF` in your local `.env` before linking this repo to a remote Supabase project:
+
+```bash
+SUPABASE_PROJECT_REF=your-supabase-project-ref
+```
+
+Then apply migrations from this repo to the correct project:
 
 ### Install Supabase CLI (once)
 
@@ -31,10 +37,6 @@ The project is linked to Supabase project **oxkxzzlunfzyotbjmfxy**. To apply mig
 # One-time: link this folder to your remote Supabase project
 # Get your DB password from: Supabase Dashboard → Project Settings → Database
 npm run supabase:link
-# If you have the password in env (e.g. SUPABASE_DB_PASSWORD):
-# npx supabase link --project-ref oxkxzzlunfzyotbjmfxy -p $env:SUPABASE_DB_PASSWORD   # PowerShell
-# npx supabase link --project-ref oxkxzzlunfzyotbjmfxy -p "$SUPABASE_DB_PASSWORD"       # Bash
-
 # Apply all pending migrations to the linked project
 npm run supabase:push
 ```
@@ -55,6 +57,7 @@ npm run supabase:status
 
 | Step            | Command / Action                                      |
 |----------------|--------------------------------------------------------|
+| Verify release | `npm run deploy:check`                                 |
 | Deploy frontend| `git push origin main` (Vercel builds from `main`)     |
 | Link Supabase  | `npm run supabase:link` (once per machine)             |
 | Apply DB       | `npm run supabase:push` after changing migrations      |

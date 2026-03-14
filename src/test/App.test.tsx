@@ -1,10 +1,18 @@
-import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
-import App from "../App";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/integrations/supabase/client", () => ({
+  hasValidSupabaseEnv: false,
+}));
+
+const { default: App } = await import("../App");
 
 describe("App", () => {
-  it("renders without crashing", () => {
-    const { container } = render(<App />);
-    expect(container).toBeTruthy();
+  it("shows setup instructions when Supabase env vars are missing", () => {
+    render(<App />);
+
+    expect(screen.getByText("Setup required")).toBeInTheDocument();
+    expect(screen.getByText(/VITE_SUPABASE_URL/)).toBeInTheDocument();
+    expect(screen.getByText(/VITE_SUPABASE_ANON_KEY/)).toBeInTheDocument();
   });
 });

@@ -46,26 +46,27 @@ function LayoutContent() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen max-w-full overflow-x-clip bg-background">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.12),transparent_30%),radial-gradient(circle_at_bottom_right,hsl(var(--accent-foreground)/0.08),transparent_26%)]" />
+    <div className="min-h-screen max-w-full overflow-x-clip bg-background text-foreground">
+      <div className="pointer-events-none fixed inset-0 -z-20 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.16),transparent_30%),radial-gradient(circle_at_top_right,hsl(var(--accent-foreground)/0.08),transparent_28%),radial-gradient(circle_at_bottom_left,hsl(var(--primary)/0.08),transparent_28%)]" />
       <GlobalProgressBar />
       <OfflineBanner />
       <Sidebar />
       <div
         className={cn(
-          "w-full min-w-0 max-w-full overflow-x-clip transition-all duration-300",
-          isCollapsed ? "md:ml-[68px]" : "md:ml-56",
+          "w-full min-w-0 max-w-full overflow-x-clip transition-[margin] duration-300",
+          isCollapsed ? "md:ml-[78px]" : "md:ml-[250px]",
           "ml-0"
         )}
       >
         <Header />
-        <main className="safe-bottom min-h-[calc(100vh-4rem)] min-w-0 max-w-full overflow-x-clip p-3 sm:p-4 md:p-6">
+        <main className="safe-bottom min-h-[calc(100vh-4.5rem)] min-w-0 max-w-full overflow-x-clip px-3 pb-4 pt-3 sm:px-4 sm:pb-5 sm:pt-4 lg:px-5 xl:px-6">
           <motion.div
             key={location.pathname}
             initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15 }}
-            className="mx-auto min-h-[200px] w-full min-w-0 max-w-[1680px] overflow-x-clip"
+            className="mx-auto min-h-[200px] w-full min-w-0 max-w-[1480px] overflow-x-clip"
           >
             <Outlet />
           </motion.div>

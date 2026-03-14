@@ -48,6 +48,7 @@ export function Header() {
 
   const userName = profile?.full_name || "User";
   const avatarUrl = profile?.avatar_url;
+  const shopName = profile?.shops?.name || "Smart Money";
 
   const formattedDate = new Date().toLocaleDateString(language === "sw" ? "sw-TZ" : "en-GB", {
     weekday: "short",
@@ -57,7 +58,8 @@ export function Header() {
   });
 
   return (
-    <header className="safe-top sticky top-0 z-30 flex min-h-16 max-w-full flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-background/85 px-3 backdrop-blur-xl sm:px-4 md:flex-nowrap md:px-6">
+    <header className="safe-top sticky top-0 z-30 mb-3 max-w-full border-b border-border/60 bg-background/72 backdrop-blur-2xl">
+      <div className="flex min-h-[72px] max-w-full flex-wrap items-center justify-between gap-3 px-3 sm:px-4 lg:flex-nowrap lg:px-5 xl:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
         {isMobile && (
           <Button
@@ -70,32 +72,36 @@ export function Header() {
           </Button>
         )}
 
-        <form onSubmit={handleSearch} className="hidden min-w-0 flex-1 md:flex md:max-w-xl">
+        <div className="hidden shrink-0 rounded-full border border-border/70 bg-card/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground lg:inline-flex">
+          {shopName}
+        </div>
+
+        <form onSubmit={handleSearch} className="hidden min-w-0 flex-1 md:flex md:max-w-[28rem] xl:max-w-[34rem]">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50 dark:text-foreground/60 dark:drop-shadow-[0_0_3px_rgba(59,130,246,0.2)] z-10" strokeWidth={1.5} />
             <Input
               placeholder={language === "sw" ? "Tafuta bidhaa..." : "Search products..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 rounded-xl border-border/70 bg-muted/40 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all"
+              className="h-11 rounded-2xl border-border/70 bg-card/75 pl-10 pr-4 text-sm placeholder:text-muted-foreground shadow-sm focus-visible:border-primary/35 focus-visible:ring-1 focus-visible:ring-primary/35"
             />
           </div>
         </form>
 
-        <div className="md:hidden text-sm text-muted-foreground truncate">{formattedDate}</div>
+        <div className="truncate text-sm text-muted-foreground md:hidden">{formattedDate}</div>
       </div>
 
-      <div className="flex max-w-full flex-wrap items-center justify-end gap-1 sm:flex-nowrap">
+      <div className="flex max-w-full flex-wrap items-center justify-end gap-1.5 sm:flex-nowrap">
         {(canInstall || needsManualInstallHint || isInstalled) && (
           <Button
             variant="outline"
             size="sm"
-            className="h-9 gap-2 rounded-xl border-border/70 bg-background/70 px-3"
+            className="h-10 gap-2 rounded-2xl border-border/70 bg-card/70 px-3"
             onClick={() => void install()}
             disabled={isInstalled}
           >
             {isInstalled ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-            <span className="hidden sm:inline">
+            <span className="hidden xl:inline">
               {isInstalled
                 ? language === "sw"
                   ? "Imesakinishwa"
@@ -109,12 +115,12 @@ export function Header() {
 
         {supportsNativeNotifications && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="h-9 rounded-xl px-3 text-xs"
+            className="h-10 rounded-2xl border-border/70 bg-card/70 px-3 text-xs"
             onClick={() => permission === "granted" ? navigate("/notifications") : void requestPermission()}
           >
-            <span className="hidden sm:inline">
+            <span className="hidden xl:inline">
               {permission === "granted"
                 ? language === "sw"
                   ? "Arifa zipo"
@@ -136,9 +142,9 @@ export function Header() {
         )}
 
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
-          className="h-9 w-9 text-foreground/70 dark:text-foreground/80 hover:text-foreground hover:bg-muted/50 dark:hover:bg-muted/70 transition-colors"
+          className="h-10 w-10 rounded-2xl border-border/70 bg-card/70 text-foreground/70 transition-colors hover:bg-accent/80 hover:text-foreground"
           onClick={toggleTheme}
         >
           {theme === "dark" ? (
@@ -150,7 +156,7 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 text-foreground/70 dark:text-foreground/80 hover:text-foreground hover:bg-muted/50 dark:hover:bg-muted/70 transition-colors">
+            <Button variant="outline" size="icon" className="relative h-10 w-10 rounded-2xl border-border/70 bg-card/70 text-foreground/70 transition-colors hover:bg-accent/80 hover:text-foreground">
               <Globe className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
               <span className="absolute -bottom-0.5 -right-0.5 rounded bg-blue-600 dark:bg-blue-500 dark:shadow-[0_0_6px_rgba(59,130,246,0.5)] px-1 text-[8px] font-bold text-white">
                 {language.toUpperCase()}
@@ -175,7 +181,7 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 text-foreground/70 dark:text-foreground/80 hover:text-foreground hover:bg-muted/50 dark:hover:bg-muted/70 transition-colors">
+            <Button variant="outline" size="icon" className="relative h-10 w-10 rounded-2xl border-border/70 bg-card/70 text-foreground/70 transition-colors hover:bg-accent/80 hover:text-foreground">
               <Bell className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" strokeWidth={1.5} />
               {unreadCount > 0 && (
                 <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 dark:bg-blue-500 dark:shadow-[0_0_8px_rgba(59,130,246,0.6)] text-[10px] font-bold text-white">
@@ -222,14 +228,14 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex min-w-0 max-w-[220px] items-center gap-2 rounded-xl border border-transparent p-1 pr-2 transition-colors duration-200 hover:border-border/70 hover:bg-muted/50">
-              <Avatar className="h-8 w-8">
+            <button className="flex min-w-0 max-w-[240px] items-center gap-2 rounded-[1.15rem] border border-border/70 bg-card/70 p-1.5 pr-3 shadow-sm transition-colors duration-200 hover:bg-accent/75">
+              <Avatar className="h-9 w-9 ring-1 ring-border/70">
                 <AvatarImage src={avatarUrl || undefined} alt={userName} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
                   {userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden min-w-0 md:block text-left">
+              <div className="hidden min-w-0 text-left md:block">
                 <p className="truncate text-sm font-medium leading-tight text-foreground">{userName}</p>
                 <p className="truncate text-xs text-muted-foreground">{formattedDate}</p>
               </div>
@@ -279,6 +285,7 @@ export function Header() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      </div>
       </div>
     </header>
   );

@@ -207,14 +207,22 @@ export default function Settings() {
     {
       label: language === "sw" ? "Lugha ya mfumo" : "App language",
       value: language === "sw" ? "Kiswahili" : "English",
+      hint: language === "sw" ? "Muonekano wa timu" : "Workspace language",
     },
     {
       label: language === "sw" ? "Arifa za stok chini" : "Low-stock alerts",
       value: enableLowStockAlerts ? (language === "sw" ? "Wazi" : "On") : language === "sw" ? "Zimezimwa" : "Off",
+      hint: language === "sw" ? "Tahadhari za bidhaa" : "Inventory safety",
     },
     {
       label: language === "sw" ? "Kuchapisha risiti" : "Receipt printing",
       value: autoPrintReceipt ? (language === "sw" ? "Otomatiki" : "Automatic") : language === "sw" ? "Manual" : "Manual",
+      hint: language === "sw" ? "Baada ya mauzo" : "After checkout",
+    },
+    {
+      label: language === "sw" ? "Push ya background" : "Background push",
+      value: pushSubscribed ? (language === "sw" ? "Imeunganishwa" : "Connected") : language === "sw" ? "Haijaunganishwa" : "Not connected",
+      hint: language === "sw" ? "Arifa za kifaa" : "Device alerts",
     },
   ];
 
@@ -229,12 +237,13 @@ export default function Settings() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {settingsCards.map((card) => (
           <Card key={card.label} className="section-shell">
             <CardContent className="p-5">
               <p className="text-sm text-muted-foreground">{card.label}</p>
               <p className="mt-2 text-2xl font-bold">{card.value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{card.hint}</p>
             </CardContent>
           </Card>
         ))}
@@ -273,7 +282,7 @@ export default function Settings() {
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-3">
-                <Button onClick={() => void install()} disabled={!canInstall}>
+                <Button onClick={() => void install()} disabled={!canInstall} className="h-11">
                   {isInstalled || isStandalone
                     ? language === "sw"
                       ? "Tayari imewekwa"
@@ -320,7 +329,7 @@ export default function Settings() {
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-3">
-                <Button variant="outline" onClick={() => void requestPermission()} disabled={!supportsNativeNotifications || permission === "granted"}>
+                <Button variant="outline" onClick={() => void requestPermission()} disabled={!supportsNativeNotifications || permission === "granted"} className="h-11">
                   {permission === "granted"
                     ? language === "sw"
                       ? "Arifa zimewashwa"
@@ -337,6 +346,7 @@ export default function Settings() {
                 <Button
                   onClick={() => void (pushSubscribed ? unsubscribeFromPush() : subscribeToPush())}
                   disabled={!pushSupported || pushLoading || permission !== "granted"}
+                  className="h-11"
                 >
                   {pushSubscribed
                     ? language === "sw"
@@ -412,7 +422,7 @@ export default function Settings() {
                 <Input value={shopForm.address} onChange={(event) => setShopForm({ ...shopForm, address: event.target.value })} />
               </div>
             </div>
-            <Button onClick={handleSaveShop} disabled={updateSettings.isPending} className="gap-2">
+            <Button onClick={handleSaveShop} disabled={updateSettings.isPending} className="h-11 gap-2">
               {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {t("settings.saveChanges")}
             </Button>
@@ -532,7 +542,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <Button onClick={handleSaveReceipt} disabled={updateSettings.isPending} className="gap-2">
+            <Button onClick={handleSaveReceipt} disabled={updateSettings.isPending} className="h-11 gap-2">
               {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {t("settings.saveReceiptSettings")}
             </Button>

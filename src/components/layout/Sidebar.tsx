@@ -81,9 +81,9 @@ function NavSection({
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/90 transition-all duration-150 ease-out [&_svg]:text-inherit",
-      "hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground hover:shadow-sm",
+      "hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-      isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/25",
+      isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.95)]",
       isCollapsed && "justify-center px-2"
     );
 
@@ -225,23 +225,26 @@ export function Sidebar() {
     <aside
       data-app-sidebar
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar/95 shadow-lg backdrop-blur-xl transition-all duration-200",
-        isCollapsed ? "w-[68px]" : "w-56"
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar/92 shadow-[16px_0_60px_-38px_rgba(15,23,42,0.6)] backdrop-blur-2xl transition-all duration-200",
+        isCollapsed ? "w-[78px]" : "w-[250px]"
       )}
     >
-      <div className="flex h-16 items-center border-b border-sidebar-border px-3">
-        <div className="flex items-center gap-3 overflow-hidden min-w-0">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/15">
+      <div className="flex h-[72px] items-center border-b border-sidebar-border/80 px-4">
+        <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/14 ring-1 ring-white/10">
             <Store className="h-5 w-5 text-primary" strokeWidth={1.5} />
           </div>
           {!isCollapsed && (
-            <motion.span
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="truncate text-sm font-semibold text-sidebar-foreground"
+              className="min-w-0"
             >
-              {shopName}
-            </motion.span>
+              <p className="truncate text-sm font-semibold text-sidebar-foreground">{shopName}</p>
+              <p className="mt-0.5 text-[11px] uppercase tracking-[0.22em] text-sidebar-foreground/45">
+                {language === "sw" ? "Kituo cha kazi" : "Retail workspace"}
+              </p>
+            </motion.div>
           )}
         </div>
       </div>
@@ -250,12 +253,12 @@ export function Sidebar() {
         variant="ghost"
         size="icon"
         onClick={toggleSidebar}
-        className="absolute -right-3 top-[4.2rem] z-50 h-6 w-6 rounded-full border border-sidebar-border bg-card shadow-lg transition-colors hover:border-primary/30 hover:bg-sidebar-accent"
+        className="absolute -right-3 top-[4.6rem] z-50 h-7 w-7 rounded-full border border-sidebar-border bg-card shadow-lg transition-colors hover:border-primary/30 hover:bg-sidebar-accent"
       >
         {isCollapsed ? <ChevronRight className="h-3 w-3" strokeWidth={1.5} /> : <ChevronLeft className="h-3 w-3" strokeWidth={1.5} />}
       </Button>
 
-      <nav className="mt-1 flex-1 space-y-4 overflow-y-auto p-2">
+      <nav className="mt-2 flex-1 space-y-5 overflow-y-auto px-3 py-3">
         <NavSection
           title={sectionTitles.operations}
           items={operationsItems}
@@ -285,7 +288,7 @@ export function Sidebar() {
             <Button
               variant="ghost"
               className={cn(
-                "w-full gap-3 text-sidebar-foreground transition-colors duration-200 hover:bg-destructive/10 hover:text-destructive",
+                "w-full gap-3 rounded-2xl text-sidebar-foreground transition-colors duration-200 hover:bg-destructive/10 hover:text-destructive",
                 isCollapsed ? "justify-center px-2" : "justify-start"
               )}
               onClick={() => setSignOutConfirmOpen(true)}

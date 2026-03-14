@@ -180,6 +180,32 @@ export default function Reports() {
   }));
 
   const lowStockProducts = products?.filter((p) => p.stock <= (p.low_stock_alert ?? 5)).slice(0, 15) || [];
+  const reportStats = [
+    {
+      label: t("reports.salesSummary"),
+      value: `Tsh ${formatNumber(totalSales)}`,
+      tone: "text-foreground",
+      hint: rangeLabel,
+    },
+    {
+      label: t("reports.expenses"),
+      value: `Tsh ${formatNumber(totalExpenses)}`,
+      tone: "text-destructive",
+      hint: language === "sw" ? "Matumizi ya kipindi" : "Costs in range",
+    },
+    {
+      label: t("reports.netProfit"),
+      value: `Tsh ${formatNumber(profit)}`,
+      tone: profit >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive",
+      hint: language === "sw" ? "Baada ya gharama" : "After expenses",
+    },
+    {
+      label: t("reports.inventoryValuation"),
+      value: `Tsh ${formatNumber(stockValue)}`,
+      tone: "text-primary",
+      hint: language === "sw" ? "Thamani ya stoki" : "Stock on hand",
+    },
+  ];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -190,7 +216,7 @@ export default function Reports() {
         <>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Select value={rangeType} onValueChange={(v: DateRangeType) => setRangeType(v)}>
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="h-11 w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -203,7 +229,7 @@ export default function Reports() {
           {rangeType === "custom" && (
             <Popover open={customOpen} onOpenChange={setCustomOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="h-11 gap-2">
                   <CalendarIcon className="h-4 w-4" />
                   {rangeLabel}
                 </Button>
@@ -224,18 +250,18 @@ export default function Reports() {
             </Popover>
           )}
           {rangeType !== "custom" && (
-            <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
+            <div className="flex h-11 items-center gap-2 rounded-2xl border bg-card px-3 py-2">
               <CalendarIcon className="h-4 w-4 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
               <span className="text-sm">{rangeLabel}</span>
             </div>
           )}
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExportPDF}>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" className="h-11 gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExportPDF}>
             <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             {t("reports.exportPdf")}
           </Button>
-          <Button variant="outline" className="gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExportCSV}>
+          <Button variant="outline" className="h-11 gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExportCSV}>
             <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             {t("reports.exportExcel")}
           </Button>
@@ -244,8 +270,20 @@ export default function Reports() {
         }
       />
 
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {reportStats.map((stat) => (
+          <Card key={stat.label} className="section-shell">
+            <CardContent className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{stat.label}</p>
+              <p className={`mt-3 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
       <Tabs value={reportTab} onValueChange={(v) => setReportTab(v as "sales" | "inventory" | "profit")}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid h-auto w-full max-w-xl grid-cols-3 rounded-[1.3rem] border border-border/70 bg-card/70 p-1.5">
           <TabsTrigger value="sales" className="gap-2">
             <FileText className="h-4 w-4 dark:drop-shadow-[0_0_3px_rgba(59,130,246,0.2)]" />
             {t("reports.salesTab")}
@@ -260,7 +298,7 @@ export default function Reports() {
           </TabsTrigger>
         </TabsList>
 
-      <TabsContent value="sales" className="space-y-6 mt-6">
+      <TabsContent value="sales" className="mt-6 space-y-6">
       <Card className="section-shell">
         <CardContent className="p-4 md:p-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-foreground/70 dark:text-foreground/80">{t("reports.salesPeriod")}</p>
@@ -365,7 +403,7 @@ export default function Reports() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="section-shell">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">{t("reports.salesByCategory")}</CardTitle>
           </CardHeader>

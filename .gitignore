@@ -19,6 +19,7 @@ dist-ssr
 .env.production
 .env.development
 supabase/.temp/
+screenshots/
 
 # Editor directories and files
 .vscode/*

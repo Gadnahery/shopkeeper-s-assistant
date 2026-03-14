@@ -27,6 +27,8 @@ import {
   ShoppingBag,
   Wallet,
   X,
+  TimerReset,
+  ReceiptText,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
@@ -175,6 +177,26 @@ export default function Sales() {
   const featuredProducts = filteredProducts.slice(0, searchTerm ? 12 : 8);
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
+  const saleStats = [
+    {
+      label: language === "sw" ? "Bidhaa kwenye kikapu" : "Items in cart",
+      value: `${cartItems.length}`,
+      tone: "text-foreground",
+      icon: ShoppingBag,
+    },
+    {
+      label: language === "sw" ? "Jumla ya malipo" : "Checkout total",
+      value: formatNumber(total),
+      tone: "text-primary",
+      icon: Wallet,
+    },
+    {
+      label: language === "sw" ? "Chenji" : "Change due",
+      value: formatNumber(changeDue),
+      tone: "text-foreground",
+      icon: ReceiptText,
+    },
+  ];
 
   const handleCompleteSale = async () => {
     if (cartItems.length === 0) {
@@ -363,7 +385,7 @@ export default function Sales() {
                     </div>
                   </div>
 
-                  <div className="rounded-[1.35rem] border border-border/70 bg-background/65 p-3 shadow-inner">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.8),hsl(var(--background)/0.58))] p-3 shadow-inner">
                     <div className="flex items-center gap-3">
                       <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
                       <Input
@@ -384,6 +406,18 @@ export default function Sales() {
                     </div>
                   </div>
 
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {saleStats.map((stat) => (
+                      <div key={stat.label} className="rounded-[1.35rem] border border-border/70 bg-background/60 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{stat.label}</span>
+                          <stat.icon className="h-4 w-4 text-primary/80" />
+                        </div>
+                        <p className={`mt-4 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {featuredProducts.length === 0 ? (
                       <div className="col-span-full rounded-[1.35rem] border border-dashed border-border/70 bg-background/40 px-4 py-8 text-center text-sm text-muted-foreground">
@@ -399,7 +433,7 @@ export default function Sales() {
                             type="button"
                             onClick={() => addToCart(product)}
                             disabled={outOfStock}
-                            className="group rounded-[1.35rem] border border-border/70 bg-background/55 p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-55"
+                            className="group rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.56))] p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-55"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
@@ -415,7 +449,7 @@ export default function Sales() {
                                 <p className="text-xs text-muted-foreground">{language === "sw" ? "Bei ya kuuza" : "Sell price"}</p>
                                 <p className="text-lg font-bold text-foreground">{formatNumber(product.selling_price)}</p>
                               </div>
-                              <span className="text-xs font-medium text-primary">{language === "sw" ? "Ongeza" : "Add"}</span>
+                              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{language === "sw" ? "Ongeza" : "Add"}</span>
                             </div>
                           </button>
                         );
@@ -425,36 +459,37 @@ export default function Sales() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                    <div className="rounded-[1.35rem] border border-border/70 bg-background/55 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                        {language === "sw" ? "Bidhaa kwenye kikapu" : "Items in cart"}
-                      </p>
-                      <p className="mt-3 text-3xl font-bold text-foreground">{cartItems.length}</p>
+                  <div className="rounded-[1.45rem] border border-primary/15 bg-[linear-gradient(145deg,hsl(var(--primary)/0.14),transparent_55%)] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          {language === "sw" ? "Kituo cha checkout" : "Checkout lane"}
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-foreground">
+                          {language === "sw" ? "Tayari kwa malipo ya haraka" : "Ready for fast payment"}
+                        </p>
+                      </div>
+                      <TimerReset className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="rounded-[1.35rem] border border-border/70 bg-background/55 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                        {language === "sw" ? "Jumla ya malipo" : "Checkout total"}
-                      </p>
-                      <p className="mt-3 text-3xl font-bold text-foreground">{formatNumber(total)}</p>
-                    </div>
-                    <div className="rounded-[1.35rem] border border-border/70 bg-gradient-to-br from-primary/16 to-blue-500/10 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                        {language === "sw" ? "Invoice ya leo" : "Today's invoice"}
-                      </p>
-                      <p className="mt-3 text-lg font-bold text-foreground">{`INV-${format(new Date(), "yyyyMMdd")}`}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{format(new Date(), "dd MMM yyyy, hh:mm a")}</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                      <div className="rounded-[1.2rem] border border-border/70 bg-background/60 p-4">
+                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                          {language === "sw" ? "Miamala ya sasa" : "Current invoice"}
+                        </p>
+                        <p className="mt-3 text-lg font-bold text-foreground">{`INV-${format(new Date(), "yyyyMMdd")}`}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{format(new Date(), "dd MMM yyyy, hh:mm a")}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {drafts && drafts.length > 0 ? (
-                    <div className="rounded-[1.35rem] border border-border/70 bg-background/45 p-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-foreground">{language === "sw" ? "Rasimu za mauzo" : "Saved drafts"}</p>
-                        <Badge variant="secondary" className="rounded-full">
-                          {drafts.length}
-                        </Badge>
-                      </div>
+                  <div className="rounded-[1.35rem] border border-border/70 bg-background/45 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-foreground">{language === "sw" ? "Hifadhi ya kazi" : "Work in progress"}</p>
+                      <Badge variant="secondary" className="rounded-full">
+                        {drafts?.length || 0}
+                      </Badge>
+                    </div>
+                    {(drafts && drafts.length > 0) ? (
                       <div className="mt-3 space-y-2">
                         {drafts.slice(0, 4).map((d: any) => (
                           <div key={d.id} className="rounded-2xl border border-border/70 bg-background/65 p-3">
@@ -497,8 +532,12 @@ export default function Sales() {
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ) : null}
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {language === "sw" ? "Hakuna rasimu zilizohifadhiwa kwa sasa." : "No saved drafts at the moment."}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -656,7 +695,7 @@ export default function Sales() {
                 </div>
               </div>
 
-              <div className="rounded-[1.35rem] border border-border/70 bg-background/55 p-4">
+              <div className="rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.55))] p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t("sales.subtotal")}</span>
                   <span className="font-semibold text-foreground">{formatNumber(subtotal)}</span>
@@ -711,7 +750,7 @@ export default function Sales() {
                 </div>
               </div>
 
-              <div className="rounded-[1.35rem] border border-primary/15 bg-gradient-to-br from-primary/12 to-blue-500/8 p-4">
+              <div className="rounded-[1.45rem] border border-primary/15 bg-gradient-to-br from-primary/12 to-blue-500/8 p-4">
                 <p className="text-sm font-semibold text-foreground">{language === "sw" ? "Muhtasari wa malipo" : "Payment summary"}</p>
                 <div className="mt-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between">

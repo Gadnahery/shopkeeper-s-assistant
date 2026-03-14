@@ -6,7 +6,7 @@ import { LanguageProvider } from "../contexts/LanguageContext";
 
 function renderWithProviders() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <LanguageProvider>
         <NotFound />
       </LanguageProvider>

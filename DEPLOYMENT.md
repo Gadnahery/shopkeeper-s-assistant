@@ -54,6 +54,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 Run all checks before every production deploy:
 
 ```bash
+npm run env:check
 npm run lint
 npm run test
 npm run build
@@ -61,10 +62,17 @@ node scripts/responsive-check.cjs
 ```
 
 Expected status:
+- `env:check`: required frontend env vars are present and not placeholders
 - `lint`: no errors (warnings are currently tolerated)
 - `test`: all tests pass
 - `build`: success
 - `responsive-check`: `failed: 0`
+
+For the full automated release gate, run:
+
+```bash
+npm run deploy:check
+```
 
 ## Database and Function Deployment
 
