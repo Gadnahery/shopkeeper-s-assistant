@@ -95,7 +95,7 @@ export default function LoginPage() {
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/18">
               <Store className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold">Smart Money</span>
+            <span className="text-xl font-bold">WiseCash</span>
           </Link>
 
           <div className="space-y-8">
@@ -127,7 +127,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-sm text-white/55">© 2026 Smart Money</p>
+          <p className="text-sm text-white/55">© 2026 WiseCash</p>
         </motion.section>
 
         <motion.section
@@ -142,7 +142,7 @@ export default function LoginPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-blue-600 text-white">
                   <Store className="h-5 w-5" />
                 </div>
-                <span className="text-lg font-bold">Smart Money</span>
+                <span className="text-lg font-bold">WiseCash</span>
               </Link>
             </div>
 

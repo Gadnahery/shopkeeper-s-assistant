@@ -18,12 +18,12 @@ export function About() {
             <Store className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-foreground md:text-4xl">
-            {language === "sw" ? "Kuhusu Smart Money" : "About Smart Money"}
+            {language === "sw" ? "Kuhusu WiseCash" : "About WiseCash"}
           </h2>
           <p className="mt-6 text-lg text-muted-foreground">
             {language === "sw"
-              ? "Smart Money ni mfumo wa kusimamia biashara uliojengwa kwa dukani na wafanyi biashara wadogo. Tunasaidia wamiliki wa duka kuendesha biashara zao kwa urahisi na ufanisi zaidi — POS, hesabu ya stoki, ripoti, na mengine."
-              : "Smart Money is a business management system built for shops and small businesses. We help shop owners run their businesses more easily and efficiently—POS, inventory, reports, and more."}
+              ? "WiseCash ni mfumo wa kusimamia biashara uliojengwa kwa maduka na biashara zinazokua. Tunasaidia wamiliki wa biashara kuendesha POS, stoki, ripoti, na shughuli za kila siku kwa urahisi zaidi."
+              : "WiseCash is a business management system built for shops and growing businesses. We help owners run POS, inventory, reports, subscriptions, and daily operations more efficiently."}
           </p>
         </motion.div>
       </div>

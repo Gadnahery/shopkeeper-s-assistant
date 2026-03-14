@@ -63,7 +63,7 @@ export function Slideshow() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl font-bold text-foreground md:text-4xl">
-            {language === "sw" ? "Kwa Nini Smart Money?" : "Why Smart Money?"}
+            {language === "sw" ? "Kwa Nini WiseCash?" : "Why WiseCash?"}
           </h2>
           <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
             {language === "sw"

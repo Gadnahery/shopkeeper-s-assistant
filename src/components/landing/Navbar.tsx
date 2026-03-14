@@ -35,7 +35,7 @@ export function Navbar() {
             <Store className="h-5 w-5 text-white" />
           </div>
           <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-xl font-bold text-transparent dark:from-emerald-400 dark:to-cyan-400">
-            Smart Money
+            WiseCash
           </span>
         </Link>
 

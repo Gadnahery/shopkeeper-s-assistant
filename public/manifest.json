@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Smart Money Management",
-  "short_name": "Smart Money",
-  "description": "Modern retail management with POS, inventory, sales, reports, and team tools.",
+  "name": "WiseCash",
+  "short_name": "WiseCash",
+  "description": "Modern retail management with POS, inventory, sales, reports, subscriptions, and team tools.",
   "lang": "en",
   "theme_color": "#26a17b",
   "background_color": "#f7f7f7",

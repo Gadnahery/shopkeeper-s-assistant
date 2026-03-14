@@ -16,7 +16,7 @@ export function Footer() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-blue-600">
               <Store className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold">Smart Money</span>
+            <span className="text-lg font-bold">WiseCash</span>
           </Link>
           <div className="flex gap-8">
             <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">
@@ -28,7 +28,7 @@ export function Footer() {
           </div>
         </div>
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          © 2026 Smart Money. {language === "sw" ? "Haki zote zimehifadhiwa." : "All rights reserved."}
+          © 2026 WiseCash. {language === "sw" ? "Haki zote zimehifadhiwa." : "All rights reserved."}
         </p>
       </div>
     </footer>
