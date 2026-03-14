@@ -195,7 +195,7 @@ export default function Billing() {
               <div className="space-y-2">
                 <Label>{language === "sw" ? "Mtandao wa malipo" : "Mobile money provider"}</Label>
                 <Select value={provider} onValueChange={setProvider}>
-                  <SelectTrigger className="h-12 rounded-2xl">
+                  <SelectTrigger className="h-12 rounded-2xl bg-card/90 text-foreground placeholder:text-muted-foreground dark:bg-slate-950/80">
                     <SelectValue placeholder={language === "sw" ? "Chagua mtandao" : "Choose provider"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -214,7 +214,7 @@ export default function Billing() {
                   value={phoneNumber}
                   onChange={(event) => setPhoneNumber(event.target.value)}
                   placeholder="07XXXXXXXX or 2557XXXXXXXX"
-                  className="h-12 rounded-2xl"
+                  className="h-12 rounded-2xl bg-card/90 text-foreground placeholder:text-muted-foreground dark:bg-slate-950/80 dark:text-white dark:placeholder:text-slate-400"
                 />
               </div>
 

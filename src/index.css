@@ -186,6 +186,17 @@
     caret-color: hsl(var(--foreground));
   }
 
+  .dark input,
+  .dark textarea,
+  .dark [role="combobox"] {
+    color: hsl(var(--foreground));
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
