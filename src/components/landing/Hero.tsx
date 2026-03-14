@@ -60,8 +60,19 @@ export function Hero() {
             className="mt-6 max-w-xl text-lg text-muted-foreground md:text-xl"
           >
             {language === "sw"
-              ? "POS, Hesabu, Stoki, Ripoti na Udhibiti wote sehemu moja."
-              : "POS, accounting, stock, reports and control all in one place."}
+              ? "WiseCash ni mfumo wa POS, usimamizi wa stoki, mauzo, ripoti, na uendeshaji wa biashara kwa maduka ya Tanzania na Afrika Mashariki."
+              : "WiseCash is a POS system, inventory management, sales reporting, and retail business software built for shops in Tanzania and East Africa."}
+          </motion.p>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.22 }}
+            className="mt-4 max-w-2xl text-sm text-muted-foreground md:text-base"
+          >
+            {language === "sw"
+              ? "Dhibiti mauzo ya dukani, barcode, stoki, wateja, wafanyakazi, na usajili wa kila mwezi kutoka kwenye web app moja ya kisasa."
+              : "Run checkout, barcode scanning, stock control, customer records, staff tools, and monthly subscriptions from one modern web app."}
           </motion.p>
 
           <motion.div

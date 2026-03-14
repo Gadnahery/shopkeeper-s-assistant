@@ -14,43 +14,43 @@ const features = [
     icon: ShoppingCart,
     titleEn: "POS",
     titleSw: "POS",
-    descEn: "Fast checkout and sales",
-    descSw: "Malipo ya haraka na mauzo",
+    descEn: "Fast retail checkout for shops, kiosks, and daily sales",
+    descSw: "Malipo ya haraka kwa maduka, vibanda, na mauzo ya kila siku",
   },
   {
     icon: Package,
     titleEn: "Stock Management",
     titleSw: "Udhibiti wa Stoki",
-    descEn: "Track inventory in real time",
-    descSw: "Fuata stoki kwa wakati halisi",
+    descEn: "Track inventory, stock movement, and low-stock alerts in real time",
+    descSw: "Fuatilia stoki, mabadiliko ya bidhaa, na tahadhari za stoki kwa wakati halisi",
   },
   {
     icon: BarChart3,
     titleEn: "Reports",
     titleSw: "Ripoti",
-    descEn: "Detailed analytics",
-    descSw: "Uchambuzi wa kina",
+    descEn: "View sales trends, profit insights, and business performance reports",
+    descSw: "Angalia mwenendo wa mauzo, faida, na ripoti za utendaji wa biashara",
   },
   {
     icon: Users,
     titleEn: "Customer Management",
     titleSw: "Usimamizi wa Wateja",
-    descEn: "Manage loyalty and credit",
-    descSw: "Simamia uaminifu na mkopo",
+    descEn: "Manage customer history, loyalty, and shop credit records",
+    descSw: "Simamia historia ya wateja, uaminifu, na kumbukumbu za mikopo",
   },
   {
     icon: Smartphone,
     titleEn: "Mobile Friendly",
     titleSw: "Inafaa Simu",
-    descEn: "Works on any device",
-    descSw: "Inafanya kazi kwenye kifaa chochote",
+    descEn: "Works on phone, tablet, laptop, and installed PWA app",
+    descSw: "Inafanya kazi kwenye simu, tablet, laptop, na app iliyowekwa",
   },
   {
     icon: Cloud,
     titleEn: "Cloud Based",
     titleSw: "Inatumia Wingu",
-    descEn: "Sync across locations",
-    descSw: "Sawazisha mahali popote",
+    descEn: "Access your retail software anywhere with cloud sync",
+    descSw: "Tumia mfumo wako wa biashara popote kwa usawazishaji wa wingu",
   },
 ];
 
@@ -84,8 +84,8 @@ export function Features() {
           </h2>
           <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
             {language === "sw"
-              ? "Kila kitu kwa kusimamia biashara yako kwa ufanisi."
-              : "Everything you need to run your business efficiently."}
+              ? "Vipengele muhimu kwa POS, usimamizi wa stoki, ripoti za mauzo, na uendeshaji wa biashara kwenye mfumo mmoja."
+              : "Core features for POS, inventory management, sales reports, and day-to-day retail operations in one platform."}
           </p>
         </motion.div>
 

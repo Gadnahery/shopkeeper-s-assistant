@@ -30,8 +30,8 @@ export function CTA() {
             </h2>
             <p className="mt-4 max-w-xl mx-auto text-white/90">
               {language === "sw"
-                ? "Fungua akaunti bila malipo na anza kusimamia biashara yako leo."
-                : "Create your free account and start managing your business today."}
+                ? "Fungua akaunti ya WiseCash, jaribu wiki 1 bure, kisha endelea kusimamia POS, stoki, na ripoti za biashara yako."
+                : "Create your WiseCash account, try it free for 1 week, then keep running POS, inventory, and business reports from one place."}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <motion.div

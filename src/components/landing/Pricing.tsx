@@ -29,8 +29,8 @@ export function Pricing() {
           </h2>
           <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
             {language === "sw"
-              ? "Anza bila malipo. Ongeza vipengele kadri unavyohitaji."
-              : "Start free. Add features as you grow."}
+              ? "Anza na mafunzo ya wiki 1 bure, kisha endelea na mpango wa kila mwezi wa WiseCash."
+              : "Start with a 1-week free trial, then continue with WiseCash monthly subscription pricing."}
           </p>
         </motion.div>
 
@@ -41,14 +41,19 @@ export function Pricing() {
           className="mx-auto max-w-md rounded-3xl border border-border bg-card p-8 shadow-lg"
         >
           <h3 className="text-2xl font-bold text-foreground">
-            {language === "sw" ? "Anza Bure" : "Start Free"}
+            {language === "sw" ? "Mpango wa Biashara" : "Business Plan"}
           </h3>
           <div className="mt-4 flex items-baseline gap-1">
-            <span className="text-4xl font-bold">Tsh 0</span>
+            <span className="text-4xl font-bold">Tsh 10,000</span>
             <span className="text-muted-foreground">
               / {language === "sw" ? "mwezi" : "month"}
             </span>
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {language === "sw"
+              ? "Wiki 1 ya kwanza ni bure kwa mafunzo na kuanza kutumia mfumo."
+              : "The first week is free for onboarding and training before billing begins."}
+          </p>
           <ul className="mt-6 space-y-3">
             {features.map((f) => (
               <li key={f.en} className="flex items-center gap-2 text-muted-foreground">
