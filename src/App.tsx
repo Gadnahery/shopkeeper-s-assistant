@@ -10,6 +10,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { PWAProvider } from "@/contexts/PWAContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { PWAUpdateBanner } from "@/components/pwa/PWAUpdateBanner";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CommandPalette } from "./components/CommandPalette";
@@ -37,6 +38,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const Loyalty = lazy(() => import("./pages/Loyalty"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Billing = lazy(() => import("./pages/Billing"));
 const HRM = lazy(() => import("./pages/HRM"));
 const Assets = lazy(() => import("./pages/Assets"));
 const Categories = lazy(() => import("./pages/Categories"));
@@ -95,59 +97,62 @@ const App = () => (
     {!hasValidSupabaseEnv ? (
       <EnvSetupMessage />
     ) : (
-    <AuthProvider>
-      <LanguageProvider>
-        <ThemeProvider>
-          <NotificationProvider>
-            <PWAProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <PWAUpdateBanner />
-                <BrowserRouter>
-                  <Suspense fallback={<AppLoader />}>
-                    <Routes>
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/login" element={<LoginPage />} />
-                      <Route path="/signup" element={<SignupPage />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/forgot-password" element={<ForgotPassword />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      
-                      <Route element={<ProtectedRoute><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
-                        <Route path="/dashboard" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Dashboard /></Suspense></ProtectedRoute>} />
-                        <Route path="/sales" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Sales /></Suspense></ProtectedRoute>} />
-                        <Route path="/sales/terminal" element={<Navigate to="/sales" replace />} />
-                        <Route path="/inventory" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Inventory /></Suspense></ProtectedRoute>} />
-                        <Route path="/inventory/add" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><AddProduct /></Suspense></ProtectedRoute>} />
-                        <Route path="/inventory/receive" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><ReceiveStock /></Suspense></ProtectedRoute>} />
-                        <Route path="/categories" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><Categories /></Suspense></ProtectedRoute>} />
-                        <Route path="/orders" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Orders /></Suspense></ProtectedRoute>} />
-                        <Route path="/todo" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Todo /></Suspense></ProtectedRoute>} />
-                        <Route path="/customers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Customers /></Suspense></ProtectedRoute>} />
-                        <Route path="/customers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><CustomerDetail /></Suspense></ProtectedRoute>} />
-                        <Route path="/suppliers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Suppliers /></Suspense></ProtectedRoute>} />
-                        <Route path="/suppliers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><SupplierDetail /></Suspense></ProtectedRoute>} />
-                        <Route path="/expenses" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Expenses /></Suspense></ProtectedRoute>} />
-                        <Route path="/hrm" element={<ProtectedRoute allowedRoles={["owner", "manager", "hr"]}><Suspense fallback={<RouteFallback />}><HRM /></Suspense></ProtectedRoute>} />
-                        <Route path="/user-management" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><UserManagement /></Suspense></ProtectedRoute>} />
-                        <Route path="/assets" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><Assets /></Suspense></ProtectedRoute>} />
-                        <Route path="/reports" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Reports /></Suspense></ProtectedRoute>} />
-                        <Route path="/loyalty" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Loyalty /></Suspense></ProtectedRoute>} />
-                        <Route path="/notifications" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Notifications /></Suspense></ProtectedRoute>} />
-                        <Route path="/settings" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><Settings /></Suspense></ProtectedRoute>} />
-                      </Route>
+      <AuthProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <SubscriptionProvider>
+              <NotificationProvider>
+                <PWAProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <PWAUpdateBanner />
+                    <BrowserRouter>
+                      <Suspense fallback={<AppLoader />}>
+                        <Routes>
+                          <Route path="/" element={<LandingPage />} />
+                          <Route path="/login" element={<LoginPage />} />
+                          <Route path="/signup" element={<SignupPage />} />
+                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/forgot-password" element={<ForgotPassword />} />
+                          <Route path="/reset-password" element={<ResetPassword />} />
 
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </BrowserRouter>
-              </TooltipProvider>
-            </PWAProvider>
-          </NotificationProvider>
-        </ThemeProvider>
-      </LanguageProvider>
-    </AuthProvider>
+                          <Route element={<ProtectedRoute allowBillingLocked><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
+                            <Route path="/billing" element={<ProtectedRoute allowBillingLocked><Suspense fallback={<RouteFallback />}><Billing /></Suspense></ProtectedRoute>} />
+                            <Route path="/dashboard" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Dashboard /></Suspense></ProtectedRoute>} />
+                            <Route path="/sales" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Sales /></Suspense></ProtectedRoute>} />
+                            <Route path="/sales/terminal" element={<Navigate to="/sales" replace />} />
+                            <Route path="/inventory" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Inventory /></Suspense></ProtectedRoute>} />
+                            <Route path="/inventory/add" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><AddProduct /></Suspense></ProtectedRoute>} />
+                            <Route path="/inventory/receive" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><ReceiveStock /></Suspense></ProtectedRoute>} />
+                            <Route path="/categories" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><Categories /></Suspense></ProtectedRoute>} />
+                            <Route path="/orders" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Orders /></Suspense></ProtectedRoute>} />
+                            <Route path="/todo" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Todo /></Suspense></ProtectedRoute>} />
+                            <Route path="/customers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Customers /></Suspense></ProtectedRoute>} />
+                            <Route path="/customers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><CustomerDetail /></Suspense></ProtectedRoute>} />
+                            <Route path="/suppliers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Suppliers /></Suspense></ProtectedRoute>} />
+                            <Route path="/suppliers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><SupplierDetail /></Suspense></ProtectedRoute>} />
+                            <Route path="/expenses" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Expenses /></Suspense></ProtectedRoute>} />
+                            <Route path="/hrm" element={<ProtectedRoute allowedRoles={["owner", "manager", "hr"]}><Suspense fallback={<RouteFallback />}><HRM /></Suspense></ProtectedRoute>} />
+                            <Route path="/user-management" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><UserManagement /></Suspense></ProtectedRoute>} />
+                            <Route path="/assets" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><Assets /></Suspense></ProtectedRoute>} />
+                            <Route path="/reports" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Reports /></Suspense></ProtectedRoute>} />
+                            <Route path="/loyalty" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Loyalty /></Suspense></ProtectedRoute>} />
+                            <Route path="/notifications" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Notifications /></Suspense></ProtectedRoute>} />
+                            <Route path="/settings" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><Settings /></Suspense></ProtectedRoute>} />
+                          </Route>
+
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Suspense>
+                    </BrowserRouter>
+                  </TooltipProvider>
+                </PWAProvider>
+              </NotificationProvider>
+            </SubscriptionProvider>
+          </ThemeProvider>
+        </LanguageProvider>
+      </AuthProvider>
     )}
   </QueryClientProvider>
 );

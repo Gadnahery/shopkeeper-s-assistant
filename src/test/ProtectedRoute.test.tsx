@@ -14,12 +14,21 @@ const accessState = vi.hoisted(() => ({
   isLoading: false,
 }));
 
+const subscriptionState = vi.hoisted(() => ({
+  isBillingLocked: false,
+  isLoading: false,
+}));
+
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => authState,
 }));
 
 vi.mock("@/hooks/useUserPageAccess", () => ({
   useMyPageAccess: () => accessState,
+}));
+
+vi.mock("@/contexts/SubscriptionContext", () => ({
+  useSubscription: () => subscriptionState,
 }));
 
 function renderProtectedRoute(route = "/dashboard", allowedRoles?: Array<"owner" | "manager" | "cashier" | "staff" | "hr">) {
@@ -55,6 +64,8 @@ describe("ProtectedRoute", () => {
     authState.role = null;
     accessState.data = ["/dashboard", "/settings"];
     accessState.isLoading = false;
+    subscriptionState.isBillingLocked = false;
+    subscriptionState.isLoading = false;
   });
 
   it("redirects unauthenticated users to login", () => {
@@ -78,5 +89,35 @@ describe("ProtectedRoute", () => {
     renderProtectedRoute("/settings", ["owner", "manager"]);
 
     expect(screen.getByText("Dashboard content")).toBeInTheDocument();
+  });
+
+  it("redirects billing-locked users to billing", () => {
+    authState.user = { id: "user-3" };
+    subscriptionState.isBillingLocked = true;
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div>Dashboard content</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <ProtectedRoute allowBillingLocked>
+                <div>Billing page</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Billing page")).toBeInTheDocument();
   });
 });

@@ -590,6 +590,65 @@ export type Database = {
           },
         ]
       }
+      shop_subscriptions: {
+        Row: {
+          created_at: string
+          currency: string
+          current_period_ends_at: string | null
+          current_period_started_at: string | null
+          grace_ends_at: string | null
+          last_payment_at: string | null
+          metadata: Json
+          monthly_price: number
+          provider: string
+          shop_id: string
+          status: string
+          trial_ends_at: string
+          trial_started_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          current_period_ends_at?: string | null
+          current_period_started_at?: string | null
+          grace_ends_at?: string | null
+          last_payment_at?: string | null
+          metadata?: Json
+          monthly_price?: number
+          provider?: string
+          shop_id: string
+          status?: string
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          current_period_ends_at?: string | null
+          current_period_started_at?: string | null
+          grace_ends_at?: string | null
+          last_payment_at?: string | null
+          metadata?: Json
+          monthly_price?: number
+          provider?: string
+          shop_id?: string
+          status?: string
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_subscriptions_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shops: {
         Row: {
           address: string | null
@@ -742,6 +801,95 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          amount: number
+          billing_period_months: number
+          callback_payload: Json
+          completed_at: string | null
+          created_at: string
+          currency: string
+          expires_at: string | null
+          external_id: string
+          id: string
+          initiated_by: string | null
+          message: string | null
+          paid_for_period_end: string | null
+          paid_for_period_start: string | null
+          payment_channel: string
+          phone_number: string
+          provider: string
+          provider_reference: string | null
+          request_payload: Json
+          response_payload: Json
+          shop_id: string
+          status: string
+          transaction_reference: string | null
+          updated_at: string
+          utility_reference: string | null
+        }
+        Insert: {
+          amount: number
+          billing_period_months?: number
+          callback_payload?: Json
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          external_id: string
+          id?: string
+          initiated_by?: string | null
+          message?: string | null
+          paid_for_period_end?: string | null
+          paid_for_period_start?: string | null
+          payment_channel: string
+          phone_number: string
+          provider?: string
+          provider_reference?: string | null
+          request_payload?: Json
+          response_payload?: Json
+          shop_id: string
+          status?: string
+          transaction_reference?: string | null
+          updated_at?: string
+          utility_reference?: string | null
+        }
+        Update: {
+          amount?: number
+          billing_period_months?: number
+          callback_payload?: Json
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          external_id?: string
+          id?: string
+          initiated_by?: string | null
+          message?: string | null
+          paid_for_period_end?: string | null
+          paid_for_period_start?: string | null
+          payment_channel?: string
+          phone_number?: string
+          provider?: string
+          provider_reference?: string | null
+          request_payload?: Json
+          response_payload?: Json
+          shop_id?: string
+          status?: string
+          transaction_reference?: string | null
+          updated_at?: string
+          utility_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -826,6 +974,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_shop_subscription: {
+        Args: { target_shop_id: string }
+        Returns: Database["public"]["Tables"]["shop_subscriptions"]["Row"]
+      }
+      ensure_subscription_notifications: { Args: never; Returns: Json }
       generate_invoice_number: { Args: never; Returns: string }
       get_user_shop_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
@@ -834,6 +987,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      refresh_shop_subscription_state: {
+        Args: { target_shop_id?: string }
+        Returns: Database["public"]["Tables"]["shop_subscriptions"]["Row"]
       }
     }
     Enums: {

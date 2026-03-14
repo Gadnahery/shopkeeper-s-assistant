@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useMyPageAccess } from "@/hooks/useUserPageAccess";
 
 type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
@@ -9,6 +10,7 @@ type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
 type ProtectedRouteProps = {
   children: ReactNode;
   allowedRoles?: AppRole[];
+  allowBillingLocked?: boolean;
 };
 
 function pathAllowed(pathname: string, allowedPaths: string[]) {
@@ -23,12 +25,13 @@ function pathAllowed(pathname: string, allowedPaths: string[]) {
   });
 }
 
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, allowedRoles, allowBillingLocked = false }: ProtectedRouteProps) {
   const { user, loading, role } = useAuth();
   const location = useLocation();
   const { data: allowedPaths = [], isLoading: accessLoading } = useMyPageAccess();
+  const { isBillingLocked, isLoading: subscriptionLoading } = useSubscription();
 
-  if (loading || accessLoading) {
+  if (loading || accessLoading || subscriptionLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -42,6 +45,14 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (allowedRoles && allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (isBillingLocked && !allowBillingLocked) {
+    return <Navigate to="/billing" replace state={{ from: location }} />;
+  }
+
+  if (location.pathname === "/billing") {
+    return <>{children}</>;
   }
 
   if (!pathAllowed(location.pathname, allowedPaths)) {

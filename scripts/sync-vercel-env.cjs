@@ -3,7 +3,12 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const envPath = path.resolve(process.cwd(), ".env");
-const requiredVars = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "VITE_VAPID_PUBLIC_KEY"];
+const requiredVars = [
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_ANON_KEY",
+  "VITE_VAPID_PUBLIC_KEY",
+  "VITE_SUBSCRIPTION_MONTHLY_PRICE_TZS",
+];
 const targets = ["production", "development"];
 const scope = process.env.VERCEL_SCOPE || "gadnaherys-projects";
 const previewBranch = process.env.VERCEL_PREVIEW_BRANCH;

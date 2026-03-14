@@ -2,7 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 const envPath = path.resolve(process.cwd(), ".env");
-const requiredVars = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"];
+const requiredVars = [
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_ANON_KEY",
+  "VITE_SUBSCRIPTION_MONTHLY_PRICE_TZS",
+];
 const placeholderPatterns = [
   /^https:\/\/your-project\.supabase\.co$/i,
   /^your-/i,
