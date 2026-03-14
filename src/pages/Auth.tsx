@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getAppUrl } from "@/lib/siteUrl";
 
 const features = [
   { icon: Store, label: "POS & Sales", labelSw: "Mauzo na POS" },
@@ -124,7 +125,7 @@ export default function Auth() {
     setResetLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${getAppUrl()}/reset-password`,
       });
       if (error) {
         toast.error(error.message);

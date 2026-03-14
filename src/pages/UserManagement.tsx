@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { getAppUrl } from "@/lib/siteUrl";
 import { useShopUsers } from "@/hooks/useShopUsers";
 import { logAudit } from "@/lib/audit";
 import { PageLoader } from "@/components/PageLoader";
@@ -257,7 +258,7 @@ export default function UserManagement() {
     setResettingPassword(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${getAppUrl()}/reset-password`,
       });
       if (error) throw error;
 

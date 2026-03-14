@@ -24,6 +24,7 @@ const FeaturesPage = lazy(() => import("./pages/FeaturesPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
+const AuthConfirmPage = lazy(() => import("./pages/AuthConfirmPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -119,6 +120,7 @@ const App = () => (
                           <Route path="/pricing" element={<PricingPage />} />
                           <Route path="/about" element={<AboutPage />} />
                           <Route path="/contact" element={<ContactPage />} />
+                          <Route path="/auth/confirm" element={<AuthConfirmPage />} />
                           <Route path="/login" element={<LoginPage />} />
                           <Route path="/signup" element={<SignupPage />} />
                           <Route path="/auth" element={<Auth />} />

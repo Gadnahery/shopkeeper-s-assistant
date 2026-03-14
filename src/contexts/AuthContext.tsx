@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { type AuthError, type Session, type User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { getAppUrl } from "@/lib/siteUrl";
 
 type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -146,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, shopName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = getAppUrl();
     const { error } = await supabase.auth.signUp({
       email,
       password,
