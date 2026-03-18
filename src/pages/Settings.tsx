@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Barcode as BarcodeIcon,
@@ -34,6 +34,11 @@ import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import {
+  type CameraPermissionState,
+  getCameraPermissionState,
+  requestCameraPermission,
+} from "@/lib/cameraPermissions";
 
 export default function Settings() {
   const { t, language, setLanguage } = useLanguage();
@@ -64,6 +69,8 @@ export default function Settings() {
   const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
   const [printerConnected, setPrinterConnected] = useState(false);
   const [scannerConnected, setScannerConnected] = useState(false);
+  const [cameraPermissionState, setCameraPermissionState] = useState<CameraPermissionState>("unknown");
+  const [cameraPermissionLoading, setCameraPermissionLoading] = useState(false);
 
   useEffect(() => {
     if (!shopSettings) {
@@ -95,9 +102,153 @@ export default function Settings() {
     setAutoPrintReceipt(settings.auto_print_receipt ?? false);
   }, [shopSettings]);
 
+  const refreshCameraPermissionState = useCallback(async () => {
+    const result = await getCameraPermissionState();
+    setCameraPermissionState(result.state);
+  }, []);
+
+  useEffect(() => {
+    void refreshCameraPermissionState();
+
+    const handleWindowFocus = () => {
+      void refreshCameraPermissionState();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshCameraPermissionState();
+      }
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshCameraPermissionState]);
+
   if (shopSettings === undefined || isLoading) {
     return <PageLoader message="Loading settings..." messageSw="Inapakia mipangilio..." language={language} />;
   }
+
+  const handleRequestCameraPermission = async () => {
+    setCameraPermissionLoading(true);
+
+    try {
+      const result = await requestCameraPermission();
+      setCameraPermissionState(result.state);
+
+      if (result.state === "granted") {
+        toast.success(language === "sw" ? "Ruhusa ya kamera imewashwa" : "Camera access enabled");
+        return;
+      }
+
+      if (result.state === "denied") {
+        toast.error(
+          language === "sw"
+            ? "Kamera imezuiwa. Fungua settings za simu au browser na uruhusu kamera."
+            : "Camera access is blocked. Open your phone or browser settings and allow camera access.",
+        );
+        return;
+      }
+
+      if (result.state === "insecure") {
+        toast.error(
+          language === "sw"
+            ? "Kamera inahitaji kufungua app kwenye HTTPS."
+            : "Camera access requires the app to be opened on HTTPS.",
+        );
+        return;
+      }
+
+      if (result.state === "unsupported") {
+        toast.error(
+          language === "sw"
+            ? "Kifaa au browser hii haiungi mkono kamera ya web app."
+            : "This device or browser does not support camera access for the web app.",
+        );
+        return;
+      }
+
+      if (result.state === "unavailable") {
+        toast.error(
+          language === "sw"
+            ? "Kamera haipatikani sasa hivi. Funga app nyingine zinazotumia kamera kisha ujaribu tena."
+            : "The camera is not available right now. Close other apps using the camera and try again.",
+        );
+        return;
+      }
+
+      toast.info(language === "sw" ? "Tafadhali jaribu tena kufungua kamera." : "Please try opening the camera again.");
+    } finally {
+      setCameraPermissionLoading(false);
+    }
+  };
+
+  const cameraPermissionLabel =
+    cameraPermissionState === "granted"
+      ? language === "sw"
+        ? "Imeruhusiwa"
+        : "Allowed"
+      : cameraPermissionState === "denied"
+        ? language === "sw"
+          ? "Imezuiwa"
+          : "Blocked"
+        : cameraPermissionState === "prompt"
+          ? language === "sw"
+            ? "Inaomba ruhusa"
+            : "Needs permission"
+          : cameraPermissionState === "insecure"
+            ? language === "sw"
+              ? "Inahitaji HTTPS"
+              : "Needs HTTPS"
+            : cameraPermissionState === "unsupported"
+              ? language === "sw"
+                ? "Haiungwi mkono"
+                : "Not supported"
+              : cameraPermissionState === "unavailable"
+                ? language === "sw"
+                  ? "Haipatikani sasa"
+                  : "Unavailable"
+                : language === "sw"
+                  ? "Haijathibitishwa"
+                  : "Not checked yet";
+
+  const cameraPermissionHelp =
+    cameraPermissionState === "granted"
+      ? language === "sw"
+        ? "Unaweza kutumia kamera kuscan QR code na barcode kwenye ukurasa wa mauzo."
+        : "You can use the camera to scan QR codes and barcodes on the sales page."
+      : cameraPermissionState === "denied"
+        ? language === "sw"
+          ? "Kama uliikataa mara ya kwanza, fungua settings za simu au browser > Permissions > Camera, kisha weka Allow."
+          : "If you denied it before, open your phone or browser settings, then set Camera permission to Allow."
+        : cameraPermissionState === "insecure"
+          ? language === "sw"
+            ? "Fungua app kupitia HTTPS ili browser iruhusu kamera."
+            : "Open the app over HTTPS so the browser can allow camera access."
+          : cameraPermissionState === "unsupported"
+            ? language === "sw"
+              ? "Tumia browser mpya kama Chrome, Edge, au Safari ya kisasa."
+              : "Use a modern browser such as Chrome, Edge, or a recent Safari version."
+            : cameraPermissionState === "unavailable"
+              ? language === "sw"
+                ? "Kamera inaweza kuwa inatumiwa na app nyingine au kifaa hakina kamera."
+                : "The camera may be busy in another app, or this device may not have a camera."
+              : language === "sw"
+                ? "Bonyeza kitufe hapa chini ili app iombe ruhusa ya kamera."
+                : "Tap the button below so the app can request camera permission.";
+
+  const cameraPermissionActionLabel =
+    cameraPermissionState === "granted"
+      ? language === "sw"
+        ? "Kagua tena"
+        : "Check again"
+      : language === "sw"
+        ? "Ruhusu kamera"
+        : "Allow camera";
 
   const handleSaveShop = async () => {
     if (!shopId) {
@@ -461,6 +612,26 @@ export default function Settings() {
                     </Button>
                   </div>
 
+                  <div className="rounded-[1.2rem] border border-border/70 bg-background/70 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{language === "sw" ? "Ruhusa ya kamera" : "Camera access"}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{cameraPermissionLabel}</p>
+                      </div>
+                      <Camera className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="mt-3 text-sm text-muted-foreground">{cameraPermissionHelp}</p>
+                    <div className="mt-3 flex gap-2">
+                      <Button onClick={() => void handleRequestCameraPermission()} disabled={cameraPermissionLoading || cameraPermissionState === "unsupported"} className="h-10 flex-1 gap-2">
+                        {cameraPermissionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                        {cameraPermissionActionLabel}
+                      </Button>
+                      <Button variant="outline" onClick={() => void refreshCameraPermissionState()} className="h-10">
+                        {language === "sw" ? "Onyesha hali" : "Refresh"}
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-[1.2rem] border border-border/70 bg-background/70 p-4">
                       <p className="font-medium">{language === "sw" ? "Printa ya risiti" : "Receipt printer"}</p>
@@ -612,6 +783,33 @@ export default function Settings() {
                         ? "Push haijaunganishwa"
                         : "Push not connected"}
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-border/70 bg-background/70 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">{language === "sw" ? "Ruhusa ya kamera" : "Camera access"}</p>
+                  <p className="mt-2 text-xl font-semibold">{cameraPermissionLabel}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{cameraPermissionHelp}</p>
+                </div>
+                <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                  <Camera className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button
+                  variant={cameraPermissionState === "granted" ? "outline" : "default"}
+                  onClick={() => void handleRequestCameraPermission()}
+                  disabled={cameraPermissionLoading || cameraPermissionState === "unsupported"}
+                  className="h-11 gap-2"
+                >
+                  {cameraPermissionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                  {cameraPermissionActionLabel}
+                </Button>
+                <Button variant="outline" onClick={() => void refreshCameraPermissionState()} className="h-11">
+                  {language === "sw" ? "Onyesha hali" : "Refresh status"}
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -907,8 +1105,8 @@ export default function Settings() {
 
             <p className="text-sm text-muted-foreground">
               {language === "sw"
-                ? "Kuchapisha risiti hutumia printa ya mfumo. Skana nyingi za USB hufanya kazi kwa keyboard mode, hivyo utafutaji ukiwa kwenye focus unaweza kuscan moja kwa moja."
-                : "Receipt printing uses your system printer. Most USB scanners work in keyboard mode, so scanning works best when a search field is focused."}
+                ? "Kuchapisha risiti hutumia printa ya mfumo. Skana nyingi za USB hufanya kazi kwa keyboard mode, hivyo utafutaji ukiwa kwenye focus unaweza kuscan moja kwa moja. Kwa scan ya kamera kwenye simu, ruhusu Camera kwenye browser au settings za app."
+                : "Receipt printing uses your system printer. Most USB scanners work in keyboard mode, so scanning works best when a search field is focused. For camera scanning on phone, allow Camera in your browser or app settings."}
             </p>
           </CardContent>
         </Card>

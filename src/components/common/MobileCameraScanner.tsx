@@ -9,6 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  type CameraPermissionState,
+  mapCameraPermissionError,
+  requestCameraPermission,
+} from "@/lib/cameraPermissions";
 
 type MobileCameraScannerProps = {
   open: boolean;
@@ -45,6 +50,7 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
   const [scannerMode, setScannerMode] = useState<"native" | "fallback" | null>(null);
   const [status, setStatus] = useState<"idle" | "starting" | "ready" | "unsupported" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [cameraPermissionState, setCameraPermissionState] = useState<CameraPermissionState>("unknown");
 
   const copy = useMemo(
     () => ({
@@ -65,11 +71,45 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
         language === "sw"
           ? "Imeshindikana kufungua kamera. Ruhusu matumizi ya kamera kisha ujaribu tena."
           : "Could not access the camera. Allow camera access and try again.",
+      permissionDenied:
+        language === "sw"
+          ? "Kamera imezuiwa. Fungua ruhusa ya kamera kwenye browser au kwenye settings za simu, kisha rudi ujaribu tena."
+          : "Camera access is blocked. Allow camera access in your browser or phone app settings, then try again.",
+      insecure:
+        language === "sw"
+          ? "Kamera inahitaji app ifunguliwe kwenye muunganisho salama wa HTTPS."
+          : "Camera access requires the app to be opened on a secure HTTPS connection.",
+      unavailable:
+        language === "sw"
+          ? "Hakuna kamera inayopatikana, au kamera inatumiwa na app nyingine."
+          : "No camera is available, or the camera is busy in another app.",
       close: language === "sw" ? "Funga" : "Close",
       opening: language === "sw" ? "Inafungua kamera..." : "Opening camera...",
       hint: language === "sw" ? "Lenga barcode au QR code ndani ya fremu." : "Keep the barcode or QR code inside the frame.",
+      allow: language === "sw" ? "Ruhusu kamera" : "Allow camera",
+      retry: language === "sw" ? "Jaribu tena" : "Try again",
+      settingsHelp:
+        language === "sw"
+          ? "Ikiwa imekataliwa tayari, fungua settings za simu > app/browser > Permissions > Camera, halafu weka Allow."
+          : "If access was denied before, open your phone settings or browser site settings and set Camera to Allow.",
     }),
     [language],
+  );
+
+  const getCameraErrorMessage = useCallback(
+    (permissionState: CameraPermissionState, fallbackMessage?: string) => {
+      switch (permissionState) {
+        case "denied":
+          return copy.permissionDenied;
+        case "insecure":
+          return copy.insecure;
+        case "unavailable":
+          return copy.unavailable;
+        default:
+          return fallbackMessage || copy.permission;
+      }
+    },
+    [copy.insecure, copy.permission, copy.permissionDenied, copy.unavailable],
   );
 
   const stopScanner = useCallback(async () => {
@@ -184,13 +224,29 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
   const startScanner = useCallback(async () => {
     setErrorMessage("");
     setStatus("starting");
+    setCameraPermissionState("unknown");
 
     if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraPermissionState("unsupported");
       setStatus("unsupported");
       return;
     }
 
     try {
+      const permissionResult = await requestCameraPermission();
+      setCameraPermissionState(permissionResult.state);
+
+      if (permissionResult.state === "denied" || permissionResult.state === "insecure" || permissionResult.state === "unavailable") {
+        setStatus("error");
+        setErrorMessage(getCameraErrorMessage(permissionResult.state));
+        return;
+      }
+
+      if (permissionResult.state === "unsupported") {
+        setStatus("unsupported");
+        return;
+      }
+
       if (!window.BarcodeDetector) {
         await startFallbackScanner();
         setStatus("ready");
@@ -230,24 +286,29 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
         void detectLoop();
       });
     } catch (error) {
+      const mappedError = mapCameraPermissionError(error);
+      setCameraPermissionState(mappedError.state);
+
       try {
         await stopScanner();
 
-        if (navigator.mediaDevices?.getUserMedia) {
+        if (navigator.mediaDevices?.getUserMedia && mappedError.state !== "denied" && mappedError.state !== "insecure") {
           await startFallbackScanner();
           setStatus("ready");
           return;
         }
       } catch (fallbackError) {
+        const mappedFallbackError = mapCameraPermissionError(fallbackError);
+        setCameraPermissionState(mappedFallbackError.state);
         setStatus("error");
-        setErrorMessage((fallbackError as Error)?.message || copy.permission);
+        setErrorMessage(getCameraErrorMessage(mappedFallbackError.state, (fallbackError as Error)?.message));
         return;
       }
 
       setStatus("error");
-      setErrorMessage((error as Error)?.message || copy.permission);
+      setErrorMessage(getCameraErrorMessage(mappedError.state, (error as Error)?.message));
     }
-  }, [copy.permission, detectLoop, startFallbackScanner, stopScanner]);
+  }, [detectLoop, getCameraErrorMessage, startFallbackScanner, stopScanner]);
 
   useEffect(() => {
     if (!open) {
@@ -323,7 +384,10 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
           {status === "error" ? (
             <div className="mt-4 flex items-start gap-2 rounded-[1rem] border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
               <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{errorMessage || copy.permission}</span>
+              <div className="space-y-1">
+                <p>{errorMessage || copy.permission}</p>
+                {cameraPermissionState === "denied" ? <p className="text-xs text-destructive/90">{copy.settingsHelp}</p> : null}
+              </div>
             </div>
           ) : null}
 
@@ -334,7 +398,7 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
             {status !== "ready" && status !== "starting" ? (
               <Button className="h-11 flex-1 gap-2" onClick={() => void startScanner()}>
                 <ScanLine className="h-4 w-4" />
-                {language === "sw" ? "Jaribu tena" : "Try again"}
+                {cameraPermissionState === "denied" || cameraPermissionState === "prompt" || cameraPermissionState === "unknown" ? copy.allow : copy.retry}
               </Button>
             ) : null}
           </div>
