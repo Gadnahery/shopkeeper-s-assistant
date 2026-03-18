@@ -391,16 +391,16 @@ export default function Sales() {
 
       <section
         className={cn(
-          "gap-4 overflow-x-hidden",
+          "min-w-0 gap-4 overflow-x-hidden",
           isMobile ? "space-y-4" : "grid xl:grid-cols-[minmax(0,1fr)_minmax(340px,390px)] 2xl:grid-cols-[minmax(0,1.08fr)_420px]",
         )}
       >
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className={cn(isMobile && mobileStep !== "products" && "hidden")}>
-          <Card className="section-shell overflow-hidden">
-            <CardContent className="p-5 md:p-6">
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.78fr)]">
-                <div className="space-y-4">
+          <Card className="section-shell min-w-0">
+            <CardContent className="min-w-0 p-5 md:p-6">
+              <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.78fr)]">
+                <div className="min-w-0 space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
                       <ScanLine className="h-5 w-5" />
@@ -418,7 +418,7 @@ export default function Sales() {
                   </div>
 
                   <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.8),hsl(var(--background)/0.58))] p-3 shadow-inner">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
                       <Input
                         ref={searchInputRef}
@@ -478,8 +478,8 @@ export default function Sales() {
                   <div
                     className={cn(
                       isMobile
-                        ? "flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                        : "grid max-h-[calc(100vh-25rem)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3",
+                        ? "-mx-5 flex min-h-[13rem] w-[calc(100%+2.5rem)] snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-hidden px-5 pb-3 pt-1 touch-pan-x overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        : "grid min-w-0 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 2xl:grid-cols-3 xl:max-h-[min(60vh,44rem)]",
                     )}
                   >
                     {featuredProducts.length === 0 ? (
@@ -498,7 +498,7 @@ export default function Sales() {
                             disabled={outOfStock}
                             className={cn(
                               "group flex min-h-[11.75rem] min-w-0 flex-col rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.56))] p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-55",
-                              isMobile && "w-[min(82vw,20rem)] max-w-[20rem] shrink-0 snap-center",
+                              isMobile && "w-[min(84vw,20rem)] max-w-[20rem] shrink-0 snap-start",
                             )}
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -530,7 +530,7 @@ export default function Sales() {
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3">
                   <div className={cn("rounded-[1.45rem] border border-primary/15 bg-[linear-gradient(145deg,hsl(var(--primary)/0.14),transparent_55%)] p-4", isMobile && "hidden")}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
