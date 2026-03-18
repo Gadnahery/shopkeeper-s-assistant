@@ -16,8 +16,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getAppUrl } from "@/lib/siteUrl";
 import { checkPasswordStrength } from "@/lib/validation";
+import { requestPasswordReset } from "@/lib/passwordRecovery";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { isGoogleAuthReady } from "@/lib/authProviders";
 
 const features = [
   { icon: Store, label: "POS & Sales", labelSw: "Mauzo na POS" },
@@ -28,11 +30,12 @@ const features = [
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle } = useAuth();
   const { language } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
@@ -131,28 +134,28 @@ export default function Auth() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail.trim()) {
-      toast.error(language === "sw" ? "Ingiza barua pepe" : "Enter your email");
-      return;
-    }
     setResetLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: `${getAppUrl()}/reset-password`,
-      });
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(
-          language === "sw"
-            ? "Angalia barua pepe yako kwa kiungo cha kubadilisha nenosiri."
-            : "Check your email for a link to reset your password."
-        );
-        setForgotOpen(false);
-        setResetEmail("");
-      }
+      const message = await requestPasswordReset(resetEmail, language);
+      toast.success(message);
+      setForgotOpen(false);
+      setResetEmail("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : (language === "sw" ? "Imeshindikana kutuma barua pepe." : "Could not send the reset email."));
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await signInWithGoogle(isLogin ? "login" : "signup");
+      if (error) {
+        toast.error(error.message);
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -264,6 +267,35 @@ export default function Auth() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+                  <GoogleAuthButton
+                    loading={googleLoading}
+                    onClick={handleGoogleAuth}
+                    disabled={!isGoogleAuthReady}
+                    label={
+                      isLogin
+                        ? language === "sw" ? "Endelea na Google" : "Continue with Google"
+                        : language === "sw" ? "Jisajili kwa Google" : "Continue with Google"
+                    }
+                  />
+                  {!isGoogleAuthReady ? (
+                    <p className="text-xs text-muted-foreground">
+                      {language === "sw"
+                        ? "Google itaonekana hapa baada ya kuunganishwa kwenye Supabase."
+                        : "Google sign-in will appear here after it is connected in Supabase."}
+                    </p>
+                  ) : !isLogin && (
+                    <p className="text-xs text-muted-foreground">
+                      {language === "sw"
+                        ? "Ukichagua Google, tutakuomba kwanza jina lako na jina la duka kabla ya kukamilisha usajili."
+                        : "If you choose Google, we will ask for your name and shop name before finishing setup."}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    <span className="h-px flex-1 bg-border/70" />
+                    <span>{language === "sw" ? "au kwa barua pepe" : "or with email"}</span>
+                    <span className="h-px flex-1 bg-border/70" />
+                  </div>
+
                   {!isLogin && (
                     <>
                       <div className="space-y-2">
@@ -335,6 +367,11 @@ export default function Auth() {
             <Button type="submit" className="h-12 w-full rounded-2xl" disabled={resetLoading}>
               {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : language === "sw" ? "Tuma Kiungo" : "Send reset link"}
             </Button>
+            <p className="text-xs text-muted-foreground">
+              {language === "sw"
+                ? "Kwa usalama, unaweza kuomba kiungo kingine baada ya takribani dakika moja."
+                : "For security, you can request another reset link after about one minute."}
+            </p>
           </form>
         </DialogContent>
       </Dialog>

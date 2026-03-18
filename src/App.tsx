@@ -29,6 +29,7 @@ const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const GoogleOnboardingPage = lazy(() => import("./pages/GoogleOnboardingPage"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Sales = lazy(() => import("./pages/Sales"));
 const Inventory = lazy(() => import("./pages/Inventory"));
@@ -126,6 +127,7 @@ const App = () => (
                           <Route path="/auth" element={<Auth />} />
                           <Route path="/forgot-password" element={<ForgotPassword />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
+                          <Route path="/auth/oauth-setup" element={<GoogleOnboardingPage />} />
 
                           <Route element={<ProtectedRoute allowBillingLocked><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
                             <Route path="/billing" element={<ProtectedRoute allowBillingLocked><Suspense fallback={<RouteFallback />}><Billing /></Suspense></ProtectedRoute>} />

@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "vercel:sync-env": "node scripts/sync-vercel-env.cjs",
     "supabase:link": "node scripts/supabase-link.cjs",
+    "supabase:auth-config": "node scripts/configure-supabase-auth.cjs",
     "supabase:push": "npx supabase db push",
     "supabase:status": "npx supabase db remote status"
   },

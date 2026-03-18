@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
-import { getAppUrl } from "@/lib/siteUrl";
+import { requestPasswordReset } from "@/lib/passwordRecovery";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -15,17 +14,15 @@ export default function ForgotPassword() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${getAppUrl()}/reset-password`,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const message = await requestPasswordReset(email, "en");
+      toast.success(message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send reset email.");
+    } finally {
+      setLoading(false);
     }
-    toast.success("Password reset link sent. Check your email.");
   };
 
   return (
@@ -59,6 +56,9 @@ export default function ForgotPassword() {
             <Button type="submit" className="h-12 w-full rounded-2xl" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send reset link"}
             </Button>
+            <p className="text-xs text-muted-foreground">
+              For security, you can request another reset link after about one minute.
+            </p>
             <p className="text-center text-sm text-muted-foreground">
               <Link className="inline-flex items-center gap-2 text-primary hover:underline" to="/login">
                 <ArrowLeft className="h-4 w-4" />

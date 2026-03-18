@@ -23,12 +23,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { getAppUrl } from "@/lib/siteUrl";
 import { useShopUsers } from "@/hooks/useShopUsers";
 import { logAudit } from "@/lib/audit";
 import { checkPasswordStrength } from "@/lib/validation";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
+import { requestPasswordReset } from "@/lib/passwordRecovery";
 
 type ShopUser = {
   id: string;
@@ -262,10 +262,7 @@ export default function UserManagement() {
 
     setResettingPassword(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${getAppUrl()}/reset-password`,
-      });
-      if (error) throw error;
+      const message = await requestPasswordReset(email.trim(), language);
 
       await logAudit({
         action: "user_password_reset_requested",
@@ -273,7 +270,7 @@ export default function UserManagement() {
         metadata: { email: email.trim() },
       });
 
-      toast.success(language === "sw" ? "Barua pepe ya kubadilisha neno la siri imetumwa" : "Password reset email sent");
+      toast.success(message);
     } catch (e: unknown) {
       toast.error(getErrorMessage(e));
     } finally {

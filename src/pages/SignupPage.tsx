@@ -9,13 +9,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { checkPasswordStrength } from "@/lib/validation";
 import { toast } from "sonner";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { isGoogleAuthReady } from "@/lib/authProviders";
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const { user, signUp } = useAuth();
+  const { user, signUp, signInWithGoogle } = useAuth();
   const { language } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({
     email: "",
@@ -71,6 +74,18 @@ export default function SignupPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await signInWithGoogle("signup");
+      if (error) {
+        toast.error(error.message);
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -159,6 +174,28 @@ export default function SignupPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+                  <GoogleAuthButton
+                    loading={googleLoading}
+                    onClick={handleGoogleSignup}
+                    disabled={!isGoogleAuthReady}
+                    label={language === "sw" ? "Jisajili kwa Google" : "Continue with Google"}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {!isGoogleAuthReady
+                      ? language === "sw"
+                        ? "Google itaonekana hapa baada ya kuunganishwa kwenye Supabase."
+                        : "Google sign-in will appear here after it is connected in Supabase."
+                      : language === "sw"
+                        ? "Ukichagua Google, tutaomba pia jina lako na jina la duka kabla ya kukupeleka ndani."
+                        : "If you choose Google, we will also ask for your name and shop name before taking you inside."}
+                  </p>
+
+                  <div className="flex items-center gap-3 pt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    <span className="h-px flex-1 bg-border/70" />
+                    <span>{language === "sw" ? "au kwa barua pepe" : "or with email"}</span>
+                    <span className="h-px flex-1 bg-border/70" />
+                  </div>
+
                   <div className="space-y-2">
                     <Label>{language === "sw" ? "Jina Kamili" : "Full Name"}</Label>
                     <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="h-12 rounded-2xl text-foreground" required />
