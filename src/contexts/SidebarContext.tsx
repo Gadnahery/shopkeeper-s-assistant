@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { DESKTOP_BREAKPOINT } from "@/hooks/useAdaptiveLayout";
 
 interface SidebarContextType {
   isCollapsed: boolean;
@@ -9,7 +10,10 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth < DESKTOP_BREAKPOINT;
+  });
 
   const toggleSidebar = () => setIsCollapsed((prev) => !prev);
   const setCollapsed = (collapsed: boolean) => setIsCollapsed(collapsed);

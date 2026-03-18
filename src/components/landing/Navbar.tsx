@@ -70,7 +70,7 @@ export function Navbar() {
             title={language === "sw" ? "Switch to English" : "Badilisha kwa Kiswahili"}
           >
             <Globe className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-            <span>{language === "sw" ? "EN" : "SW"}</span>
+            <span>{language === "sw" ? "English" : "Kiswahili"}</span>
           </button>
           <Button variant="ghost" asChild>
             <Link to="/login">{t("Login", "Ingia")}</Link>
@@ -129,7 +129,7 @@ export function Navbar() {
                   className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all flex-1"
                 >
                   <Globe className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-                  <span>{language === "sw" ? "EN" : "SW"}</span>
+                  <span>{language === "sw" ? "English" : "Kiswahili"}</span>
                 </button>
               </div>
               <div className="mt-2 flex flex-col gap-2 px-4">

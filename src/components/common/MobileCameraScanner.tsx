@@ -1,0 +1,345 @@
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Camera, Loader2, ScanLine, XCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+type MobileCameraScannerProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDetected: (value: string) => void;
+};
+
+type BarcodeDetectorResult = { rawValue: string };
+type BarcodeDetectorClass = {
+  new (options?: { formats?: string[] }): {
+    detect: (source: ImageBitmapSource) => Promise<BarcodeDetectorResult[]>;
+  };
+  getSupportedFormats?: () => Promise<string[]>;
+};
+
+declare global {
+  interface Window {
+    BarcodeDetector?: BarcodeDetectorClass;
+  }
+}
+
+type Html5QrcodeModule = typeof import("html5-qrcode");
+type Html5QrcodeInstance = import("html5-qrcode").Html5Qrcode;
+
+export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCameraScannerProps) {
+  const { language } = useLanguage();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const detectorRef = useRef<InstanceType<BarcodeDetectorClass> | null>(null);
+  const fallbackScannerRef = useRef<Html5QrcodeInstance | null>(null);
+  const scannerRegionId = useId().replace(/:/g, "-");
+
+  const [scannerMode, setScannerMode] = useState<"native" | "fallback" | null>(null);
+  const [status, setStatus] = useState<"idle" | "starting" | "ready" | "unsupported" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const copy = useMemo(
+    () => ({
+      title: language === "sw" ? "Skani kwa kamera" : "Scan with camera",
+      description:
+        language === "sw"
+          ? "Elekeza kamera kwenye barcode au QR code. Ukisomwa, bidhaa itaongezwa moja kwa moja."
+          : "Point the camera at a barcode or QR code. Once detected, the item will be added automatically.",
+      unsupported:
+        language === "sw"
+          ? "Kifaa au kivinjari hiki hakiungi mkono skani ya kamera."
+          : "This device or browser does not support camera scanning.",
+      fallback:
+        language === "sw"
+          ? "Inatumia njia ya ziada ya skani kwa simu za zamani."
+          : "Using a broader scanner mode for older mobile browsers.",
+      permission:
+        language === "sw"
+          ? "Imeshindikana kufungua kamera. Ruhusu matumizi ya kamera kisha ujaribu tena."
+          : "Could not access the camera. Allow camera access and try again.",
+      close: language === "sw" ? "Funga" : "Close",
+      opening: language === "sw" ? "Inafungua kamera..." : "Opening camera...",
+      hint: language === "sw" ? "Lenga barcode au QR code ndani ya fremu." : "Keep the barcode or QR code inside the frame.",
+    }),
+    [language],
+  );
+
+  const stopScanner = useCallback(async () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    detectorRef.current = null;
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    if (fallbackScannerRef.current) {
+      try {
+        if (fallbackScannerRef.current.isScanning) {
+          await fallbackScannerRef.current.stop();
+        }
+      } catch {
+        // Ignore stop failures during teardown and clear the region.
+      }
+
+      try {
+        fallbackScannerRef.current.clear();
+      } catch {
+        // Ignore DOM cleanup errors if the dialog already unmounted.
+      }
+
+      fallbackScannerRef.current = null;
+    }
+
+    setScannerMode(null);
+  }, []);
+
+  const detectLoop = useCallback(async () => {
+    const video = videoRef.current;
+    const detector = detectorRef.current;
+
+    if (!video || !detector || video.readyState < 2) {
+      rafRef.current = requestAnimationFrame(() => {
+        void detectLoop();
+      });
+      return;
+    }
+
+    try {
+      const results = await detector.detect(video);
+      const code = results.find((result) => result.rawValue)?.rawValue;
+
+      if (code) {
+        onDetected(code);
+        onOpenChange(false);
+        return;
+      }
+    } catch {
+      // Ignore transient detect errors and keep scanning.
+    }
+
+    rafRef.current = requestAnimationFrame(() => {
+      void detectLoop();
+    });
+  }, [onDetected, onOpenChange]);
+
+  const startFallbackScanner = useCallback(async () => {
+    const module = (await import("html5-qrcode")) as Html5QrcodeModule;
+    const { Html5Qrcode, Html5QrcodeSupportedFormats } = module;
+
+    const scanner = new Html5Qrcode(
+      scannerRegionId,
+      {
+        verbose: false,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+        ],
+        useBarCodeDetectorIfSupported: false,
+      },
+    );
+
+    fallbackScannerRef.current = scanner;
+    setScannerMode("fallback");
+
+    await scanner.start(
+      { facingMode: { ideal: "environment" } },
+      {
+        fps: 10,
+        qrbox: { width: 280, height: 280 },
+        aspectRatio: 1,
+        disableFlip: false,
+      },
+      (decodedText) => {
+        onDetected(decodedText);
+        onOpenChange(false);
+      },
+      () => {
+        // Ignore scan misses while the camera keeps scanning.
+      },
+    );
+  }, [onDetected, onOpenChange, scannerRegionId]);
+
+  const startScanner = useCallback(async () => {
+    setErrorMessage("");
+    setStatus("starting");
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus("unsupported");
+      return;
+    }
+
+    try {
+      if (!window.BarcodeDetector) {
+        await startFallbackScanner();
+        setStatus("ready");
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+      });
+
+      streamRef.current = stream;
+
+      const formats = window.BarcodeDetector.getSupportedFormats
+        ? await window.BarcodeDetector.getSupportedFormats()
+        : [];
+
+      const preferredFormats = ["qr_code", "ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e"];
+      const supportedFormats = formats.length
+        ? preferredFormats.filter((format) => formats.includes(format))
+        : preferredFormats;
+
+      detectorRef.current = new window.BarcodeDetector({
+        formats: supportedFormats.length ? supportedFormats : undefined,
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      setScannerMode("native");
+      setStatus("ready");
+      rafRef.current = requestAnimationFrame(() => {
+        void detectLoop();
+      });
+    } catch (error) {
+      try {
+        await stopScanner();
+
+        if (navigator.mediaDevices?.getUserMedia) {
+          await startFallbackScanner();
+          setStatus("ready");
+          return;
+        }
+      } catch (fallbackError) {
+        setStatus("error");
+        setErrorMessage((fallbackError as Error)?.message || copy.permission);
+        return;
+      }
+
+      setStatus("error");
+      setErrorMessage((error as Error)?.message || copy.permission);
+    }
+  }, [copy.permission, detectLoop, startFallbackScanner, stopScanner]);
+
+  useEffect(() => {
+    if (!open) {
+      void stopScanner();
+      return;
+    }
+
+    void startScanner();
+
+    return () => {
+      void stopScanner();
+    };
+  }, [open, startScanner, stopScanner]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md rounded-[1.5rem] border-border/70 p-0 sm:rounded-[1.75rem]">
+        <DialogHeader className="space-y-2 px-5 pb-0 pt-5 text-left">
+          <DialogTitle className="flex items-center gap-2">
+            <Camera className="h-5 w-5 text-primary" />
+            {copy.title}
+          </DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
+        </DialogHeader>
+
+        <div className="px-5 pb-5">
+          <div className="overflow-hidden rounded-[1.35rem] border border-border/70 bg-black">
+            <div className="relative aspect-[3/4] w-full">
+              <div
+                id={scannerRegionId}
+                className={`h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&>div]:h-full [&>div]:w-full ${
+                  scannerMode === "fallback" ? "block" : "hidden"
+                }`}
+              />
+              <video
+                ref={videoRef}
+                className={`h-full w-full object-cover ${scannerMode === "fallback" ? "hidden" : "block"}`}
+                muted
+                playsInline
+                autoPlay
+              />
+
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-[58%] w-[78%] rounded-[1.6rem] border-2 border-white/85 shadow-[0_0_0_9999px_rgba(0,0,0,0.26)]" />
+              </div>
+
+              <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+                <div className="rounded-full bg-black/55 px-3 py-1.5 text-xs text-white">
+                  {status === "starting"
+                    ? copy.opening
+                    : scannerMode === "fallback"
+                    ? copy.fallback
+                    : copy.hint}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {status === "starting" ? (
+            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              {copy.opening}
+            </div>
+          ) : null}
+
+          {status === "unsupported" ? (
+            <div className="mt-4 flex items-start gap-2 rounded-[1rem] border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+              <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{copy.unsupported}</span>
+            </div>
+          ) : null}
+
+          {status === "error" ? (
+            <div className="mt-4 flex items-start gap-2 rounded-[1rem] border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+              <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{errorMessage || copy.permission}</span>
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex gap-2">
+            <Button variant="outline" className="h-11 flex-1" onClick={() => onOpenChange(false)}>
+              {copy.close}
+            </Button>
+            {status !== "ready" && status !== "starting" ? (
+              <Button className="h-11 flex-1 gap-2" onClick={() => void startScanner()}>
+                <ScanLine className="h-4 w-4" />
+                {language === "sw" ? "Jaribu tena" : "Try again"}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

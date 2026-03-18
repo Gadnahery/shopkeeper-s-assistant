@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { getAppUrl } from "@/lib/siteUrl";
 import { useShopUsers } from "@/hooks/useShopUsers";
 import { logAudit } from "@/lib/audit";
+import { checkPasswordStrength } from "@/lib/validation";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
 
@@ -103,8 +104,12 @@ export default function UserManagement() {
       toast.error(language === "sw" ? "Jaza barua pepe, neno la siri na jina" : "Fill email, password and name");
       return;
     }
-    if (form.password.length < 6) {
-      toast.error(language === "sw" ? "Neno la siri lazima liwe na herufi 6 zaidi" : "Password must be at least 6 characters");
+    if (checkPasswordStrength(form.password).suggestions.length > 0) {
+      toast.error(
+        language === "sw"
+          ? "Neno la siri liwe na herufi 8 au zaidi, herufi kubwa na ndogo, namba, na alama."
+          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol."
+      );
       return;
     }
     if (!shopId) {
@@ -366,7 +371,7 @@ export default function UserManagement() {
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Neno la Siri" : "Password"} *</Label>
-              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={language === "sw" ? "Angalau herufi 6" : "At least 6 characters"} />
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={language === "sw" ? "Herufi 8+, kubwa, ndogo, namba, alama" : "8+ chars, upper, lower, number, symbol"} minLength={8} />
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Jukumu" : "Role"}</Label>

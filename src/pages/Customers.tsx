@@ -27,10 +27,13 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
 export default function Customers() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const { isMobile } = useAdaptiveLayout();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
@@ -117,17 +120,26 @@ export default function Customers() {
                 <div className="space-y-4 pt-4">
                   <div className="space-y-2"><Label>{t("customers.name")}</Label><Input value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} /></div>
                   <div className="space-y-2"><Label>{t("customers.phoneNumber")}</Label><Input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} /></div>
-                  <div className="space-y-2"><Label>{language === "sw" ? "Barua pepe" : "Email"}</Label><Input type="email" value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} placeholder="email@example.com" /></div>
-                  <div className="space-y-2"><Label>{t("customers.type")}</Label>
-                    <Select value={newCustomer.customer_type} onValueChange={(v) => setNewCustomer({ ...newCustomer, customer_type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Retail">{t("customers.retail")}</SelectItem>
-                        <SelectItem value="Contractor">{t("customers.contractor")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2"><Label>{t("customers.creditBalance")}</Label><Input type="number" value={newCustomer.credit_balance} onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })} /></div>
+                  <Accordion type="single" collapsible className="rounded-[1rem] border border-border/70 px-4">
+                    <AccordionItem value="advanced" className="border-none">
+                      <AccordionTrigger className="py-4 text-sm font-semibold hover:no-underline">
+                        {language === "sw" ? "Maelezo ya ziada" : "Advanced details"}
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pb-4">
+                        <div className="space-y-2"><Label>{language === "sw" ? "Barua pepe" : "Email"}</Label><Input type="email" value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} placeholder="email@example.com" /></div>
+                        <div className="space-y-2"><Label>{t("customers.type")}</Label>
+                          <Select value={newCustomer.customer_type} onValueChange={(v) => setNewCustomer({ ...newCustomer, customer_type: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Retail">{t("customers.retail")}</SelectItem>
+                              <SelectItem value="Contractor">{t("customers.contractor")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2"><Label>{t("customers.creditBalance")}</Label><Input type="number" value={newCustomer.credit_balance} onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })} /></div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                   <div className="flex gap-2 justify-end">
                     <Button type="button" variant="outline" onClick={() => { clearAddCustomerDraft(); setIsAddOpen(false); }}>{t("common.cancel")}</Button>
                     <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" onClick={handleAddCustomer} disabled={!newCustomer.name || createCustomer.isPending}>
@@ -141,7 +153,7 @@ export default function Customers() {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className={`grid gap-4 ${isMobile ? "grid-cols-3" : "md:grid-cols-3"}`}>
         <Card className="section-shell">
           <CardContent className="p-5">
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Wateja wote" : "Total customers"}</p>
@@ -337,21 +349,37 @@ export default function Customers() {
                           {customer.customer_type === "Contractor" ? t("customers.contractor") : t("customers.retail")}
                         </Badge>
                       </div>
-                      {(customer as { email?: string }).email && <p className="text-sm text-muted-foreground">{(customer as { email?: string }).email}</p>}
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{t("customers.creditBalance")}</span>
-                        <span className={customer.credit_balance > 0 ? "font-semibold text-destructive" : "font-semibold"}>{formatNumber(customer.credit_balance)}</span>
+                      <div className="rounded-[1rem] border border-border/60 bg-background/75 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{t("customers.creditBalance")}</p>
+                        <p className={`mt-2 text-2xl font-bold ${customer.credit_balance > 0 ? "text-destructive" : "text-foreground"}`}>{formatNumber(customer.credit_balance)}</p>
                       </div>
-                      <div className="flex flex-wrap justify-end gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {customer.credit_balance > 0 && (
-                          <Button variant="outline" size="sm" className="gap-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setPayDialog(customer)}>
+                          <Button variant="outline" size="sm" className="flex-1 gap-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setPayDialog(customer)}>
                             <CreditCard className="h-3 w-3" />{t("customers.pay")}
                           </Button>
                         )}
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/customers/${customer.id}`)}><Eye className="mr-1 h-4 w-4" />{language === "sw" ? "Tazama" : "View"}</Button>
-                        <Button variant="outline" size="sm" onClick={() => setDetailCustomer(customer)}><History className="mr-1 h-4 w-4" />{language === "sw" ? "Historia" : "History"}</Button>
-                        <Button variant="outline" size="sm" onClick={() => setEditingCustomer({ ...customer })}><Pencil className="mr-1 h-4 w-4" />{language === "sw" ? "Hariri" : "Edit"}</Button>
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate(`/customers/${customer.id}`)}><Eye className="mr-1 h-4 w-4" />{language === "sw" ? "Tazama" : "View"}</Button>
                       </div>
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="details" className="border-none">
+                          <AccordionTrigger className="py-0 text-sm font-medium text-primary hover:no-underline">
+                            {language === "sw" ? "Historia na zaidi" : "History and more"}
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-3 pb-0 pt-3">
+                            {(customer as { email?: string }).email ? (
+                              <div className="rounded-[1rem] border border-border/60 bg-background/75 p-3">
+                                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Barua pepe" : "Email"}</p>
+                                <p className="mt-1 text-sm font-medium break-all">{(customer as { email?: string }).email}</p>
+                              </div>
+                            ) : null}
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="outline" size="sm" className="flex-1" onClick={() => setDetailCustomer(customer)}><History className="mr-1 h-4 w-4" />{language === "sw" ? "Historia" : "History"}</Button>
+                              <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditingCustomer({ ...customer })}><Pencil className="mr-1 h-4 w-4" />{language === "sw" ? "Hariri" : "Edit"}</Button>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
                     </CardContent>
                   </Card>
                 ))

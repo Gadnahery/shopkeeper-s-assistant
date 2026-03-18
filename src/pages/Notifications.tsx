@@ -16,8 +16,8 @@ export default function Notifications() {
   return (
     <div className="min-w-0 space-y-6">
       <PageHeader
-        title={language === "sw" ? "Arifa" : "Notifications"}
-        subtitle={language === "sw" ? "Fuatilia arifa mpya, zilizosomeka, na taarifa muhimu za duka lako." : "Review unread updates, activity alerts, and important store notifications in one clean feed."}
+        title="Notifications"
+        subtitle={language === "sw" ? "Fuatilia notifications mpya, zilizosomeka, na taarifa muhimu za duka lako." : "Review unread updates, activity alerts, and important store notifications in one clean feed."}
         actions={
           <Button variant="outline" onClick={() => markAllRead.mutate()} disabled={unreadCount === 0}>
             {language === "sw" ? "Soma zote" : "Mark all read"}
@@ -25,10 +25,10 @@ export default function Notifications() {
         }
       />
       <Card className="section-shell">
-        <CardHeader><CardTitle>{language === "sw" ? "Arifa zote" : "All notifications"}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{language === "sw" ? "Notifications zote" : "All notifications"}</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           {!data?.length ? (
-            <p className="text-sm text-muted-foreground">{language === "sw" ? "Hakuna arifa bado." : "No notifications yet."}</p>
+            <p className="text-sm text-muted-foreground">{language === "sw" ? "Hakuna notifications bado." : "No notifications yet."}</p>
           ) : (
             data.map((n: any) => (
               <button

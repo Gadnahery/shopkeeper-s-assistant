@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { checkPasswordStrength } from "@/lib/validation";
 import { toast } from "sonner";
 
 export default function SignupPage() {
@@ -37,6 +38,15 @@ export default function SignupPage() {
     }
     if (!form.fullName || !form.shopName) {
       toast.error(language === "sw" ? "Tafadhali jaza sehemu zote" : "Please fill in all fields");
+      return;
+    }
+    const passwordCheck = checkPasswordStrength(form.password);
+    if (passwordCheck.suggestions.length > 0) {
+      toast.error(
+        language === "sw"
+          ? "Nenosiri liwe na angalau herufi 8, litumie herufi kubwa na ndogo, namba, na alama."
+          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol."
+      );
       return;
     }
 
@@ -171,7 +181,7 @@ export default function SignupPage() {
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
                         className="h-12 rounded-2xl pr-11 text-foreground"
                         required
-                        minLength={6}
+                        minLength={8}
                       />
                       <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -187,9 +197,14 @@ export default function SignupPage() {
                       onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                       className="h-12 rounded-2xl text-foreground"
                       required
-                      minLength={6}
+                      minLength={8}
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {language === "sw"
+                      ? "Tumia herufi 8 au zaidi zenye herufi kubwa, ndogo, namba, na alama."
+                      : "Use 8 or more characters with uppercase, lowercase, a number, and a symbol."}
+                  </p>
                   <Button type="submit" className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 text-base font-semibold" disabled={loading}>
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>
                       {language === "sw" ? "Fungua Akaunti" : "Create Account"}

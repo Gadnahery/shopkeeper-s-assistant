@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getAppUrl } from "@/lib/siteUrl";
+import { checkPasswordStrength } from "@/lib/validation";
 
 const features = [
   { icon: Store, label: "POS & Sales", labelSw: "Mauzo na POS" },
@@ -72,6 +73,14 @@ export default function Auth() {
           toast.error(language === "sw" ? "Tafadhali jaza sehemu zote" : "Please fill in all fields");
           return;
         }
+        if (checkPasswordStrength(form.password).suggestions.length > 0) {
+          toast.error(
+            language === "sw"
+              ? "Nenosiri liwe na herufi 8 au zaidi, herufi kubwa na ndogo, namba, na alama."
+              : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol."
+          );
+          return;
+        }
         const { error } = await signUp(form.email, form.password, form.fullName, form.shopName);
         if (error) {
           toast.error(
@@ -97,8 +106,12 @@ export default function Auth() {
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 6) {
-      toast.error(language === "sw" ? "Nenosiri lazima liwe angalau herufi 6" : "Password must be at least 6 characters");
+    if (!newPassword || checkPasswordStrength(newPassword).suggestions.length > 0) {
+      toast.error(
+        language === "sw"
+          ? "Nenosiri liwe na herufi 8 au zaidi, herufi kubwa na ndogo, namba, na alama."
+          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol."
+      );
       return;
     }
     setUpdatePasswordLoading(true);
@@ -175,7 +188,7 @@ export default function Auth() {
             </div>
           </div>
 
-          <p className="text-sm text-white/55">© 2026 WiseCash</p>
+          <p className="text-sm text-white/55">(c) 2026 WiseCash</p>
         </section>
 
         <motion.section
@@ -223,6 +236,7 @@ export default function Auth() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="h-12 rounded-2xl pr-11"
                       required
+                      minLength={8}
                     />
                     <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -232,6 +246,11 @@ export default function Auth() {
                 <Button type="submit" className="h-12 w-full rounded-2xl" disabled={updatePasswordLoading}>
                   {updatePasswordLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : language === "sw" ? "Weka Nenosiri Jipya" : "Set new password"}
                 </Button>
+                <p className="text-xs text-muted-foreground">
+                  {language === "sw"
+                    ? "Tumia herufi 8 au zaidi zenye herufi kubwa, ndogo, namba, na alama."
+                    : "Use 8 or more characters with uppercase, lowercase, a number, and a symbol."}
+                </p>
               </form>
             ) : (
               <>
@@ -266,7 +285,7 @@ export default function Auth() {
                   <div className="space-y-2">
                     <Label>{language === "sw" ? "Nenosiri" : "Password"}</Label>
                     <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} placeholder="********" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="h-12 rounded-2xl pr-11" required minLength={6} />
+                      <Input type={showPassword ? "text" : "password"} placeholder="********" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="h-12 rounded-2xl pr-11" required minLength={isLogin ? undefined : 8} />
                       <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -275,6 +294,13 @@ export default function Auth() {
                       <button type="button" onClick={() => { setResetEmail(form.email); setForgotOpen(true); }} className="text-sm text-primary hover:text-primary/80">
                         {language === "sw" ? "Umesahau nenosiri?" : "Forgot password?"}
                       </button>
+                    )}
+                    {!isLogin && (
+                      <p className="text-xs text-muted-foreground">
+                        {language === "sw"
+                          ? "Tumia herufi 8 au zaidi zenye herufi kubwa, ndogo, namba, na alama."
+                          : "Use 8 or more characters with uppercase, lowercase, a number, and a symbol."}
+                      </p>
                     )}
                   </div>
 

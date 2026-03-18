@@ -21,7 +21,7 @@ function readInitialPreference(): ThemePreference {
   if (typeof window === "undefined") return "light";
   const saved = localStorage.getItem("app-theme");
   if (saved === "dark" || saved === "light" || saved === "system") return saved;
-  return "system";
+  return "light";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

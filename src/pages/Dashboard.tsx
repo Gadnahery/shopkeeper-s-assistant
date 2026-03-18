@@ -46,6 +46,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
 import { buildCategoryChartData, buildSalesTrendData } from "@/pages/dashboard/chartData";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type KpiRange = "today" | "week" | "month" | "custom";
 
@@ -80,6 +83,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { profile } = useAuth();
+  const { isMobile } = useAdaptiveLayout();
   const range = useMemo(() => getRange(kpiRange, customRange), [kpiRange, customRange]);
   const { data: rangeSales, isLoading: salesLoading } = useSalesSummaryByRange(range.start, range.end);
   const { data: detailedSales, isLoading: detailedSalesLoading } = useSalesByDateRange(range.start, range.end);
@@ -220,6 +224,49 @@ export default function Dashboard() {
     kpiRange === "custom" && customRange?.from && customRange?.to
       ? `${format(customRange.from, "dd MMM")} - ${format(customRange.to, "dd MMM yyyy")}`
       : t(range.labelKey);
+  const mobileSpotlightStats = [spotlightStats[0], spotlightStats[1], spotlightStats[3]];
+  const mobileQuickActions = [
+    {
+      label: language === "sw" ? "Uza sasa" : "Start sale",
+      caption: language === "sw" ? "Njia ya haraka ya kuuza" : "Quick way to check out",
+      icon: Sparkles,
+      onClick: () => {
+        playSound("click");
+        navigate("/sales");
+      },
+      primary: true,
+    },
+    {
+      label: t("dashboard.addProduct"),
+      caption: language === "sw" ? "Bidhaa mpya kwa stoki" : "Add a new stock item",
+      icon: Package,
+      onClick: () => {
+        playSound("click");
+        navigate("/inventory/add");
+      },
+    },
+    {
+      label: t("dashboard.recordExpense"),
+      caption: language === "sw" ? "Andika matumizi mapya" : "Capture a new cost",
+      icon: Receipt,
+      onClick: () => {
+        playSound("click");
+        navigate("/expenses");
+      },
+    },
+    {
+      label: t("dashboard.calculator"),
+      caption: language === "sw" ? "Hesabu za haraka" : "Quick calculations",
+      icon: CalculatorIcon,
+      onClick: () => setCalculatorOpen(true),
+    },
+  ];
+  const visibleAlerts = isMobile ? alerts.slice(0, 2) : alerts;
+  const visibleCategoryItems = isMobile ? categoryChartData.slice(0, 4) : categoryChartData.slice(0, 5);
+  const salesChartHeight = isMobile ? 190 : 220;
+  const pieShellClass = isMobile ? "h-32 w-32" : "h-40 w-40";
+  const pieInnerRadius = isMobile ? 38 : 48;
+  const pieOuterRadius = isMobile ? 54 : 64;
 
   return (
     <motion.div
@@ -230,28 +277,31 @@ export default function Dashboard() {
     >
       <Calculator open={calculatorOpen} onOpenChange={setCalculatorOpen} />
 
-      <motion.section variants={item} className="section-shell relative max-w-full overflow-hidden p-5 sm:p-6">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.22),transparent_34%),radial-gradient(circle_at_bottom_left,hsl(var(--accent-foreground)/0.08),transparent_28%)]" />
-        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.92fr)]">
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-3">
-                <Badge variant="outline" className="rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-primary">
-                  <Store className="mr-1.5 h-3.5 w-3.5" />
-                  {language === "sw" ? "Muhtasari wa Leo" : "Daily command center"}
-                </Badge>
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                    {shopName}
-                  </h1>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[15px]">
-                    {t("dashboard.subtitle")}
-                  </p>
-                </div>
+      {isMobile ? (
+        <motion.section variants={item} className="section-shell relative max-w-full overflow-hidden p-4">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.24),transparent_34%),radial-gradient(circle_at_bottom_left,hsl(var(--accent-foreground)/0.08),transparent_30%)]" />
+          <div className="relative space-y-4">
+            <div className="space-y-3">
+              <Badge variant="outline" className="rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-primary">
+                <Store className="mr-1.5 h-3.5 w-3.5" />
+                {language === "sw" ? "Leo kwa haraka" : "Today at a glance"}
+              </Badge>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{shopName}</h1>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("dashboard.subtitle")}</p>
               </div>
-              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                <Select value={kpiRange} onValueChange={(v: KpiRange) => setKpiRange(v)}>
-                  <SelectTrigger className="h-11 w-full rounded-2xl border-border/70 bg-background/70 sm:w-40">
+            </div>
+
+            <div className="rounded-[1.35rem] border border-primary/20 bg-primary/10 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80">
+                {language === "sw" ? "Mapato ya kipindi" : "Sales in range"}
+              </p>
+              <p className="mt-3 text-3xl font-bold text-foreground">TSH {formatNumber(rangeSales?.total || 0)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{rangeLabel}</p>
+
+              <div className="mt-4 grid gap-2">
+                <Select value={kpiRange} onValueChange={(value: KpiRange) => setKpiRange(value)}>
+                  <SelectTrigger className="h-11 rounded-2xl border-border/70 bg-background/75">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -261,46 +311,35 @@ export default function Dashboard() {
                     <SelectItem value="custom">{t("reports.custom")}</SelectItem>
                   </SelectContent>
                 </Select>
+
                 {kpiRange === "custom" ? (
                   <Popover open={customOpen} onOpenChange={setCustomOpen}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="h-11 w-full rounded-2xl border-border/70 bg-background/75 sm:w-auto">
+                      <Button variant="outline" className="h-11 justify-start rounded-2xl border-border/70 bg-background/75">
                         <LayoutGrid className="mr-2 h-4 w-4" />
                         <span className="truncate">{rangeLabel}</span>
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="range"
-                        numberOfMonths={2}
+                        numberOfMonths={1}
                         selected={customRange}
                         onSelect={(value) => {
                           setCustomRange(value);
-                          if (value?.from && value?.to) {
-                            setCustomOpen(false);
-                          }
+                          if (value?.from && value?.to) setCustomOpen(false);
                         }}
                       />
                     </PopoverContent>
                   </Popover>
                 ) : null}
-                <Button
-                  variant="outline"
-                  size="default"
-                  className="h-11 w-full rounded-2xl border-border/70 bg-background/75 sm:w-auto"
-                  onClick={() => setCalculatorOpen(true)}
-                  title="Calculator"
-                >
-                  <CalculatorIcon className="h-5 w-5 text-foreground/70" strokeWidth={1.5} />
-                  <span className="font-medium">{t("dashboard.calculator")}</span>
-                </Button>
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-              {spotlightStats.map((stat) => (
-                <div key={stat.label} className="rounded-[1.3rem] border border-border/60 bg-background/68 p-4 backdrop-blur-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {mobileSpotlightStats.map((stat) => (
+                <div key={stat.label} className="rounded-[1.2rem] border border-border/60 bg-background/70 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {stat.label}
                   </p>
                   <p className={`mt-3 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
@@ -308,31 +347,214 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            {commandTiles.map((tile) => (
-              <button
-                key={tile.label}
-                className={`rounded-[1.4rem] border p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/20 ${tile.className}`}
-                onClick={tile.action}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-[0.22em] opacity-80">{tile.label}</span>
-                  <tile.icon className="h-5 w-5" />
-                </div>
-                <p className="mt-5 text-2xl font-bold">{tile.value}</p>
-                <div className="mt-2 flex items-center text-sm font-medium opacity-85">
-                  <span>{tile.caption}</span>
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </div>
-              </button>
-            ))}
+            <div className="grid grid-cols-2 gap-2">
+              {mobileQuickActions.map((action, index) => (
+                <button
+                  key={action.label}
+                  className={cn(
+                    "rounded-[1.25rem] border p-4 text-left transition-all",
+                    index === 0
+                      ? "col-span-2 border-transparent bg-[linear-gradient(145deg,#0f766e,#0284c7)] text-white shadow-[0_28px_70px_-36px_rgba(2,132,199,0.65)]"
+                      : "border-border/70 bg-background/72 text-foreground",
+                  )}
+                  onClick={action.onClick}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold">{action.label}</span>
+                    <action.icon className="h-5 w-5" />
+                  </div>
+                  <p className={cn("mt-2 text-xs", index === 0 ? "text-white/80" : "text-muted-foreground")}>{action.caption}</p>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </motion.section>
+        </motion.section>
+      ) : (
+        <motion.section variants={item} className="section-shell relative max-w-full overflow-hidden p-5 sm:p-6">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.22),transparent_34%),radial-gradient(circle_at_bottom_left,hsl(var(--accent-foreground)/0.08),transparent_28%)]" />
+          <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.92fr)]">
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="space-y-3">
+                  <Badge variant="outline" className="rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-primary">
+                    <Store className="mr-1.5 h-3.5 w-3.5" />
+                    {language === "sw" ? "Muhtasari wa Leo" : "Daily command center"}
+                  </Badge>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                      {shopName}
+                    </h1>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[15px]">
+                      {t("dashboard.subtitle")}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                  <Select value={kpiRange} onValueChange={(v: KpiRange) => setKpiRange(v)}>
+                    <SelectTrigger className="h-11 w-full rounded-2xl border-border/70 bg-background/70 sm:w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">{t("dashboard.daily")}</SelectItem>
+                      <SelectItem value="week">{t("dashboard.weekly")}</SelectItem>
+                      <SelectItem value="month">{t("dashboard.monthly")}</SelectItem>
+                      <SelectItem value="custom">{t("reports.custom")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {kpiRange === "custom" ? (
+                    <Popover open={customOpen} onOpenChange={setCustomOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="h-11 w-full rounded-2xl border-border/70 bg-background/75 sm:w-auto">
+                          <LayoutGrid className="mr-2 h-4 w-4" />
+                          <span className="truncate">{rangeLabel}</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="range"
+                          numberOfMonths={2}
+                          selected={customRange}
+                          onSelect={(value) => {
+                            setCustomRange(value);
+                            if (value?.from && value?.to) {
+                              setCustomOpen(false);
+                            }
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  ) : null}
+                  <Button
+                    variant="outline"
+                    size="default"
+                    className="h-11 w-full rounded-2xl border-border/70 bg-background/75 sm:w-auto"
+                    onClick={() => setCalculatorOpen(true)}
+                    title="Calculator"
+                  >
+                    <CalculatorIcon className="h-5 w-5 text-foreground/70" strokeWidth={1.5} />
+                    <span className="font-medium">{t("dashboard.calculator")}</span>
+                  </Button>
+                </div>
+              </div>
 
-      <motion.div variants={container} className="responsive-grid-wide">
+              <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+                {spotlightStats.map((stat) => (
+                  <div key={stat.label} className="rounded-[1.3rem] border border-border/60 bg-background/68 p-4 backdrop-blur-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      {stat.label}
+                    </p>
+                    <p className={`mt-3 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              {commandTiles.map((tile) => (
+                <button
+                  key={tile.label}
+                  className={`rounded-[1.4rem] border p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/20 ${tile.className}`}
+                  onClick={tile.action}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold uppercase tracking-[0.22em] opacity-80">{tile.label}</span>
+                    <tile.icon className="h-5 w-5" />
+                  </div>
+                  <p className="mt-5 text-2xl font-bold">{tile.value}</p>
+                  <div className="mt-2 flex items-center text-sm font-medium opacity-85">
+                    <span>{tile.caption}</span>
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+      )}
+
+      {isMobile ? (
+        <motion.div variants={item}>
+          <Card className="section-shell overflow-hidden">
+            <CardContent className="p-0">
+              <Accordion type="multiple" className="px-4">
+                <AccordionItem value="performance" className="border-border/60">
+                  <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
+                    {language === "sw" ? "Utendaji wa biashara" : "Business performance"}
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-3 pb-4">
+                    {kpiData.map((kpi) => (
+                      <div key={kpi.title} className="rounded-[1rem] border border-border/60 bg-background/75 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{kpi.title}</p>
+                            <p className="mt-2 text-xl font-bold text-foreground">{kpi.value}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{kpi.subtitle}</p>
+                          </div>
+                          <kpi.icon className="h-5 w-5 text-primary/70" strokeWidth={1.6} />
+                        </div>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="inventory" className="border-border/60">
+                  <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
+                    {language === "sw" ? "Stoki na tahadhari" : "Stock and alerts"}
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pb-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-[1rem] border border-border/60 bg-background/75 p-4">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Bidhaa za chini" : "Low stock"}</p>
+                        <p className="mt-2 text-2xl font-bold text-orange-600 dark:text-orange-400">{lowStockCount}</p>
+                      </div>
+                      <div className="rounded-[1rem] border border-border/60 bg-background/75 p-4">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Makundi" : "Categories"}</p>
+                        <p className="mt-2 text-2xl font-bold text-foreground">{categoryChartData.length}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {visibleAlerts.length === 0 ? (
+                        <p className="rounded-[1rem] border border-border/60 bg-background/75 p-4 text-sm text-muted-foreground">
+                          {language === "sw" ? "Hakuna tahadhari mpya sasa." : "No urgent stock alerts right now."}
+                        </p>
+                      ) : (
+                        visibleAlerts.map((alert, index) => (
+                          <div key={index} className="rounded-[1rem] border border-orange-500/15 bg-orange-500/5 p-4">
+                            <p className="text-sm font-semibold text-foreground">
+                              {alert.title} <span className="text-orange-600 dark:text-orange-400">{alert.badge}</span>
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground">{alert.subtitle}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="next" className="border-none">
+                  <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
+                    {language === "sw" ? "Maelezo ya kina" : "Open deeper details"}
+                  </AccordionTrigger>
+                  <AccordionContent className="grid gap-2 pb-4">
+                    <Button variant="outline" className="justify-start rounded-2xl" onClick={() => navigate("/reports")}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      {language === "sw" ? "Fungua ripoti" : "Open reports"}
+                    </Button>
+                    <Button variant="outline" className="justify-start rounded-2xl" onClick={() => navigate("/inventory")}>
+                      <Package className="mr-2 h-4 w-4" />
+                      {language === "sw" ? "Fungua stoki" : "Open inventory"}
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : null}
+
+      {!isMobile ? <motion.div variants={container} className="responsive-grid-wide">
         {kpiData.map((kpi) => (
           <motion.div key={kpi.title} variants={item}>
             <Card
@@ -391,9 +613,9 @@ export default function Dashboard() {
             </Card>
           </motion.div>
         ))}
-      </motion.div>
+      </motion.div> : null}
 
-      <motion.div variants={item} className="grid gap-6 lg:grid-cols-5">
+      {!isMobile ? <motion.div variants={item} className="grid gap-6 lg:grid-cols-5">
         <Card className="section-shell overflow-hidden lg:col-span-3">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
@@ -402,7 +624,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {salesLoading ? (
-              <Skeleton className="h-[220px] w-full rounded-xl" />
+              <Skeleton className={cn("w-full rounded-xl", isMobile ? "h-[190px]" : "h-[220px]")} />
             ) : !hasSalesInRange ? (
               <EmptyState
                 title={language === "sw" ? "Hakuna mauzo kwenye kipindi hiki" : "No sales in this range"}
@@ -410,7 +632,7 @@ export default function Dashboard() {
                 icon={<LayoutGrid className="h-8 w-8" />}
               />
             ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={salesChartHeight}>
               <AreaChart data={chartData} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>
                 <defs>
                   <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -457,7 +679,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {salesLoading ? (
-              <Skeleton className="h-[220px] w-full rounded-xl" />
+              <Skeleton className={cn("w-full rounded-xl", isMobile ? "h-[190px]" : "h-[220px]")} />
             ) : !hasCategoryData ? (
               <EmptyState
                 title={language === "sw" ? "Hakuna data ya makundi" : "No category data yet"}
@@ -465,16 +687,16 @@ export default function Dashboard() {
                 icon={<Boxes className="h-8 w-8" />}
               />
             ) : (
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="relative h-40 w-40 flex-shrink-0 flex items-center justify-center">
+            <div className={cn("flex items-center gap-6", isMobile ? "flex-col" : "flex-col md:flex-row")}>
+              <div className={cn("relative flex flex-shrink-0 items-center justify-center", pieShellClass)}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={categoryChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={48}
-                      outerRadius={64}
+                      innerRadius={pieInnerRadius}
+                      outerRadius={pieOuterRadius}
                       paddingAngle={2}
                       dataKey="value"
                       stroke="transparent"
@@ -493,7 +715,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex-1 space-y-3 w-full min-w-0">
-                {categoryChartData.slice(0, 5).map((cat) => (
+                {visibleCategoryItems.map((cat) => (
                   <div
                     key={cat.name}
                     className="flex items-center gap-2"
@@ -515,9 +737,9 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-      </motion.div>
+      </motion.div> : null}
 
-      <motion.div variants={item}>
+      {!isMobile ? <motion.div variants={item}>
         <Card className="section-shell overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground dark:text-foreground">
@@ -526,14 +748,14 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {alerts.length === 0 ? (
+              {visibleAlerts.length === 0 ? (
                 <EmptyState
                   title={t("dashboard.alerts")}
                   description={t("dashboard.checkInventory")}
                   icon={<AlertTriangle className="h-8 w-8" />}
                 />
               ) : (
-                alerts.map((alert, index) => (
+                visibleAlerts.map((alert, index) => (
                   <div
                     key={index}
                     className="flex items-start gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted border border-orange-500/10 dark:border-orange-400/20"
@@ -552,9 +774,10 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+      </motion.div> : null}
 
-      <motion.div variants={item} className="grid gap-3 sm:grid-cols-3">
+      {!isMobile && (
+        <motion.div variants={item} className="grid gap-3 sm:grid-cols-3">
         <Button
           className="h-12 gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 font-medium"
           onClick={() => { playSound("click"); navigate("/sales"); }}
@@ -578,7 +801,8 @@ export default function Dashboard() {
           <Receipt className="h-4 w-4 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
           {t("dashboard.recordExpense")}
         </Button>
-      </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

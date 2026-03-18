@@ -128,7 +128,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-sm text-white/55">© 2026 WiseCash</p>
+          <p className="text-sm text-white/55">(c) 2026 WiseCash</p>
         </motion.section>
 
         <motion.section
@@ -179,7 +179,6 @@ export default function LoginPage() {
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="h-12 rounded-2xl pr-11 text-foreground"
                     required
-                    minLength={6}
                   />
                   <button
                     type="button"

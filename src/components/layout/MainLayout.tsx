@@ -10,6 +10,9 @@ import { SubscriptionReminderDialog } from "@/components/subscription/Subscripti
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Loader2, WifiOff } from "lucide-react";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { MobileBottomNav } from "./MobileBottomNav";
+import { getShellMeta } from "./app-navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,23 +48,36 @@ function OfflineBanner() {
 function LayoutContent() {
   const { isCollapsed } = useSidebar();
   const location = useLocation();
+  const { isMobile, isTablet, isDesktop } = useAdaptiveLayout();
+  const shellMeta = getShellMeta(location.pathname);
+  const sidebarOffset = isDesktop ? (isCollapsed ? 96 : 280) : isTablet ? 96 : 0;
+  const showMobileNav = isMobile && shellMeta.showMobileNav;
 
   return (
     <div className="min-h-screen max-w-full overflow-x-clip bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-20 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.16),transparent_30%),radial-gradient(circle_at_top_right,hsl(var(--accent-foreground)/0.08),transparent_28%),radial-gradient(circle_at_bottom_left,hsl(var(--primary)/0.08),transparent_28%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(255,214,153,0.14),transparent_26%),radial-gradient(circle_at_bottom_left,hsl(var(--primary)/0.08),transparent_30%),linear-gradient(180deg,transparent,rgba(255,255,255,0.02))]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 opacity-[0.22] [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:28px_28px]" />
       <GlobalProgressBar />
       <OfflineBanner />
       <Sidebar />
       <div
         className={cn(
-          "w-full min-w-0 max-w-full overflow-x-clip transition-[margin] duration-300",
-          isCollapsed ? "md:ml-[78px]" : "md:ml-[250px]",
-          "ml-0"
+          "min-w-0 max-w-full overflow-x-clip transition-[margin,width] duration-300",
+          showMobileNav && "pb-20",
         )}
+        style={{
+          marginLeft: sidebarOffset,
+          width: sidebarOffset > 0 ? `calc(100% - ${sidebarOffset}px)` : "100%",
+        }}
       >
         <Header />
-        <main className="safe-bottom min-h-[calc(100vh-4.5rem)] min-w-0 max-w-full overflow-x-clip px-3 pb-4 pt-3 sm:px-4 sm:pb-5 sm:pt-4 lg:px-5 xl:px-6">
+        <main
+          className={cn(
+            "safe-bottom min-h-[calc(100vh-4.5rem)] min-w-0 max-w-full overflow-x-clip px-3 pt-3 sm:px-4 sm:pt-4 lg:px-5 xl:px-6",
+            showMobileNav ? "pb-24" : "pb-4 sm:pb-5",
+          )}
+        >
           <motion.div
             key={location.pathname}
             initial={false}
@@ -73,6 +89,7 @@ function LayoutContent() {
           </motion.div>
         </main>
       </div>
+      {showMobileNav ? <MobileBottomNav /> : null}
     </div>
   );
 }

@@ -1,19 +1,25 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Languages,
+  LogOut,
+  Moon,
+  Store,
+  Sun,
+  X,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { preloadRoute } from "@/lib/routePreload";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMyPageAccess } from "@/hooks/useUserPageAccess";
 import { usePendingOrdersCount } from "@/hooks/useOrders";
-import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  LayoutDashboard, ShoppingCart, Package, Users, Truck,
-  Receipt, BarChart3, Settings, Store,
-  ChevronLeft, ChevronRight, X, UserCog, Building2, LogOut, Tags, ClipboardList,
-  CheckSquare, UserPlus, Gift,
-} from "lucide-react";
+import { useMyPageAccess } from "@/hooks/useUserPageAccess";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,73 +33,43 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { motion, AnimatePresence } from "framer-motion";
-
-const OPERATIONS = [
-  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { to: "/sales", labelKey: "nav.sales", icon: ShoppingCart },
-  { to: "/inventory", labelKey: "nav.inventory", icon: Package },
-  { to: "/categories", labelKey: "nav.categories", icon: Tags },
-  { to: "/orders", labelKey: "nav.orders", icon: ClipboardList },
-  { to: "/todo", labelKey: "nav.todo", icon: CheckSquare },
-];
-
-const MANAGEMENT = [
-  { to: "/customers", labelKey: "nav.customers", icon: Users },
-  { to: "/suppliers", labelKey: "nav.suppliers", icon: Truck },
-  { to: "/expenses", labelKey: "nav.expenses", icon: Receipt },
-  { to: "/hrm", labelKey: "nav.hrm", icon: UserCog },
-  { to: "/reports", labelKey: "nav.reports", icon: BarChart3 },
-  { to: "/loyalty", labelKey: "nav.loyalty", icon: Gift },
-];
-
-const ADMIN = [
-  { to: "/user-management", labelKey: "nav.userManagement", icon: UserPlus },
-  { to: "/assets", labelKey: "nav.assets", icon: Building2 },
-  { to: "/settings", labelKey: "nav.settings", icon: Settings },
-];
-
-const SECTION_HEADERS = {
-  operations: "Operations",
-  management: "Management",
-  admin: "Admin",
-};
-
-const SECTION_HEADERS_SW = {
-  operations: "Operesheni",
-  management: "Usimamizi",
-  admin: "Msimamizi",
-};
+import {
+  NAVIGATION_SECTIONS,
+  NAV_SECTION_LABELS,
+  type AppNavItem,
+  filterItemsByAccess,
+} from "./app-navigation";
 
 function NavSection({
   title,
   items,
   t,
   pendingOrdersCount,
-  isCollapsed,
+  isCompact,
 }: {
   title: string;
-  items: typeof OPERATIONS;
+  items: AppNavItem[];
   t: (k: string) => string;
   pendingOrdersCount: number;
-  isCollapsed: boolean;
+  isCompact: boolean;
 }) {
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/90 transition-all duration-150 ease-out [&_svg]:text-inherit",
+      "relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-all duration-150 ease-out [&_svg]:text-inherit",
       "hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
       isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.95)]",
-      isCollapsed && "justify-center px-2"
+      isCompact && "justify-center px-2",
     );
 
   return (
-    <div className="space-y-1">
-      {!isCollapsed && (
+    <div className={cn("space-y-1 rounded-[1.35rem] border border-sidebar-border/70 bg-sidebar-accent/28 p-2", isCompact && "border-0 bg-transparent p-0")}>
+      {!isCompact && (
         <span className="mb-1.5 block px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-sidebar-foreground/55">
           {title}
         </span>
       )}
+
       {items.map((item) => (
         <NavLink
           key={item.to}
@@ -101,22 +77,21 @@ function NavSection({
           className={navLinkClass}
           onMouseEnter={() => preloadRoute(item.to)}
         >
-          {({ isActive }) => {
-            return (
-            <span
-              className="flex items-center gap-3 w-full min-w-0"
-            >
+          {({ isActive }) => (
+            <span className="flex w-full min-w-0 items-center gap-3">
               {isActive && (
                 <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-sidebar-primary-foreground" />
               )}
+
               <item.icon
                 className={cn(
                   "h-[18px] w-[18px] flex-shrink-0 transition-colors duration-150",
-                  isActive && "drop-shadow-[0_0_6px_rgba(13,148,136,0.35)]"
+                  isActive && "drop-shadow-[0_0_6px_rgba(13,148,136,0.35)]",
                 )}
                 strokeWidth={isActive ? 2 : 1.5}
               />
-              {!isCollapsed && (
+
+              {!isCompact && (
                 <>
                   <span className="flex-1 truncate">{t(item.labelKey)}</span>
                   {item.to === "/orders" && pendingOrdersCount > 0 && (
@@ -127,8 +102,7 @@ function NavSection({
                 </>
               )}
             </span>
-            );
-          }}
+          )}
         </NavLink>
       ))}
     </div>
@@ -137,22 +111,26 @@ function NavSection({
 
 export function Sidebar() {
   const { isCollapsed, toggleSidebar, setCollapsed } = useSidebar();
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { signOut, profile } = useAuth();
   const { data: pendingOrdersCount = 0 } = usePendingOrdersCount();
-  const isMobile = useIsMobile();
+  const { data: allowedPages } = useMyPageAccess();
+  const { isMobile, isTablet, isDesktop } = useAdaptiveLayout();
+  const { theme, toggleTheme } = useTheme();
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
   const shopName = profile?.shops?.name || "Smart Money";
-  const sectionTitles = language === "sw" ? SECTION_HEADERS_SW : SECTION_HEADERS;
-  const { data: allowedPages } = useMyPageAccess();
-  const filterByAccess = (items: typeof OPERATIONS) => {
-    if (!allowedPages || allowedPages.length === 0) return items;
-    return items.filter((item) => allowedPages.includes(item.to));
+  const collapsedView = isTablet || isCollapsed;
+  const sidebarWidth = collapsedView ? 96 : 280;
+
+  const operationsItems = filterItemsByAccess(NAVIGATION_SECTIONS.operations, allowedPages);
+  const managementItems = filterItemsByAccess(NAVIGATION_SECTIONS.management, allowedPages);
+  const adminItems = filterItemsByAccess(NAVIGATION_SECTIONS.admin, allowedPages);
+  const sectionTitles = {
+    operations: NAV_SECTION_LABELS.operations[language],
+    management: NAV_SECTION_LABELS.management[language],
+    admin: NAV_SECTION_LABELS.admin[language],
   };
-  const operationsItems = filterByAccess(OPERATIONS);
-  const managementItems = filterByAccess(MANAGEMENT);
-  const adminItems = filterByAccess(ADMIN);
 
   if (isMobile) {
     return (
@@ -163,53 +141,96 @@ export function Sidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-[rgba(28,23,18,0.42)] backdrop-blur-[3px]"
               onClick={() => setCollapsed(true)}
             />
+
             <motion.aside
               data-app-sidebar
-              initial={{ x: -280 }}
+              initial={{ x: -320 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed left-0 top-0 z-50 flex h-screen w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar/95 shadow-2xl backdrop-blur-xl"
+              exit={{ x: -320 }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed left-0 top-0 z-50 flex h-screen w-[min(88vw,23.5rem)] flex-col rounded-r-[2rem] border-r border-sidebar-border/80 bg-[linear-gradient(180deg,hsl(var(--sidebar-background)/0.98),hsl(var(--sidebar-background)/0.94))] shadow-[22px_0_80px_-36px_rgba(15,23,42,0.55)] backdrop-blur-xl"
             >
-              <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/15">
+              <div className="border-b border-sidebar-border/80 px-4 pb-4 pt-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[1.1rem] bg-primary/15 ring-1 ring-primary/15">
                     <Store className="h-5 w-5 text-primary" strokeWidth={1.5} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold text-sidebar-foreground">{shopName}</p>
+                    </div>
                   </div>
-                  <span className="truncate text-sm font-semibold text-sidebar-foreground">{shopName}</span>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCollapsed(true)}
+                    className="h-10 w-10 rounded-full text-sidebar-foreground hover:bg-sidebar-accent/70"
+                  >
+                    <X className="h-4 w-4" strokeWidth={1.5} />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setCollapsed(true)} className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent/70">
-                  <X className="h-4 w-4" strokeWidth={1.5} />
-                </Button>
               </div>
-              <nav className="flex-1 space-y-4 overflow-y-auto p-2">
+
+              <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
                 <NavSection
                   title={sectionTitles.operations}
                   items={operationsItems}
                   t={t}
                   pendingOrdersCount={pendingOrdersCount}
-                  isCollapsed={false}
-                  />
+                  isCompact={false}
+                />
                 <NavSection
                   title={sectionTitles.management}
                   items={managementItems}
                   t={t}
                   pendingOrdersCount={pendingOrdersCount}
-                  isCollapsed={false}
+                  isCompact={false}
                 />
                 <NavSection
                   title={sectionTitles.admin}
                   items={adminItems}
                   t={t}
                   pendingOrdersCount={pendingOrdersCount}
-                  isCollapsed={false}
+                  isCompact={false}
                 />
               </nav>
-              <div className="border-t border-sidebar-border p-2">
-                <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => setSignOutConfirmOpen(true)}>
+
+              <div className="space-y-3 border-t border-sidebar-border/80 bg-sidebar-accent/18 p-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="ghost"
+                    className="h-11 justify-start gap-2 rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/35 text-sidebar-foreground hover:bg-sidebar-accent/80"
+                    onClick={toggleTheme}
+                  >
+                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    {theme === "dark"
+                      ? language === "sw"
+                        ? "Mwanga"
+                        : "Light"
+                      : language === "sw"
+                        ? "Giza"
+                        : "Dark"}
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    className="h-11 justify-start gap-2 rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/35 text-sidebar-foreground hover:bg-sidebar-accent/80"
+                    onClick={() => setLanguage(language === "sw" ? "en" : "sw")}
+                  >
+                    <Languages className="h-4 w-4" />
+                    {language === "sw" ? "English" : "Kiswahili"}
+                  </Button>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  className="h-11 w-full justify-start gap-3 rounded-2xl border border-sidebar-border/70 bg-transparent text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setSignOutConfirmOpen(true)}
+                >
                   <LogOut className="h-4 w-4" strokeWidth={1.5} />
                   {language === "sw" ? "Toka" : "Sign Out"}
                 </Button>
@@ -217,6 +238,29 @@ export function Sidebar() {
             </motion.aside>
           </>
         )}
+
+        <AlertDialog open={signOutConfirmOpen} onOpenChange={setSignOutConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{language === "sw" ? "Thibitisha kutoka" : "Sign out?"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {language === "sw" ? "Una uhakika unataka kutoka kwa akaunti yako?" : "Are you sure you want to sign out?"}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  signOut();
+                  setSignOutConfirmOpen(false);
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {language === "sw" ? "Toka" : "Sign Out"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </AnimatePresence>
     );
   }
@@ -224,61 +268,55 @@ export function Sidebar() {
   return (
     <aside
       data-app-sidebar
-      className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar/92 shadow-[16px_0_60px_-38px_rgba(15,23,42,0.6)] backdrop-blur-2xl transition-all duration-200",
-        isCollapsed ? "w-[78px]" : "w-[250px]"
-      )}
+      className="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar/92 shadow-[16px_0_60px_-38px_rgba(15,23,42,0.6)] backdrop-blur-2xl transition-[width] duration-200"
+      style={{ width: sidebarWidth }}
     >
-      <div className="flex h-[72px] items-center border-b border-sidebar-border/80 px-4">
+      <div className="flex h-[76px] items-center border-b border-sidebar-border/80 px-4">
         <div className="flex min-w-0 items-center gap-3 overflow-hidden">
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/14 ring-1 ring-white/10">
             <Store className="h-5 w-5 text-primary" strokeWidth={1.5} />
           </div>
-          {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="min-w-0"
-            >
+
+          {!collapsedView && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0">
               <p className="truncate text-sm font-semibold text-sidebar-foreground">{shopName}</p>
-              <p className="mt-0.5 text-[11px] uppercase tracking-[0.22em] text-sidebar-foreground/45">
-                {language === "sw" ? "Kituo cha kazi" : "Retail workspace"}
-              </p>
             </motion.div>
           )}
         </div>
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={toggleSidebar}
-        className="absolute -right-3 top-[4.6rem] z-50 h-7 w-7 rounded-full border border-sidebar-border bg-card shadow-lg transition-colors hover:border-primary/30 hover:bg-sidebar-accent"
-      >
-        {isCollapsed ? <ChevronRight className="h-3 w-3" strokeWidth={1.5} /> : <ChevronLeft className="h-3 w-3" strokeWidth={1.5} />}
-      </Button>
+      {isDesktop && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-[4.8rem] z-50 h-7 w-7 rounded-full border border-sidebar-border bg-card shadow-lg transition-colors hover:border-primary/30 hover:bg-sidebar-accent"
+        >
+          {collapsedView ? <ChevronRight className="h-3 w-3" strokeWidth={1.5} /> : <ChevronLeft className="h-3 w-3" strokeWidth={1.5} />}
+        </Button>
+      )}
 
-      <nav className="mt-2 flex-1 space-y-5 overflow-y-auto px-3 py-3">
+      <nav className={cn("mt-2 flex-1 overflow-y-auto px-3 py-3", collapsedView ? "space-y-6" : "space-y-5")}>
         <NavSection
           title={sectionTitles.operations}
           items={operationsItems}
           t={t}
           pendingOrdersCount={pendingOrdersCount}
-          isCollapsed={isCollapsed}
-          />
+          isCompact={collapsedView}
+        />
         <NavSection
           title={sectionTitles.management}
           items={managementItems}
           t={t}
           pendingOrdersCount={pendingOrdersCount}
-          isCollapsed={isCollapsed}
+          isCompact={collapsedView}
         />
         <NavSection
           title={sectionTitles.admin}
           items={adminItems}
           t={t}
           pendingOrdersCount={pendingOrdersCount}
-          isCollapsed={isCollapsed}
+          isCompact={collapsedView}
         />
       </nav>
 
@@ -289,15 +327,15 @@ export function Sidebar() {
               variant="ghost"
               className={cn(
                 "w-full gap-3 rounded-2xl text-sidebar-foreground transition-colors duration-200 hover:bg-destructive/10 hover:text-destructive",
-                isCollapsed ? "justify-center px-2" : "justify-start"
+                collapsedView ? "justify-center px-2" : "justify-start",
               )}
               onClick={() => setSignOutConfirmOpen(true)}
             >
               <LogOut className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
-              {!isCollapsed && (language === "sw" ? "Toka" : "Sign Out")}
+              {!collapsedView && (language === "sw" ? "Toka" : "Sign Out")}
             </Button>
           </TooltipTrigger>
-          {isCollapsed && <TooltipContent side="right">{language === "sw" ? "Toka" : "Sign Out"}</TooltipContent>}
+          {collapsedView && <TooltipContent side="right">{language === "sw" ? "Toka" : "Sign Out"}</TooltipContent>}
         </Tooltip>
       </div>
 
@@ -312,7 +350,10 @@ export function Sidebar() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { signOut(); setSignOutConfirmOpen(false); }}
+              onClick={() => {
+                signOut();
+                setSignOutConfirmOpen(false);
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {language === "sw" ? "Toka" : "Sign Out"}

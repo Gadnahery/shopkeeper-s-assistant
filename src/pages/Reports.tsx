@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar as CalendarIcon, FileText, FileSpreadsheet, Loader2, Package, TrendingUp } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,6 +21,8 @@ import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/common/PageHeader";
 import type { DateRange } from "react-day-picker";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { cn } from "@/lib/utils";
 
 type DateRangeType = "daily" | "weekly" | "monthly" | "custom";
 
@@ -50,6 +53,7 @@ function getRangeForType(type: DateRangeType, customStart?: Date, customEnd?: Da
 
 export default function Reports() {
   const { t, language } = useLanguage();
+  const { isMobile } = useAdaptiveLayout();
   const [searchParams] = useSearchParams();
   const rangeParam = searchParams.get("range") as DateRangeType | null;
   const [rangeType, setRangeType] = useState<DateRangeType>(rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam) ? rangeParam : "monthly");
@@ -206,6 +210,7 @@ export default function Reports() {
       hint: language === "sw" ? "Thamani ya stoki" : "Stock on hand",
     },
   ];
+  const visibleReportStats = isMobile ? [reportStats[0], reportStats[2], reportStats[3]] : reportStats;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -214,7 +219,7 @@ export default function Reports() {
         subtitle={language === "sw" ? "Pata muhtasari wa mauzo, hesabu, na faida" : "Analyze sales, inventory, and profitability"}
         actions={
         <>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Select value={rangeType} onValueChange={(v: DateRangeType) => setRangeType(v)}>
             <SelectTrigger className="h-11 w-40">
               <SelectValue />
@@ -255,8 +260,8 @@ export default function Reports() {
               <span className="text-sm">{rangeLabel}</span>
             </div>
           )}
-        </div>
-        <div className="flex flex-wrap gap-3">
+          </div>
+        {!isMobile && <div className="flex flex-wrap gap-3">
           <Button variant="outline" className="h-11 gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExportPDF}>
             <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             {t("reports.exportPdf")}
@@ -265,13 +270,26 @@ export default function Reports() {
             <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             {t("reports.exportExcel")}
           </Button>
-        </div>
+        </div>}
         </>
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {reportStats.map((stat) => (
+      {isMobile ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" className="h-11 gap-2" onClick={handleExportPDF}>
+            <FileText className="h-4 w-4 text-blue-600" />
+            {t("reports.exportPdf")}
+          </Button>
+          <Button variant="outline" className="h-11 gap-2" onClick={handleExportCSV}>
+            <FileSpreadsheet className="h-4 w-4 text-blue-600" />
+            {t("reports.exportExcel")}
+          </Button>
+        </div>
+      ) : null}
+
+      <section className={cn("grid gap-4", isMobile ? "grid-cols-1 sm:grid-cols-2" : "md:grid-cols-2 xl:grid-cols-4")}>
+        {visibleReportStats.map((stat) => (
           <Card key={stat.label} className="section-shell">
             <CardContent className="p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{stat.label}</p>
@@ -336,6 +354,91 @@ export default function Reports() {
         </CardContent>
       </Card>
 
+      {isMobile ? (
+        <Accordion type="multiple" className="space-y-3">
+          <AccordionItem value="sales-trend" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 px-0">
+            <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
+              {language === "sw" ? "Mwelekeo na viongozi" : "Trend and top performers"}
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 px-4 pb-4">
+              {trendData.length > 0 && (
+                <Card className="section-shell">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-semibold">{t("reports.salesTrend")}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={trendData}>
+                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatK(v)} />
+                          <Tooltip formatter={(v: number) => [`Tsh ${formatNumber(v)}`, ""]} />
+                          <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="section-shell">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-semibold">{t("reports.bestSelling")}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {bestSellingProducts.length === 0 ? (
+                    <p className="py-2 text-center text-sm text-foreground/70 dark:text-foreground/80">{t("reports.noSalesData")}</p>
+                  ) : (
+                    bestSellingProducts.map((product) => (
+                      <div key={product.name} className="flex items-center gap-3">
+                        <span className="w-24 truncate text-sm">{product.name}</span>
+                        <div className="flex-1">
+                          <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${product.percentage}%` }} />
+                          </div>
+                        </div>
+                        <span className="w-14 text-right text-sm font-medium">{formatK(product.amount)}</span>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="sales-transactions" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 px-0">
+            <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
+              {t("reports.recentTransactions")}
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="space-y-3">
+                {recentTransactions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("reports.noSalesYet")}</p>
+                ) : (
+                  recentTransactions.slice(0, 8).map((tx, index) => (
+                    <div key={index} className="rounded-[1.2rem] border border-border/70 bg-background/70 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold">{tx.invoice}</p>
+                          <p className="truncate text-sm text-muted-foreground">{tx.customer}</p>
+                        </div>
+                        <Badge className={reportStatusTone[tx.status] || "bg-secondary text-secondary-foreground hover:bg-secondary/80"}>
+                          {tx.status === "completed" ? t("reports.completed") : tx.status}
+                        </Badge>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{tx.date}</span>
+                        <span className="font-semibold">Tsh {formatNumber(tx.amount)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      ) : (
+      <>
       {/* Sales Trend Chart */}
       {trendData.length > 0 && (
         <Card className="section-shell">
@@ -491,6 +594,8 @@ export default function Reports() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
       </TabsContent>
 
       <TabsContent value="inventory" className="space-y-6 mt-6">
@@ -515,6 +620,46 @@ export default function Reports() {
                 <p className="text-2xl font-bold text-destructive">{products?.filter((p) => p.stock <= 0).length ?? 0}</p>
               </div>
             </div>
+            {isMobile ? (
+              <Accordion type="multiple" className="space-y-3">
+                <AccordionItem value="inventory-low-stock" className="overflow-hidden rounded-[1.3rem] border border-border/70 bg-background/65 px-0">
+                  <AccordionTrigger className="px-4 py-4 text-left font-semibold hover:no-underline">{t("reports.lowStockProducts")}</AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-2">
+                      {lowStockProducts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{t("reports.noData")}</p>
+                      ) : (
+                        lowStockProducts.slice(0, 10).map((p) => (
+                          <div key={p.id} className="rounded-[1rem] border border-border/70 bg-background/70 p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="truncate font-medium">{language === "sw" && p.name_sw ? p.name_sw : p.name}</span>
+                              <Badge variant="destructive" className="text-xs">{p.stock}</Badge>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="inventory-value" className="overflow-hidden rounded-[1.3rem] border border-border/70 bg-background/65 px-0">
+                  <AccordionTrigger className="px-4 py-4 text-left font-semibold hover:no-underline">{t("reports.valueByProduct")}</AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-2">
+                      {products?.slice(0, 12).map((p) => (
+                        <div key={p.id} className="rounded-[1rem] border border-border/70 bg-background/70 p-3">
+                          <p className="truncate font-medium">{language === "sw" && p.name_sw ? p.name_sw : p.name}</p>
+                          <div className="mt-2 flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{t("inventory.stock")}: {p.stock}</span>
+                            <span className="font-semibold">Tsh {formatNumber(Number(p.buying_price) * p.stock)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            ) : (
+            <>
             <div className="mt-4">
               <h4 className="mb-2 font-medium">{t("reports.lowStockProducts")}</h4>
               <div className="max-h-64 overflow-auto rounded-lg border">
@@ -554,6 +699,8 @@ export default function Reports() {
                 </Table>
               </div>
             </div>
+            </>
+            )}
           </CardContent>
         </Card>
       </TabsContent>

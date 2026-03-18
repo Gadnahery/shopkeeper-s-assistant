@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Pencil, Trash2, Loader2, Download, Calendar, Package } from "lucide-react";
+import { Search, Plus, Pencil, Loader2, Download, Calendar, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrders, useOrder, useCreateOrder, useUpdateOrderStatus, useUpdateOrder, useAddOrderNote, useDeleteOrder } from "@/hooks/useOrders";
 import { useProducts } from "@/hooks/useProducts";
@@ -27,6 +27,8 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
@@ -58,6 +60,7 @@ const PRIORITY_OPTIONS = [
 
 export default function Orders() {
   const { t, language } = useLanguage();
+  const { isMobile } = useAdaptiveLayout();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
@@ -127,6 +130,19 @@ export default function Orders() {
   }
 
   const formatNumber = (n: number) => n.toLocaleString("en-US");
+  const visibleStats = isMobile
+    ? [
+        { label: language === "sw" ? "Maagizo" : "Orders", value: stats.total, tone: "text-foreground" },
+        { label: language === "sw" ? "Inasubiri" : "Pending", value: stats.pending, tone: "text-amber-600 dark:text-amber-400" },
+        { label: language === "sw" ? "Thamani" : "Value", value: formatNumber(stats.totalValue), tone: "text-primary" },
+      ]
+    : [
+        { label: language === "sw" ? "Jumla ya maagizo" : "Total orders", value: stats.total, tone: "text-foreground" },
+        { label: language === "sw" ? "Inasubiri" : "Pending", value: stats.pending, tone: "text-amber-600 dark:text-amber-400" },
+        { label: language === "sw" ? "Inachakatwa" : "Processing", value: stats.processing, tone: "text-blue-600 dark:text-blue-400" },
+        { label: language === "sw" ? "Imekamilika" : "Completed", value: stats.completed, tone: "text-green-600 dark:text-green-400" },
+        { label: language === "sw" ? "Thamani (zisizofutwa)" : "Value (excl. cancelled)", value: formatNumber(stats.totalValue), tone: "text-foreground" },
+      ];
 
   const handleCreateOrder = async () => {
     if (addItems.length === 0) {
@@ -204,31 +220,35 @@ export default function Orders() {
         subtitle={language === "sw" ? "Fuatilia, hariri, na simamia maagizo ya wateja" : "Track, update, and manage customer orders"}
         actions={
         <div className="flex w-full min-w-0 flex-wrap gap-2 xl:w-auto xl:justify-end">
-          <div className="relative w-full sm:w-64">
+          <div className={`relative ${isMobile ? "flex-1" : "w-full sm:w-64"}`}>
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder={language === "sw" ? "Tafuta (nambari, mteja, simu)..." : "Search (order #, customer, phone)..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
           </div>
-          <Select value={dateRange} onValueChange={(v: "all" | "today" | "week" | "month") => setDateRange(v)}>
-            <SelectTrigger className="w-full sm:w-36 gap-1"><Calendar className="h-4 w-4" /><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
-              <SelectItem value="today">{language === "sw" ? "Leo" : "Today"}</SelectItem>
-              <SelectItem value="week">{language === "sw" ? "Wiki 1" : "Last 7 days"}</SelectItem>
-              <SelectItem value="month">{language === "sw" ? "Mwezi 1" : "Last 30 days"}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
-              {STATUS_LEGEND.map((s) => (
-                <SelectItem key={s.key} value={s.key}>{language === "sw" ? s.sw : s.en}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" className="gap-1" onClick={exportCsv} disabled={filteredOrders.length === 0}>
-            <Download className="h-4 w-4" />{language === "sw" ? "Pakua CSV" : "Export CSV"}
-          </Button>
+          {!isMobile ? (
+            <>
+              <Select value={dateRange} onValueChange={(v: "all" | "today" | "week" | "month") => setDateRange(v)}>
+                <SelectTrigger className="w-full sm:w-36 gap-1"><Calendar className="h-4 w-4" /><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+                  <SelectItem value="today">{language === "sw" ? "Leo" : "Today"}</SelectItem>
+                  <SelectItem value="week">{language === "sw" ? "Wiki 1" : "Last 7 days"}</SelectItem>
+                  <SelectItem value="month">{language === "sw" ? "Mwezi 1" : "Last 30 days"}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+                  {STATUS_LEGEND.map((s) => (
+                    <SelectItem key={s.key} value={s.key}>{language === "sw" ? s.sw : s.en}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="gap-1" onClick={exportCsv} disabled={filteredOrders.length === 0}>
+                <Download className="h-4 w-4" />{language === "sw" ? "Pakua CSV" : "Export CSV"}
+              </Button>
+            </>
+          ) : null}
           <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add"}
           </Button>
@@ -236,45 +256,85 @@ export default function Orders() {
         }
       />
 
-      {/* Status legend */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-foreground/70 dark:text-foreground/80">
-        <span className="font-medium">{language === "sw" ? "Maana ya rangi:" : "Status colors:"}</span>
-        {STATUS_LEGEND.map((s) => (
-          <Badge key={s.key} variant="outline" className={statusColors[s.key]}>{language === "sw" ? s.sw : s.en}</Badge>
-        ))}
-      </div>
+      {isMobile ? (
+        <Card className="section-shell">
+          <CardContent className="p-0">
+            <Accordion type="single" collapsible className="px-4">
+              <AccordionItem value="filters" className="border-none">
+                <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">
+                  <span className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-4 w-4 text-primary" />
+                    {language === "sw" ? "Vichujio na maelezo zaidi" : "Filters and advanced details"}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pb-4">
+                  <div className="grid gap-3">
+                    <Select value={dateRange} onValueChange={(v: "all" | "today" | "week" | "month") => setDateRange(v)}>
+                      <SelectTrigger className="gap-1"><Calendar className="h-4 w-4" /><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+                        <SelectItem value="today">{language === "sw" ? "Leo" : "Today"}</SelectItem>
+                        <SelectItem value="week">{language === "sw" ? "Wiki 1" : "Last 7 days"}</SelectItem>
+                        <SelectItem value="month">{language === "sw" ? "Mwezi 1" : "Last 30 days"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{language === "sw" ? "Zote" : "All"}</SelectItem>
+                        {STATUS_LEGEND.map((s) => (
+                          <SelectItem key={s.key} value={s.key}>{language === "sw" ? s.sw : s.en}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" className="justify-start gap-2" onClick={exportCsv} disabled={filteredOrders.length === 0}>
+                      <Download className="h-4 w-4" />
+                      {language === "sw" ? "Pakua CSV" : "Export CSV"}
+                    </Button>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground">{language === "sw" ? "Maana ya rangi" : "Status colors"}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {STATUS_LEGEND.map((s) => (
+                          <Badge key={s.key} variant="outline" className={statusColors[s.key]}>
+                            {language === "sw" ? s.sw : s.en}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-[1rem] border border-border/60 bg-background/70 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Inachakatwa" : "Processing"}</p>
+                        <p className="mt-2 text-xl font-bold text-blue-600 dark:text-blue-400">{stats.processing}</p>
+                      </div>
+                      <div className="rounded-[1rem] border border-border/60 bg-background/70 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Imekamilika" : "Completed"}</p>
+                        <p className="mt-2 text-xl font-bold text-green-600 dark:text-green-400">{stats.completed}</p>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-foreground/70 dark:text-foreground/80">
+          <span className="font-medium">{language === "sw" ? "Maana ya rangi:" : "Status colors:"}</span>
+          {STATUS_LEGEND.map((s) => (
+            <Badge key={s.key} variant="outline" className={statusColors[s.key]}>{language === "sw" ? s.sw : s.en}</Badge>
+          ))}
+        </div>
+      )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Card className="section-shell">
-          <CardContent className="p-4">
-            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Jumla ya maagizo" : "Total orders"}</p>
-            <p className="text-2xl font-bold text-foreground dark:text-foreground">{stats.total}</p>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="p-4">
-            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Inasubiri" : "Pending"}</p>
-            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="p-4">
-            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Inachakatwa" : "Processing"}</p>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.processing}</p>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="p-4">
-            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Imekamilika" : "Completed"}</p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.completed}</p>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="p-4">
-            <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{language === "sw" ? "Thamani (zisizofutwa)" : "Value (excl. cancelled)"}</p>
-            <p className="text-2xl font-bold text-foreground dark:text-foreground">{formatNumber(stats.totalValue)}</p>
-          </CardContent>
-        </Card>
+      <div className={`grid gap-3 ${isMobile ? "grid-cols-1 sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-5"}`}>
+        {visibleStats.map((stat) => (
+          <Card key={stat.label} className="section-shell">
+            <CardContent className="p-4">
+              <p className="text-xs text-foreground/70 dark:text-foreground/80 uppercase tracking-wide">{stat.label}</p>
+              <p className={`text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Add Order Dialog */}
@@ -285,23 +345,6 @@ export default function Orders() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2"><Label>{language === "sw" ? "Jina la Mteja" : "Customer Name"}</Label><Input value={addForm.customer_name} onChange={(e) => setAddForm({ ...addForm, customer_name: e.target.value })} /></div>
               <div className="space-y-2"><Label>{language === "sw" ? "Simu" : "Phone"}</Label><Input value={addForm.customer_phone} onChange={(e) => setAddForm({ ...addForm, customer_phone: e.target.value })} /></div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>{language === "sw" ? "Kipaumbele" : "Priority"}</Label>
-                <Select value={addForm.priority} onValueChange={(v) => setAddForm({ ...addForm, priority: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PRIORITY_OPTIONS.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{language === "sw" ? p.sw : p.en}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{language === "sw" ? "Tarehe ya kukamilika" : "Due date"}</Label>
-                <Input type="date" value={addForm.due_date} onChange={(e) => setAddForm({ ...addForm, due_date: e.target.value })} />
-              </div>
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Bidhaa" : "Products"}</Label>
@@ -364,7 +407,33 @@ export default function Orders() {
                 </ul>
               </div>
             )}
-            <div className="space-y-2"><Label>{language === "sw" ? "Vidokezo" : "Notes"}</Label><Input value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} /></div>
+            <Accordion type="single" collapsible className="rounded-[1rem] border border-border/70 px-4">
+              <AccordionItem value="advanced" className="border-none">
+                <AccordionTrigger className="py-4 text-sm font-semibold hover:no-underline">
+                  {language === "sw" ? "Chaguo za ziada" : "Advanced options"}
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pb-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>{language === "sw" ? "Kipaumbele" : "Priority"}</Label>
+                      <Select value={addForm.priority} onValueChange={(v) => setAddForm({ ...addForm, priority: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PRIORITY_OPTIONS.map((p) => (
+                            <SelectItem key={p.value} value={p.value}>{language === "sw" ? p.sw : p.en}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === "sw" ? "Tarehe ya kukamilika" : "Due date"}</Label>
+                      <Input type="date" value={addForm.due_date} onChange={(e) => setAddForm({ ...addForm, due_date: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="space-y-2"><Label>{language === "sw" ? "Vidokezo" : "Notes"}</Label><Input value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} /></div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="outline" onClick={() => { clearOrderDraft(); setAddOpen(false); }}>{t("common.cancel")}</Button>
               <Button 
@@ -525,17 +594,42 @@ export default function Orders() {
                           {language === "sw" ? STATUS_LEGEND.find((s) => s.key === o.status)?.sw ?? o.status : o.status}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{format(new Date(o.created_at), "dd MMM yyyy")}</span>
-                        <span className="font-semibold">{formatNumber(Number(o.total))}</span>
+                      <div className="grid grid-cols-2 gap-3 rounded-[1rem] border border-border/60 bg-background/75 p-3 text-sm">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Jumla" : "Total"}</p>
+                          <p className="mt-1 font-semibold">{formatNumber(Number(o.total))}</p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Tarehe" : "Date"}</p>
+                          <p className="mt-1 font-semibold">{format(new Date(o.created_at), "dd MMM yyyy")}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <Badge className={priorityColors[(o as any).priority ?? "medium"] || ""}>{(o as any).priority ?? "medium"}</Badge>
                         <Button variant="outline" size="sm" className="gap-1" onClick={() => setEditing(o)}>
                           <Pencil className="h-4 w-4" />
                           {language === "sw" ? "Hariri" : "Edit"}
                         </Button>
                       </div>
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="details" className="border-none">
+                          <AccordionTrigger className="py-0 text-sm font-medium text-primary hover:no-underline">
+                            {language === "sw" ? "Maelezo zaidi" : "More details"}
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-0 pt-3">
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Due</p>
+                                <p className="mt-1 font-medium">{(o as any).due_date ? format(new Date((o as any).due_date), "dd MMM") : "-"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Simu" : "Phone"}</p>
+                                <p className="mt-1 font-medium">{(o as any).customer_phone || "-"}</p>
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
                     </CardContent>
                   </Card>
                 ))

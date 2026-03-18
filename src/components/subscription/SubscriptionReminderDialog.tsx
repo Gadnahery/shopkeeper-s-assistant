@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Clock3, CreditCard } from "lucide-react";
 import {
@@ -17,13 +17,44 @@ export function SubscriptionReminderDialog() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { subscription, daysRemaining, isBillingLocked, canManageBilling } = useSubscription();
-  const [dismissed, setDismissed] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const reminderTarget = useMemo(() => {
+    if (!subscription) return null;
+    return subscription.status === "trialing"
+      ? subscription.trial_ends_at
+      : subscription.current_period_ends_at;
+  }, [subscription]);
+
+  const reminderStage = useMemo(() => {
+    if (!subscription || !reminderTarget) return null;
+    if (isBillingLocked) return "locked";
+    if (daysRemaining === 1) return "day-1";
+    if (daysRemaining === 3) return "day-3";
+    return null;
+  }, [subscription, reminderTarget, isBillingLocked, daysRemaining]);
+
+  const reminderStorageKey = useMemo(() => {
+    if (!subscription || !reminderTarget || !reminderStage) return null;
+    return `subscription-reminder:${subscription.id}:${reminderTarget}:${reminderStage}`;
+  }, [subscription, reminderTarget, reminderStage]);
 
   const shouldOpen = useMemo(() => {
-    if (!subscription || dismissed) return false;
-    if (isBillingLocked) return true;
-    return daysRemaining !== null && daysRemaining <= 7;
-  }, [subscription, dismissed, isBillingLocked, daysRemaining]);
+    if (!subscription || !reminderStorageKey || !reminderStage) return false;
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem(reminderStorageKey) !== "seen";
+  }, [subscription, reminderStorageKey, reminderStage]);
+
+  useEffect(() => {
+    setOpen(shouldOpen);
+  }, [shouldOpen]);
+
+  const dismissReminder = () => {
+    if (reminderStorageKey && typeof window !== "undefined") {
+      localStorage.setItem(reminderStorageKey, "seen");
+    }
+    setOpen(false);
+  };
 
   if (!subscription) {
     return null;
@@ -33,6 +64,10 @@ export function SubscriptionReminderDialog() {
     ? language === "sw"
       ? "Usajili umeisha"
       : "Subscription expired"
+    : daysRemaining === 1
+      ? language === "sw"
+        ? "Kesho ndiyo siku ya mwisho"
+        : "Your access ends tomorrow"
     : language === "sw"
       ? "Usajili unaisha karibuni"
       : "Subscription ending soon";
@@ -41,12 +76,16 @@ export function SubscriptionReminderDialog() {
     ? language === "sw"
       ? "Lipa usajili wa mwezi ili kuendelea kutumia Smart Money."
       : "Renew your monthly plan to continue using Smart Money."
+    : daysRemaining === 1
+      ? language === "sw"
+        ? "Kesho ndiyo siku ya mwisho ya kipindi chako cha sasa."
+        : "Tomorrow is the last day of your current access."
     : language === "sw"
       ? `Zimebaki siku ${Math.max(daysRemaining ?? 0, 0)} kabla ya mpango wako kuisha.`
       : `${Math.max(daysRemaining ?? 0, 0)} day(s) remain before your current access ends.`;
 
   return (
-    <Dialog open={shouldOpen} onOpenChange={(open) => !open && !isBillingLocked && setDismissed(true)}>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && dismissReminder()}>
       <DialogContent className="rounded-[1.75rem] sm:max-w-lg">
         <DialogHeader>
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600">
@@ -64,7 +103,7 @@ export function SubscriptionReminderDialog() {
 
         <DialogFooter className="sm:justify-between">
           {!isBillingLocked && (
-            <Button variant="ghost" onClick={() => setDismissed(true)}>
+            <Button variant="ghost" onClick={dismissReminder}>
               {language === "sw" ? "Nikumbushe baadaye" : "Remind me later"}
             </Button>
           )}

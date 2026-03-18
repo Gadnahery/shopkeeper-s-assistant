@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,9 +33,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
 export default function Settings() {
   const { t, language, setLanguage } = useLanguage();
+  const { isMobile } = useAdaptiveLayout();
   const { data: shopSettings, isLoading } = useShopSettings();
   const updateSettings = useUpdateShopSettings();
   const updatePreferences = useUpdatePreferences();
@@ -210,7 +213,7 @@ export default function Settings() {
       hint: language === "sw" ? "Muonekano wa timu" : "Workspace language",
     },
     {
-      label: language === "sw" ? "Arifa za stok chini" : "Low-stock alerts",
+      label: language === "sw" ? "Notifications za stok chini" : "Low-stock alerts",
       value: enableLowStockAlerts ? (language === "sw" ? "Wazi" : "On") : language === "sw" ? "Zimezimwa" : "Off",
       hint: language === "sw" ? "Tahadhari za bidhaa" : "Inventory safety",
     },
@@ -222,7 +225,7 @@ export default function Settings() {
     {
       label: language === "sw" ? "Push ya background" : "Background push",
       value: pushSubscribed ? (language === "sw" ? "Imeunganishwa" : "Connected") : language === "sw" ? "Haijaunganishwa" : "Not connected",
-      hint: language === "sw" ? "Arifa za kifaa" : "Device alerts",
+      hint: language === "sw" ? "Notifications za kifaa" : "Device alerts",
     },
   ];
 
@@ -249,6 +252,246 @@ export default function Settings() {
         ))}
       </div>
 
+      {isMobile && (
+        <div className="space-y-4">
+          <Card className="section-shell">
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center gap-3">
+                <ImageUpload
+                  currentUrl={profile?.avatar_url}
+                  bucket="avatars"
+                  folder={shopId || "default"}
+                  onUpload={handleProfileUpload}
+                  variant="avatar"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-semibold">{profile?.full_name || (language === "sw" ? "Mtumiaji" : "User")}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {language === "sw" ? "Mipangilio muhimu ya biashara na kifaa." : "Important business and device settings."}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Accordion type="single" collapsible className="space-y-3">
+            <AccordionItem value="shop" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/70 px-0">
+              <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
+                {language === "sw" ? "Wasifu na duka" : "Profile and shop"}
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 px-4 pb-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("settings.shopName")}</Label>
+                    <Input value={shopForm.shop_name} onChange={(event) => setShopForm({ ...shopForm, shop_name: event.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("settings.phoneNumber")}</Label>
+                    <Input value={shopForm.phone} onChange={(event) => setShopForm({ ...shopForm, phone: event.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("settings.location")}</Label>
+                    <Input value={shopForm.address} onChange={(event) => setShopForm({ ...shopForm, address: event.target.value })} />
+                  </div>
+                </div>
+                <Button onClick={handleSaveShop} disabled={updateSettings.isPending} className="h-11 w-full gap-2">
+                  {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t("settings.saveChanges")}
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="prefs" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/70 px-0">
+              <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
+                {language === "sw" ? "Lugha na notifications" : "Language and alerts"}
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 px-4 pb-4">
+                <div className="space-y-2">
+                  <Label>{t("settings.language")}</Label>
+                  <Select value={language} onValueChange={(value: "en" | "sw") => setLanguage(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="sw">Kiswahili</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/70 bg-background/70 p-4">
+                  <div>
+                    <p className="font-medium">{t("settings.lowStockAlerts")}</p>
+                    <p className="text-sm text-muted-foreground">{t("settings.notifyLow")}</p>
+                  </div>
+                  <Switch
+                    checked={enableLowStockAlerts}
+                    onCheckedChange={(value) => {
+                      setEnableLowStockAlerts(value);
+                      updatePreferences.mutate({ enable_low_stock_alerts: value });
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/70 bg-background/70 p-4">
+                  <div>
+                    <p className="font-medium">{t("settings.autoPrint")}</p>
+                    <p className="text-sm text-muted-foreground">{t("settings.printAfterSale")}</p>
+                  </div>
+                  <Switch
+                    checked={autoPrintReceipt}
+                    onCheckedChange={(value) => {
+                      setAutoPrintReceipt(value);
+                      updatePreferences.mutate({ auto_print_receipt: value });
+                    }}
+                  />
+                </div>
+
+                <div className="grid gap-3">
+                  <Button onClick={() => void requestPermission()} disabled={!supportsNativeNotifications || permission === "granted"} className="h-11 w-full">
+                    {permission === "granted"
+                      ? language === "sw"
+                        ? "Notifications zimewashwa"
+                        : "Notifications enabled"
+                      : language === "sw"
+                        ? "Washa notifications"
+                        : "Enable notifications"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => void (pushSubscribed ? unsubscribeFromPush() : subscribeToPush())}
+                    disabled={!pushSupported || pushLoading || permission !== "granted"}
+                    className="h-11 w-full"
+                  >
+                    {pushSubscribed
+                      ? language === "sw"
+                        ? "Zima push"
+                        : "Disable push"
+                      : language === "sw"
+                        ? "Washa push ya background"
+                        : "Enable background push"}
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="receipt" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/70 px-0">
+              <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
+                {language === "sw" ? "Risiti na chapa" : "Receipt and branding"}
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 px-4 pb-4">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("settings.receiptHeader")}</Label>
+                    <Textarea
+                      rows={3}
+                      className="resize-none"
+                      placeholder={language === "sw" ? "Maandishi ya juu ya risiti" : "Text at the top of the receipt"}
+                      value={receiptForm.receipt_header}
+                      onChange={(event) => setReceiptForm({ ...receiptForm, receipt_header: event.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("settings.receiptFooter")}</Label>
+                    <Textarea
+                      rows={3}
+                      className="resize-none"
+                      placeholder={language === "sw" ? "Asante kwa kununua" : "Thank you for shopping"}
+                      value={receiptForm.receipt_footer}
+                      onChange={(event) => setReceiptForm({ ...receiptForm, receipt_footer: event.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("settings.logo")}</Label>
+                    <Input
+                      placeholder={language === "sw" ? "Bandika kiungo cha nembo" : "Paste logo URL"}
+                      value={receiptForm.logo_url}
+                      onChange={(event) => setReceiptForm({ ...receiptForm, logo_url: event.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("settings.taxRate")}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={receiptForm.tax_rate}
+                      onChange={(event) => setReceiptForm({ ...receiptForm, tax_rate: event.target.value })}
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleSaveReceipt} disabled={updateSettings.isPending} className="h-11 w-full gap-2">
+                  {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t("settings.saveReceiptSettings")}
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="devices" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/70 px-0">
+              <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
+                {language === "sw" ? "Programu na vifaa" : "App and devices"}
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 px-4 pb-4">
+                <div className="grid gap-3">
+                  <div className="rounded-[1.2rem] border border-border/70 bg-background/70 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{language === "sw" ? "Sakinisha app" : "Install app"}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {isInstalled || isStandalone
+                            ? language === "sw"
+                              ? "App ipo tayari kwenye kifaa hiki"
+                              : "App is already on this device"
+                            : language === "sw"
+                              ? "Ifungue kama app kamili kwenye simu au kompyuta"
+                              : "Use it like a full app on phone or desktop"}
+                        </p>
+                      </div>
+                      <Download className="h-5 w-5 text-primary" />
+                    </div>
+                    <Button onClick={() => void install()} disabled={!canInstall} className="mt-3 h-11 w-full">
+                      {isInstalled || isStandalone
+                        ? language === "sw"
+                          ? "Tayari imewekwa"
+                          : "Already installed"
+                        : language === "sw"
+                          ? "Sakinisha app"
+                          : "Install app"}
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[1.2rem] border border-border/70 bg-background/70 p-4">
+                      <p className="font-medium">{language === "sw" ? "Printa ya risiti" : "Receipt printer"}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {printerConnected ? (language === "sw" ? "Imeunganishwa" : "Connected") : language === "sw" ? "Haijaunganishwa" : "Not connected"}
+                      </p>
+                      <Button variant={printerConnected ? "outline" : "default"} className="mt-3 h-10 w-full gap-2" onClick={handleConnectPrinter}>
+                        <Wifi className="h-4 w-4" />
+                        {printerConnected ? (language === "sw" ? "Ondoa" : "Disconnect") : language === "sw" ? "Unganisha" : "Connect"}
+                      </Button>
+                    </div>
+
+                    <div className="rounded-[1.2rem] border border-border/70 bg-background/70 p-4">
+                      <p className="font-medium">{language === "sw" ? "Skana ya barcode" : "Barcode scanner"}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {scannerConnected ? (language === "sw" ? "Imeunganishwa" : "Connected") : language === "sw" ? "Haijaunganishwa" : "Not connected"}
+                      </p>
+                      <Button variant={scannerConnected ? "outline" : "default"} className="mt-3 h-10 w-full gap-2" onClick={handleConnectScanner}>
+                        <Usb className="h-4 w-4" />
+                        {scannerConnected ? (language === "sw" ? "Ondoa" : "Disconnect") : language === "sw" ? "Unganisha" : "Connect"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      )}
+
+      {!isMobile && (
       <div className="grid gap-6 xl:grid-cols-2">
         <Card className="section-shell xl:col-span-2">
           <CardHeader>
@@ -300,7 +543,7 @@ export default function Settings() {
             <div className="rounded-[1.5rem] border border-border/70 bg-background/70 p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">{language === "sw" ? "Arifa za kifaa" : "Device notifications"}</p>
+                  <p className="text-sm text-muted-foreground">{language === "sw" ? "Notifications za kifaa" : "Device notifications"}</p>
                   <p className="mt-2 text-xl font-semibold">
                     {!supportsNativeNotifications
                       ? language === "sw"
@@ -320,7 +563,7 @@ export default function Settings() {
                   </p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {language === "sw"
-                      ? "Arifa mpya zinaweza kuonekana kwenye kifaa chako wakati app iko wazi au imewekwa."
+                      ? "Notifications mpya zinaweza kuonekana kwenye kifaa chako wakati app iko wazi au imewekwa."
                       : "New activity alerts can appear on the device while the app is open and after installation."}
                   </p>
                 </div>
@@ -332,10 +575,10 @@ export default function Settings() {
                 <Button variant="outline" onClick={() => void requestPermission()} disabled={!supportsNativeNotifications || permission === "granted"} className="h-11">
                   {permission === "granted"
                     ? language === "sw"
-                      ? "Arifa zimewashwa"
+                      ? "Notifications zimewashwa"
                       : "Notifications enabled"
                     : language === "sw"
-                      ? "Washa arifa"
+                      ? "Washa notifications"
                       : "Enable notifications"}
                 </Button>
                 <div className="rounded-full border border-border/70 px-3 py-2 text-xs text-muted-foreground">
@@ -670,6 +913,7 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+      )}
     </motion.div>
   );
 }

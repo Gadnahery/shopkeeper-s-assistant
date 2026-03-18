@@ -112,11 +112,11 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
   if (!value) return null;
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex w-full flex-col items-center gap-3">
       {format === "qr" && qrUrl ? (
-        <img src={qrUrl} alt="QR Code" className="rounded border max-w-[200px]" />
+        <img src={qrUrl} alt="QR Code" className="rounded-[1rem] border border-border/70 bg-white p-2 max-w-[200px]" />
       ) : format === "code128" ? (
-        <div className="rounded border bg-white overflow-hidden max-w-full flex justify-center">
+        <div className="flex w-full justify-center overflow-hidden rounded-[1rem] border border-border/70 bg-white p-2">
           {barcodeError ? (
             <p className="text-sm text-destructive px-4 py-2">{barcodeError}</p>
           ) : (
@@ -124,7 +124,7 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
           )}
         </div>
       ) : null}
-      <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2" disabled={!!barcodeError}>
+      <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 rounded-xl" disabled={!!barcodeError}>
         <Printer className="h-3 w-3" />
         Print
       </Button>

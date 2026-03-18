@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { checkPasswordStrength } from "@/lib/validation";
 import { toast } from "sonner";
 import { KeyRound, Loader2 } from "lucide-react";
 
@@ -16,8 +17,8 @@ export default function ResetPassword() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (checkPasswordStrength(password).suggestions.length > 0) {
+      toast.error("Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol");
       return;
     }
     if (password !== confirmPassword) {
@@ -60,6 +61,7 @@ export default function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-12 rounded-2xl"
                 required
+                minLength={8}
               />
             </div>
             <div className="space-y-2">
@@ -71,8 +73,12 @@ export default function ResetPassword() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="h-12 rounded-2xl"
                 required
+                minLength={8}
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              Use 8 or more characters with uppercase, lowercase, a number, and a symbol.
+            </p>
             <Button type="submit" className="h-12 w-full rounded-2xl" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update password"}
             </Button>

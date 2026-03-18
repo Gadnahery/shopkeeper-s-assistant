@@ -12,8 +12,8 @@ export default function AboutPage() {
       eyebrow={language === "sw" ? "Kuhusu WiseCash" : "About WiseCash"}
       title={
         language === "sw"
-          ? "Mfumo wa kisasa wa usimamizi wa duka kwa biashara za Tanzania"
-          : "A modern shop management system built for businesses in Tanzania"
+          ? "Mfumo wa kisasa wa usimamizi wa duka kwa biashara za kisasa"
+          : "A modern shop management system built for modern businesses"
       }
       description={
         language === "sw"

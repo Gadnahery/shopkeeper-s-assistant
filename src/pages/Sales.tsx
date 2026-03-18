@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,9 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
+import { MobileCameraScanner } from "@/components/common/MobileCameraScanner";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { cn } from "@/lib/utils";
 
 interface CartItem {
   id: string;
@@ -54,6 +58,7 @@ interface CartItem {
 
 export default function Sales() {
   const { t, language } = useLanguage();
+  const { isMobile } = useAdaptiveLayout();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discountAmount, setDiscountAmount] = useState("0");
   const [discountPercent, setDiscountPercent] = useState("0");
@@ -65,9 +70,11 @@ export default function Sales() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
+  const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [draftToDeleteId, setDraftToDeleteId] = useState<string | null>(null);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [mobileStep, setMobileStep] = useState<"products" | "cart" | "checkout">("products");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const previousAutoCashRef = useRef("");
 
@@ -154,6 +161,7 @@ export default function Sales() {
     }
 
     setSearchTerm("");
+    searchInputRef.current?.focus();
   };
 
   const handleBarcodeScan = (barcode: string) => {
@@ -179,13 +187,13 @@ export default function Sales() {
   const formatNumber = (num: number) => num.toLocaleString("en-US");
   const saleStats = [
     {
-      label: language === "sw" ? "Bidhaa kwenye kikapu" : "Items in cart",
+      label: language === "sw" ? "Cart" : "Items in cart",
       value: `${cartItems.length}`,
       tone: "text-foreground",
       icon: ShoppingBag,
     },
     {
-      label: language === "sw" ? "Jumla ya malipo" : "Checkout total",
+      label: language === "sw" ? "Checkout" : "Checkout total",
       value: formatNumber(total),
       tone: "text-primary",
       icon: Wallet,
@@ -286,6 +294,7 @@ export default function Sales() {
       setSelectedCustomer("walk-in");
       setCustomerName("");
       setCustomerPhone("");
+      setMobileStep("products");
       previousAutoCashRef.current = "";
 
       if (activeDraftId) {
@@ -327,6 +336,7 @@ export default function Sales() {
     setCashAmount("");
     setMpesaAmount("");
     setMpesaCode("");
+    setMobileStep("products");
     previousAutoCashRef.current = "";
 
     if (activeDraftId) {
@@ -341,7 +351,7 @@ export default function Sales() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 overflow-x-hidden">
       <PageHeader
         title={language === "sw" ? "Mauzo" : "Sales"}
         subtitle={
@@ -350,7 +360,7 @@ export default function Sales() {
             : "A cleaner POS flow for quick product search, faster checkout, and easier daily selling."
         }
         actions={
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
             <Button variant="outline" className="gap-2" onClick={handleSaveDraft} disabled={cartItems.length === 0 || saveDraft.isPending}>
               {saveDraft.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingBag className="h-4 w-4" />}
               {t("sales.saveAsDraft")}
@@ -363,11 +373,33 @@ export default function Sales() {
         }
       />
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_420px]">
+      {isMobile && (
+        <Tabs value={mobileStep} onValueChange={(value) => setMobileStep(value as "products" | "cart" | "checkout")}>
+          <TabsList className="grid h-auto w-full grid-cols-3 rounded-[1.2rem] bg-muted/80 p-1">
+            <TabsTrigger value="products" className="rounded-[0.9rem] py-2.5">
+              {language === "sw" ? "Bidhaa" : "Products"}
+            </TabsTrigger>
+            <TabsTrigger value="cart" className="rounded-[0.9rem] py-2.5">
+              {t("sales.cart")}
+            </TabsTrigger>
+            <TabsTrigger value="checkout" className="rounded-[0.9rem] py-2.5">
+              {language === "sw" ? "Malipo" : "Checkout"}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
+      <section
+        className={cn(
+          "gap-4 overflow-x-hidden",
+          isMobile ? "space-y-4" : "grid xl:grid-cols-[minmax(0,1fr)_minmax(340px,390px)] 2xl:grid-cols-[minmax(0,1.08fr)_420px]",
+        )}
+      >
         <div className="space-y-4">
+          <div className={cn(isMobile && mobileStep !== "products" && "hidden")}>
           <Card className="section-shell overflow-hidden">
             <CardContent className="p-5 md:p-6">
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.78fr)]">
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
@@ -403,22 +435,53 @@ export default function Sales() {
                         autoFocus
                         autoComplete="off"
                       />
+                      {isMobile ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 shrink-0 rounded-xl"
+                          onClick={() => setCameraScannerOpen(true)}
+                        >
+                          <ScanLine className="h-4 w-4" />
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {saleStats.map((stat) => (
-                      <div key={stat.label} className="rounded-[1.35rem] border border-border/70 bg-background/60 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{stat.label}</span>
-                          <stat.icon className="h-4 w-4 text-primary/80" />
+                  {isMobile ? (
+                    <div className="flex flex-wrap gap-2">
+                      {saleStats.map((stat) => (
+                        <div key={stat.label} className="flex min-w-[calc(50%-0.25rem)] flex-1 items-center gap-2 rounded-full border border-border/70 bg-background/72 px-3 py-2">
+                          <stat.icon className="h-4 w-4 shrink-0 text-primary/80" />
+                          <div className="min-w-0">
+                            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{stat.label}</p>
+                            <p className={`truncate text-base font-bold ${stat.tone}`}>{stat.value}</p>
+                          </div>
                         </div>
-                        <p className={`mt-4 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {saleStats.map((stat) => (
+                        <div key={stat.label} className="min-w-0 rounded-[1.35rem] border border-border/70 bg-background/60 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="min-w-0 text-xs font-semibold tracking-[0.08em] text-muted-foreground">{stat.label}</span>
+                            <stat.icon className="h-4 w-4 text-primary/80" />
+                          </div>
+                          <p className={`mt-4 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <div
+                    className={cn(
+                      isMobile
+                        ? "flex w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        : "grid max-h-[calc(100vh-25rem)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3",
+                    )}
+                  >
                     {featuredProducts.length === 0 ? (
                       <div className="col-span-full rounded-[1.35rem] border border-dashed border-border/70 bg-background/40 px-4 py-8 text-center text-sm text-muted-foreground">
                         {language === "sw" ? "Hakuna bidhaa zinazolingana na utafutaji huu." : "No products match this search yet."}
@@ -433,7 +496,10 @@ export default function Sales() {
                             type="button"
                             onClick={() => addToCart(product)}
                             disabled={outOfStock}
-                            className="group rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.56))] p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-55"
+                            className={cn(
+                              "group flex min-h-[11.75rem] min-w-0 flex-col rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.56))] p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-55",
+                              isMobile && "w-[min(82vw,20rem)] max-w-[20rem] shrink-0 snap-center",
+                            )}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
@@ -444,26 +510,32 @@ export default function Sales() {
                                 {outOfStock ? (language === "sw" ? "Imeisha" : "Out") : `${product.stock}`}
                               </Badge>
                             </div>
-                            <div className="mt-5 flex items-end justify-between gap-3">
-                              <div>
+                            <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+                              <div className="min-w-0">
                                 <p className="text-xs text-muted-foreground">{language === "sw" ? "Bei ya kuuza" : "Sell price"}</p>
                                 <p className="text-lg font-bold text-foreground">{formatNumber(product.selling_price)}</p>
                               </div>
-                              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{language === "sw" ? "Ongeza" : "Add"}</span>
+                              <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{language === "sw" ? "Ongeza" : "Add"}</span>
                             </div>
                           </button>
                         );
                       })
                     )}
                   </div>
+
+                  {isMobile && cartItems.length > 0 && (
+                    <Button className="h-12 w-full bg-gradient-to-r from-teal-500 to-blue-600 text-white hover:from-teal-600 hover:to-blue-700" onClick={() => setMobileStep("cart")}>
+                      {language === "sw" ? "Nenda Kikapuni" : "Go to cart"}
+                    </Button>
+                  )}
                 </div>
 
                 <div className="space-y-3">
-                  <div className="rounded-[1.45rem] border border-primary/15 bg-[linear-gradient(145deg,hsl(var(--primary)/0.14),transparent_55%)] p-4">
+                  <div className={cn("rounded-[1.45rem] border border-primary/15 bg-[linear-gradient(145deg,hsl(var(--primary)/0.14),transparent_55%)] p-4", isMobile && "hidden")}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                          {language === "sw" ? "Kituo cha checkout" : "Checkout lane"}
+                          {language === "sw" ? "Checkout" : "Checkout"}
                         </p>
                         <p className="mt-2 text-lg font-semibold text-foreground">
                           {language === "sw" ? "Tayari kwa malipo ya haraka" : "Ready for fast payment"}
@@ -502,7 +574,7 @@ export default function Sales() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
+                                onClick={() => {
                                     const items = (d.sale_items || []).map((si: any) => ({
                                       id: `cart-${Date.now()}-${si.product_id}`,
                                       product_id: si.product_id,
@@ -520,6 +592,7 @@ export default function Sales() {
                                     setSelectedCustomer("walk-in");
                                     setCustomerName(d.customer_name || "");
                                     setActiveDraftId(d.id);
+                                    setMobileStep("cart");
                                   }}
                                 >
                                   {language === "sw" ? "Endelea" : "Resume"}
@@ -542,12 +615,14 @@ export default function Sales() {
               </div>
             </CardContent>
           </Card>
+          </div>
 
+          <div className={cn(isMobile && mobileStep !== "cart" && "hidden")}>
           <Card className="section-shell">
             <CardContent className="p-5 md:p-6">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-foreground">{language === "sw" ? "Kikapu cha sasa" : "Current cart"}</h2>
+                  <h2 className="text-xl font-bold text-foreground">{language === "sw" ? "Cart" : "Current cart"}</h2>
                   <p className="text-sm text-muted-foreground">
                     {language === "sw"
                       ? "Badili kiasi au futa bidhaa kabla ya kukamilisha mauzo."
@@ -639,12 +714,28 @@ export default function Sales() {
                   ))
                 )}
               </div>
+
+              {isMobile && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Button variant="outline" className="h-12" onClick={() => setMobileStep("products")}>
+                    {language === "sw" ? "Ongeza zaidi" : "Add more"}
+                  </Button>
+                  <Button
+                    className="h-12 bg-gradient-to-r from-teal-500 to-blue-600 text-white hover:from-teal-600 hover:to-blue-700"
+                    disabled={cartItems.length === 0}
+                    onClick={() => setMobileStep("checkout")}
+                  >
+                    {language === "sw" ? "Endelea" : "Continue"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <Card className="section-shell xl:sticky xl:top-24">
+        <div className={cn("space-y-4", isMobile && mobileStep !== "checkout" && "hidden")}>
+          <Card className={cn("section-shell", !isMobile && "xl:sticky xl:top-24")}>
             <CardContent className="space-y-6 p-5 md:p-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
@@ -770,14 +861,30 @@ export default function Sales() {
                 </div>
               </div>
 
-              <Button
-                className="h-12 w-full gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white shadow-lg shadow-teal-500/20 hover:from-teal-600 hover:to-blue-700"
-                onClick={handleCompleteSale}
-                disabled={cartItems.length === 0 || createSale.isPending}
-              >
-                {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                {t("sales.completeSale")}
-              </Button>
+              {isMobile ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" className="h-12" onClick={() => setMobileStep("cart")}>
+                    {language === "sw" ? "Rudi kikapuni" : "Back to cart"}
+                  </Button>
+                  <Button
+                    className="h-12 gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white shadow-lg shadow-teal-500/20 hover:from-teal-600 hover:to-blue-700"
+                    onClick={handleCompleteSale}
+                    disabled={cartItems.length === 0 || createSale.isPending}
+                  >
+                    {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                    {language === "sw" ? "Maliza" : "Finish"}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  className="h-12 w-full gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white shadow-lg shadow-teal-500/20 hover:from-teal-600 hover:to-blue-700"
+                  onClick={handleCompleteSale}
+                  disabled={cartItems.length === 0 || createSale.isPending}
+                >
+                  {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                  {t("sales.completeSale")}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -800,6 +907,12 @@ export default function Sales() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MobileCameraScanner
+        open={cameraScannerOpen}
+        onOpenChange={setCameraScannerOpen}
+        onDetected={(value) => handleBarcodeScan(value)}
+      />
 
       {showReceipt && lastSale ? <Receipt data={lastSale} onClose={() => setShowReceipt(false)} /> : null}
     </motion.div>
