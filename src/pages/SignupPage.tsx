@@ -10,7 +10,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { checkPasswordStrength } from "@/lib/validation";
 import { toast } from "sonner";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { isGoogleAuthReady } from "@/lib/authProviders";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -177,17 +176,12 @@ export default function SignupPage() {
                   <GoogleAuthButton
                     loading={googleLoading}
                     onClick={handleGoogleSignup}
-                    disabled={!isGoogleAuthReady}
                     label={language === "sw" ? "Jisajili kwa Google" : "Continue with Google"}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {!isGoogleAuthReady
-                      ? language === "sw"
-                        ? "Google itaonekana hapa baada ya kuunganishwa kwenye Supabase."
-                        : "Google sign-in will appear here after it is connected in Supabase."
-                      : language === "sw"
-                        ? "Ukichagua Google, tutaomba pia jina lako na jina la duka kabla ya kukupeleka ndani."
-                        : "If you choose Google, we will also ask for your name and shop name before taking you inside."}
+                    {language === "sw"
+                      ? "Ukichagua Google, tutaomba pia jina lako na jina la duka kabla ya kukupeleka ndani."
+                      : "If you choose Google, we will also ask for your name and shop name before taking you inside."}
                   </p>
 
                   <div className="flex items-center gap-3 pt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">

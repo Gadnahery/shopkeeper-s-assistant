@@ -19,7 +19,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { checkPasswordStrength } from "@/lib/validation";
 import { requestPasswordReset } from "@/lib/passwordRecovery";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { isGoogleAuthReady } from "@/lib/authProviders";
 
 const features = [
   { icon: Store, label: "POS & Sales", labelSw: "Mauzo na POS" },
@@ -270,20 +269,13 @@ export default function Auth() {
                   <GoogleAuthButton
                     loading={googleLoading}
                     onClick={handleGoogleAuth}
-                    disabled={!isGoogleAuthReady}
                     label={
                       isLogin
                         ? language === "sw" ? "Endelea na Google" : "Continue with Google"
                         : language === "sw" ? "Jisajili kwa Google" : "Continue with Google"
                     }
                   />
-                  {!isGoogleAuthReady ? (
-                    <p className="text-xs text-muted-foreground">
-                      {language === "sw"
-                        ? "Google itaonekana hapa baada ya kuunganishwa kwenye Supabase."
-                        : "Google sign-in will appear here after it is connected in Supabase."}
-                    </p>
-                  ) : !isLogin && (
+                  {!isLogin && (
                     <p className="text-xs text-muted-foreground">
                       {language === "sw"
                         ? "Ukichagua Google, tutakuomba kwanza jina lako na jina la duka kabla ya kukamilisha usajili."

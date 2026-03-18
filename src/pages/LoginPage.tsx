@@ -17,7 +17,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { requestPasswordReset } from "@/lib/passwordRecovery";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { isGoogleAuthReady } from "@/lib/authProviders";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -162,16 +161,8 @@ export default function LoginPage() {
               <GoogleAuthButton
                 loading={googleLoading}
                 onClick={handleGoogleLogin}
-                disabled={!isGoogleAuthReady}
                 label={language === "sw" ? "Endelea na Google" : "Continue with Google"}
               />
-              {!isGoogleAuthReady && (
-                <p className="text-xs text-muted-foreground">
-                  {language === "sw"
-                    ? "Google itaonekana hapa baada ya kuunganishwa kwenye Supabase."
-                    : "Google sign-in will appear here after it is connected in Supabase."}
-                </p>
-              )}
 
               <div className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="h-px flex-1 bg-border/70" />
