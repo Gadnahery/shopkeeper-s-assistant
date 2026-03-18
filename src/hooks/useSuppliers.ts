@@ -29,7 +29,7 @@ export function useCreateSupplier() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (supplier: SupplierInsert) => {
-      let final = { ...supplier };
+      const final = { ...supplier };
       if (!final.shop_id) { final.shop_id = await getUserShopId(); }
       const { data, error } = await supabase.from("suppliers").insert(final).select().single();
       if (error) throw error;

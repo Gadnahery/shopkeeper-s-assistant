@@ -41,7 +41,7 @@ export function useCreateExpense() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (expense: ExpenseInsert) => {
-      let final = { ...expense };
+      const final = { ...expense };
       if (!final.shop_id) { final.shop_id = await getUserShopId(); }
       const { data, error } = await supabase.from("expenses").insert(final).select().single();
       if (error) throw error;

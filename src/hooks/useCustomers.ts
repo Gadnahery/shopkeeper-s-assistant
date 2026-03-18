@@ -32,7 +32,7 @@ export function useCreateCustomer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (customer: CustomerInsert) => {
-      let final = { ...customer };
+      const final = { ...customer };
       if (!final.shop_id) {
         final.shop_id = await getUserShopId();
       }

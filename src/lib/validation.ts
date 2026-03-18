@@ -18,12 +18,12 @@ export function isValidPhone(phone: string): boolean {
 
 export function isValidBarcode(barcode: string): boolean {
   return (
-    /^[0-9]{8,14}$/.test(barcode) || /^[A-Z0-9\-\.\/\+]{4,}$/.test(barcode)
+    /^[0-9]{8,14}$/.test(barcode) || /^[A-Z0-9.+/-]{4,}$/.test(barcode)
   );
 }
 
 export function isValidSKU(sku: string): boolean {
-  return /^[A-Z0-9\-]{3,}$/.test(sku);
+  return /^[A-Z0-9-]{3,}$/.test(sku);
 }
 
 export function isValidPrice(price: number): boolean {

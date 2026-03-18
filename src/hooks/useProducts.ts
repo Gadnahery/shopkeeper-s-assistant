@@ -50,7 +50,7 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: async (product: ProductInsert) => {
       // Ensure shop_id is set
-      let finalProduct = { ...product };
+      const finalProduct = { ...product };
       if (!finalProduct.shop_id) {
         const shopId = await getUserShopId();
         if (shopId) finalProduct.shop_id = shopId;
