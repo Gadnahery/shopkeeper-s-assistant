@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => ({
         name: "WiseCash",
         short_name: "WiseCash",
         description: "Modern retail management with POS, inventory, sales, reports, subscriptions, and team tools.",
-        lang: "en",
+        lang: "sw",
         theme_color: "#0c766b",
         background_color: "#071a1e",
         display: "standalone",
