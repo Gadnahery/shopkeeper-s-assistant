@@ -44,6 +44,40 @@ type SubscriptionContextValue = {
 
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
+async function getFunctionErrorMessage(error: unknown, fallback: string) {
+  const response =
+    typeof error === "object" && error && "context" in error
+      ? (error as { context?: Response }).context
+      : undefined;
+
+  if (response instanceof Response) {
+    try {
+      const payload = (await response.clone().json()) as {
+        error?: string;
+        message?: string;
+        details?: unknown;
+      };
+
+      if (payload.error) return payload.error;
+      if (payload.message) return payload.message;
+      if (typeof payload.details === "string" && payload.details.trim()) return payload.details;
+    } catch {
+      try {
+        const text = await response.clone().text();
+        if (text.trim()) return text;
+      } catch {
+        // Ignore response parsing errors and fall back below.
+      }
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 function getDaysRemaining(subscription: ShopSubscription | null) {
   if (!subscription) return null;
 
@@ -103,7 +137,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     queryKey: ["subscription-payment-options", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("azampay-payment-options");
-      if (error) throw error;
+      if (error) {
+        throw new Error(await getFunctionErrorMessage(error, "Failed to load payment options"));
+      }
       return (data ?? {
         providers: [],
         amount: 0,
@@ -122,7 +158,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(await getFunctionErrorMessage(error, "Failed to start payment"));
+      }
       return (data ?? { message: "Payment request started" }) as { message: string };
     },
     onSuccess: async () => {
