@@ -44,15 +44,17 @@ type SubscriptionContextValue = {
 
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
-async function getFunctionErrorMessage(error: unknown, fallback: string) {
-  const response =
+async function getFunctionErrorMessage(error: unknown, fallback: string, response?: Response) {
+  const errorResponse =
     typeof error === "object" && error && "context" in error
       ? (error as { context?: Response }).context
       : undefined;
 
-  if (response instanceof Response) {
+  const resolvedResponse = response ?? errorResponse;
+
+  if (resolvedResponse instanceof Response) {
     try {
-      const payload = (await response.clone().json()) as {
+      const payload = (await resolvedResponse.clone().json()) as {
         error?: string;
         message?: string;
         details?: unknown;
@@ -63,7 +65,7 @@ async function getFunctionErrorMessage(error: unknown, fallback: string) {
       if (typeof payload.details === "string" && payload.details.trim()) return payload.details;
     } catch {
       try {
-        const text = await response.clone().text();
+        const text = await resolvedResponse.clone().text();
         if (text.trim()) return text;
       } catch {
         // Ignore response parsing errors and fall back below.
@@ -136,9 +138,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const paymentOptionsQuery = useQuery({
     queryKey: ["subscription-payment-options", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("azampay-payment-options");
+      const { data, error, response } = await supabase.functions.invoke("azampay-payment-options");
       if (error) {
-        throw new Error(await getFunctionErrorMessage(error, "Failed to load payment options"));
+        throw new Error(await getFunctionErrorMessage(error, "Failed to load payment options", response));
       }
       return (data ?? {
         providers: [],
@@ -151,7 +153,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async (input: InitiatePaymentInput) => {
-      const { data, error } = await supabase.functions.invoke("azampay-initiate-subscription", {
+      const { data, error, response } = await supabase.functions.invoke("azampay-initiate-subscription", {
         body: {
           provider: input.provider,
           phone_number: input.phoneNumber,
@@ -159,7 +161,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        throw new Error(await getFunctionErrorMessage(error, "Failed to start payment"));
+        throw new Error(await getFunctionErrorMessage(error, "Failed to start payment", response));
       }
       return (data ?? { message: "Payment request started" }) as { message: string };
     },
