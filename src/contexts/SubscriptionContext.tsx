@@ -24,6 +24,7 @@ const DEFAULT_PAYMENT_OPTIONS: PaymentProviderOption[] = [
   { value: "Tigo", label: "Yas (TigoPesa)" },
   { value: "Azampesa", label: "AzamPesa" },
 ];
+const DEFAULT_SUBSCRIPTION_AMOUNT = Number(import.meta.env.VITE_SUBSCRIPTION_MONTHLY_PRICE_TZS ?? "0");
 
 type SubscriptionContextValue = {
   subscription: ShopSubscription | null;
@@ -235,7 +236,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       paymentOptions: paymentOptionsQuery.data?.providers?.length
         ? paymentOptionsQuery.data.providers
         : DEFAULT_PAYMENT_OPTIONS,
-      paymentAmount: paymentOptionsQuery.data?.amount ?? 0,
+      paymentAmount:
+        paymentOptionsQuery.data?.amount && paymentOptionsQuery.data.amount > 0
+          ? paymentOptionsQuery.data.amount
+          : subscriptionQuery.data?.monthly_price && Number(subscriptionQuery.data.monthly_price) > 0
+            ? Number(subscriptionQuery.data.monthly_price)
+            : DEFAULT_SUBSCRIPTION_AMOUNT,
       isLoading:
         subscriptionQuery.isLoading ||
         latestPaymentQuery.isLoading ||
