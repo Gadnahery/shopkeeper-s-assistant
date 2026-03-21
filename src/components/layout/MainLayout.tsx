@@ -6,7 +6,6 @@ import { GlobalProgressBar } from "@/components/GlobalProgressBar";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { SubscriptionReminderDialog } from "@/components/subscription/SubscriptionReminderDialog";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Loader2, WifiOff } from "lucide-react";
@@ -111,7 +110,6 @@ export function MainLayout() {
     <SidebarProvider>
       <>
         <LayoutContent />
-        <SubscriptionReminderDialog />
         <AlertDialog open={sessionExpired}>
           <AlertDialogContent>
             <AlertDialogHeader>

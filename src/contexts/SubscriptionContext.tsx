@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
+import { BILLING_ENABLED } from "@/lib/billing";
+import { resolveSubscriptionMonthlyPrice } from "@/lib/subscription";
 
 type ShopSubscription = Tables<"shop_subscriptions">;
 type SubscriptionPayment = Tables<"subscription_payments">;
@@ -24,8 +26,6 @@ const DEFAULT_PAYMENT_OPTIONS: PaymentProviderOption[] = [
   { value: "Tigo", label: "Yas (TigoPesa)" },
   { value: "Azampesa", label: "AzamPesa" },
 ];
-const DEFAULT_SUBSCRIPTION_AMOUNT = Number(import.meta.env.VITE_SUBSCRIPTION_MONTHLY_PRICE_TZS ?? "0");
-
 type SubscriptionContextValue = {
   subscription: ShopSubscription | null;
   latestPayment: SubscriptionPayment | null;
@@ -81,6 +81,10 @@ async function getFunctionErrorMessage(error: unknown, fallback: string, respons
   return fallback;
 }
 
+function isInvalidJwtMessage(message: string) {
+  return /invalid jwt|jwt malformed|jwt expired/i.test(message);
+}
+
 function getDaysRemaining(subscription: ShopSubscription | null) {
   if (!subscription) return null;
 
@@ -96,8 +100,38 @@ function getDaysRemaining(subscription: ShopSubscription | null) {
 }
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const { shopId, role, user } = useAuth();
+  const { shopId, role, user, session } = useAuth();
   const queryClient = useQueryClient();
+
+  const invokeBillingFunction = async <TData,>(
+    functionName: string,
+    options?: { body?: unknown },
+  ) => {
+    const execute = () => supabase.functions.invoke<TData>(functionName, options);
+
+    let result = await execute();
+    if (!result.error) return result;
+
+    const message = await getFunctionErrorMessage(result.error, "Authentication failed", result.response);
+    if (!isInvalidJwtMessage(message)) {
+      return result;
+    }
+
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData.session) {
+      throw new Error("Session expired. Please sign in again.");
+    }
+
+    result = await execute();
+    if (!result.error) return result;
+
+    const retryMessage = await getFunctionErrorMessage(result.error, "Authentication failed", result.response);
+    if (isInvalidJwtMessage(retryMessage)) {
+      throw new Error("Session expired. Please sign in again.");
+    }
+
+    return result;
+  };
 
   const subscriptionQuery = useQuery({
     queryKey: ["shop-subscription", shopId],
@@ -139,7 +173,24 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const paymentOptionsQuery = useQuery({
     queryKey: ["subscription-payment-options", user?.id],
     queryFn: async () => {
-      const { data, error, response } = await supabase.functions.invoke("azampay-payment-options");
+      if (!BILLING_ENABLED) {
+        return {
+          providers: DEFAULT_PAYMENT_OPTIONS,
+          amount: resolveSubscriptionMonthlyPrice(),
+        };
+      }
+
+      if (!session?.access_token) {
+        return {
+          providers: DEFAULT_PAYMENT_OPTIONS,
+          amount: resolveSubscriptionMonthlyPrice(),
+        };
+      }
+
+      const { data, error, response } = await invokeBillingFunction<{
+        providers?: PaymentProviderOption[];
+        amount?: number;
+      }>("azampay-payment-options");
       if (error) {
         throw new Error(await getFunctionErrorMessage(error, "Failed to load payment options", response));
       }
@@ -148,13 +199,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         amount: 0,
       }) as { providers?: PaymentProviderOption[]; amount?: number };
     },
-    enabled: Boolean(user),
+    enabled: BILLING_ENABLED && Boolean(user && session?.access_token),
     staleTime: 10 * 60 * 1000,
   });
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async (input: InitiatePaymentInput) => {
-      const { data, error, response } = await supabase.functions.invoke("azampay-initiate-subscription", {
+      if (!BILLING_ENABLED) {
+        return {
+          message: "Billing is currently disabled while live payment setup is in progress.",
+        };
+      }
+
+      const { data, error, response } = await invokeBillingFunction<{ message: string }>("azampay-initiate-subscription", {
         body: {
           provider: input.provider,
           phone_number: input.phoneNumber,
@@ -207,14 +264,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     };
   }, [shopId, queryClient]);
 
-  const daysRemaining = getDaysRemaining(subscriptionQuery.data);
-  const isTrialing = subscriptionQuery.data?.status === "trialing";
-  const isActive = subscriptionQuery.data?.status === "active" || isTrialing;
-  const isBillingLocked =
-    Boolean(subscriptionQuery.data) &&
-    !(subscriptionQuery.data?.status === "active" || subscriptionQuery.data?.status === "trialing");
+  const daysRemaining = BILLING_ENABLED ? getDaysRemaining(subscriptionQuery.data) : null;
+  const isTrialing = BILLING_ENABLED ? subscriptionQuery.data?.status === "trialing" : false;
+  const isActive = BILLING_ENABLED ? subscriptionQuery.data?.status === "active" || isTrialing : true;
+  const isBillingLocked = false;
 
   const renewalDateLabel = useMemo(() => {
+    if (!BILLING_ENABLED) return null;
     if (!subscriptionQuery.data) return null;
     const dateValue =
       subscriptionQuery.data.status === "trialing"
@@ -236,12 +292,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       paymentOptions: paymentOptionsQuery.data?.providers?.length
         ? paymentOptionsQuery.data.providers
         : DEFAULT_PAYMENT_OPTIONS,
-      paymentAmount:
-        paymentOptionsQuery.data?.amount && paymentOptionsQuery.data.amount > 0
-          ? paymentOptionsQuery.data.amount
-          : subscriptionQuery.data?.monthly_price && Number(subscriptionQuery.data.monthly_price) > 0
-            ? Number(subscriptionQuery.data.monthly_price)
-            : DEFAULT_SUBSCRIPTION_AMOUNT,
+      paymentAmount: resolveSubscriptionMonthlyPrice(
+        paymentOptionsQuery.data?.amount,
+        subscriptionQuery.data?.monthly_price,
+      ),
       isLoading:
         subscriptionQuery.isLoading ||
         latestPaymentQuery.isLoading ||

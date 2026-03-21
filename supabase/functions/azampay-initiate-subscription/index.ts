@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  applySubscriptionPaymentSuccess,
+  getConfiguredSubscriptionMonthlyPrice,
+  isAzamPayDemoMode,
+} from "../_shared/subscription.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,7 +65,7 @@ serve(async (req) => {
     const authUrl = Deno.env.get("AZAMPAY_AUTH_URL");
     const callbackSecret = Deno.env.get("AZAMPAY_CALLBACK_SECRET");
     const source = Deno.env.get("AZAMPAY_SOURCE") ?? "Smart Money Subscription";
-    const amount = Number(Deno.env.get("SUBSCRIPTION_MONTHLY_PRICE_TZS") ?? "0");
+    const amount = getConfiguredSubscriptionMonthlyPrice();
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRole || !authHeader) {
       return json({ error: "Server misconfigured" }, 500);
@@ -173,7 +178,7 @@ serve(async (req) => {
         expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
         request_payload: payload,
       })
-      .select("id, external_id")
+      .select("*")
       .single();
 
     if (paymentError || !paymentRow) {
@@ -233,6 +238,30 @@ serve(async (req) => {
         message: "Awaiting customer confirmation on mobile phone",
       })
       .eq("id", paymentRow.id);
+
+    if (isAzamPayDemoMode(baseUrl)) {
+      await applySubscriptionPaymentSuccess({
+        adminClient,
+        payment: paymentRow,
+        amountConfigured: amount,
+        callbackPayload: {
+          demo_mode: true,
+          checkout_response: checkoutBody,
+        },
+        message: "Demo payment confirmed in sandbox mode",
+        providerReference: `demo-${paymentRow.external_id}`,
+        utilityReference: paymentRow.external_id,
+      });
+
+      return json({
+        ok: true,
+        external_id: paymentRow.external_id,
+        phone_number: phoneNumber,
+        amount,
+        status: "success",
+        message: "Demo payment completed successfully.",
+      });
+    }
 
     return json({
       ok: true,

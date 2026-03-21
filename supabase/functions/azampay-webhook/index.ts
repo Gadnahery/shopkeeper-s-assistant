@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  applySubscriptionPaymentSuccess,
+  getConfiguredSubscriptionMonthlyPrice,
+} from "../_shared/subscription.ts";
 
 type WebhookBody = {
   utilityref?: string;
@@ -26,7 +30,7 @@ serve(async (req) => {
     const expectedSecret = Deno.env.get("AZAMPAY_CALLBACK_SECRET");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const amountConfigured = Number(Deno.env.get("SUBSCRIPTION_MONTHLY_PRICE_TZS") ?? "0");
+    const amountConfigured = getConfiguredSubscriptionMonthlyPrice();
 
     if (!expectedSecret || secret !== expectedSecret) {
       return response("Unauthorized", 401);
@@ -61,16 +65,6 @@ serve(async (req) => {
 
     if (paymentError || !payment) {
       return response("Payment not found", 404);
-    }
-
-    const { data: subscription } = await adminClient
-      .from("shop_subscriptions")
-      .select("*")
-      .eq("shop_id", payment.shop_id)
-      .maybeSingle();
-
-    if (!subscription) {
-      return response("Subscription not found", 404);
     }
 
     if (payment.status === "success") {
@@ -116,52 +110,14 @@ serve(async (req) => {
       return response("Amount too low", 400);
     }
 
-    const now = new Date();
-    const baseDate = subscription.current_period_ends_at && new Date(subscription.current_period_ends_at) > now
-      ? new Date(subscription.current_period_ends_at)
-      : now;
-    const periodStart = new Date(baseDate);
-    const periodEnd = new Date(baseDate);
-    periodEnd.setMonth(periodEnd.getMonth() + (payment.billing_period_months ?? 1));
-
-    await adminClient
-      .from("subscription_payments")
-      .update({
-        status: "success",
-        provider_reference: providerReference,
-        utility_reference: externalId,
-        transaction_reference: providerReference,
-        message: message || "Subscription payment confirmed",
-        callback_payload: body,
-        paid_for_period_start: periodStart.toISOString(),
-        paid_for_period_end: periodEnd.toISOString(),
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", payment.id);
-
-    await adminClient
-      .from("shop_subscriptions")
-      .update({
-        status: "active",
-        current_period_started_at: periodStart.toISOString(),
-        current_period_ends_at: periodEnd.toISOString(),
-        grace_ends_at: null,
-        last_payment_at: new Date().toISOString(),
-        monthly_price: amountConfigured > 0 ? amountConfigured : payment.amount,
-        provider: "azampay",
-        metadata: {
-          last_provider_reference: providerReference,
-          last_payment_phone: payment.phone_number,
-          last_payment_channel: payment.payment_channel,
-        },
-      })
-      .eq("shop_id", payment.shop_id);
-
-    await adminClient.from("notifications").insert({
-      shop_id: payment.shop_id,
-      title: "Subscription renewed",
-      message: `Your access is active until ${periodEnd.toLocaleDateString("en-GB")}.`,
-      type: "subscription-payment-success",
+    await applySubscriptionPaymentSuccess({
+      adminClient,
+      payment,
+      amountConfigured,
+      callbackPayload: body,
+      message: message || "Subscription payment confirmed",
+      providerReference,
+      utilityReference: externalId,
     });
 
     return response("Payment applied", 200);

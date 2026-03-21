@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { type AuthError, type Session, type User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { clearStoredSupabaseAuth, supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { getAppUrl } from "@/lib/siteUrl";
 
@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [shopId, setShopId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileWithShop | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const authVersionRef = useRef(0);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -95,6 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      authVersionRef.current += 1;
+
       if (!isMounted) return;
 
       if (event === "SIGNED_OUT") {
@@ -121,16 +124,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    void supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      const bootstrapVersion = authVersionRef.current;
+
       if (!isMounted) return;
 
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-
-      if (initialSession?.user) {
-        void fetchProfile(initialSession.user.id);
+      if (!initialSession) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+      if (!isMounted || bootstrapVersion !== authVersionRef.current) return;
+
+      const resolvedSession = refreshData.session ?? initialSession;
+      const resolvedUser = resolvedSession?.user ?? null;
+
+      if (resolvedSession && resolvedUser) {
+        setSession(resolvedSession);
+        setUser(resolvedUser);
+        setSessionExpired(false);
+        void fetchProfile(resolvedUser.id);
+        setLoading(false);
+        return;
+      }
+
+      if (refreshError) {
+        clearStoredSupabaseAuth();
+        await supabase.auth.signOut();
+      }
+
+      if (!isMounted || bootstrapVersion !== authVersionRef.current) return;
+
+      setSession(null);
+      setUser(null);
+      setShopId(null);
+      setProfile(null);
+      setRole(null);
+      setSessionExpired(Boolean(initialSession));
       setLoading(false);
     });
 
@@ -161,7 +195,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (!error && data.session && data.user) {
+      authVersionRef.current += 1;
+      setSession(data.session);
+      setUser(data.user);
+      setSessionExpired(false);
+      await fetchProfile(data.user.id);
+      setLoading(false);
+    }
+
     return { error };
   };
 
@@ -182,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    clearStoredSupabaseAuth();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

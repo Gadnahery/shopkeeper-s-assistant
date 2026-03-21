@@ -19,7 +19,9 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { BILLING_ENABLED } from "@/lib/billing";
 import { cn } from "@/lib/utils";
+import { resolveSubscriptionMonthlyPrice } from "@/lib/subscription";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-TZ", {
@@ -98,6 +100,7 @@ export default function Billing() {
   } = useSubscription();
   const [provider, setProvider] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const monthlyAmount = resolveSubscriptionMonthlyPrice(paymentAmount, subscription?.monthly_price);
 
   const statusTone = useMemo(() => {
     if (!subscription) return "secondary";
@@ -135,6 +138,63 @@ export default function Billing() {
     );
   }
 
+  if (!BILLING_ENABLED) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title={language === "sw" ? "Malipo yamesimamishwa kwa sasa" : "Billing is paused for now"}
+          subtitle={
+            language === "sw"
+              ? "Programu iko kwenye free mode. Watumiaji wanaweza kutumia mfumo wote bila vizuizi hadi tutakapowasha malipo halisi."
+              : "The app is currently in free mode. Users can use the full system without billing restrictions until live payments are enabled."
+          }
+        />
+
+        <Card className="section-shell">
+          <CardContent className="space-y-4 p-6">
+            <div className="rounded-[1.35rem] border border-emerald-500/20 bg-emerald-500/8 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                {language === "sw" ? "Ufikiaji wa app uko wazi" : "App access is fully open"}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {language === "sw"
+                  ? "Tumeondoa kufunga app, vikumbusho vya usajili, na kulazimisha malipo kwa muda huu wa mpito."
+                  : "Subscription lockouts, reminder popups, and payment enforcement are temporarily disabled during this transition period."}
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-[1.2rem] border border-border/70 bg-background/68 p-4">
+                <p className="text-sm font-semibold text-foreground">
+                  {language === "sw" ? "Live payment baadaye" : "Live payments later"}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {language === "sw"
+                    ? "Tutawasha tena billing page hii baada ya AzamPay live mode kukamilika."
+                    : "This billing page will be turned back on once AzamPay live mode is fully configured."}
+                </p>
+              </div>
+
+              <div className="rounded-[1.2rem] border border-border/70 bg-background/68 p-4">
+                <p className="text-sm font-semibold text-foreground">
+                  {language === "sw" ? "Kumbukumbu ya mwisho" : "Last payment record"}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {language === "sw" ? "Hali" : "Status"}:{" "}
+                  <span className="font-semibold text-foreground">{latestPayment?.status ?? "-"}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {language === "sw" ? "Njia" : "Channel"}:{" "}
+                  <span className="font-semibold text-foreground">{latestPayment?.payment_channel ?? "-"}</span>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const billingStats = [
     {
       label: language === "sw" ? "Hali ya sasa" : "Current access",
@@ -155,7 +215,7 @@ export default function Billing() {
     },
     {
       label: language === "sw" ? "Bei ya mwezi" : "Monthly amount",
-      value: formatCurrency(paymentAmount || subscription?.monthly_price || 0),
+      value: formatCurrency(monthlyAmount),
       hint: language === "sw" ? "Unalipa mara moja kwa mwezi" : "Charged once every month",
       icon: WalletCards,
     },
@@ -299,7 +359,7 @@ export default function Billing() {
                   </p>
                 </div>
                 <p className="text-xl font-bold text-foreground">
-                  {formatCurrency(paymentAmount || subscription?.monthly_price || 0)}
+                  {formatCurrency(monthlyAmount)}
                 </p>
               </div>
 

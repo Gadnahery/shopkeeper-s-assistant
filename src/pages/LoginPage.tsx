@@ -20,7 +20,7 @@ import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { user, signIn, signInWithGoogle } = useAuth();
+  const { user, session, signIn, signInWithGoogle } = useAuth();
   const { language } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,10 +31,10 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
 
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
+    if (user && session) navigate("/dashboard", { replace: true });
+  }, [user, session, navigate]);
 
-  if (user) return null;
+  if (user && session) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +49,6 @@ export default function LoginPage() {
               : "Invalid email or password"
             : error.message
         );
-      } else {
-        navigate("/dashboard", { replace: true });
       }
     } finally {
       setLoading(false);

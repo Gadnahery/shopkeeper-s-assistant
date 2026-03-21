@@ -8,6 +8,32 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
 /** True when both env vars are set (non-empty). Use to show setup message instead of blank screen. */
 export const hasValidSupabaseEnv = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
+function getSupabaseProjectRef(url: string) {
+  try {
+    return new URL(url).hostname.split(".")[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearStoredSupabaseAuth() {
+  if (typeof localStorage === "undefined") return;
+
+  const projectRef = getSupabaseProjectRef(SUPABASE_URL);
+  if (!projectRef) return;
+
+  const prefixes = [
+    `sb-${projectRef}-auth-token`,
+    `sb-${projectRef}-auth-token-code-verifier`,
+  ];
+
+  Object.keys(localStorage).forEach((key) => {
+    if (prefixes.some((prefix) => key.startsWith(prefix))) {
+      localStorage.removeItem(key);
+    }
+  });
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 

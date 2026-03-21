@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getConfiguredSubscriptionMonthlyPrice } from "../_shared/subscription.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -144,7 +145,7 @@ serve(async (req) => {
     return json({
       providers: options,
       source: Deno.env.get("AZAMPAY_SOURCE") ?? "Smart Money Subscription",
-      amount: Number(Deno.env.get("SUBSCRIPTION_MONTHLY_PRICE_TZS") ?? "0"),
+      amount: getConfiguredSubscriptionMonthlyPrice(),
       currency: "TZS",
     });
   } catch (error) {

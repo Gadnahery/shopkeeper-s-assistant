@@ -5,6 +5,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const authState = vi.hoisted(() => ({
   user: null as null | { id: string },
+  session: null as null | { access_token: string },
   loading: false,
   role: null as null | "owner" | "manager" | "cashier" | "staff" | "hr",
 }));
@@ -60,6 +61,7 @@ function renderProtectedRoute(route = "/dashboard", allowedRoles?: Array<"owner"
 describe("ProtectedRoute", () => {
   beforeEach(() => {
     authState.user = null;
+    authState.session = null;
     authState.loading = false;
     authState.role = null;
     accessState.data = ["/dashboard", "/settings"];
@@ -76,6 +78,7 @@ describe("ProtectedRoute", () => {
 
   it("renders the protected content for authenticated users with access", () => {
     authState.user = { id: "user-1" };
+    authState.session = { access_token: "token-1" };
 
     renderProtectedRoute();
 
@@ -84,6 +87,7 @@ describe("ProtectedRoute", () => {
 
   it("redirects users without the required role back to the dashboard", () => {
     authState.user = { id: "user-2" };
+    authState.session = { access_token: "token-2" };
     authState.role = "cashier";
 
     renderProtectedRoute("/settings", ["owner", "manager"]);
@@ -91,33 +95,13 @@ describe("ProtectedRoute", () => {
     expect(screen.getByText("Dashboard content")).toBeInTheDocument();
   });
 
-  it("redirects billing-locked users to billing", () => {
+  it("allows authenticated users through even when billing is marked locked", () => {
     authState.user = { id: "user-3" };
+    authState.session = { access_token: "token-3" };
     subscriptionState.isBillingLocked = true;
 
-    render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
-        <Routes>
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <div>Dashboard content</div>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/billing"
-            element={
-              <ProtectedRoute allowBillingLocked>
-                <div>Billing page</div>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>,
-    );
+    renderProtectedRoute();
 
-    expect(screen.getByText("Billing page")).toBeInTheDocument();
+    expect(screen.getByText("Dashboard content")).toBeInTheDocument();
   });
 });

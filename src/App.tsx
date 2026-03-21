@@ -12,6 +12,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { PWAProvider } from "@/contexts/PWAContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { PWAUpdateBanner } from "@/components/pwa/PWAUpdateBanner";
+import { RouteSeo } from "@/components/seo/RouteSeo";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CommandPalette } from "./components/CommandPalette";
 import { hasValidSupabaseEnv } from "@/integrations/supabase/client";
@@ -114,6 +115,7 @@ const App = () => (
                     <Sonner />
                     <PWAUpdateBanner />
                     <BrowserRouter>
+                      <RouteSeo />
                       <Suspense fallback={<AppLoader />}>
                         <Routes>
                           <Route path="/" element={<LandingPage />} />
@@ -129,8 +131,8 @@ const App = () => (
                           <Route path="/reset-password" element={<ResetPassword />} />
                           <Route path="/auth/oauth-setup" element={<GoogleOnboardingPage />} />
 
-                          <Route element={<ProtectedRoute allowBillingLocked><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
-                            <Route path="/billing" element={<ProtectedRoute allowBillingLocked><Suspense fallback={<RouteFallback />}><Billing /></Suspense></ProtectedRoute>} />
+                          <Route element={<ProtectedRoute><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
+                            <Route path="/billing" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Billing /></Suspense></ProtectedRoute>} />
                             <Route path="/dashboard" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Dashboard /></Suspense></ProtectedRoute>} />
                             <Route path="/sales" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Sales /></Suspense></ProtectedRoute>} />
                             <Route path="/sales/terminal" element={<Navigate to="/sales" replace />} />

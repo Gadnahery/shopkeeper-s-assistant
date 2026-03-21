@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNotificationContext } from "@/contexts/NotificationContext";
@@ -53,7 +52,6 @@ export function Header() {
   const { setCollapsed } = useSidebar();
   const { language, setLanguage } = useLanguage();
   const { profile, signOut } = useAuth();
-  const { isBillingLocked, daysRemaining, renewalDateLabel } = useSubscription();
   const { isMobile } = useAdaptiveLayout();
   const { theme, toggleTheme } = useTheme();
   const { data: notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
@@ -116,29 +114,6 @@ export function Header() {
 
           {!isMobile && (
             <>
-              <button
-                type="button"
-                onClick={() => navigate("/billing")}
-                className={cn(
-                  "hidden rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors lg:inline-flex",
-                  isBillingLocked
-                    ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                    : "border-border/70 bg-card/75 text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {isBillingLocked
-                  ? language === "sw"
-                    ? "Malipo yanahitajika"
-                    : "Payment required"
-                  : daysRemaining !== null && daysRemaining <= 7
-                    ? language === "sw"
-                      ? `Inaisha ${renewalDateLabel ?? ""}`
-                      : `Renews by ${renewalDateLabel ?? ""}`
-                    : language === "sw"
-                      ? "Usajili"
-                      : "Subscription"}
-              </button>
-
               <form onSubmit={handleSearch} className="hidden min-w-0 flex-1 md:flex md:max-w-[28rem] xl:max-w-[34rem]">
                 <div className="relative w-full">
                   <Search
