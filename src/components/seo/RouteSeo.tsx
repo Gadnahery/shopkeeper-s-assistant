@@ -79,12 +79,7 @@ function buildHomeJsonLd() {
         operatingSystem: "Web",
         url: "https://wisecash.app/",
         description:
-          "WiseCash helps businesses manage POS, inventory, sales, staff, reports, and subscriptions in one app.",
-        offers: {
-          "@type": "Offer",
-          price: "10000",
-          priceCurrency: "TZS",
-        },
+          "WiseCash helps businesses manage POS, inventory, sales, staff, reports, and daily operations in one app.",
         publisher: {
           "@id": "https://wisecash.app/#organization",
         },
@@ -99,7 +94,7 @@ function buildHomeJsonLd() {
             acceptedAnswer: {
               "@type": "Answer",
               text:
-                "WiseCash is retail management software for shops and growing businesses. It combines POS, inventory management, sales tracking, reports, staff tools, and subscriptions in one web app.",
+                "WiseCash is business management software for shops and growing businesses. It combines POS, inventory management, sales tracking, reports, and staff tools in one web app.",
             },
           },
           {
@@ -126,7 +121,7 @@ function buildHomeJsonLd() {
             acceptedAnswer: {
               "@type": "Answer",
               text:
-                "New businesses get a 1-week free trial for onboarding and training. After that, the monthly subscription is 10,000 TZS.",
+                "WiseCash is currently open for use while worldwide billing is being prepared. Official global pricing will be announced later.",
             },
           },
         ],
@@ -142,7 +137,7 @@ function getSeoConfig(pathname: string): SeoConfig {
     "/": {
       title: "WiseCash | POS, Inventory, Sales and Retail Management",
       description:
-        "WiseCash helps shops and growing businesses manage POS, inventory, sales, reports, staff, and daily operations in one modern web app.",
+        "WiseCash helps shops and growing businesses worldwide manage POS, inventory, sales, reports, staff, and daily operations in one modern web app.",
       robots: INDEXABLE_ROBOTS,
       canonicalPath: "/",
       ogType: "website",
@@ -157,9 +152,9 @@ function getSeoConfig(pathname: string): SeoConfig {
       ogType: "website",
     },
     "/pricing": {
-      title: "WiseCash Pricing | Free Trial and 10,000 TZS Monthly Plan",
+      title: "WiseCash Pricing | Global Launch Access",
       description:
-        "Start WiseCash with a 1-week free trial, onboarding support, and a simple 10,000 TZS monthly subscription paid by mobile money.",
+        "Start using WiseCash now while global billing is being prepared. Official worldwide pricing and payment options will be announced later.",
       robots: INDEXABLE_ROBOTS,
       canonicalPath: "/pricing",
       ogType: "website",
@@ -189,7 +184,7 @@ function getSeoConfig(pathname: string): SeoConfig {
   return {
     title: "WiseCash",
     description:
-      "WiseCash helps shops and growing businesses manage POS, inventory, sales, reports, staff, and daily operations in one modern web app.",
+      "WiseCash helps shops and growing businesses worldwide manage POS, inventory, sales, reports, staff, and daily operations in one modern web app.",
     robots: NOINDEX_ROBOTS,
     canonicalPath: routePath || "/",
     ogType: "website",

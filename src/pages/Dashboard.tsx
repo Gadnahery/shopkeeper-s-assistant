@@ -47,6 +47,7 @@ import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
 import { buildCategoryChartData, buildSalesTrendData } from "@/pages/dashboard/chartData";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
@@ -84,6 +85,7 @@ export default function Dashboard() {
   const { t, language } = useLanguage();
   const { profile } = useAuth();
   const { isMobile } = useAdaptiveLayout();
+  const { currency, formatMoney, formatNumber } = useShopFormatting();
   const range = useMemo(() => getRange(kpiRange, customRange), [kpiRange, customRange]);
   const { data: rangeSales, isLoading: salesLoading } = useSalesSummaryByRange(range.start, range.end);
   const { data: detailedSales, isLoading: detailedSalesLoading } = useSalesByDateRange(range.start, range.end);
@@ -92,7 +94,6 @@ export default function Dashboard() {
   const { data: categoryData, isLoading: categoryLoading } = useStockByCategory();
 
   const shopName = profile?.shops?.name || "Smart Money";
-  const formatNumber = (num: number) => num.toLocaleString("en-US");
 
   const cashPercent = rangeSales?.total ? Math.round((rangeSales.cash / rangeSales.total) * 100) : 0;
   const mpesaPercent = 100 - cashPercent;
@@ -135,13 +136,13 @@ export default function Dashboard() {
     },
     {
       label: language === "sw" ? "Mapato ya kipindi" : "Revenue in range",
-      value: `TSH ${formatNumber(rangeSales?.total || 0)}`,
+      value: formatMoney(rangeSales?.total || 0),
       tone: "text-primary",
       hint: language === "sw" ? "Kipindi ulichochagua" : "Selected range",
     },
     {
       label: language === "sw" ? "Fedha taslimu" : "Cash collected",
-      value: `TSH ${formatNumber(rangeSales?.cash || 0)}`,
+      value: formatMoney(rangeSales?.cash || 0),
       tone: "text-foreground",
       hint: language === "sw" ? "Leo hadi sasa" : "Cash share",
     },
@@ -178,7 +179,7 @@ export default function Dashboard() {
     {
       title: t("dashboard.todaySales"),
       value: salesLoading ? "..." : formatNumber(rangeSales?.total || 0),
-      subtitle: "TSH",
+      subtitle: currency,
       icon: LayoutGrid,
       link: "/reports",
       linkRange: kpiRange,
@@ -296,7 +297,7 @@ export default function Dashboard() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80">
                 {language === "sw" ? "Mapato ya kipindi" : "Sales in range"}
               </p>
-              <p className="mt-3 text-3xl font-bold text-foreground">TSH {formatNumber(rangeSales?.total || 0)}</p>
+              <p className="mt-3 text-3xl font-bold text-foreground">{formatMoney(rangeSales?.total || 0)}</p>
               <p className="mt-1 text-sm text-muted-foreground">{rangeLabel}</p>
 
               <div className="mt-4 grid gap-2">
@@ -650,7 +651,7 @@ export default function Dashboard() {
                 />
                 <YAxis hide domain={["auto", "auto"]} />
                 <Tooltip
-                  formatter={(value: number) => [`Tsh ${formatNumber(value)}`, "Sales"]}
+                  formatter={(value: number) => [formatMoney(value), "Sales"]}
                   contentStyle={{
                     borderRadius: 12,
                     border: "1px solid hsl(var(--border))",

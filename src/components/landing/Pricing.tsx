@@ -29,8 +29,8 @@ export function Pricing() {
           </h2>
           <p className="mt-4 max-w-2xl mx-auto text-muted-foreground">
             {language === "sw"
-              ? "Anza na mafunzo ya wiki 1 bure, kisha endelea na mpango wa kila mwezi wa WiseCash."
-              : "Start with a 1-week free trial, then continue with WiseCash monthly subscription pricing."}
+              ? "Anza kutumia WiseCash sasa. Billing ya kimataifa itawekwa rasmi baadaye, kwa hiyo timu yako inaweza kuanza bila vikwazo vya malipo kwa sasa."
+              : "Start using WiseCash now. Global billing will be finalized later, so your team can get started without payment restrictions for now."}
           </p>
         </motion.div>
 
@@ -41,18 +41,18 @@ export function Pricing() {
           className="mx-auto max-w-md rounded-3xl border border-border bg-card p-8 shadow-lg"
         >
           <h3 className="text-2xl font-bold text-foreground">
-            {language === "sw" ? "Mpango wa Biashara" : "Business Plan"}
+            {language === "sw" ? "Mpango wa Global Launch" : "Global Launch Access"}
           </h3>
           <div className="mt-4 flex items-baseline gap-1">
-            <span className="text-4xl font-bold">Tsh 10,000</span>
+            <span className="text-4xl font-bold">{language === "sw" ? "Bure kwa sasa" : "Free for now"}</span>
             <span className="text-muted-foreground">
-              / {language === "sw" ? "mwezi" : "month"}
+              {language === "sw" ? "wakati wa maandalizi ya billing" : "while billing is being prepared"}
             </span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             {language === "sw"
-              ? "Wiki 1 ya kwanza ni bure kwa mafunzo na kuanza kutumia mfumo."
-              : "The first week is free for onboarding and training before billing begins."}
+              ? "Tunafungua WiseCash kwa matumizi mapana kwanza. Bei ya kimataifa na njia rasmi za malipo zitatangazwa baada ya global setup kukamilika."
+              : "We are opening WiseCash for broader use first. Global pricing and official billing options will be announced after the worldwide setup is complete."}
           </p>
           <ul className="mt-6 space-y-3">
             {features.map((f) => (

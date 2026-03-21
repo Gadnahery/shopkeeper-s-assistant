@@ -11,7 +11,7 @@ const faqItems = [
   {
     enQuestion: "What is WiseCash?",
     enAnswer:
-      "WiseCash is retail management software for shops and growing businesses. It combines POS, inventory management, sales tracking, reports, staff tools, and subscriptions in one web app.",
+      "WiseCash is business management software for shops and growing businesses. It combines POS, inventory management, sales tracking, reports, and staff tools in one web app.",
     swQuestion: "WiseCash ni nini?",
     swAnswer:
       "WiseCash ni mfumo wa usimamizi wa biashara kwa maduka na biashara zinazokua. Unaunganisha POS, stoki, mauzo, ripoti, wafanyakazi, na usajili kwenye web app moja.",
@@ -35,10 +35,10 @@ const faqItems = [
   {
     enQuestion: "How much does WiseCash cost?",
     enAnswer:
-      "New businesses get a 1-week free trial for onboarding and training. After that, the monthly subscription is 10,000 TZS.",
+      "WiseCash is currently open for use while worldwide billing is being prepared. Official global pricing will be announced later.",
     swQuestion: "WiseCash inagharimu kiasi gani?",
     swAnswer:
-      "Biashara mpya hupata wiki 1 bure kwa mafunzo na kuanza kutumia mfumo. Baada ya hapo, usajili wa mwezi ni 10,000 TZS.",
+      "Kwa sasa WiseCash iko wazi kutumika wakati billing ya kimataifa inaandaliwa. Bei rasmi ya global itatangazwa baadaye.",
   },
 ];
 
@@ -59,8 +59,8 @@ export function FAQ() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
             {language === "sw"
-              ? "Majibu ya haraka kuhusu WiseCash, usajili, na matumizi ya mfumo."
-              : "Quick answers about WiseCash, subscriptions, and how the platform works."}
+              ? "Majibu ya haraka kuhusu WiseCash, matumizi ya mfumo, na hatua za global launch."
+              : "Quick answers about WiseCash, how the platform works, and the global launch setup."}
           </p>
         </motion.div>
 

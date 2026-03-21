@@ -26,7 +26,7 @@ export function useShopSettings() {
       if (error) throw error;
       const { data: shops } = await supabase
         .from("shops")
-        .select("name, phone, address, receipt_header, receipt_footer, logo_url, tax_rate")
+        .select("name, phone, address, receipt_header, receipt_footer, logo_url, tax_rate, currency, locale, country_code")
         .eq("id", shopId)
         .maybeSingle();
       const shopBase = shops
@@ -38,6 +38,9 @@ export function useShopSettings() {
             receipt_footer: shops.receipt_footer,
             logo_url: shops.logo_url,
             tax_rate: shops.tax_rate ?? 0,
+            currency: shops.currency ?? "USD",
+            locale: shops.locale ?? "en-US",
+            country_code: shops.country_code ?? "US",
           }
         : null;
       if (!data) {

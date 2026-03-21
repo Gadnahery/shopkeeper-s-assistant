@@ -166,12 +166,12 @@ export default function Billing() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-[1.2rem] border border-border/70 bg-background/68 p-4">
                 <p className="text-sm font-semibold text-foreground">
-                  {language === "sw" ? "Live payment baadaye" : "Live payments later"}
+                  {language === "sw" ? "Global billing baadaye" : "Global billing later"}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {language === "sw"
-                    ? "Tutawasha tena billing page hii baada ya AzamPay live mode kukamilika."
-                    : "This billing page will be turned back on once AzamPay live mode is fully configured."}
+                    ? "Tutawasha tena billing page hii baada ya njia za malipo za kimataifa kukamilika."
+                    : "This billing page will be turned back on once the worldwide payment setup is complete."}
                 </p>
               </div>
 

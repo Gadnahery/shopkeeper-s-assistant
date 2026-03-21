@@ -652,10 +652,12 @@ export type Database = {
       shops: {
         Row: {
           address: string | null
+          country_code: string | null
           created_at: string | null
           currency: string | null
           email: string | null
           id: string
+          locale: string | null
           logo_url: string | null
           name: string
           phone: string | null
@@ -666,10 +668,12 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          country_code?: string | null
           created_at?: string | null
           currency?: string | null
           email?: string | null
           id?: string
+          locale?: string | null
           logo_url?: string | null
           name: string
           phone?: string | null
@@ -680,10 +684,12 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          country_code?: string | null
           created_at?: string | null
           currency?: string | null
           email?: string | null
           id?: string
+          locale?: string | null
           logo_url?: string | null
           name?: string
           phone?: string | null

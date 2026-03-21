@@ -6,7 +6,7 @@ import { getAppUrl } from "@/lib/siteUrl";
 
 type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
-type ShopRow = Pick<Database["public"]["Tables"]["shops"]["Row"], "id" | "name">;
+type ShopRow = Database["public"]["Tables"]["shops"]["Row"];
 type ProfileWithShop = ProfileRow & { shops?: ShopRow | null };
 
 interface AuthContextType {
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!resolvedProfile.shops && resolvedProfile.shop_id) {
         const { data: shop } = await supabase
           .from("shops")
-          .select("id, name")
+          .select("*")
           .eq("id", resolvedProfile.shop_id)
           .maybeSingle();
 

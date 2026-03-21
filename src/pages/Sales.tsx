@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { MobileCameraScanner } from "@/components/common/MobileCameraScanner";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { cn } from "@/lib/utils";
 
 interface CartItem {
@@ -59,6 +60,7 @@ interface CartItem {
 export default function Sales() {
   const { t, language } = useLanguage();
   const { isMobile } = useAdaptiveLayout();
+  const { currency, formatMoney } = useShopFormatting();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discountAmount, setDiscountAmount] = useState("0");
   const [discountPercent, setDiscountPercent] = useState("0");
@@ -184,7 +186,6 @@ export default function Sales() {
 
   const featuredProducts = filteredProducts.slice(0, searchTerm ? 12 : 8);
 
-  const formatNumber = (num: number) => num.toLocaleString("en-US");
   const saleStats = [
     {
       label: language === "sw" ? "Cart" : "Items in cart",
@@ -194,13 +195,13 @@ export default function Sales() {
     },
     {
       label: language === "sw" ? "Checkout" : "Checkout total",
-      value: formatNumber(total),
+      value: formatMoney(total),
       tone: "text-primary",
       icon: Wallet,
     },
     {
       label: language === "sw" ? "Chenji" : "Change due",
-      value: formatNumber(changeDue),
+      value: formatMoney(changeDue),
       tone: "text-foreground",
       icon: ReceiptText,
     },
@@ -224,7 +225,7 @@ export default function Sales() {
       return;
     }
     if (mpesaPaid > 0 && !mpesaCode.trim()) {
-      toast.error(language === "sw" ? "Weka namba ya muamala wa M-Pesa" : "Enter the M-Pesa transaction code");
+      toast.error(language === "sw" ? "Weka namba ya muamala wa mobile money" : "Enter the mobile money transaction reference");
       return;
     }
 
@@ -513,7 +514,7 @@ export default function Sales() {
                             <div className="mt-auto flex items-end justify-between gap-3 pt-5">
                               <div className="min-w-0">
                                 <p className="text-xs text-muted-foreground">{language === "sw" ? "Bei ya kuuza" : "Sell price"}</p>
-                                <p className="text-lg font-bold text-foreground">{formatNumber(product.selling_price)}</p>
+                                <p className="text-lg font-bold text-foreground">{formatMoney(product.selling_price)}</p>
                               </div>
                               <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{language === "sw" ? "Ongeza" : "Add"}</span>
                             </div>
@@ -568,7 +569,7 @@ export default function Sales() {
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <p className="font-medium text-foreground">{d.invoice_number}</p>
-                                <p className="text-sm text-muted-foreground">{formatNumber(Number(d.total))}</p>
+                                <p className="text-sm text-muted-foreground">{formatMoney(Number(d.total))}</p>
                               </div>
                               <div className="flex gap-2">
                                 <Button
@@ -667,8 +668,8 @@ export default function Sales() {
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">{item.name}</TableCell>
-                          <TableCell className="text-right">{formatNumber(item.price)}</TableCell>
-                          <TableCell className="text-right font-semibold">{formatNumber(item.price * item.quantity)}</TableCell>
+                          <TableCell className="text-right">{formatMoney(item.price)}</TableCell>
+                          <TableCell className="text-right font-semibold">{formatMoney(item.price * item.quantity)}</TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
                               <X className="h-4 w-4" />
@@ -692,7 +693,7 @@ export default function Sales() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate font-semibold text-foreground">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">{formatNumber(item.price)} each</p>
+                          <p className="text-sm text-muted-foreground">{formatMoney(item.price)} each</p>
                         </div>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
                           <X className="h-4 w-4" />
@@ -708,7 +709,7 @@ export default function Sales() {
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        <p className="text-lg font-bold text-foreground">{formatNumber(item.price * item.quantity)}</p>
+                        <p className="text-lg font-bold text-foreground">{formatMoney(item.price * item.quantity)}</p>
                       </div>
                     </div>
                   ))
@@ -789,7 +790,7 @@ export default function Sales() {
               <div className="rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.55))] p-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t("sales.subtotal")}</span>
-                  <span className="font-semibold text-foreground">{formatNumber(subtotal)}</span>
+                  <span className="font-semibold text-foreground">{formatMoney(subtotal)}</span>
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -804,7 +805,7 @@ export default function Sales() {
                         }}
                         className="pr-12"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Tsh</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{currency}</span>
                     </div>
                     <div className="relative">
                       <Input
@@ -822,14 +823,14 @@ export default function Sales() {
 
                 <div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4">
                   <span className="text-base font-medium text-muted-foreground">{t("sales.total")}</span>
-                  <span className="text-3xl font-bold text-foreground">{formatNumber(total)}</span>
+                  <span className="text-3xl font-bold text-foreground">{formatMoney(total)}</span>
                 </div>
               </div>
 
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <Label>{t("sales.cash")}</Label>
-                  <Input value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} placeholder={formatNumber(total)} className="h-12" />
+                  <Input value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} placeholder={String(total || "")} className="h-12" />
                 </div>
                 <div className="space-y-2">
                   <Label>{t("sales.mpesa")}</Label>
@@ -846,17 +847,17 @@ export default function Sales() {
                 <div className="mt-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">{language === "sw" ? "Imelipwa" : "Paid"}</span>
-                    <span className="font-semibold text-foreground">{formatNumber(totalPaid)}</span>
+                    <span className="font-semibold text-foreground">{formatMoney(totalPaid)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">{language === "sw" ? "Salio" : "Remaining"}</span>
                     <span className={`font-semibold ${totalPaid < total ? "text-destructive" : "text-foreground"}`}>
-                      {formatNumber(Math.max(total - totalPaid, 0))}
+                      {formatMoney(Math.max(total - totalPaid, 0))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">{language === "sw" ? "Chenji" : "Change"}</span>
-                    <span className="font-semibold text-primary">{formatNumber(changeDue)}</span>
+                    <span className="font-semibold text-primary">{formatMoney(changeDue)}</span>
                   </div>
                 </div>
               </div>

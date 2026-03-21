@@ -12,13 +12,13 @@ export default function PricingPage() {
       eyebrow={language === "sw" ? "Bei" : "Pricing"}
       title={
         language === "sw"
-          ? "Jaribu bure kwa wiki moja, kisha ulipe 10,000 TZS kwa mwezi"
-          : "Start with a 1-week free trial, then pay 10,000 TZS monthly"
+          ? "Anza kutumia WiseCash sasa huku global billing ikiandaliwa"
+          : "Start using WiseCash now while global billing is being prepared"
       }
       description={
         language === "sw"
-          ? "WiseCash inakupa mafunzo ya kuanza, kipindi cha majaribio bila malipo, na usajili wa kila mwezi unaolipwa kwa mobile money kupitia AzamPay."
-          : "WiseCash includes onboarding, a free trial, and simple monthly subscription billing collected with mobile money through AzamPay."
+          ? "Kwa sasa tunaruhusu matumizi mapana ya WiseCash bila kuzuia biashara kwa billing. Bei na njia rasmi za malipo za kimataifa zitatangazwa baada ya setup kukamilika."
+          : "For now, WiseCash is open for broader use without blocking businesses on billing. Official global pricing and payment options will be announced after setup is complete."
       }
     >
       <Pricing />

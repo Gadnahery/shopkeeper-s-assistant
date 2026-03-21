@@ -39,6 +39,7 @@ import {
   getCameraPermissionState,
   requestCameraPermission,
 } from "@/lib/cameraPermissions";
+import { SHOP_COUNTRY_OPTIONS, SHOP_CURRENCY_OPTIONS, SHOP_LOCALE_OPTIONS } from "@/lib/international";
 
 export default function Settings() {
   const { t, language, setLanguage } = useLanguage();
@@ -58,7 +59,14 @@ export default function Settings() {
     isLoading: pushLoading,
   } = usePushNotifications();
 
-  const [shopForm, setShopForm] = useState({ shop_name: "", phone: "", address: "" });
+  const [shopForm, setShopForm] = useState({
+    shop_name: "",
+    phone: "",
+    address: "",
+    currency: "USD",
+    locale: "en-US",
+    country_code: "US",
+  });
   const [receiptForm, setReceiptForm] = useState({
     receipt_header: "",
     receipt_footer: "",
@@ -81,6 +89,9 @@ export default function Settings() {
       shop_name: shopSettings.shop_name || "",
       phone: shopSettings.phone || "",
       address: shopSettings.address || "",
+      currency: shopSettings.currency || "USD",
+      locale: shopSettings.locale || "en-US",
+      country_code: shopSettings.country_code || "US",
     });
 
     const settings = shopSettings as {
@@ -255,8 +266,23 @@ export default function Settings() {
       return;
     }
 
-    await supabase.from("shops").update({ name: shopForm.shop_name, phone: shopForm.phone, address: shopForm.address }).eq("id", shopId);
-    await updateSettings.mutateAsync({ id: shopSettings?.id || undefined, ...shopForm });
+    await supabase
+      .from("shops")
+      .update({
+        name: shopForm.shop_name,
+        phone: shopForm.phone,
+        address: shopForm.address,
+        currency: shopForm.currency,
+        locale: shopForm.locale,
+        country_code: shopForm.country_code,
+      })
+      .eq("id", shopId);
+    await updateSettings.mutateAsync({
+      id: shopSettings?.id || undefined,
+      shop_name: shopForm.shop_name,
+      phone: shopForm.phone,
+      address: shopForm.address,
+    });
   };
 
   const handleSaveReceipt = async () => {
@@ -364,6 +390,11 @@ export default function Settings() {
       hint: language === "sw" ? "Muonekano wa timu" : "Workspace language",
     },
     {
+      label: language === "sw" ? "Sarafu ya duka" : "Shop currency",
+      value: shopForm.currency,
+      hint: language === "sw" ? "Bei na ripoti" : "Pricing and reports",
+    },
+    {
       label: language === "sw" ? "Notifications za stok chini" : "Low-stock alerts",
       value: enableLowStockAlerts ? (language === "sw" ? "Wazi" : "On") : language === "sw" ? "Zimezimwa" : "Off",
       hint: language === "sw" ? "Tahadhari za bidhaa" : "Inventory safety",
@@ -443,6 +474,51 @@ export default function Settings() {
                   <div className="space-y-2">
                     <Label>{t("settings.location")}</Label>
                     <Input value={shopForm.address} onChange={(event) => setShopForm({ ...shopForm, address: event.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{language === "sw" ? "Nchi" : "Country"}</Label>
+                    <Select value={shopForm.country_code} onValueChange={(value) => setShopForm({ ...shopForm, country_code: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SHOP_COUNTRY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{language === "sw" ? "Sarafu" : "Currency"}</Label>
+                    <Select value={shopForm.currency} onValueChange={(value) => setShopForm({ ...shopForm, currency: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SHOP_CURRENCY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{language === "sw" ? "Muundo wa tarehe na namba" : "Locale"}</Label>
+                    <Select value={shopForm.locale} onValueChange={(value) => setShopForm({ ...shopForm, locale: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SHOP_LOCALE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <Button onClick={handleSaveShop} disabled={updateSettings.isPending} className="h-11 w-full gap-2">
@@ -861,6 +937,51 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>{t("settings.location")}</Label>
                 <Input value={shopForm.address} onChange={(event) => setShopForm({ ...shopForm, address: event.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Nchi" : "Country"}</Label>
+                <Select value={shopForm.country_code} onValueChange={(value) => setShopForm({ ...shopForm, country_code: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SHOP_COUNTRY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Sarafu" : "Currency"}</Label>
+                <Select value={shopForm.currency} onValueChange={(value) => setShopForm({ ...shopForm, currency: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SHOP_CURRENCY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === "sw" ? "Muundo wa tarehe na namba" : "Locale"}</Label>
+                <Select value={shopForm.locale} onValueChange={(value) => setShopForm({ ...shopForm, locale: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SHOP_LOCALE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Button onClick={handleSaveShop} disabled={updateSettings.isPending} className="h-11 gap-2">

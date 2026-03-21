@@ -6,19 +6,24 @@ import { format as formatDateFns, formatDistanceToNow, parseISO } from "date-fns
 
 export function formatCurrency(
   amount: number,
-  currency: string = "TZS",
-  locale: string = "en-US"
+  currency: string = "USD",
+  locale: string = "en-US",
+  options: Intl.NumberFormatOptions = {},
 ): string {
-  if (currency === "TZS" || currency === "Tsh") {
-    return `Tsh ${amount.toLocaleString(locale, {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+      ...options,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     })}`;
   }
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-  }).format(amount);
 }
 
 export function formatNumber(

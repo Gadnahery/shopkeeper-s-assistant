@@ -44,6 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { getShellMeta } from "./app-navigation";
 
 export function Header() {
@@ -57,6 +58,7 @@ export function Header() {
   const { data: notifications, unreadCount, markAsRead, markAllRead } = useNotifications();
   const { permission, requestPermission, supportsNativeNotifications } = useNotificationContext();
   const { canInstall, install, isInstalled, needsManualInstallHint } = usePWAContext();
+  const { formatDate } = useShopFormatting();
   const [searchQuery, setSearchQuery] = useState("");
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
@@ -72,7 +74,7 @@ export function Header() {
   const avatarUrl = profile?.avatar_url;
   const shopName = profile?.shops?.name || "Smart Money";
 
-  const formattedDate = new Date().toLocaleDateString(language === "sw" ? "sw-TZ" : "en-GB", {
+  const formattedDate = formatDate(new Date(), {
     weekday: "short",
     day: "numeric",
     month: "short",
