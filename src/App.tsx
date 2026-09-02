@@ -50,6 +50,8 @@ const HRM = lazy(() => import("./pages/HRM"));
 const Assets = lazy(() => import("./pages/Assets"));
 const Categories = lazy(() => import("./pages/Categories"));
 const Orders = lazy(() => import("./pages/Orders"));
+const Purchases = lazy(() => import("./pages/Purchases"));
+const Production = lazy(() => import("./pages/Production"));
 const Todo = lazy(() => import("./pages/Todo"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -134,6 +136,8 @@ const App = () => (
                           <Route element={<ProtectedRoute><><CommandPalette /><ErrorBoundary><MainLayout /></ErrorBoundary></></ProtectedRoute>}>
                             <Route path="/billing" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Billing /></Suspense></ProtectedRoute>} />
                             <Route path="/dashboard" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Dashboard /></Suspense></ProtectedRoute>} />
+                            <Route path="/purchases" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Purchases /></Suspense></ProtectedRoute>} />
+                            <Route path="/production" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Production /></Suspense></ProtectedRoute>} />
                             <Route path="/sales" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Sales /></Suspense></ProtectedRoute>} />
                             <Route path="/sales/terminal" element={<Navigate to="/sales" replace />} />
                             <Route path="/inventory" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Inventory /></Suspense></ProtectedRoute>} />

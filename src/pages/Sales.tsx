@@ -1,10 +1,32 @@
-import { useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { format } from "date-fns";
+import {
+  CheckCircle,
+  CreditCard,
+  History,
+  Loader2,
+  Minus,
+  Package,
+  Plus,
+  Printer,
+  ReceiptText,
+  ScanLine,
+  Search,
+  ShoppingBag,
+  ShoppingCart,
+  Trash2,
+  Wallet,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,22 +37,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  CheckCircle,
-  Loader2,
-  Minus,
-  Plus,
-  Printer,
-  ScanLine,
-  Search,
-  ShoppingBag,
-  Wallet,
-  X,
-  TimerReset,
-  ReceiptText,
-} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
@@ -39,13 +45,9 @@ import { useShopSettings } from "@/hooks/useShopSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt } from "@/components/Receipt";
 import { PageLoader } from "@/components/PageLoader";
-import { format } from "date-fns";
-import { motion } from "framer-motion";
-import { toast } from "sonner";
-import { PageHeader } from "@/components/common/PageHeader";
 import { MobileCameraScanner } from "@/components/common/MobileCameraScanner";
-import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
+import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
 interface CartItem {
@@ -59,8 +61,8 @@ interface CartItem {
 
 export default function Sales() {
   const { t, language } = useLanguage();
-  const { isMobile } = useAdaptiveLayout();
-  const { currency, formatMoney } = useShopFormatting();
+  const { formatMoney, formatNumber } = useShopFormatting();
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discountAmount, setDiscountAmount] = useState("0");
   const [discountPercent, setDiscountPercent] = useState("0");
@@ -69,168 +71,129 @@ export default function Sales() {
   const [mpesaCode, setMpesaCode] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("walk-in");
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
   const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
-  const [draftToDeleteId, setDraftToDeleteId] = useState<string | null>(null);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
-  const [mobileStep, setMobileStep] = useState<"products" | "cart" | "checkout">("products");
+
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const previousAutoCashRef = useRef("");
 
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: customers } = useCustomers();
-  const { data: shopSettings, isLoading: settingsLoading } = useShopSettings();
+  const { data: shopSettings } = useShopSettings();
   const { profile } = useAuth();
-  const { data: drafts, isLoading: draftsLoading } = useDraftSales();
-
-  const initialLoading =
-    products === undefined ||
-    shopSettings === undefined ||
-    drafts === undefined ||
-    productsLoading ||
-    settingsLoading ||
-    draftsLoading;
+  const { data: drafts } = useDraftSales();
 
   const createSale = useCreateSale();
   const saveDraft = useSaveDraftSale();
   const deleteDraft = useDeleteDraftSale();
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const discount = parseInt(discountAmount) || Math.round(subtotal * (parseInt(discountPercent) || 0) / 100);
-  const total = subtotal - discount;
+  if (products === undefined || productsLoading) {
+    return <PageLoader message="Loading POS..." messageSw="Inapakia mfumo wa mauzo..." language={language} />;
+  }
+
+  const filteredProducts = (products || []).filter((p) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      p.code.toLowerCase().includes(q) ||
+      (p.name_sw && p.name_sw.toLowerCase().includes(q)) ||
+      (p.barcode && p.barcode.toLowerCase().includes(q))
+    );
+  });
+
+  const addToCart = (product: any) => {
+    if (product.stock <= 0) {
+      toast.error(language === "sw" ? "Bidhaa hii haina stoki" : "This product is out of stock");
+      return;
+    }
+
+    setCartItems((prev) => {
+      const existing = prev.find((item) => item.product_id === product.id);
+      if (existing) {
+        if (existing.quantity >= product.stock) {
+          toast.warning(language === "sw" ? "Ukomo wa stoki umefikiwa" : "Stock limit reached");
+          return prev;
+        }
+        return prev.map((item) =>
+          item.product_id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          product_id: product.id,
+          name: language === "sw" && product.name_sw ? product.name_sw : product.name,
+          price: Number(product.selling_price) || 0,
+          quantity: 1,
+          maxStock: product.stock,
+        },
+      ];
+    });
+    playSound("click");
+  };
+
+  const updateQuantity = (productId: string, qty: number) => {
+    if (qty <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.product_id === productId) {
+          if (qty > item.maxStock) {
+            toast.warning(language === "sw" ? "Ukomo wa stoki umefikiwa" : "Stock limit reached");
+            return { ...item, quantity: item.maxStock };
+          }
+          return { ...item, quantity: qty };
+        }
+        return item;
+      }),
+    );
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCartItems((prev) => prev.filter((item) => item.product_id !== productId));
+  };
+
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, [cartItems]);
+
+  const discount = useMemo(() => {
+    const directAmt = parseFloat(discountAmount) || 0;
+    const pct = parseFloat(discountPercent) || 0;
+    if (pct > 0) return Math.round((subtotal * pct) / 100);
+    return directAmt;
+  }, [subtotal, discountAmount, discountPercent]);
+
+  const total = Math.max(0, subtotal - discount);
+
   const cashPaid = parseFloat(cashAmount) || 0;
   const mpesaPaid = parseFloat(mpesaAmount) || 0;
   const totalPaid = cashPaid + mpesaPaid;
   const changeDue = Math.max(0, totalPaid - total);
 
+  // Auto-fill cash input with exact total if user hasn't typed
   useEffect(() => {
-    const nextAutoCash = total > 0 ? String(total) : "";
-    const shouldAutoFillCash =
-      mpesaAmount.trim() === "" &&
-      (cashAmount.trim() === "" || cashAmount === previousAutoCashRef.current);
-
-    if (shouldAutoFillCash && cashAmount !== nextAutoCash) {
-      setCashAmount(nextAutoCash);
+    if (total > 0 && !cashAmount && !mpesaAmount) {
+      setCashAmount(String(total));
     }
-
-    previousAutoCashRef.current = nextAutoCash;
-  }, [total, cashAmount, mpesaAmount]);
-
-  if (initialLoading) {
-    return <PageLoader message="Loading sales..." messageSw="Inapakia mauzo..." language={language} />;
-  }
-
-  const updateQuantity = (id: string, delta: number) => {
-    setCartItems((items) =>
-      items.map((item) => {
-        if (item.id !== id) return item;
-        const newQty = Math.max(1, Math.min(item.maxStock, item.quantity + delta));
-        return { ...item, quantity: newQty };
-      })
-    );
-  };
-
-  const removeItem = (id: string) => setCartItems((items) => items.filter((item) => item.id !== id));
-
-  const addToCart = (product: NonNullable<typeof products>[0]) => {
-    if (product.stock <= 0) {
-      toast.error(language === "sw" ? "Bidhaa hii haina stoki" : "Product out of stock");
-      return;
-    }
-
-    const existing = cartItems.find((item) => item.product_id === product.id);
-    if (existing) {
-      if (existing.quantity >= product.stock) {
-        toast.error(language === "sw" ? "Stoki haitoshi" : "Not enough stock");
-        return;
-      }
-      updateQuantity(existing.id, 1);
-    } else {
-      setCartItems([
-        ...cartItems,
-        {
-          id: `cart-${Date.now()}`,
-          product_id: product.id,
-          name: language === "sw" && product.name_sw ? product.name_sw : product.name,
-          price: product.selling_price,
-          quantity: 1,
-          maxStock: product.stock,
-        },
-      ]);
-    }
-
-    setSearchTerm("");
-    searchInputRef.current?.focus();
-  };
-
-  const handleBarcodeScan = (barcode: string) => {
-    const product = products?.find((p) => p.barcode === barcode || p.code === barcode);
-    if (product) {
-      addToCart(product);
-    } else {
-      setSearchTerm(barcode);
-      toast.error(language === "sw" ? "Bidhaa haipatikani" : "Product not found");
-    }
-  };
-
-  const filteredProducts =
-    products?.filter(
-      (p) =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.barcode && p.barcode.includes(searchTerm))
-    ) || [];
-
-  const featuredProducts = filteredProducts.slice(0, searchTerm ? 12 : 8);
-
-  const saleStats = [
-    {
-      label: language === "sw" ? "Cart" : "Items in cart",
-      value: `${cartItems.length}`,
-      tone: "text-foreground",
-      icon: ShoppingBag,
-    },
-    {
-      label: language === "sw" ? "Checkout" : "Checkout total",
-      value: formatMoney(total),
-      tone: "text-primary",
-      icon: Wallet,
-    },
-    {
-      label: language === "sw" ? "Chenji" : "Change due",
-      value: formatMoney(changeDue),
-      tone: "text-foreground",
-      icon: ReceiptText,
-    },
-  ];
+  }, [total]);
 
   const handleCompleteSale = async () => {
     if (cartItems.length === 0) {
       toast.error(language === "sw" ? "Kikapu ni tupu" : "Cart is empty");
       return;
     }
-    if (total <= 0) {
-      toast.error(language === "sw" ? "Jumla ya mauzo si sahihi" : "Sale total is invalid");
-      return;
-    }
-    if (totalPaid <= 0) {
-      toast.error(language === "sw" ? "Weka kiasi cha malipo" : "Enter a payment amount");
-      return;
-    }
     if (totalPaid < total) {
-      toast.error(language === "sw" ? "Malipo hayatoshi kukamilisha mauzo" : "Payment is not enough to complete this sale");
-      return;
-    }
-    if (mpesaPaid > 0 && !mpesaCode.trim()) {
-      toast.error(language === "sw" ? "Weka namba ya muamala wa mobile money" : "Enter the mobile money transaction reference");
+      toast.error(language === "sw" ? "Kiasi cha malipo hakitoshi" : "Payment amount is less than total");
       return;
     }
 
     const paymentMethod = cashPaid > 0 && mpesaPaid > 0 ? "Split" : mpesaPaid > 0 ? "M-Pesa" : "Cash";
-    const customerId = selectedCustomer === "walk-in" ? null : selectedCustomer;
     const custName =
       selectedCustomer === "walk-in"
         ? customerName.trim() || null
@@ -238,7 +201,7 @@ export default function Sales() {
 
     try {
       const sale = await createSale.mutateAsync({
-        customer_id: customerId,
+        customer_id: selectedCustomer === "walk-in" ? null : selectedCustomer,
         customer_name: custName,
         payment_method: paymentMethod,
         mpesa_code: mpesaCode || null,
@@ -252,16 +215,10 @@ export default function Sales() {
         })),
       });
 
-      const receiptCustomerName =
-        custName ||
-        (selectedCustomer === "walk-in"
-          ? t("sales.walkIn")
-          : customers?.find((c) => c.id === selectedCustomer)?.name || t("sales.walkIn"));
-
       setLastSale({
         invoiceNumber: sale.invoice_number,
         date: format(new Date(), "dd MMM yyyy, hh:mm a"),
-        customerName: receiptCustomerName,
+        customerName: custName || t("sales.walkIn"),
         cashier: profile?.full_name || undefined,
         items: cartItems.map((item) => ({
           name: item.name,
@@ -277,12 +234,9 @@ export default function Sales() {
         cashAmount: cashPaid || undefined,
         mpesaAmount: mpesaPaid || undefined,
         changeDue: changeDue || undefined,
-        shopName: shopSettings?.shop_name || "",
-        shopPhone: shopSettings?.phone || undefined,
-        shopAddress: shopSettings?.address || undefined,
-        receiptHeader: (shopSettings as { receipt_header?: string | null })?.receipt_header,
-        receiptFooter: (shopSettings as { receipt_footer?: string | null })?.receipt_footer,
-        logoUrl: (shopSettings as { logo_url?: string | null })?.logo_url,
+        shopName: (shopSettings as any)?.shop_name || "",
+        shopPhone: (shopSettings as any)?.phone || undefined,
+        shopAddress: (shopSettings as any)?.address || undefined,
       });
 
       setShowReceipt(true);
@@ -294,628 +248,342 @@ export default function Sales() {
       setMpesaCode("");
       setSelectedCustomer("walk-in");
       setCustomerName("");
-      setCustomerPhone("");
-      setMobileStep("products");
-      previousAutoCashRef.current = "";
 
       if (activeDraftId) {
-        try {
-          await deleteDraft.mutateAsync(activeDraftId);
-        } catch {
-          toast.error(language === "sw" ? "Mauzo yamekamilika lakini rasimu ya zamani haikufutika." : "Sale completed, but the original draft could not be removed.");
-        } finally {
-          setActiveDraftId(null);
-        }
+        deleteDraft.mutate(activeDraftId);
+        setActiveDraftId(null);
       }
-    } catch (error) {
-      // Handled inside mutation.
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to complete sale");
     }
   };
 
-  const handleSaveDraft = async () => {
-    if (cartItems.length === 0) {
-      toast.error(language === "sw" ? "Kikapu ni tupu" : "Cart is empty");
-      return;
-    }
+  const handleHoldDraft = async () => {
+    if (cartItems.length === 0) return;
+    try {
+      await saveDraft.mutateAsync({
+        customer_id: selectedCustomer === "walk-in" ? null : selectedCustomer,
+        customer_name: customerName.trim() || null,
+        payment_method: "Cash",
+        discount_amount: discount,
+        discount_percent: parseInt(discountPercent) || 0,
+        items: cartItems.map((item) => ({
+          product_id: item.product_id,
+          product_name: item.name,
+          unit_price: item.price,
+          quantity: item.quantity,
+        })),
+      });
 
-    await saveDraft.mutateAsync({
-      customer_id: selectedCustomer === "walk-in" ? null : selectedCustomer,
-      customer_name: customerName.trim() || null,
-      payment_method: "Cash",
-      discount_amount: discount,
-      discount_percent: parseInt(discountPercent) || 0,
-      items: cartItems.map((item) => ({
-        product_id: item.product_id,
-        product_name: item.name,
-        unit_price: item.price,
-        quantity: item.quantity,
-      })),
+      setCartItems([]);
+      setCustomerName("");
+      setCashAmount("");
+      setMpesaAmount("");
+      toast.success(language === "sw" ? "Rasimu imehifadhiwa" : "Draft saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save draft");
+    }
+  };
+
+  const restoreDraft = (draft: any) => {
+    const items = (draft.items || []).map((it: any) => {
+      const prod = products?.find((p) => p.id === it.product_id);
+      return {
+        id: crypto.randomUUID(),
+        product_id: it.product_id,
+        name: it.product_name,
+        price: Number(it.unit_price || 0),
+        quantity: Number(it.quantity || 1),
+        maxStock: prod?.stock || 999,
+      };
     });
-
-    setCartItems([]);
-    setCustomerName("");
-    setCashAmount("");
-    setMpesaAmount("");
-    setMpesaCode("");
-    setMobileStep("products");
-    previousAutoCashRef.current = "";
-
-    if (activeDraftId) {
-      try {
-        await deleteDraft.mutateAsync(activeDraftId);
-      } catch {
-        toast.error(language === "sw" ? "Rasimu mpya imehifadhiwa lakini rasimu ya zamani bado ipo." : "New draft saved, but the old draft is still there.");
-      } finally {
-        setActiveDraftId(null);
-      }
-    }
+    setCartItems(items);
+    setSelectedCustomer(draft.customer_id || "walk-in");
+    setCustomerName(draft.customer_name || "");
+    setActiveDraftId(draft.id);
+    toast.info(language === "sw" ? "Rasimu imerejeshwa kwenye kikapu" : "Draft restored to cart");
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 overflow-x-hidden">
-      <PageHeader
-        title={language === "sw" ? "Mauzo" : "Sales"}
-        subtitle={
-          language === "sw"
-            ? "POS mpya iliyorahisishwa kwa kuuza kwa haraka, kutafuta bidhaa kwa urahisi, na kukamilisha malipo bila msongamano."
-            : "A cleaner POS flow for quick product search, faster checkout, and easier daily selling."
-        }
-        actions={
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <Button variant="outline" className="gap-2" onClick={handleSaveDraft} disabled={cartItems.length === 0 || saveDraft.isPending}>
-              {saveDraft.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingBag className="h-4 w-4" />}
-              {t("sales.saveAsDraft")}
-            </Button>
-            <Button variant="outline" className="gap-2" onClick={() => lastSale && setShowReceipt(true)} disabled={!lastSale}>
-              <Printer className="h-4 w-4" />
-              {t("sales.printReceipt")}
-            </Button>
-          </div>
-        }
-      />
+    <div className="space-y-6 pb-12">
+      {/* 2-Column POS Layout */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left 7 Columns: Product Catalog & Quick Picker */}
+        <div className="space-y-4 lg:col-span-7">
+          <Card className="border border-border bg-card p-4 shadow-xs">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  ref={searchInputRef}
+                  placeholder={t("sales.searchOrScan")}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-10 rounded-xl border-border bg-background pl-9 text-xs"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCameraScannerOpen(true)}
+                className="h-10 w-10 rounded-xl border-border"
+                title="Camera Scanner"
+              >
+                <ScanLine className="h-4 w-4" />
+              </Button>
+            </div>
+          </Card>
 
-      {isMobile && (
-        <Tabs value={mobileStep} onValueChange={(value) => setMobileStep(value as "products" | "cart" | "checkout")}>
-          <TabsList className="grid h-auto w-full grid-cols-3 rounded-[1.2rem] bg-muted/80 p-1">
-            <TabsTrigger value="products" className="rounded-[0.9rem] py-2.5">
-              {language === "sw" ? "Bidhaa" : "Products"}
-            </TabsTrigger>
-            <TabsTrigger value="cart" className="rounded-[0.9rem] py-2.5">
-              {t("sales.cart")}
-            </TabsTrigger>
-            <TabsTrigger value="checkout" className="rounded-[0.9rem] py-2.5">
-              {language === "sw" ? "Malipo" : "Checkout"}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
-      <section
-        className={cn(
-          "min-w-0 gap-4 overflow-x-hidden",
-          isMobile ? "space-y-4" : "grid xl:grid-cols-[minmax(0,1fr)_minmax(340px,390px)] 2xl:grid-cols-[minmax(0,1.08fr)_420px]",
-        )}
-      >
-        <div className="min-w-0 space-y-4">
-          <div className={cn(isMobile && mobileStep !== "products" && "hidden")}>
-          <Card className="section-shell min-w-0">
-            <CardContent className="min-w-0 p-5 md:p-6">
-              <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.78fr)]">
-                <div className="min-w-0 space-y-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
-                      <ScanLine className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">
-                        {language === "sw" ? "Tafuta au scan bidhaa" : "Search or scan products"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {language === "sw"
-                          ? "Andika jina, code, au barcode. Bidhaa maarufu zinaonekana chini."
-                          : "Type a name, code, or barcode. Matching products appear instantly below."}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.8),hsl(var(--background)/0.58))] p-3 shadow-inner">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
-                      <Input
-                        ref={searchInputRef}
-                        placeholder={t("sales.searchOrScan")}
-                        className="border-0 bg-transparent p-0 text-base focus-visible:ring-0"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && searchTerm.trim()) {
-                            e.preventDefault();
-                            handleBarcodeScan(searchTerm.trim());
-                          }
-                        }}
-                        autoFocus
-                        autoComplete="off"
-                      />
-                      {isMobile ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-10 w-10 shrink-0 rounded-xl"
-                          onClick={() => setCameraScannerOpen(true)}
-                        >
-                          <ScanLine className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {isMobile ? (
-                    <div className="flex flex-wrap gap-2">
-                      {saleStats.map((stat) => (
-                        <div key={stat.label} className="flex min-w-[calc(50%-0.25rem)] flex-1 items-center gap-2 rounded-full border border-border/70 bg-background/72 px-3 py-2">
-                          <stat.icon className="h-4 w-4 shrink-0 text-primary/80" />
-                          <div className="min-w-0">
-                            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{stat.label}</p>
-                            <p className={`truncate text-base font-bold ${stat.tone}`}>{stat.value}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid gap-3 md:grid-cols-3">
-                      {saleStats.map((stat) => (
-                        <div key={stat.label} className="min-w-0 rounded-[1.35rem] border border-border/70 bg-background/60 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="min-w-0 text-xs font-semibold tracking-[0.08em] text-muted-foreground">{stat.label}</span>
-                            <stat.icon className="h-4 w-4 text-primary/80" />
-                          </div>
-                          <p className={`mt-4 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div
+          {/* Product Grid */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {filteredProducts.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
+                <Package className="h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 text-xs text-muted-foreground">{language === "sw" ? "Hakuna bidhaa iliyopatikana" : "No matching products found"}</p>
+              </div>
+            ) : (
+              filteredProducts.slice(0, 30).map((product) => {
+                const isOut = product.stock <= 0;
+                return (
+                  <button
+                    key={product.id}
+                    disabled={isOut}
+                    onClick={() => addToCart(product)}
                     className={cn(
-                      isMobile
-                        ? "-mx-5 flex min-h-[13rem] w-[calc(100%+2.5rem)] snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-hidden px-5 pb-3 pt-1 touch-pan-x overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                        : "grid min-w-0 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 2xl:grid-cols-3 xl:max-h-[min(60vh,44rem)]",
+                      "flex flex-col justify-between rounded-xl border border-border bg-card p-3.5 text-left transition-all hover:border-primary/30 hover:shadow-xs",
+                      isOut ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-98",
                     )}
                   >
-                    {featuredProducts.length === 0 ? (
-                      <div className="col-span-full rounded-[1.35rem] border border-dashed border-border/70 bg-background/40 px-4 py-8 text-center text-sm text-muted-foreground">
-                        {language === "sw" ? "Hakuna bidhaa zinazolingana na utafutaji huu." : "No products match this search yet."}
+                    <div>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{product.code}</span>
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                            isOut
+                              ? "bg-[var(--danger-bg)] text-[var(--danger-text)]"
+                              : product.stock <= (product.low_stock_alert ?? 5)
+                              ? "bg-[var(--warning-bg)] text-[var(--warning-text)]"
+                              : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {product.stock} left
+                        </span>
                       </div>
-                    ) : (
-                      featuredProducts.map((product) => {
-                        const productName = language === "sw" && product.name_sw ? product.name_sw : product.name;
-                        const outOfStock = product.stock <= 0;
-                        return (
-                          <button
-                            key={product.id}
-                            type="button"
-                            onClick={() => addToCart(product)}
-                            disabled={outOfStock}
-                            className={cn(
-                              "group flex min-h-[11.75rem] min-w-0 flex-col rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.56))] p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/35 hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-55",
-                              isMobile && "w-[min(84vw,20rem)] max-w-[20rem] shrink-0 snap-start",
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate font-semibold text-foreground">{productName}</p>
-                                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">{product.code}</p>
-                              </div>
-                              <Badge variant={outOfStock ? "destructive" : "secondary"} className="shrink-0 rounded-full">
-                                {outOfStock ? (language === "sw" ? "Imeisha" : "Out") : `${product.stock}`}
-                              </Badge>
-                            </div>
-                            <div className="mt-auto flex items-end justify-between gap-3 pt-5">
-                              <div className="min-w-0">
-                                <p className="text-xs text-muted-foreground">{language === "sw" ? "Bei ya kuuza" : "Sell price"}</p>
-                                <p className="text-lg font-bold text-foreground">{formatMoney(product.selling_price)}</p>
-                              </div>
-                              <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{language === "sw" ? "Ongeza" : "Add"}</span>
-                            </div>
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {isMobile && cartItems.length > 0 && (
-                    <Button className="h-12 w-full bg-gradient-to-r from-teal-500 to-blue-600 text-white hover:from-teal-600 hover:to-blue-700" onClick={() => setMobileStep("cart")}>
-                      {language === "sw" ? "Nenda Kikapuni" : "Go to cart"}
-                    </Button>
-                  )}
-                </div>
-
-                <div className="min-w-0 space-y-3">
-                  <div className={cn("rounded-[1.45rem] border border-primary/15 bg-[linear-gradient(145deg,hsl(var(--primary)/0.14),transparent_55%)] p-4", isMobile && "hidden")}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                          {language === "sw" ? "Checkout" : "Checkout"}
-                        </p>
-                        <p className="mt-2 text-lg font-semibold text-foreground">
-                          {language === "sw" ? "Tayari kwa malipo ya haraka" : "Ready for fast payment"}
-                        </p>
-                      </div>
-                      <TimerReset className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                      <div className="rounded-[1.2rem] border border-border/70 bg-background/60 p-4">
-                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                          {language === "sw" ? "Miamala ya sasa" : "Current invoice"}
-                        </p>
-                        <p className="mt-3 text-lg font-bold text-foreground">{`INV-${format(new Date(), "yyyyMMdd")}`}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">{format(new Date(), "dd MMM yyyy, hh:mm a")}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[1.35rem] border border-border/70 bg-background/45 p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-foreground">{language === "sw" ? "Hifadhi ya kazi" : "Work in progress"}</p>
-                      <Badge variant="secondary" className="rounded-full">
-                        {drafts?.length || 0}
-                      </Badge>
-                    </div>
-                    {(drafts && drafts.length > 0) ? (
-                      <div className="mt-3 space-y-2">
-                        {drafts.slice(0, 4).map((d: any) => (
-                          <div key={d.id} className="rounded-2xl border border-border/70 bg-background/65 p-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="font-medium text-foreground">{d.invoice_number}</p>
-                                <p className="text-sm text-muted-foreground">{formatMoney(Number(d.total))}</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                onClick={() => {
-                                    const items = (d.sale_items || []).map((si: any) => ({
-                                      id: `cart-${Date.now()}-${si.product_id}`,
-                                      product_id: si.product_id,
-                                      name: si.product_name,
-                                      price: si.unit_price,
-                                      quantity: si.quantity,
-                                      maxStock: products?.find((p) => p.id === si.product_id)?.stock || 999,
-                                    }));
-                                    setCartItems(items);
-                                    setDiscountAmount(String(d.discount_amount || 0));
-                                    setDiscountPercent(String(d.discount_percent || 0));
-                                    setCashAmount("");
-                                    setMpesaAmount("");
-                                    setMpesaCode(d.mpesa_code || "");
-                                    setSelectedCustomer("walk-in");
-                                    setCustomerName(d.customer_name || "");
-                                    setActiveDraftId(d.id);
-                                    setMobileStep("cart");
-                                  }}
-                                >
-                                  {language === "sw" ? "Endelea" : "Resume"}
-                                </Button>
-                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDraftToDeleteId(d.id)}>
-                                  {language === "sw" ? "Futa" : "Delete"}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        {language === "sw" ? "Hakuna rasimu zilizohifadhiwa kwa sasa." : "No saved drafts at the moment."}
+                      <p className="mt-1.5 text-xs font-bold text-foreground line-clamp-2">
+                        {language === "sw" && product.name_sw ? product.name_sw : product.name}
                       </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-border/50">
+                      <span className="text-xs font-bold text-foreground">{formatMoney(product.selling_price)}</span>
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                        <Plus className="h-3.5 w-3.5 text-accent" />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
 
-          <div className={cn(isMobile && mobileStep !== "cart" && "hidden")}>
-          <Card className="section-shell">
-            <CardContent className="p-5 md:p-6">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">{language === "sw" ? "Cart" : "Current cart"}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {language === "sw"
-                      ? "Badili kiasi au futa bidhaa kabla ya kukamilisha mauzo."
-                      : "Adjust quantity or remove products before finishing checkout."}
-                  </p>
-                </div>
-                <Badge variant="secondary" className="rounded-full px-3 py-1">
-                  {cartItems.length} {language === "sw" ? "bidhaa" : "items"}
-                </Badge>
+          {/* Held Drafts section */}
+          {drafts && drafts.length > 0 && (
+            <Card className="border border-border bg-card p-4 shadow-xs">
+              <h4 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+                <History className="h-3.5 w-3.5 text-accent" />
+                <span>{language === "sw" ? "Mauzo Yaliyosimamishwa (Rasimu)" : "Held Drafts"} ({drafts.length})</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {drafts.map((d: any) => (
+                  <button
+                    key={d.id}
+                    onClick={() => restoreDraft(d)}
+                    className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                  >
+                    <span>{d.customer_name || "Draft"} · {d.items?.length || 0} items</span>
+                    <span className="text-[10px] text-muted-foreground">{format(new Date(d.created_at), "HH:mm")}</span>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Right 5 Columns: Checkout Cart & Summary */}
+        <div className="space-y-4 lg:col-span-5">
+          <Card className="border border-border bg-card shadow-xs">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+              <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4 text-accent" />
+                <span>{t("sales.cart")} ({cartItems.reduce((sum, it) => sum + it.quantity, 0)})</span>
+              </CardTitle>
+              {cartItems.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCartItems([])}
+                  className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  <span>{language === "sw" ? "Futa Yote" : "Clear"}</span>
+                </Button>
+              )}
+            </CardHeader>
+
+            <CardContent className="p-4 space-y-4">
+              {/* Customer Selector */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">{t("sales.customer")}</Label>
+                <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                  <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                    <SelectItem value="walk-in">{t("sales.walkIn")}</SelectItem>
+                    {(customers || []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="hidden overflow-x-auto md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-28">{t("sales.qty")}</TableHead>
-                      <TableHead>{t("sales.product")}</TableHead>
-                      <TableHead className="text-right">{t("sales.price")}</TableHead>
-                      <TableHead className="text-right">{t("sales.subtotal")}</TableHead>
-                      <TableHead className="w-12" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cartItems.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                          {t("sales.barcodeOrSearch")}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      cartItems.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, -1)}>
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <span className="w-8 text-center font-medium">{item.quantity}</span>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, 1)}>
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">{item.name}</TableCell>
-                          <TableCell className="text-right">{formatMoney(item.price)}</TableCell>
-                          <TableCell className="text-right font-semibold">{formatMoney(item.price * item.quantity)}</TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="grid gap-3 md:hidden">
+              {/* Cart Items List */}
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {cartItems.length === 0 ? (
-                  <div className="rounded-[1.35rem] border border-dashed border-border/70 bg-background/35 px-4 py-8 text-center text-sm text-muted-foreground">
-                    {t("sales.barcodeOrSearch")}
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-muted-foreground">
+                    <ShoppingBag className="h-6 w-6 mb-1 text-muted-foreground/60" />
+                    <span>{language === "sw" ? "Kikapu kiko tupu. Bonyeza bidhaa kuongeza." : "Cart is empty. Tap items on the left to add."}</span>
                   </div>
                 ) : (
                   cartItems.map((item) => (
-                    <div key={item.id} className="rounded-[1.35rem] border border-border/70 bg-background/50 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold text-foreground">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">{formatMoney(item.price)} each</p>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
-                          <X className="h-4 w-4" />
+                    <div key={item.product_id} className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-2.5">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="truncate text-xs font-semibold text-foreground">{item.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{formatMoney(item.price)}</p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                          className="h-7 w-7 rounded-lg border-border"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-6 text-center text-xs font-bold text-foreground">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                          className="h-7 w-7 rounded-lg border-border"
+                        >
+                          <Plus className="h-3 w-3" />
                         </Button>
                       </div>
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateQuantity(item.id, -1)}>
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-10 text-center font-semibold">{item.quantity}</span>
-                          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateQuantity(item.id, 1)}>
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <p className="text-lg font-bold text-foreground">{formatMoney(item.price * item.quantity)}</p>
+
+                      <div className="w-20 text-right text-xs font-bold text-foreground">
+                        {formatMoney(item.price * item.quantity)}
                       </div>
                     </div>
                   ))
                 )}
               </div>
 
-              {isMobile && (
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="h-12" onClick={() => setMobileStep("products")}>
-                    {language === "sw" ? "Ongeza zaidi" : "Add more"}
-                  </Button>
-                  <Button
-                    className="h-12 bg-gradient-to-r from-teal-500 to-blue-600 text-white hover:from-teal-600 hover:to-blue-700"
-                    disabled={cartItems.length === 0}
-                    onClick={() => setMobileStep("checkout")}
-                  >
-                    {language === "sw" ? "Endelea" : "Continue"}
-                  </Button>
+              {/* Financial Breakdown */}
+              <div className="space-y-1.5 rounded-xl bg-muted/40 p-3 text-xs border border-border/60">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t("sales.subtotal")}</span>
+                  <span>{formatMoney(subtotal)}</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-          </div>
-        </div>
-
-        <div className={cn("space-y-4", isMobile && mobileStep !== "checkout" && "hidden")}>
-          <Card className={cn("section-shell", !isMobile && "xl:sticky xl:top-24")}>
-            <CardContent className="space-y-6 p-5 md:p-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
-                  <Wallet className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">{language === "sw" ? "Malipo" : "Checkout"}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {language === "sw"
-                      ? "Hakiki mteja, punguzo, na malipo kabla ya kukamilisha."
-                      : "Review customer, discount, and payment before completing the sale."}
-                  </p>
+                {discount > 0 && (
+                  <div className="flex justify-between text-[var(--danger-text)] font-semibold">
+                    <span>{t("sales.discount")}</span>
+                    <span>-{formatMoney(discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t border-border pt-1.5 text-sm font-bold text-foreground">
+                  <span>{t("sales.total")}</span>
+                  <span className="text-base">{formatMoney(total)}</span>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t("sales.customer")}</Label>
-                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder={t("sales.selectCustomer")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="walk-in">{t("sales.walkIn")}</SelectItem>
-                      {customers?.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                  <div className="space-y-2">
-                    <Label>{t("sales.customerName")}</Label>
+              {/* Payment Amount & Method */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold text-foreground">Cash (TSH)</Label>
                     <Input
-                      placeholder={language === "sw" ? "Jina la mteja (si lazima)" : "Customer name (optional)"}
-                      className="h-12"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
+                      type="number"
+                      value={cashAmount}
+                      onChange={(e) => setCashAmount(e.target.value)}
+                      placeholder="0"
+                      className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("sales.phone")}</Label>
-                    <Input placeholder={t("sales.enterPhone")} className="h-12" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-semibold text-foreground">M-Pesa / Mobile (TSH)</Label>
+                    <Input
+                      type="number"
+                      value={mpesaAmount}
+                      onChange={(e) => setMpesaAmount(e.target.value)}
+                      placeholder="0"
+                      className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+                    />
                   </div>
                 </div>
+
+                {changeDue > 0 && (
+                  <div className="flex justify-between rounded-xl bg-[var(--success-bg)] p-2.5 text-xs font-bold text-[var(--success-text)]">
+                    <span>{language === "sw" ? "Chenji ya Mteja" : "Change Due"}</span>
+                    <span>{formatMoney(changeDue)}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--background)/0.7),hsl(var(--background)/0.55))] p-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{t("sales.subtotal")}</span>
-                  <span className="font-semibold text-foreground">{formatMoney(subtotal)}</span>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <Label className="text-muted-foreground">{t("sales.discount")}</Label>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="relative">
-                      <Input
-                        value={discountAmount}
-                        onChange={(e) => {
-                          setDiscountAmount(e.target.value);
-                          setDiscountPercent("0");
-                        }}
-                        className="pr-12"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{currency}</span>
-                    </div>
-                    <div className="relative">
-                      <Input
-                        value={discountPercent}
-                        onChange={(e) => {
-                          setDiscountPercent(e.target.value);
-                          setDiscountAmount("0");
-                        }}
-                        className="pr-8"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4">
-                  <span className="text-base font-medium text-muted-foreground">{t("sales.total")}</span>
-                  <span className="text-3xl font-bold text-foreground">{formatMoney(total)}</span>
-                </div>
-              </div>
-
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label>{t("sales.cash")}</Label>
-                  <Input value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} placeholder={String(total || "")} className="h-12" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sales.mpesa")}</Label>
-                  <Input value={mpesaAmount} onChange={(e) => setMpesaAmount(e.target.value)} placeholder={t("sales.enterAmount")} className="h-12" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("sales.mpesaCode")}</Label>
-                  <Input value={mpesaCode} onChange={(e) => setMpesaCode(e.target.value)} placeholder={t("sales.transactionCode")} className="h-12" />
-                </div>
-              </div>
-
-              <div className="rounded-[1.45rem] border border-primary/15 bg-gradient-to-br from-primary/12 to-blue-500/8 p-4">
-                <p className="text-sm font-semibold text-foreground">{language === "sw" ? "Muhtasari wa malipo" : "Payment summary"}</p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">{language === "sw" ? "Imelipwa" : "Paid"}</span>
-                    <span className="font-semibold text-foreground">{formatMoney(totalPaid)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">{language === "sw" ? "Salio" : "Remaining"}</span>
-                    <span className={`font-semibold ${totalPaid < total ? "text-destructive" : "text-foreground"}`}>
-                      {formatMoney(Math.max(total - totalPaid, 0))}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">{language === "sw" ? "Chenji" : "Change"}</span>
-                    <span className="font-semibold text-primary">{formatMoney(changeDue)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {isMobile ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="h-12" onClick={() => setMobileStep("cart")}>
-                    {language === "sw" ? "Rudi kikapuni" : "Back to cart"}
-                  </Button>
-                  <Button
-                    className="h-12 gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white shadow-lg shadow-teal-500/20 hover:from-teal-600 hover:to-blue-700"
-                    onClick={handleCompleteSale}
-                    disabled={cartItems.length === 0 || createSale.isPending}
-                  >
-                    {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                    {language === "sw" ? "Maliza" : "Finish"}
-                  </Button>
-                </div>
-              ) : (
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
                 <Button
-                  className="h-12 w-full gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white shadow-lg shadow-teal-500/20 hover:from-teal-600 hover:to-blue-700"
+                  variant="outline"
+                  onClick={handleHoldDraft}
+                  disabled={cartItems.length === 0}
+                  className="h-10 rounded-xl text-xs flex-1"
+                >
+                  <History className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                  <span>{t("sales.saveAsDraft")}</span>
+                </Button>
+
+                <Button
                   onClick={handleCompleteSale}
                   disabled={cartItems.length === 0 || createSale.isPending}
+                  className="h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2] shadow-xs hover:bg-primary/90"
                 >
-                  {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                  {t("sales.completeSale")}
+                  {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1 text-accent" />}
+                  <span>{language === "sw" ? "Kamilisha Mauzo" : "Complete Sale"}</span>
                 </Button>
-              )}
+              </div>
             </CardContent>
           </Card>
         </div>
-      </section>
+      </div>
 
-      <AlertDialog open={!!draftToDeleteId} onOpenChange={(open) => !open && setDraftToDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{language === "sw" ? "Futa rasimu hii?" : "Delete this draft?"}</AlertDialogTitle>
-            <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => draftToDeleteId && deleteDraft.mutate(draftToDeleteId, { onSettled: () => setDraftToDeleteId(null) })}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteDraft.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Receipt Modal */}
+      {showReceipt && lastSale && (
+        <Receipt sale={lastSale} open={showReceipt} onOpenChange={setShowReceipt} />
+      )}
 
-      <MobileCameraScanner
-        open={cameraScannerOpen}
-        onOpenChange={setCameraScannerOpen}
-        onDetected={(value) => handleBarcodeScan(value)}
-      />
-
-      {showReceipt && lastSale ? <Receipt data={lastSale} onClose={() => setShowReceipt(false)} /> : null}
-    </motion.div>
+      {/* Mobile Camera Scanner */}
+      {cameraScannerOpen && (
+        <MobileCameraScanner
+          open={cameraScannerOpen}
+          onOpenChange={setCameraScannerOpen}
+          onScan={(code) => {
+            setSearchTerm(code);
+            setCameraScannerOpen(false);
+          }}
+        />
+      )}
+    </div>
   );
 }

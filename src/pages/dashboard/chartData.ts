@@ -82,7 +82,7 @@ export function buildCategoryChartData(
       return {
         name: category.name?.trim() || "Uncategorized",
         value: Number.isFinite(value) ? value : 0,
-        color: category.color || fallbackColors[index % fallbackColors.length] || "#0D9488",
+        color: category.color || fallbackColors[index % fallbackColors.length] || "#d99a4e",
       };
     })
     .filter((category) => category.value > 0)

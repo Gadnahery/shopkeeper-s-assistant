@@ -1,11 +1,36 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { format } from "date-fns";
+import {
+  CreditCard,
+  DollarSign,
+  Eye,
+  History,
+  Loader2,
+  Mail,
+  Pencil,
+  Phone,
+  Plus,
+  Receipt,
+  Search,
+  Trash2,
+  TrendingDown,
+  UserCheck,
+  UserPlus,
+  Users,
+  Wallet,
+  X,
+  ChevronRight,
+  CheckCircle2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,39 +41,58 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, CreditCard, Pencil, Trash2, Loader2, Mail, History, Eye } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
-import { useDraftForm } from "@/hooks/useDraftForm";
 import { useSalesByCustomer } from "@/hooks/useSales";
-import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { PageLoader } from "@/components/PageLoader";
-import { PageHeader } from "@/components/common/PageHeader";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { cn } from "@/lib/utils";
 
 export default function Customers() {
-  const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const { isMobile } = useAdaptiveLayout();
+  const { formatMoney, formatNumber } = useShopFormatting();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<any>(null);
-  const [payDialog, setPayDialog] = useState<any>(null);
+
+  // Inline Master-Detail Panel State (NO POPUPS)
+  const [isAddingCustomer, setIsAddingCustomer] = useState(searchParams.get("new") === "true");
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [customerToDeleteId, setCustomerToDeleteId] = useState<string | null>(null);
-  const initialNewCustomer = { name: "", phone: "", email: "", customer_type: "Retail", credit_balance: "0" };
-  const [newCustomer, setNewCustomer, clearAddCustomerDraft] = useDraftForm("add-customer", initialNewCustomer);
-  const [detailCustomer, setDetailCustomer] = useState<(typeof customers)[0] | null>(null);
+
+  // Forms
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    customer_type: "Retail",
+    credit_balance: "0",
+  });
+  const [editForm, setEditForm] = useState<any>(null);
 
   const { data: customers, isLoading } = useCustomers();
-  const { data: customerSales } = useSalesByCustomer(detailCustomer?.id ?? null);
+  const { data: customerSales } = useSalesByCustomer(selectedCustomer?.id ?? null);
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
+
+  useEffect(() => {
+    if (searchParams.get("new") === "true") {
+      setIsAddingCustomer(true);
+      setSelectedCustomer(null);
+    }
+  }, [searchParams]);
+
+  // Auto-select first customer
+  useEffect(() => {
+    if (customers && customers.length > 0 && !selectedCustomer && !isAddingCustomer) {
+      const first = customers[0];
+      setSelectedCustomer(first);
+      setEditForm({ ...first });
+    }
+  }, [customers]);
 
   if (customers === undefined || isLoading) {
     return <PageLoader message="Loading customers..." messageSw="Inapakia wateja..." language={language} />;
@@ -59,338 +103,483 @@ export default function Customers() {
       (c) =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.phone && c.phone.includes(searchTerm)) ||
-        ((c as { email?: string }).email && (c as { email?: string }).email?.toLowerCase().includes(searchTerm.toLowerCase()))
+        ((c as any).email && (c as any).email.toLowerCase().includes(searchTerm.toLowerCase())),
     ) ?? [];
 
-  const formatNumber = (num: number) => num.toLocaleString("en-US");
-  const customersWithCredit = filteredCustomers.filter((customer) => customer.credit_balance > 0).length;
-  const totalCredit = filteredCustomers.reduce((sum, customer) => sum + Number(customer.credit_balance || 0), 0);
+  const totalCredit = filteredCustomers.reduce((sum, c) => sum + Number(c.credit_balance || 0), 0);
+  const creditCount = filteredCustomers.filter((c) => Number(c.credit_balance) > 0).length;
 
-  const handleAddCustomer = async () => {
-    await createCustomer.mutateAsync({
-      name: newCustomer.name,
-      phone: newCustomer.phone || null,
-      email: newCustomer.email || undefined,
-      customer_type: newCustomer.customer_type,
-      credit_balance: parseFloat(newCustomer.credit_balance) || 0,
-    } as Parameters<typeof createCustomer.mutateAsync>[0]);
-    clearAddCustomerDraft();
-    setIsAddOpen(false);
-  };
-
-  const handleEditCustomer = async () => {
-    if (!editingCustomer) return;
-    await updateCustomer.mutateAsync({
-      id: editingCustomer.id,
-      name: editingCustomer.name,
-      phone: editingCustomer.phone || null,
-      email: editingCustomer.email ?? undefined,
-      customer_type: editingCustomer.customer_type,
-      credit_balance: parseFloat(editingCustomer.credit_balance) || 0,
-      internal_notes: editingCustomer.internal_notes ?? undefined,
-    } as Parameters<typeof updateCustomer.mutateAsync>[0]);
-    setEditingCustomer(null);
-  };
-
-  const handlePayCredit = async () => {
-    if (!payDialog) return;
-    const amount = parseFloat(payAmount) || 0;
-    const newBalance = Math.max(0, payDialog.credit_balance - amount);
-    await updateCustomer.mutateAsync({ id: payDialog.id, credit_balance: newBalance });
-    toast.success(language === "sw" ? "Malipo yamefanikiwa" : "Payment recorded");
-    setPayDialog(null);
+  const handleSelectCustomer = (c: any) => {
+    setSelectedCustomer(c);
+    setEditForm({ ...c });
+    setIsAddingCustomer(false);
+    setIsEditing(false);
     setPayAmount("");
   };
 
+  const handleAddCustomer = async () => {
+    if (!newCustomer.name.trim()) return;
+    try {
+      const created = await createCustomer.mutateAsync({
+        name: newCustomer.name.trim(),
+        phone: newCustomer.phone?.trim() || null,
+        email: newCustomer.email?.trim() || undefined,
+        customer_type: newCustomer.customer_type,
+        credit_balance: parseFloat(newCustomer.credit_balance) || 0,
+      } as any);
+
+      toast.success(language === "sw" ? "Mteja ameongezwa" : "Customer added");
+      setIsAddingCustomer(false);
+      setNewCustomer({ name: "", phone: "", email: "", customer_type: "Retail", credit_balance: "0" });
+      if (created) handleSelectCustomer(created);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to add customer");
+    }
+  };
+
+  const handleUpdateCustomer = async () => {
+    if (!editForm) return;
+    try {
+      await updateCustomer.mutateAsync({
+        id: editForm.id,
+        name: editForm.name.trim(),
+        phone: editForm.phone?.trim() || null,
+        email: editForm.email?.trim() || undefined,
+        customer_type: editForm.customer_type,
+        credit_balance: parseFloat(editForm.credit_balance) || 0,
+      } as any);
+
+      toast.success(language === "sw" ? "Mteja amesasishwa" : "Customer updated");
+      setIsEditing(false);
+      setSelectedCustomer({ ...editForm });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update customer");
+    }
+  };
+
+  const handlePayDebt = async () => {
+    if (!selectedCustomer) return;
+    const amount = parseFloat(payAmount) || 0;
+    if (amount <= 0) return;
+
+    const newBalance = Math.max(0, Number(selectedCustomer.credit_balance) - amount);
+
+    try {
+      await updateCustomer.mutateAsync({ id: selectedCustomer.id, credit_balance: newBalance });
+      toast.success(language === "sw" ? "Malipo ya deni yamehifadhiwa" : "Debt payment recorded");
+      setSelectedCustomer({ ...selectedCustomer, credit_balance: newBalance });
+      setPayAmount("");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to record payment");
+    }
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
-      <PageHeader
-        title={language === "sw" ? "Wateja" : "Customers"}
-        subtitle={language === "sw" ? "Simamia wateja, deni la mikopo, na historia ya ununuzi kwa mpangilio bora." : "Manage customer records, credit balances, and purchase history with a cleaner workspace."}
-        actions={
-          <div className="flex w-full min-w-0 flex-wrap gap-2 xl:w-auto xl:justify-end">
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-              <Input placeholder={t("customers.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+    <div className="space-y-6 pb-12">
+      {/* 4 Olly KPI Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("customers.totalCustomers")}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <Users className="h-4 w-4 text-accent" />
             </div>
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{t("customers.addCustomer")}</Button></DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>{t("customers.addCustomer")}</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2"><Label>{t("customers.name")}</Label><Input value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} /></div>
-                  <div className="space-y-2"><Label>{t("customers.phoneNumber")}</Label><Input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} /></div>
-                  <Accordion type="single" collapsible className="rounded-[1rem] border border-border/70 px-4">
-                    <AccordionItem value="advanced" className="border-none">
-                      <AccordionTrigger className="py-4 text-sm font-semibold hover:no-underline">
-                        {language === "sw" ? "Maelezo ya ziada" : "Advanced details"}
-                      </AccordionTrigger>
-                      <AccordionContent className="space-y-4 pb-4">
-                        <div className="space-y-2"><Label>{language === "sw" ? "Barua pepe" : "Email"}</Label><Input type="email" value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} placeholder="email@example.com" /></div>
-                        <div className="space-y-2"><Label>{t("customers.type")}</Label>
-                          <Select value={newCustomer.customer_type} onValueChange={(v) => setNewCustomer({ ...newCustomer, customer_type: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Retail">{t("customers.retail")}</SelectItem>
-                              <SelectItem value="Contractor">{t("customers.contractor")}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2"><Label>{t("customers.creditBalance")}</Label><Input type="number" value={newCustomer.credit_balance} onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })} /></div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                  <div className="flex gap-2 justify-end">
-                    <Button type="button" variant="outline" onClick={() => { clearAddCustomerDraft(); setIsAddOpen(false); }}>{t("common.cancel")}</Button>
-                    <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" onClick={handleAddCustomer} disabled={!newCustomer.name || createCustomer.isPending}>
-                      {createCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-                    </Button>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{customers?.length || 0}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Wateja waliosajiliwa" : "Registered customer accounts"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("customers.totalOutstandingDebt")}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <DollarSign className="h-4 w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalCredit)}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{creditCount} {language === "sw" ? "wateja wenye madeni" : "customers with balance"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Wateja wa Madeni" : "Debt Accounts"}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <CreditCard className="h-4 w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{creditCount}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Madeni yanayofuatiliwa" : "Active credit balances"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Wateja wa Jumla" : "Wholesale Clients"}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <UserCheck className="h-4 w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">
+              {customers?.filter((c) => c.customer_type === "Wholesale").length || 0}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Akaunti za biashara" : "Commercial accounts"}</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* 2-Column Master-Detail Layout (NO POPUPS) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left Column (Master Customers Table - 7 Cols) */}
+        <div className="space-y-4 lg:col-span-7">
+          <Card className="border border-border bg-card shadow-xs">
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder={language === "sw" ? "Tafuta mteja..." : "Search customer..."}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 rounded-xl border-border bg-background pl-9 text-xs"
+                />
+              </div>
+
+              <Button
+                onClick={() => {
+                  setIsAddingCustomer(true);
+                  setSelectedCustomer(null);
+                }}
+                className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
+              >
+                <Plus className="h-3.5 w-3.5 text-accent" />
+                <span>{t("customers.addCustomer")}</span>
+              </Button>
+            </div>
+
+            {filteredCustomers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <Users className="h-8 w-8 text-muted-foreground" />
+                <p className="mt-3 text-sm font-semibold text-foreground">
+                  {language === "sw" ? "Hakuna wateja waliopatikana" : "No customers found"}
+                </p>
+                <Button
+                  onClick={() => {
+                    setIsAddingCustomer(true);
+                    setSelectedCustomer(null);
+                  }}
+                  className="mt-3 h-8 rounded-xl text-xs bg-primary text-primary-foreground"
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5 text-accent" />
+                  {t("customers.addCustomer")}
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("customers.name")}</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("customers.phone")}</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{language === "sw" ? "Aina" : "Type"}</TableHead>
+                      <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("customers.debt")}</TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase text-muted-foreground"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCustomers.map((c) => {
+                      const isSelected = selectedCustomer?.id === c.id && !isAddingCustomer;
+                      const hasDebt = Number(c.credit_balance) > 0;
+
+                      return (
+                        <TableRow
+                          key={c.id}
+                          onClick={() => handleSelectCustomer(c)}
+                          className={cn(
+                            "cursor-pointer border-b border-border/60 transition-colors",
+                            isSelected ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-muted/40",
+                          )}
+                        >
+                          <TableCell className="text-xs font-semibold text-foreground">
+                            {c.name}
+                          </TableCell>
+                          <TableCell className="text-xs text-foreground">{c.phone || "-"}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground">
+                              {c.customer_type || "Retail"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {hasDebt ? (
+                              <span className="inline-flex rounded-full bg-[var(--danger-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--danger-text)]">
+                                {formatMoney(c.credit_balance)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">{formatMoney(0)}</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <ChevronRight className={cn("h-4 w-4 transition-transform", isSelected ? "text-accent translate-x-1" : "text-muted-foreground")} />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Right Column (Inline Action / Detail Panel - 5 Cols, NO POPUPS) */}
+        <div className="space-y-4 lg:col-span-5">
+          {/* Case 1: Inline Add Customer Form */}
+          {isAddingCustomer && (
+            <Card className="border border-border bg-card shadow-xs">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+                <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-accent" />
+                  <span>{t("customers.addCustomer")}</span>
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAddingCustomer(false)}
+                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+
+              <CardContent className="p-4 space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{t("customers.name")} *</Label>
+                  <Input
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                    placeholder="e.g. Amani Mwita"
+                    className="h-9 rounded-xl border-border bg-background text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">{t("customers.phone")}</Label>
+                    <Input
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                      placeholder="0712345678"
+                      className="h-9 rounded-xl border-border bg-background text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold">{language === "sw" ? "Aina" : "Type"}</Label>
+                    <Select
+                      value={newCustomer.customer_type}
+                      onValueChange={(v) => setNewCustomer({ ...newCustomer, customer_type: v })}
+                    >
+                      <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                        <SelectItem value="Retail">Retail</SelectItem>
+                        <SelectItem value="Wholesale">Wholesale</SelectItem>
+                        <SelectItem value="Corporate">Corporate</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        }
-      />
 
-      <section className={`grid gap-4 ${isMobile ? "grid-cols-3" : "md:grid-cols-3"}`}>
-        <Card className="section-shell">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Wateja wote" : "Total customers"}</p>
-            <p className="mt-2 text-3xl font-bold text-foreground">{filteredCustomers.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Wenye deni" : "Customers with credit"}</p>
-            <p className="mt-2 text-3xl font-bold text-foreground">{customersWithCredit}</p>
-          </CardContent>
-        </Card>
-        <Card className="section-shell">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{language === "sw" ? "Jumla ya deni" : "Outstanding credit"}</p>
-            <p className="mt-2 text-3xl font-bold text-foreground">Tsh {formatNumber(totalCredit)}</p>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editingCustomer} onOpenChange={(o) => !o && setEditingCustomer(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{t("common.edit")} {language === "sw" ? "Mteja" : "Customer"}</DialogTitle></DialogHeader>
-          {editingCustomer && (
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2"><Label>{t("customers.name")}</Label><Input value={editingCustomer.name} onChange={(e) => setEditingCustomer({ ...editingCustomer, name: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{t("customers.phoneNumber")}</Label><Input value={editingCustomer.phone || ""} onChange={(e) => setEditingCustomer({ ...editingCustomer, phone: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{t("customers.type")}</Label>
-                <Select value={editingCustomer.customer_type} onValueChange={(v) => setEditingCustomer({ ...editingCustomer, customer_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Retail">{t("customers.retail")}</SelectItem>
-                    <SelectItem value="Contractor">{t("customers.contractor")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2"><Label>{language === "sw" ? "Barua pepe" : "Email"}</Label><Input type="email" value={editingCustomer.email || ""} onChange={(e) => setEditingCustomer({ ...editingCustomer, email: e.target.value })} placeholder="email@example.com" /></div>
-              <div className="space-y-2"><Label>{t("customers.creditBalance")}</Label><Input type="number" value={editingCustomer.credit_balance} onChange={(e) => setEditingCustomer({ ...editingCustomer, credit_balance: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{language === "sw" ? "Maandishi ya Ndani" : "Internal Notes"}</Label><Input value={editingCustomer.internal_notes || ""} onChange={(e) => setEditingCustomer({ ...editingCustomer, internal_notes: e.target.value })} placeholder={language === "sw" ? "mf. Anapenda usafirishaji Jumamosi" : "e.g. Prefers delivery on Saturdays"} /></div>
-              <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                onClick={handleEditCustomer} 
-                disabled={updateCustomer.isPending}
-              >
-                {updateCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Customer Detail / Purchase History */}
-      <Dialog open={!!detailCustomer} onOpenChange={(o) => !o && setDetailCustomer(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><History className="h-5 w-5" />{detailCustomer?.name} - {language === "sw" ? "Historia ya Ununuzi" : "Purchase History"}</DialogTitle></DialogHeader>
-          {detailCustomer && (
-            <div className="space-y-4 pt-4">
-              <div className="flex flex-wrap gap-2">
-                {(detailCustomer as { loyalty_points?: number }).loyalty_points > 0 && (
-                  <Badge variant="secondary">{(detailCustomer as { loyalty_points?: number }).loyalty_points} pts</Badge>
-                )}
-                {(detailCustomer as { email?: string }).email && (
-                  <span className="flex items-center gap-1 text-sm text-foreground/70 dark:text-foreground/80">
-                    <Mail className="h-4 w-4 dark:drop-shadow-[0_0_3px_rgba(59,130,246,0.2)]" />{(detailCustomer as { email?: string }).email}
-                  </span>
-                )}
-              </div>
-              {customerSales && customerSales.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-auto">
-                  {customerSales.map((sale) => (
-                    <div key={sale.id} className="rounded-lg border p-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium">{sale.invoice_number}</span>
-                        <span className="text-foreground/70 dark:text-foreground/80">{new Date(sale.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <p className="mt-1 text-lg font-bold text-foreground dark:text-foreground">Tsh {formatNumber(Number(sale.total))}</p>
-                      <p className="text-xs text-foreground/70 dark:text-foreground/80">{sale.payment_method}</p>
-                    </div>
-                  ))}
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Barua Pepe" : "Email"}</Label>
+                  <Input
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                    placeholder="customer@example.com"
+                    className="h-9 rounded-xl border-border bg-background text-xs"
+                  />
                 </div>
-              ) : (
-                <p className="py-8 text-center text-sm text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Hakuna historia ya ununuzi." : "No purchase history yet."}</p>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
-      {/* Pay Credit Dialog */}
-      <Dialog open={!!payDialog} onOpenChange={(o) => !o && setPayDialog(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{t("customers.pay")} - {payDialog?.name}</DialogTitle></DialogHeader>
-          {payDialog && (
-            <div className="space-y-4 pt-4">
-              <p className="text-sm text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Deni la sasa" : "Current balance"}: <span className="font-bold text-destructive dark:text-destructive">Tsh {formatNumber(payDialog.credit_balance)}</span></p>
-              <div className="space-y-2"><Label>{language === "sw" ? "Kiasi cha Kulipa" : "Payment Amount"}</Label><Input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder="0" /></div>
-              <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
-                onClick={handlePayCredit} 
-                disabled={!payAmount || updateCustomer.isPending}
-              >
-                {updateCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Lipa" : "Record Payment")}
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Deni la Awali (TSH)" : "Initial Credit Balance"}</Label>
+                  <Input
+                    type="number"
+                    value={newCustomer.credit_balance}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })}
+                    placeholder="0"
+                    className="h-9 rounded-xl border-border bg-background text-xs"
+                  />
+                </div>
 
-      <Card className="section-shell overflow-hidden">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-          ) : (
-            <>
-            <div className="hidden max-w-full overflow-x-auto md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("customers.name")}</TableHead>
-                  <TableHead>{t("customers.phoneNumber")}</TableHead>
-                  <TableHead>{t("customers.type")}</TableHead>
-                  <TableHead>{t("customers.creditBalance")}</TableHead>
-                  <TableHead className="text-right">{t("common.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-foreground/70 dark:text-foreground/80">{customers?.length === 0 ? (language === "sw" ? "Hakuna wateja bado." : "No customers yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}</TableCell></TableRow>
-                ) : filteredCustomers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {customer.name}
-                        {(customer as { loyalty_points?: number }).loyalty_points > 0 && (
-                          <Badge variant="outline" className="text-xs">{(customer as { loyalty_points?: number }).loyalty_points} pts</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span>{customer.phone || "-"}</span>
-                        {(customer as { email?: string }).email && <span className="text-xs text-foreground/70 dark:text-foreground/80">{(customer as { email?: string }).email}</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={customer.customer_type === "Contractor" ? "border-secondary bg-secondary/10 text-secondary" : "border-primary bg-primary/10 text-primary"}>
-                        {customer.customer_type === "Contractor" ? t("customers.contractor") : t("customers.retail")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className={customer.credit_balance > 0 ? "font-medium text-destructive dark:text-destructive" : "text-foreground/70 dark:text-foreground/80"}>
-                      {customer.credit_balance > 0 ? formatNumber(customer.credit_balance) : "0"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        {customer.credit_balance > 0 && (
-                          <Button variant="outline" size="sm" className="gap-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setPayDialog(customer)}>
-                            <CreditCard className="h-3 w-3" />{t("customers.pay")}
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" title={language === "sw" ? "Tazama" : "View"} onClick={() => navigate(`/customers/${customer.id}`)}>
-                          <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" title={language === "sw" ? "Historia" : "History"} onClick={() => setDetailCustomer(customer)}>
-                          <History className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingCustomer({ ...customer })}>
-                          <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setCustomerToDeleteId(customer.id)} disabled={deleteCustomer.isPending}>
-                          <Trash2 className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(239,68,68,0.3)]" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-            <div className="grid gap-3 p-4 md:hidden">
-              {filteredCustomers.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">{customers?.length === 0 ? (language === "sw" ? "Hakuna wateja bado." : "No customers yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}</div>
-              ) : (
-                filteredCustomers.map((customer) => (
-                  <Card key={customer.id} className="border-border/70 bg-background/60">
-                    <CardContent className="space-y-3 p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold">{customer.name}</p>
-                          <p className="text-sm text-muted-foreground">{customer.phone || "-"}</p>
-                        </div>
-                        <Badge variant="outline" className={customer.customer_type === "Contractor" ? "border-secondary bg-secondary/10 text-secondary" : "border-primary bg-primary/10 text-primary"}>
-                          {customer.customer_type === "Contractor" ? t("customers.contractor") : t("customers.retail")}
-                        </Badge>
-                      </div>
-                      <div className="rounded-[1rem] border border-border/60 bg-background/75 p-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{t("customers.creditBalance")}</p>
-                        <p className={`mt-2 text-2xl font-bold ${customer.credit_balance > 0 ? "text-destructive" : "text-foreground"}`}>{formatNumber(customer.credit_balance)}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {customer.credit_balance > 0 && (
-                          <Button variant="outline" size="sm" className="flex-1 gap-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setPayDialog(customer)}>
-                            <CreditCard className="h-3 w-3" />{t("customers.pay")}
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate(`/customers/${customer.id}`)}><Eye className="mr-1 h-4 w-4" />{language === "sw" ? "Tazama" : "View"}</Button>
-                      </div>
-                      <Accordion type="single" collapsible>
-                        <AccordionItem value="details" className="border-none">
-                          <AccordionTrigger className="py-0 text-sm font-medium text-primary hover:no-underline">
-                            {language === "sw" ? "Historia na zaidi" : "History and more"}
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-3 pb-0 pt-3">
-                            {(customer as { email?: string }).email ? (
-                              <div className="rounded-[1rem] border border-border/60 bg-background/75 p-3">
-                                <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{language === "sw" ? "Barua pepe" : "Email"}</p>
-                                <p className="mt-1 text-sm font-medium break-all">{(customer as { email?: string }).email}</p>
-                              </div>
-                            ) : null}
-                            <div className="flex flex-wrap gap-2">
-                              <Button variant="outline" size="sm" className="flex-1" onClick={() => setDetailCustomer(customer)}><History className="mr-1 h-4 w-4" />{language === "sw" ? "Historia" : "History"}</Button>
-                              <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditingCustomer({ ...customer })}><Pencil className="mr-1 h-4 w-4" />{language === "sw" ? "Hariri" : "Edit"}</Button>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-            </>
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setIsAddingCustomer(false)} className="h-9 rounded-xl text-xs flex-1">
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    onClick={handleAddCustomer}
+                    disabled={createCustomer.isPending || !newCustomer.name.trim()}
+                    className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
+                  >
+                    {createCustomer.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                    <span>{t("common.save")}</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
 
-      <AlertDialog open={!!customerToDeleteId} onOpenChange={(open) => !open && setCustomerToDeleteId(null)}>
+          {/* Case 2: Inline Selected Customer Details + Pay Debt + History */}
+          {!isAddingCustomer && selectedCustomer && (
+            <Card className="border border-border bg-card shadow-xs">
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+                <div>
+                  <CardTitle className="text-sm font-bold text-foreground">
+                    {selectedCustomer.name}
+                  </CardTitle>
+                  <p className="text-[11px] text-muted-foreground">{selectedCustomer.phone || "No phone"} · {selectedCustomer.customer_type || "Retail"}</p>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="h-7 text-xs rounded-lg gap-1"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    <span>{isEditing ? (language === "sw" ? "Funga" : "Close") : (language === "sw" ? "Hariri" : "Edit")}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCustomerToDeleteId(selectedCustomer.id)}
+                    className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-4 space-y-4">
+                {/* Mode A: Edit Form */}
+                {isEditing ? (
+                  <div className="space-y-3 rounded-xl bg-muted/30 p-3 border border-border">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold">{t("customers.name")}</Label>
+                      <Input
+                        value={editForm?.name || ""}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="h-9 rounded-xl border-border bg-background text-xs"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-semibold">{t("customers.phone")}</Label>
+                        <Input
+                          value={editForm?.phone || ""}
+                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                          className="h-9 rounded-xl border-border bg-background text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs font-semibold">{language === "sw" ? "Deni (TSH)" : "Debt"}</Label>
+                        <Input
+                          type="number"
+                          value={editForm?.credit_balance || 0}
+                          onChange={(e) => setEditForm({ ...editForm, credit_balance: e.target.value })}
+                          className="h-9 rounded-xl border-border bg-background text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={handleUpdateCustomer} className="h-8 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+                      {t("common.save")}
+                    </Button>
+                  </div>
+                ) : null}
+
+                {/* Outstanding Debt & Payment */}
+                <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground">{t("customers.totalDebt")}</span>
+                    <span className={cn("text-base font-bold", Number(selectedCustomer.credit_balance) > 0 ? "text-[var(--danger-text)]" : "text-foreground")}>
+                      {formatMoney(selectedCustomer.credit_balance || 0)}
+                    </span>
+                  </div>
+
+                  {Number(selectedCustomer.credit_balance) > 0 && (
+                    <div className="space-y-2 pt-1 border-t border-border/60">
+                      <Label className="text-[11px] font-semibold text-muted-foreground">{t("customers.amountToPay")} (TSH)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          value={payAmount}
+                          onChange={(e) => setPayAmount(e.target.value)}
+                          placeholder={String(selectedCustomer.credit_balance)}
+                          className="h-9 flex-1 rounded-xl border-border bg-background text-xs font-bold"
+                        />
+                        <Button
+                          onClick={handlePayDebt}
+                          disabled={updateCustomer.isPending || !Number(payAmount)}
+                          className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                        >
+                          {updateCustomer.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DollarSign className="h-3.5 w-3.5 text-accent mr-1" />}
+                          <span>{t("customers.payDebt")}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Purchase History */}
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <History className="h-3.5 w-3.5 text-accent" />
+                    <span>{t("customers.purchaseHistory")} ({customerSales?.length || 0})</span>
+                  </span>
+
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40 text-xs">
+                          <TableHead>{t("sales.date")}</TableHead>
+                          <TableHead>{t("sales.paymentMethod")}</TableHead>
+                          <TableHead className="text-right">{t("sales.total")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {!customerSales || customerSales.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-4 text-xs text-muted-foreground">
+                              {language === "sw" ? "Hakuna historia bado." : "No sales history yet."}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          customerSales.slice(0, 10).map((s: any) => (
+                            <TableRow key={s.id} className="text-xs">
+                              <TableCell className="font-medium text-foreground">{format(new Date(s.created_at), "MMM d, yyyy")}</TableCell>
+                              <TableCell className="capitalize text-muted-foreground">{s.payment_method}</TableCell>
+                              <TableCell className="text-right font-bold text-foreground">{formatMoney(s.total)}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Delete Customer Confirm */}
+      <AlertDialog open={!!customerToDeleteId} onOpenChange={(o) => !o && setCustomerToDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{language === "sw" ? "Futa mteja huyu?" : "Delete this customer?"}</AlertDialogTitle>
@@ -402,11 +591,11 @@ export default function Customers() {
               onClick={() => customerToDeleteId && deleteCustomer.mutate(customerToDeleteId, { onSettled: () => setCustomerToDeleteId(null) })}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+              {deleteCustomer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Futa" : "Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </motion.div>
+    </div>
   );
 }

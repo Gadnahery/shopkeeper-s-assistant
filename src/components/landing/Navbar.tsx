@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Store, Menu, X, Globe, Sun, Moon, Check, Download } from "lucide-react";
+import { Menu, X, Globe, Sun, Moon, Check, Download, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePWAContext } from "@/contexts/PWAContext";
 import { useTheme } from "@/hooks/useTheme";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const navLinks = [
   { href: "/features", labelEn: "Features", labelSw: "Vipengele" },
@@ -26,26 +27,21 @@ export function Navbar() {
     <motion.header
       initial={{ y: -80 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="safe-top fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-white/80 backdrop-blur-xl dark:bg-neutral-900/80"
+      transition={{ duration: 0.4 }}
+      className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/90 backdrop-blur-md"
     >
-      <nav className="container mx-auto flex min-h-16 items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg shadow-emerald-500/25">
-            <Store className="h-5 w-5 text-white" />
-          </div>
-          <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-xl font-bold text-transparent dark:from-emerald-400 dark:to-cyan-400">
-            WiseCash
-          </span>
+      <nav className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+        <Link to="/" className="flex items-center">
+          <BrandLogo size="md" />
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               to={link.href}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="rounded-lg px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               {t(link.labelEn, link.labelSw)}
             </Link>
@@ -54,42 +50,32 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-2">
           <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-            title={theme === "light" ? (language === "sw" ? "Badilisha kwa hali ya giza" : "Switch to dark mode") : (language === "sw" ? "Badilisha kwa hali ya mwanga" : "Switch to light mode")}
-          >
-            {theme === "light" ? (
-              <Moon className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-            ) : (
-              <Sun className="h-4 w-4 dark:drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
-            )}
-          </button>
-          <button
             onClick={() => setLanguage(language === "sw" ? "en" : "sw")}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            className="flex items-center gap-1.5 rounded-xl border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
             title={language === "sw" ? "Switch to English" : "Badilisha kwa Kiswahili"}
           >
-            <Globe className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
+            <Globe className="h-3.5 w-3.5 text-accent" />
             <span>{language === "sw" ? "English" : "Kiswahili"}</span>
           </button>
-          <Button variant="ghost" asChild>
+
+          <Button variant="ghost" size="sm" asChild className="text-xs font-semibold">
             <Link to="/login">{t("Login", "Ingia")}</Link>
           </Button>
-          <Button variant="outline" onClick={() => void install()} disabled={isInstalled} className="gap-2">
-              {isInstalled ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-              {isInstalled ? t("Installed", "Imesakinishwa") : t("Download App", "Pakua App")}
-          </Button>
-          <Button asChild className="bg-gradient-to-r from-emerald-500 to-cyan-600 shadow-md shadow-emerald-500/25 hover:from-emerald-600 hover:to-cyan-700">
-            <Link to="/signup">{t("Signup", "Jisajili")}</Link>
+
+          <Button asChild size="sm" className="h-8 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90">
+            <Link to="/signup" className="flex items-center gap-1">
+              <span>{t("Get Started", "Anza Sasa")}</span>
+              <ArrowRight className="h-3.5 w-3.5 text-accent" />
+            </Link>
           </Button>
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile menu toggle */}
         <button
-          className="md:hidden p-2 rounded-lg hover:bg-muted"
+          className="md:hidden p-2 rounded-lg hover:bg-muted text-foreground"
           onClick={() => setOpen(!open)}
         >
-          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
@@ -99,55 +85,32 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-border bg-background"
+            className="border-b border-border bg-card px-4 py-4 md:hidden space-y-3"
           >
-            <div className="container mx-auto flex flex-col gap-1 py-4 px-4">
+            <div className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   {t(link.labelEn, link.labelSw)}
                 </Link>
               ))}
-              <div className="mt-4 flex items-center gap-2 px-4">
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-                  title={theme === "light" ? (language === "sw" ? "Badilisha kwa hali ya giza" : "Switch to dark mode") : (language === "sw" ? "Badilisha kwa hali ya mwanga" : "Switch to light mode")}
-                >
-                  {theme === "light" ? (
-                    <Moon className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-                  ) : (
-                    <Sun className="h-4 w-4 dark:drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
-                  )}
-                </button>
-                <button
-                  onClick={() => setLanguage(language === "sw" ? "en" : "sw")}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all flex-1"
-                >
-                  <Globe className="h-4 w-4 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-                  <span>{language === "sw" ? "English" : "Kiswahili"}</span>
-                </button>
-              </div>
-              <div className="mt-2 flex flex-col gap-2 px-4">
-                <Button variant="outline" asChild className="w-full">
-                  <Link to="/login" onClick={() => setOpen(false)}>
-                    {t("Login", "Ingia")}
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full gap-2" onClick={() => void install()} disabled={isInstalled}>
-                    {isInstalled ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                    {isInstalled ? t("Installed", "Imesakinishwa") : t("Download App", "Pakua App")}
-                </Button>
-                <Button asChild className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700">
-                  <Link to="/signup" onClick={() => setOpen(false)}>
-                    {t("Signup", "Jisajili")}
-                  </Link>
-                </Button>
-              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2 border-t border-border">
+              <button
+                onClick={() => setLanguage(language === "sw" ? "en" : "sw")}
+                className="flex items-center gap-2 rounded-lg py-2 text-xs font-medium text-muted-foreground"
+              >
+                <Globe className="h-4 w-4 text-accent" />
+                <span>{language === "sw" ? "English" : "Kiswahili"}</span>
+              </button>
+              <Button asChild className="h-9 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+                <Link to="/signup">{t("Get Started", "Anza Sasa")}</Link>
+              </Button>
             </div>
           </motion.div>
         )}

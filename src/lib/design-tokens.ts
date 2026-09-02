@@ -5,15 +5,16 @@
 export const tokens = {
   colors: {
     primary: {
-      50: "#F0FDFA", 100: "#CCFBF1", 200: "#99F6E4", 300: "#5EEAD4",
-      400: "#2DD4BF", 500: "#14B8A6", 600: "#0D9488", 700: "#0F766E",
-      800: "#115E59", 900: "#134E4A",
+      50: "#F9FAFB", 100: "#F3F4F6", 200: "#E5E7EB", 300: "#D1D5DB",
+      400: "#9CA3AF", 500: "#6B7280", 600: "#4B5563", 700: "#374151",
+      800: "#1F2937", 900: "#1A1D29",
     },
-    secondary: { 50: "#FFFBEB", 100: "#FEF3C7", 500: "#F59E0B", 600: "#D97706" },
-    success: { 50: "#F0FDF4", 100: "#DCFCE7", 500: "#10B981", 600: "#059669" },
-    warning: { 50: "#FFF7ED", 500: "#F97316", 600: "#EA580C" },
-    error: { 50: "#FEF2F2", 500: "#EF4444", 600: "#DC2626" },
-    neutral: { 50: "#FAFAFA", 100: "#F4F4F5", 200: "#E4E4E7", 500: "#71717A", 900: "#18181B" },
+    secondary: { 50: "#FFFDF7", 100: "#FEF7E6", 500: "#D99A4E", 600: "#B87A32" },
+    accent: { 50: "#FFFDF7", 100: "#FEF7E6", 500: "#D99A4E", 600: "#B87A32" },
+    success: { 50: "#DAF1DF", 100: "#C6ECCF", 500: "#166534", 600: "#14532D" },
+    warning: { 50: "#FFEACE", 100: "#FED7AA", 500: "#9A3412", 600: "#7C2D12" },
+    error: { 50: "#FFE4E6", 100: "#FECDD3", 500: "#9F1239", 600: "#881337" },
+    neutral: { 50: "#F9FAFB", 100: "#EEF0F3", 200: "#E5E7EB", 500: "#6B7280", 900: "#1A1D29" },
   },
   typography: {
     fontFamily: { sans: "Inter, system-ui, sans-serif", mono: "Consolas, Monaco, monospace" },

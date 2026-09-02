@@ -1,36 +1,49 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
+import {
+  Calendar as CalendarIcon,
+  CreditCard,
+  DollarSign,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Loader2,
+  Package,
+  Printer,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Calendar as CalendarIcon, FileText, FileSpreadsheet, Loader2, Package, TrendingUp } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { Calendar } from "@/components/ui/calendar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSalesByDateRange } from "@/hooks/useSales";
 import { useExpensesByDateRange } from "@/hooks/useExpenses";
 import { useProducts } from "@/hooks/useProducts";
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
 import { PageLoader } from "@/components/PageLoader";
-import { motion } from "framer-motion";
-import { PageHeader } from "@/components/common/PageHeader";
 import type { DateRange } from "react-day-picker";
-import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { cn } from "@/lib/utils";
 
 type DateRangeType = "daily" | "weekly" | "monthly" | "custom";
-
-const reportStatusTone: Record<string, string> = {
-  completed: "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400",
-  draft: "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400",
-  cancelled: "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400",
-};
 
 function getRangeForType(type: DateRangeType, customStart?: Date, customEnd?: Date): { start: string; end: string } {
   const now = new Date();
@@ -53,724 +66,443 @@ function getRangeForType(type: DateRangeType, customStart?: Date, customEnd?: Da
 
 export default function Reports() {
   const { t, language } = useLanguage();
-  const { isMobile } = useAdaptiveLayout();
+  const { formatMoney, formatNumber } = useShopFormatting();
   const [searchParams] = useSearchParams();
+
   const rangeParam = searchParams.get("range") as DateRangeType | null;
-  const [rangeType, setRangeType] = useState<DateRangeType>(rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam) ? rangeParam : "monthly");
+  const [rangeType, setRangeType] = useState<DateRangeType>(
+    rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam) ? rangeParam : "monthly",
+  );
+
   useEffect(() => {
-    if (rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam)) setRangeType(rangeParam);
+    if (rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam)) {
+      setRangeType(rangeParam);
+    }
   }, [rangeParam]);
+
   const [customRange, setCustomRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 7), to: new Date() });
   const [customOpen, setCustomOpen] = useState(false);
-  const [reportTab, setReportTab] = useState<"sales" | "inventory" | "profit">("sales");
+  const [reportTab, setReportTab] = useState<string>("sales");
 
   const { start, end } = useMemo(
     () => getRangeForType(rangeType, customRange?.from, customRange?.to),
-    [rangeType, customRange]
+    [rangeType, customRange],
   );
 
-  const { data: sales, isLoading } = useSalesByDateRange(start, end);
-  const { data: expenses } = useExpensesByDateRange(start, end);
-  const { data: products } = useProducts();
+  const { data: sales, isLoading: salesLoading } = useSalesByDateRange(start, end);
+  const { data: expenses, isLoading: expensesLoading } = useExpensesByDateRange(start, end);
+  const { data: products, isLoading: productsLoading } = useProducts();
 
-  if (sales === undefined || isLoading) {
+  if (sales === undefined || salesLoading || expensesLoading || productsLoading) {
     return <PageLoader message="Loading reports..." messageSw="Inapakia ripoti..." language={language} />;
   }
 
-  const formatNumber = (num: number) => num.toLocaleString("en-US");
-  const formatK = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
-    return num.toString();
-  };
+  const totalSales = (sales || []).reduce((sum, s) => sum + Number(s.total || 0), 0);
+  const totalExpenses = (expenses || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  const netProfit = totalSales - totalExpenses;
+  const stockValuation = (products || []).reduce((sum, p) => sum + Number(p.buying_price || 0) * Number(p.stock || 0), 0);
 
-  const totalSales = sales?.reduce((sum, s) => sum + Number(s.total), 0) || 0;
-  const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-  const profit = totalSales - totalExpenses;
-  const stockValue = products?.reduce((sum, p) => sum + Number(p.buying_price) * Number(p.stock), 0) || 0;
-  const lowStockCount = products?.filter((p) => p.stock <= p.low_stock_alert).length || 0;
-  const cashTotal = sales?.filter((s) => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total), 0) || 0;
-  const mpesaTotal = sales?.filter((s) => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total), 0) || 0;
+  // Payment Breakdown
+  const cashTotal = (sales || []).filter((s) => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total || 0), 0);
+  const mpesaTotal = (sales || []).filter((s) => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total || 0), 0);
+  const otherPayTotal = totalSales - cashTotal - mpesaTotal;
 
-  const productSales: Record<string, number> = {};
-  sales?.forEach((sale) => {
-    (sale.sale_items as any[])?.forEach((item: any) => {
-      productSales[item.product_name] = (productSales[item.product_name] || 0) + Number(item.total);
+  const paymentChartData = [
+    { name: "Cash", value: cashTotal, color: "#1a1d29" },
+    { name: "M-Pesa / Mobile", value: mpesaTotal, color: "#d99a4e" },
+    { name: "Other", value: otherPayTotal > 0 ? otherPayTotal : 0, color: "#9ca3af" },
+  ].filter((p) => p.value > 0);
+
+  // Top Selling Items
+  const productSalesMap: Record<string, { name: string; total: number; qty: number }> = {};
+  (sales || []).forEach((sale) => {
+    ((sale.sale_items as any[]) || []).forEach((item: any) => {
+      const key = item.product_name || "Item";
+      if (!productSalesMap[key]) {
+        productSalesMap[key] = { name: key, total: 0, qty: 0 };
+      }
+      productSalesMap[key].total += Number(item.total || 0);
+      productSalesMap[key].qty += Number(item.quantity || 1);
     });
   });
 
-  const bestSellingProducts = Object.entries(productSales)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, amount], index) => ({
-      name,
-      amount,
-      percentage: index === 0 ? 100 : Math.round((amount / (Object.values(productSales)[0] || 1)) * 100),
-    }));
-
-  const recentTransactions =
-    sales?.slice(0, 10).map((sale) => ({
-      date: format(new Date(sale.created_at), "dd MMM, hh:mm a"),
-      invoice: sale.invoice_number,
-      customer: (sale as any).customer_name || (sale.customers as any)?.name || t("sales.walkIn"),
-      amount: Number(sale.total),
-      payment: sale.payment_method,
-      status: sale.status,
-    })) || [];
+  const topProducts = Object.values(productSalesMap)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 6);
 
   const handleExportCSV = () => {
-    if (!recentTransactions.length) return;
-    exportToCSV(recentTransactions, "sales_report");
-  };
-
-  const handleExportPDF = () => {
-    if (!recentTransactions.length) return;
-    exportToPrintablePDF(
-      t("reports.salesSummary"),
-      [t("expenses.date"), t("sales.invoice"), t("reports.customer"), t("reports.amountTsh"), t("reports.payment"), t("reports.status")],
-      recentTransactions.map((tx) => [tx.date, tx.invoice, tx.customer, formatNumber(tx.amount), tx.payment, tx.status])
+    if (!sales?.length) return;
+    exportToCSV(
+      sales.map((s) => ({
+        ID: s.id,
+        Date: format(new Date(s.created_at), "yyyy-MM-dd HH:mm"),
+        Customer: s.customer_name || "Walk-in",
+        Total: s.total,
+        Payment: s.payment_method,
+      })),
+      `sales-report-${rangeType}`,
     );
   };
 
-  const rangeLabel =
-    rangeType === "daily"
-      ? format(new Date(), "dd MMM yyyy")
-      : rangeType === "weekly"
-        ? `${format(new Date(start), "dd MMM")} - ${format(new Date(end), "dd MMM yyyy")}`
-        : rangeType === "monthly"
-          ? format(new Date(start), "MMMM yyyy")
-          : customRange?.from && customRange?.to
-            ? `${format(customRange.from, "dd MMM")} - ${format(customRange.to, "dd MMM yyyy")}`
-            : `${format(subDays(new Date(), 7), "dd MMM")} - ${format(new Date(), "dd MMM yyyy")}`;
-
-  const categoryColors = ["hsl(160, 65%, 50%)", "hsl(36, 100%, 50%)", "hsl(220, 13%, 25%)", "hsl(220, 14%, 80%)"];
-  const categoryData = Object.entries(productSales)
-    .slice(0, 4)
-    .map(([name, value], i) => ({ name, value, color: categoryColors[i % categoryColors.length] }));
-
-  // Sales trend: daily totals for the period
-  const salesByDate: Record<string, number> = {};
-  sales?.forEach((s) => {
-    const d = format(new Date(s.created_at), "yyyy-MM-dd");
-    salesByDate[d] = (salesByDate[d] || 0) + Number(s.total);
-  });
-  const trendData = Object.entries(salesByDate)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, amount]) => ({ date: format(new Date(date), "dd MMM"), amount }));
-
-  // Top customers by spend
-  const customerSpend: Record<string, { name: string; total: number }> = {};
-  sales?.forEach((s) => {
-    const custId = (s as any).customer_id || "walk-in";
-    const name = (s as any).customer_name || (s.customers as any)?.name || t("sales.walkIn");
-    if (!customerSpend[custId]) customerSpend[custId] = { name, total: 0 };
-    customerSpend[custId].total += Number(s.total);
-  });
-  const topCustomers = Object.entries(customerSpend)
-    .map(([, v]) => v)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
-
-  // Expense breakdown by category
-  const expenseByCategory: Record<string, number> = {};
-  expenses?.forEach((e) => {
-    const cat = (e as any).category || t("reports.noData");
-    expenseByCategory[cat] = (expenseByCategory[cat] || 0) + Number(e.amount);
-  });
-  const expenseData = Object.entries(expenseByCategory).map(([name, value], i) => ({
-    name,
-    value,
-    color: categoryColors[i % categoryColors.length],
-  }));
-
-  const lowStockProducts = products?.filter((p) => p.stock <= (p.low_stock_alert ?? 5)).slice(0, 15) || [];
-  const reportStats = [
-    {
-      label: t("reports.salesSummary"),
-      value: `Tsh ${formatNumber(totalSales)}`,
-      tone: "text-foreground",
-      hint: rangeLabel,
-    },
-    {
-      label: t("reports.expenses"),
-      value: `Tsh ${formatNumber(totalExpenses)}`,
-      tone: "text-destructive",
-      hint: language === "sw" ? "Matumizi ya kipindi" : "Costs in range",
-    },
-    {
-      label: t("reports.netProfit"),
-      value: `Tsh ${formatNumber(profit)}`,
-      tone: profit >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive",
-      hint: language === "sw" ? "Baada ya gharama" : "After expenses",
-    },
-    {
-      label: t("reports.inventoryValuation"),
-      value: `Tsh ${formatNumber(stockValue)}`,
-      tone: "text-primary",
-      hint: language === "sw" ? "Thamani ya stoki" : "Stock on hand",
-    },
-  ];
-  const visibleReportStats = isMobile ? [reportStats[0], reportStats[2], reportStats[3]] : reportStats;
+  const handlePrintPDF = () => {
+    exportToPrintablePDF({
+      title: `${language === "sw" ? "Ripoti ya Biashara" : "Business Performance Report"} (${rangeType.toUpperCase()})`,
+      period: `${start} to ${end}`,
+      stats: [
+        { label: language === "sw" ? "Jumla ya Mauzo" : "Total Revenue", value: formatMoney(totalSales) },
+        { label: language === "sw" ? "Jumla ya Matumizi" : "Total Expenses", value: formatMoney(totalExpenses) },
+        { label: language === "sw" ? "Faida Halisi" : "Net Profit", value: formatMoney(netProfit) },
+      ],
+      items: (sales || []).map((s) => ({
+        date: format(new Date(s.created_at), "yyyy-MM-dd HH:mm"),
+        customer: s.customer_name || "Walk-in",
+        method: s.payment_method,
+        total: formatMoney(s.total),
+      })),
+    });
+  };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <PageHeader
-        title={t("reports.title")}
-        subtitle={language === "sw" ? "Pata muhtasari wa mauzo, hesabu, na faida" : "Analyze sales, inventory, and profitability"}
-        actions={
-        <>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <Select value={rangeType} onValueChange={(v: DateRangeType) => setRangeType(v)}>
-            <SelectTrigger className="h-11 w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">{t("reports.daily")}</SelectItem>
-              <SelectItem value="weekly">{t("reports.weekly")}</SelectItem>
-              <SelectItem value="monthly">{t("reports.monthly")}</SelectItem>
-              <SelectItem value="custom">{t("reports.custom")}</SelectItem>
-            </SelectContent>
-          </Select>
-          {rangeType === "custom" && (
-            <Popover open={customOpen} onOpenChange={setCustomOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="h-11 gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  {rangeLabel}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  numberOfMonths={2}
-                  selected={customRange}
-                  onSelect={(value) => {
-                    setCustomRange(value);
-                    if (value?.from && value?.to) {
-                      setCustomOpen(false);
-                    }
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          )}
-          {rangeType !== "custom" && (
-            <div className="flex h-11 items-center gap-2 rounded-2xl border bg-card px-3 py-2">
-              <CalendarIcon className="h-4 w-4 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-              <span className="text-sm">{rangeLabel}</span>
-            </div>
-          )}
-          </div>
-        {!isMobile && <div className="flex flex-wrap gap-3">
-          <Button variant="outline" className="h-11 gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExportPDF}>
-            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-            {t("reports.exportPdf")}
-          </Button>
-          <Button variant="outline" className="h-11 gap-2 hover:border-blue-500/30 dark:hover:border-blue-400/40" onClick={handleExportCSV}>
-            <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
-            {t("reports.exportExcel")}
-          </Button>
-        </div>}
-        </>
-        }
-      />
-
-      {isMobile ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" className="h-11 gap-2" onClick={handleExportPDF}>
-            <FileText className="h-4 w-4 text-blue-600" />
-            {t("reports.exportPdf")}
-          </Button>
-          <Button variant="outline" className="h-11 gap-2" onClick={handleExportCSV}>
-            <FileSpreadsheet className="h-4 w-4 text-blue-600" />
-            {t("reports.exportExcel")}
-          </Button>
-        </div>
-      ) : null}
-
-      <section className={cn("grid gap-4", isMobile ? "grid-cols-1 sm:grid-cols-2" : "md:grid-cols-2 xl:grid-cols-4")}>
-        {visibleReportStats.map((stat) => (
-          <Card key={stat.label} className="section-shell">
-            <CardContent className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{stat.label}</p>
-              <p className={`mt-3 text-2xl font-bold ${stat.tone}`}>{stat.value}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <Tabs value={reportTab} onValueChange={(v) => setReportTab(v as "sales" | "inventory" | "profit")}>
-        <TabsList className="grid h-auto w-full max-w-xl grid-cols-3 rounded-[1.3rem] border border-border/70 bg-card/70 p-1.5">
-          <TabsTrigger value="sales" className="gap-2">
-            <FileText className="h-4 w-4 dark:drop-shadow-[0_0_3px_rgba(59,130,246,0.2)]" />
-            {t("reports.salesTab")}
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="gap-2">
-            <Package className="h-4 w-4 dark:drop-shadow-[0_0_3px_rgba(20,184,166,0.2)]" />
-            {t("reports.inventoryTab")}
-          </TabsTrigger>
-          <TabsTrigger value="profit" className="gap-2">
-            <TrendingUp className="h-4 w-4 dark:drop-shadow-[0_0_3px_rgba(34,197,94,0.2)]" />
-            {t("reports.profitLoss")}
-          </TabsTrigger>
-        </TabsList>
-
-      <TabsContent value="sales" className="mt-6 space-y-6">
-      <Card className="section-shell">
-        <CardContent className="p-4 md:p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-foreground/70 dark:text-foreground/80">{t("reports.salesPeriod")}</p>
-          <p className="mt-2 text-2xl md:text-3xl font-bold text-foreground dark:text-foreground">Tsh {formatNumber(totalSales)}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-4 md:gap-6">
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-teal-500 dark:bg-teal-400 dark:shadow-[0_0_6px_rgba(20,184,166,0.5)]" />
-              <span className="text-sm font-semibold text-foreground dark:text-foreground">{formatNumber(cashTotal)}</span>
-              <span className="text-sm text-foreground/70 dark:text-foreground/80">{t("sales.cash")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-blue-500 dark:bg-blue-400 dark:shadow-[0_0_6px_rgba(59,130,246,0.5)]" />
-              <span className="text-sm font-semibold text-foreground dark:text-foreground">{formatNumber(mpesaTotal)}</span>
-              <span className="text-sm text-foreground/70 dark:text-foreground/80">{t("sales.mpesa")}</span>
+    <div className="space-y-6 pb-12">
+      {/* 4 Olly KPI Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* KPI 1: Revenue */}
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("reports.totalSales")}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <DollarSign className="h-4 w-4 text-accent" />
             </div>
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border/50 p-3 hover:border-orange-500/20 dark:hover:border-orange-400/30 transition-colors">
-              <p className="text-xs text-foreground/70 dark:text-foreground/80">{t("reports.expenses")}</p>
-              <p className="text-lg font-bold text-destructive dark:text-destructive">Tsh {formatNumber(totalExpenses)}</p>
-            </div>
-            <div className="rounded-lg border border-border/50 p-3 hover:border-green-500/20 dark:hover:border-green-400/30 transition-colors">
-              <p className="text-xs text-foreground/70 dark:text-foreground/80">{t("reports.netProfit")}</p>
-              <p className={`text-lg font-bold ${profit >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive dark:text-destructive"}`}>Tsh {formatNumber(profit)}</p>
-            </div>
-            <div className="rounded-lg border border-border/50 p-3 hover:border-blue-500/20 dark:hover:border-blue-400/30 transition-colors">
-              <p className="text-xs text-foreground/70 dark:text-foreground/80">{t("reports.inventoryValuation")}</p>
-              <p className="text-lg font-bold text-foreground dark:text-foreground">Tsh {formatNumber(stockValue)}</p>
-            </div>
-            <div className="rounded-lg border border-border/50 p-3 hover:border-orange-500/20 dark:hover:border-orange-400/30 transition-colors">
-              <p className="text-xs text-foreground/70 dark:text-foreground/80">{t("reports.lowStock")}</p>
-              <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{lowStockCount}</p>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalSales)}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{sales?.length || 0} {language === "sw" ? "stakabadhi za mauzo" : "sales receipts"}</p>
+          </div>
+        </Card>
+
+        {/* KPI 2: Expenses */}
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("reports.totalExpenses")}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <TrendingDown className="h-4 w-4 text-destructive" />
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalExpenses)}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{expenses?.length || 0} {language === "sw" ? "vipengele vya matumizi" : "expense line items"}</p>
+          </div>
+        </Card>
 
-      {isMobile ? (
-        <Accordion type="multiple" className="space-y-3">
-          <AccordionItem value="sales-trend" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 px-0">
-            <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
-              {language === "sw" ? "Mwelekeo na viongozi" : "Trend and top performers"}
-            </AccordionTrigger>
-            <AccordionContent className="space-y-4 px-4 pb-4">
-              {trendData.length > 0 && (
-                <Card className="section-shell">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold">{t("reports.salesTrend")}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={trendData}>
-                          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatK(v)} />
-                          <Tooltip formatter={(v: number) => [`Tsh ${formatNumber(v)}`, ""]} />
-                          <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card className="section-shell">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg font-semibold">{t("reports.bestSelling")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {bestSellingProducts.length === 0 ? (
-                    <p className="py-2 text-center text-sm text-foreground/70 dark:text-foreground/80">{t("reports.noSalesData")}</p>
-                  ) : (
-                    bestSellingProducts.map((product) => (
-                      <div key={product.name} className="flex items-center gap-3">
-                        <span className="w-24 truncate text-sm">{product.name}</span>
-                        <div className="flex-1">
-                          <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${product.percentage}%` }} />
-                          </div>
-                        </div>
-                        <span className="w-14 text-right text-sm font-medium">{formatK(product.amount)}</span>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="sales-transactions" className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 px-0">
-            <AccordionTrigger className="px-4 py-4 text-left text-base font-semibold hover:no-underline">
-              {t("reports.recentTransactions")}
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <div className="space-y-3">
-                {recentTransactions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("reports.noSalesYet")}</p>
-                ) : (
-                  recentTransactions.slice(0, 8).map((tx, index) => (
-                    <div key={index} className="rounded-[1.2rem] border border-border/70 bg-background/70 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold">{tx.invoice}</p>
-                          <p className="truncate text-sm text-muted-foreground">{tx.customer}</p>
-                        </div>
-                        <Badge className={reportStatusTone[tx.status] || "bg-secondary text-secondary-foreground hover:bg-secondary/80"}>
-                          {tx.status === "completed" ? t("reports.completed") : tx.status}
-                        </Badge>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{tx.date}</span>
-                        <span className="font-semibold">Tsh {formatNumber(tx.amount)}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      ) : (
-      <>
-      {/* Sales Trend Chart */}
-      {trendData.length > 0 && (
-        <Card className="section-shell">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">{t("reports.salesTrend")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatK(v)} />
-                  <Tooltip formatter={(v: number) => [`Tsh ${formatNumber(v)}`, ""]} />
-                  <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+        {/* KPI 3: Net Profit */}
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("reports.netProfit")}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <TrendingUp className="h-4 w-4 text-[var(--success-text)]" />
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="section-shell">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">{t("reports.bestSelling")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : bestSellingProducts.length === 0 ? (
-              <p className="py-8 text-center text-sm text-foreground/70 dark:text-foreground/80">{t("reports.noSalesData")}</p>
-            ) : (
-              bestSellingProducts.map((product) => (
-                <div key={product.name} className="flex items-center gap-4">
-                  <span className="w-28 truncate text-sm md:w-32">{product.name}</span>
-                  <div className="flex-1">
-                    <div className="h-4 w-full overflow-hidden rounded-full bg-muted">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${product.percentage}%` }} />
-                    </div>
-                  </div>
-                  <span className="w-16 text-right text-sm font-medium">{formatK(product.amount)}</span>
-                </div>
-              ))
-            )}
-          </CardContent>
+          </div>
+          <div className="mt-3">
+            <p className={cn("text-2xl font-bold tracking-tight", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
+              {formatMoney(netProfit)}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {totalSales > 0 ? `${Math.round((netProfit / totalSales) * 100)}% margin` : "0% margin"}
+            </p>
+          </div>
         </Card>
 
-        <Card className="section-shell">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">{t("reports.topCustomers")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {topCustomers.length === 0 ? (
-              <p className="py-8 text-center text-sm text-foreground/70 dark:text-foreground/80">{t("reports.noSalesData")}</p>
-            ) : (
-              topCustomers.map((c) => (
-                <div key={c.name} className="flex items-center justify-between">
-                  <span className="truncate text-sm">{c.name}</span>
-                  <span className="font-medium">Tsh {formatNumber(c.total)}</span>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="section-shell">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold">{t("reports.salesByCategory")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center gap-8 md:flex-row">
-              <div className="h-40 w-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData.length ? categoryData : [{ name: t("reports.noData"), value: 1, color: "#ccc" }]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={70}
-                      dataKey="value"
-                    >
-                      {(categoryData.length ? categoryData : [{ name: t("reports.noData"), value: 1, color: "#ccc" }]).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-2">
-                {categoryData.map((cat) => (
-                  <div key={cat.name} className="flex items-center gap-2">
-                    <span className="h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <span className="text-sm">{cat.name}</span>
-                  </div>
-                ))}
-              </div>
+        {/* KPI 4: Stock Valuation */}
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("reports.inventoryValue")}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <Package className="h-4 w-4 text-accent" />
             </div>
-          </CardContent>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(stockValuation)}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{products?.length || 0} {language === "sw" ? "bidhaa zilizopo" : "products in stock"}</p>
+          </div>
         </Card>
       </div>
 
-      <Card className="section-shell">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-semibold">{t("reports.recentTransactions")}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      {/* Main Reports Card */}
+      <Card className="border border-border bg-card shadow-xs">
+        {/* Header Controls */}
+        <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+          <Tabs value={reportTab} onValueChange={setReportTab}>
+            <TabsList className="bg-muted p-1 rounded-xl">
+              <TabsTrigger value="sales" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+                {t("reports.salesReport")}
+              </TabsTrigger>
+              <TabsTrigger value="profit" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+                {t("reports.profitReport")}
+              </TabsTrigger>
+              <TabsTrigger value="inventory" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+                {t("reports.inventoryReport")}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="flex items-center gap-2">
+            <Select value={rangeType} onValueChange={(v: DateRangeType) => setRangeType(v)}>
+              <SelectTrigger className="h-9 w-32 rounded-xl border-border bg-background text-xs font-medium">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                <SelectItem value="daily">{t("reports.daily")}</SelectItem>
+                <SelectItem value="weekly">{t("reports.weekly")}</SelectItem>
+                <SelectItem value="monthly">{t("reports.monthly")}</SelectItem>
+                <SelectItem value="custom">{t("reports.custom")}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {rangeType === "custom" && (
+              <Popover open={customOpen} onOpenChange={setCustomOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 rounded-xl border-border text-xs">
+                    <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                    <span>Custom</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="range"
+                    selected={customRange}
+                    onSelect={(val) => {
+                      setCustomRange(val);
+                      if (val?.from && val?.to) setCustomOpen(false);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              className="h-9 rounded-xl border-border text-xs gap-1"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintPDF}
+              className="h-9 rounded-xl border-border text-xs gap-1"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Tab 1: Sales Analysis */}
+        {reportTab === "sales" && (
+          <div className="p-5 space-y-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+              {/* Payment Mix Donut */}
+              <div className="rounded-xl border border-border bg-muted/20 p-4 lg:col-span-2">
+                <h3 className="text-xs font-bold uppercase text-foreground mb-3">{t("reports.paymentMethods")}</h3>
+                {paymentChartData.length === 0 ? (
+                  <div className="h-44 flex items-center justify-center text-xs text-muted-foreground">
+                    {language === "sw" ? "Hakuna data ya malipo" : "No payment data in range"}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <div className="h-44 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={paymentChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={44}
+                            outerRadius={62}
+                            paddingAngle={3}
+                            dataKey="value"
+                            stroke="transparent"
+                          >
+                            {paymentChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-3 pt-2">
+                      {paymentChartData.map((p) => (
+                        <div key={p.name} className="flex items-center gap-1.5 text-xs">
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                          <span className="text-muted-foreground">{p.name}:</span>
+                          <span className="font-semibold text-foreground">{formatMoney(p.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Top Selling Products */}
+              <div className="rounded-xl border border-border bg-muted/20 p-4 lg:col-span-3">
+                <h3 className="text-xs font-bold uppercase text-foreground mb-3">{t("reports.topSelling")}</h3>
+                {topProducts.length === 0 ? (
+                  <div className="h-44 flex items-center justify-center text-xs text-muted-foreground">
+                    {language === "sw" ? "Hakuna mauzo ya bidhaa" : "No product sales in range"}
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 pt-1">
+                    {topProducts.map((p) => {
+                      const maxVal = topProducts[0]?.total || 1;
+                      const pct = Math.round((p.total / maxVal) * 100);
+
+                      return (
+                        <div key={p.name} className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="font-semibold text-foreground truncate max-w-[200px]">{p.name} ({p.qty} pcs)</span>
+                            <span className="font-bold text-foreground">{formatMoney(p.total)}</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
+
+            {/* Transactions Table */}
+            <div className="overflow-x-auto rounded-xl border border-border">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("expenses.date")}</TableHead>
-                    <TableHead>{t("sales.invoice")}</TableHead>
-                    <TableHead className="hidden md:table-cell">{t("reports.customer")}</TableHead>
-                    <TableHead>{t("reports.amount")}</TableHead>
-                    <TableHead className="hidden md:table-cell">{t("reports.payment")}</TableHead>
-                    <TableHead>{t("reports.status")}</TableHead>
+                  <TableRow className="bg-muted/40 text-xs font-semibold">
+                    <TableHead>{t("sales.date")}</TableHead>
+                    <TableHead>{t("sales.customer")}</TableHead>
+                    <TableHead>{t("sales.paymentMethod")}</TableHead>
+                    <TableHead className="text-right">{t("sales.total")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentTransactions.length === 0 ? (
+                  {(sales || []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-8 text-center text-foreground/70 dark:text-foreground/80">
-                        {t("reports.noSalesYet")}
+                      <TableCell colSpan={4} className="text-center py-6 text-xs text-muted-foreground">
+                        {language === "sw" ? "Hakuna miamala kwenye kipindi hiki." : "No transactions recorded in this range."}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    recentTransactions.map((tx, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="whitespace-nowrap text-foreground/70 dark:text-foreground/80">{tx.date}</TableCell>
-                        <TableCell className="font-medium">{tx.invoice}</TableCell>
-                        <TableCell className="hidden md:table-cell">{tx.customer}</TableCell>
-                        <TableCell className="font-medium">{formatNumber(tx.amount)}</TableCell>
-                        <TableCell className="hidden md:table-cell">{tx.payment}</TableCell>
-                        <TableCell>
-                          <Badge className={reportStatusTone[tx.status] || "bg-secondary text-secondary-foreground hover:bg-secondary/80"}>
-                            {tx.status === "completed" ? t("reports.completed") : tx.status}
-                          </Badge>
+                    (sales || []).slice(0, 15).map((s) => (
+                      <TableRow key={s.id} className="text-xs">
+                        <TableCell className="font-medium text-foreground">
+                          {format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}
                         </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {s.customer_name || (language === "sw" ? "Moja kwa moja" : "Walk-in")}
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground">
+                            {s.payment_method}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-foreground">{formatMoney(s.total)}</TableCell>
                       </TableRow>
                     ))
                   )}
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
-      </>
-      )}
-      </TabsContent>
+          </div>
+        )}
 
-      <TabsContent value="inventory" className="space-y-6 mt-6">
-        <Card className="section-shell">
-          <CardHeader><CardTitle>{t("reports.inventoryValuation")}</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border p-4">
-                <p className="text-sm text-foreground/70 dark:text-foreground/80">{t("reports.totalValue")}</p>
-                <p className="text-2xl font-bold text-foreground dark:text-foreground">Tsh {formatNumber(stockValue)}</p>
+        {/* Tab 2: Profit & Loss */}
+        {reportTab === "profit" && (
+          <div className="p-5 space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-muted/20 p-4">
+                <span className="text-xs font-medium text-muted-foreground">{t("reports.grossSales")}</span>
+                <p className="mt-2 text-xl font-bold text-foreground">{formatMoney(totalSales)}</p>
               </div>
-              <div className="rounded-lg border border-border/50 p-4 hover:border-blue-500/20 dark:hover:border-blue-400/30 transition-colors">
-                <p className="text-sm text-foreground/70 dark:text-foreground/80">{t("reports.totalProducts")}</p>
-                <p className="text-2xl font-bold text-foreground dark:text-foreground">{products?.length ?? 0}</p>
+              <div className="rounded-xl border border-border bg-muted/20 p-4">
+                <span className="text-xs font-medium text-muted-foreground">{t("reports.operatingExpenses")}</span>
+                <p className="mt-2 text-xl font-bold text-destructive">-{formatMoney(totalExpenses)}</p>
               </div>
-              <div className="rounded-lg border border-border/50 p-4 hover:border-orange-500/20 dark:hover:border-orange-400/30 transition-colors">
-                <p className="text-sm text-foreground/70 dark:text-foreground/80">{t("reports.lowStock")}</p>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{lowStockCount}</p>
-              </div>
-              <div className="rounded-lg border border-border/50 p-4 hover:border-red-500/20 dark:hover:border-red-400/30 transition-colors">
-                <p className="text-sm text-foreground/70 dark:text-foreground/80">{t("reports.outOfStock")}</p>
-                <p className="text-2xl font-bold text-destructive">{products?.filter((p) => p.stock <= 0).length ?? 0}</p>
+              <div className="rounded-xl border border-border bg-muted/20 p-4">
+                <span className="text-xs font-medium text-muted-foreground">{t("reports.netProfit")}</span>
+                <p className={cn("mt-2 text-xl font-bold", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
+                  {formatMoney(netProfit)}
+                </p>
               </div>
             </div>
-            {isMobile ? (
-              <Accordion type="multiple" className="space-y-3">
-                <AccordionItem value="inventory-low-stock" className="overflow-hidden rounded-[1.3rem] border border-border/70 bg-background/65 px-0">
-                  <AccordionTrigger className="px-4 py-4 text-left font-semibold hover:no-underline">{t("reports.lowStockProducts")}</AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
-                    <div className="space-y-2">
-                      {lowStockProducts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">{t("reports.noData")}</p>
-                      ) : (
-                        lowStockProducts.slice(0, 10).map((p) => (
-                          <div key={p.id} className="rounded-[1rem] border border-border/70 bg-background/70 p-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="truncate font-medium">{language === "sw" && p.name_sw ? p.name_sw : p.name}</span>
-                              <Badge variant="destructive" className="text-xs">{p.stock}</Badge>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="inventory-value" className="overflow-hidden rounded-[1.3rem] border border-border/70 bg-background/65 px-0">
-                  <AccordionTrigger className="px-4 py-4 text-left font-semibold hover:no-underline">{t("reports.valueByProduct")}</AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
-                    <div className="space-y-2">
-                      {products?.slice(0, 12).map((p) => (
-                        <div key={p.id} className="rounded-[1rem] border border-border/70 bg-background/70 p-3">
-                          <p className="truncate font-medium">{language === "sw" && p.name_sw ? p.name_sw : p.name}</p>
-                          <div className="mt-2 flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{t("inventory.stock")}: {p.stock}</span>
-                            <span className="font-semibold">Tsh {formatNumber(Number(p.buying_price) * p.stock)}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            ) : (
-            <>
-            <div className="mt-4">
-              <h4 className="mb-2 font-medium">{t("reports.lowStockProducts")}</h4>
-              <div className="max-h-64 overflow-auto rounded-lg border">
-                <Table>
-                  <TableHeader><TableRow><TableHead>{t("reports.product")}</TableHead><TableHead>{t("inventory.stock")}</TableHead><TableHead>{t("reports.cost")}</TableHead><TableHead>{t("reports.value")}</TableHead><TableHead>{t("inventory.low")}</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {lowStockProducts.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="py-8 text-center text-foreground/70 dark:text-foreground/80">{t("reports.noData")}</TableCell></TableRow>
-                    ) : lowStockProducts.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell>{language === "sw" && p.name_sw ? p.name_sw : p.name}</TableCell>
-                        <TableCell>{p.stock}</TableCell>
-                        <TableCell>Tsh {formatNumber(Number(p.buying_price))}</TableCell>
-                        <TableCell className="font-medium">Tsh {formatNumber(Number(p.buying_price) * p.stock)}</TableCell>
-                        <TableCell><Badge variant="destructive" className="text-xs">{t("inventory.low")}</Badge></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-            <div className="mt-6">
-              <h4 className="mb-2 font-medium">{t("reports.valueByProduct")}</h4>
-              <div className="max-h-64 overflow-auto rounded-lg border">
-                <Table>
-                  <TableHeader><TableRow><TableHead>{t("reports.product")}</TableHead><TableHead>{t("inventory.stock")}</TableHead><TableHead>{t("reports.cost")}</TableHead><TableHead>{t("reports.value")}</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {products?.slice(0, 20).map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell>{language === "sw" && p.name_sw ? p.name_sw : p.name}</TableCell>
-                        <TableCell>{p.stock}</TableCell>
-                        <TableCell>Tsh {formatNumber(Number(p.buying_price))}</TableCell>
-                        <TableCell className="font-medium">Tsh {formatNumber(Number(p.buying_price) * p.stock)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-            </>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
 
-      <TabsContent value="profit" className="space-y-6 mt-6">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="section-shell">
-            <CardHeader><CardTitle>{t("reports.profitAndLoss")}</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex justify-between border-b py-3">
-                  <span className="font-medium">{t("reports.salesRevenue")}</span>
-                  <span className="font-bold text-green-600">Tsh {formatNumber(totalSales)}</span>
-                </div>
-                <div className="flex justify-between border-b py-3">
-                  <span className="font-medium">{t("reports.expenses")}</span>
-                  <span className="font-bold text-destructive">- Tsh {formatNumber(totalExpenses)}</span>
-                </div>
-                <div className="flex justify-between py-4 text-lg font-bold">
-                  <span>{t("reports.netProfit")}</span>
-                  <span className={profit >= 0 ? "text-green-600" : "text-destructive"}>Tsh {formatNumber(profit)}</span>
-                </div>
-                {totalSales > 0 && (
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <p className="text-sm text-foreground/70 dark:text-foreground/80">{t("reports.profitMargin")}</p>
-                    <p className="text-2xl font-bold">{(100 * profit / totalSales).toFixed(1)}%</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="section-shell">
-            <CardHeader><CardTitle>{t("reports.expenseBreakdown")}</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center gap-6 md:flex-row">
-                <div className="h-40 w-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={expenseData.length ? expenseData : [{ name: t("reports.noData"), value: 1, color: "#ccc" }]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={70}
-                        dataKey="value"
-                      >
-                        {(expenseData.length ? expenseData : [{ name: t("reports.noData"), value: 1, color: "#ccc" }]).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2">
-                  {expenseData.map((cat) => (
-                    <div key={cat.name} className="flex items-center justify-between gap-4">
-                      <span className="flex items-center gap-2">
-                        <span className="h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: cat.color }} />
-                        <span className="text-sm">{cat.name}</span>
-                      </span>
-                      <span className="text-sm font-medium">Tsh {formatNumber(cat.value)}</span>
-                    </div>
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 text-xs font-semibold">
+                    <TableHead>{language === "sw" ? "Aina ya Gharama / Mapato" : "Income / Expense Line"}</TableHead>
+                    <TableHead className="text-right">{language === "sw" ? "Kiasi (TSH)" : "Amount"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow className="text-xs">
+                    <TableCell className="font-semibold text-foreground">{language === "sw" ? "Mapato ya Mauzo" : "Sales Revenue"}</TableCell>
+                    <TableCell className="text-right font-bold text-[var(--success-text)]">+{formatMoney(totalSales)}</TableCell>
+                  </TableRow>
+                  {(expenses || []).map((e) => (
+                    <TableRow key={e.id} className="text-xs">
+                      <TableCell className="text-muted-foreground">{e.description} ({e.category})</TableCell>
+                      <TableCell className="text-right font-medium text-destructive">-{formatMoney(e.amount)}</TableCell>
+                    </TableRow>
                   ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </TabsContent>
-      </Tabs>
-    </motion.div>
+                  <TableRow className="border-t-2 border-border bg-muted/40 text-xs font-bold">
+                    <TableCell className="text-foreground">{language === "sw" ? "Faida Halisi ya Biashara" : "Net Business Profit"}</TableCell>
+                    <TableCell className={cn("text-right", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
+                      {formatMoney(netProfit)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Inventory Health */}
+        {reportTab === "inventory" && (
+          <div className="p-5 space-y-4">
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 text-xs font-semibold">
+                    <TableHead>{t("inventory.code")}</TableHead>
+                    <TableHead>{t("inventory.name")}</TableHead>
+                    <TableHead className="text-center">{t("inventory.stock")}</TableHead>
+                    <TableHead className="text-right">{t("inventory.buyingPrice")}</TableHead>
+                    <TableHead className="text-right">{language === "sw" ? "Thamani ya Stoki" : "Total Valuation"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(products || []).map((p) => {
+                    const lineVal = Number(p.stock || 0) * Number(p.buying_price || 0);
+                    return (
+                      <TableRow key={p.id} className="text-xs">
+                        <TableCell className="font-bold text-foreground">{p.code}</TableCell>
+                        <TableCell className="font-medium text-foreground">{p.name}</TableCell>
+                        <TableCell className="text-center font-bold text-foreground">{p.stock} pcs</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatMoney(p.buying_price)}</TableCell>
+                        <TableCell className="text-right font-bold text-foreground">{formatMoney(lineVal)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }

@@ -1,13 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
+import {
+  DollarSign,
+  TrendingDown,
+  Plus,
+  Search,
+  Filter,
+  CreditCard,
+  Building,
+  Receipt,
+  FileText,
+  Calendar,
+  Layers,
+  ChevronRight,
+  Trash2,
+  Loader2,
+  X,
+  CheckCircle2,
+  PieChart as PieChartIcon,
+  Tag,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,237 +39,496 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { Loader2, Pencil, Plus, Search, Trash2, TrendingUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import {
-  useExpenses,
-  useExpenseCategories,
-  useCreateExpense,
-  useUpdateExpense,
-  useExpenseStats,
-  useDeleteExpense,
-} from "@/hooks/useExpenses";
-import { useDraftForm } from "@/hooks/useDraftForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { useExpenses, useCreateExpense, useDeleteExpense, type Expense } from "@/hooks/useExpenses";
+import { useShopFormatting } from "@/hooks/useShopFormatting";
+import Billing from "@/pages/Billing";
 import { PageLoader } from "@/components/PageLoader";
-import { PageHeader } from "@/components/common/PageHeader";
-import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { cn } from "@/lib/utils";
+
+const EXPENSE_CATEGORIES = [
+  { value: "rent", labelEn: "Rent / Premises", labelSw: "Kodi ya Pango" },
+  { value: "utilities", labelEn: "Electricity / Water", labelSw: "Umeme / Maji" },
+  { value: "salaries", labelEn: "Salaries / Wages", labelSw: "Mishahara" },
+  { value: "transport", labelEn: "Transport / Fuel", labelSw: "Usafiri / Mafuta" },
+  { value: "maintenance", labelEn: "Repairs & Maintenance", labelSw: "Matengenezo" },
+  { value: "marketing", labelEn: "Marketing & Ads", labelSw: "Matangazo" },
+  { value: "supplies", labelEn: "Packaging & Office", labelSw: "Vifungashio / Vifaa" },
+  { value: "other", labelEn: "Other / Misc", labelSw: "Mengineyo" },
+];
 
 export default function Expenses() {
   const { t, language } = useLanguage();
-  const { isMobile } = useAdaptiveLayout();
+  const { formatMoney, formatNumber } = useShopFormatting();
+  const { shopId } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState<string>("expenses");
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  // Inline Master-Detail Panel State (NO POPUPS)
+  const [isAddingExpense, setIsAddingExpense] = useState(searchParams.get("new") === "true");
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [expenseToDeleteId, setExpenseToDeleteId] = useState<string | null>(null);
-  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
-  const initialNewExpense = { description: "", category: "", amount: "", payMethod: "Cash" };
-  const [newExpense, setNewExpense, clearAddExpenseDraft] = useDraftForm("add-expense", initialNewExpense);
+
+  // New Expense Form
+  const [newForm, setNewForm] = useState({
+    title: "",
+    category: "rent",
+    amount: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    notes: "",
+  });
 
   const { data: expenses, isLoading } = useExpenses();
-  const { data: categories } = useExpenseCategories();
-  const { data: stats } = useExpenseStats();
   const createExpense = useCreateExpense();
-  const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
+
+  useEffect(() => {
+    if (searchParams.get("new") === "true") {
+      setIsAddingExpense(true);
+      setSelectedExpense(null);
+    }
+  }, [searchParams]);
+
+  // Auto-select first expense
+  useEffect(() => {
+    if (expenses && expenses.length > 0 && !selectedExpense && !isAddingExpense) {
+      setSelectedExpense(expenses[0]);
+    }
+  }, [expenses]);
 
   if (expenses === undefined || isLoading) {
     return <PageLoader message="Loading expenses..." messageSw="Inapakia matumizi..." language={language} />;
   }
 
-  const filteredExpenses =
-    expenses?.filter(
-      (expense) =>
-        expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.category.toLowerCase().includes(searchTerm.toLowerCase()),
-    ) || [];
+  const filteredExpenses = useMemo(() => {
+    return (expenses || []).filter((e) => {
+      const q = searchTerm.toLowerCase();
+      const matchesSearch =
+        (e.title && e.title.toLowerCase().includes(q)) ||
+        (e.notes && e.notes.toLowerCase().includes(q)) ||
+        (e.category && e.category.toLowerCase().includes(q));
 
-  const formatNumber = (num: number) => num.toLocaleString("en-US");
-
-  const getCategoryLabel = (categoryName: string) => {
-    const categoryMap: Record<string, string> = {
-      Utilities: language === "sw" ? "Huduma" : "Utilities",
-      Rent: language === "sw" ? "Kodi" : "Rent",
-      Transport: language === "sw" ? "Usafiri" : "Transport",
-      Food: language === "sw" ? "Chakula" : "Food",
-      Office: language === "sw" ? "Ofisi" : "Office",
-      "Stock Purchase": language === "sw" ? "Ununuzi wa Stoki" : "Stock Purchase",
-    };
-    return categoryMap[categoryName] || categoryName;
-  };
-
-  const categoryBreakdown = stats?.byCategory
-    ? Object.entries(stats.byCategory)
-        .map(([name, amount]) => ({
-          name,
-          label: getCategoryLabel(name),
-          amount: Number(amount),
-          percentage: stats.total > 0 ? (Number(amount) / stats.total) * 100 : 0,
-        }))
-        .sort((a, b) => b.amount - a.amount)
-    : [];
-
-  const handleAddExpense = async () => {
-    if (!newExpense.description || !newExpense.category.trim() || !newExpense.amount) return;
-    await createExpense.mutateAsync({
-      description: newExpense.description,
-      category: newExpense.category.trim(),
-      amount: parseFloat(newExpense.amount),
+      const matchesCat = categoryFilter === "all" || e.category === categoryFilter;
+      return matchesSearch && matchesCat;
     });
-    clearAddExpenseDraft();
-    setAddExpenseOpen(false);
-  };
+  }, [expenses, searchTerm, categoryFilter]);
 
-  const handleEditExpense = async () => {
-    if (!editingExpense) return;
-    await updateExpense.mutateAsync({
-      id: editingExpense.id,
-      description: editingExpense.description,
-      category: editingExpense.category,
-      amount: parseFloat(editingExpense.amount) || 0,
+  // KPI Calculations
+  const totalAmount = useMemo(() => {
+    return (expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [expenses]);
+
+  const thisMonthExpenses = useMemo(() => {
+    const currentMonth = format(new Date(), "yyyy-MM");
+    return (expenses || [])
+      .filter((e) => (e.date || e.created_at || "").startsWith(currentMonth))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [expenses]);
+
+  const categoryBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    (expenses || []).forEach((e) => {
+      const cat = e.category || "other";
+      map.set(cat, (map.get(cat) || 0) + Number(e.amount || 0));
     });
-    setEditingExpense(null);
+    return Array.from(map.entries())
+      .map(([cat, total]) => ({ cat, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses]);
+
+  const handleSelectExpense = (e: Expense) => {
+    setSelectedExpense(e);
+    setIsAddingExpense(false);
   };
 
-  const statsCards = [
-    { label: t("expenses.totalExpenses"), value: `Tsh ${formatNumber(stats?.total || 0)}` },
-    {
-      label: t("expenses.operationalCosts"),
-      value: `Tsh ${formatNumber((stats?.byCategory?.Utilities || 0) + (stats?.byCategory?.Rent || 0))}`,
-      subtitle: t("expenses.utilitiesRent"),
-    },
-    { label: t("expenses.stockPurchases"), value: `Tsh ${formatNumber(stats?.byCategory?.["Stock Purchase"] || 0)}` },
-  ];
+  const handleCreateExpense = async () => {
+    if (!newForm.title.trim() || !Number(newForm.amount)) {
+      toast.error(language === "sw" ? "Jaza jina na kiasi cha matumizi" : "Please fill in title and amount");
+      return;
+    }
 
-  const expenseFormFields = (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>{t("expenses.expenseTitle")}</Label>
-        <Input
-          placeholder={t("expenses.expensePlaceholder")}
-          value={newExpense.description}
-          onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-        />
-      </div>
+    try {
+      const created = await createExpense.mutateAsync({
+        title: newForm.title.trim(),
+        category: newForm.category,
+        amount: Number(newForm.amount),
+        date: newForm.date,
+        notes: newForm.notes.trim() || undefined,
+        shop_id: shopId || undefined,
+      } as any);
 
-      <div className="space-y-2">
-        <Label>{t("expenses.category")}</Label>
-        <Input
-          placeholder={
-            language === "sw"
-              ? "Andika kategoria yako (mf. Huduma, Kodi, Chakula)"
-              : "Type your own category (e.g. Utilities, Rent, Food)"
-          }
-          value={newExpense.category}
-          onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-          list="expense-category-suggestions"
-        />
-        <datalist id="expense-category-suggestions">
-          {categories?.map((category) => <option key={category.id} value={category.name} />) || (
-            <>
-              <option value="Utilities" />
-              <option value="Rent" />
-              <option value="Transport" />
-              <option value="Food" />
-              <option value="Stock Purchase" />
-              <option value="Office" />
-            </>
-          )}
-        </datalist>
-      </div>
+      toast.success(language === "sw" ? "Gharama imerekodiwa" : "Expense recorded successfully");
+      setIsAddingExpense(false);
+      setNewForm({
+        title: "",
+        category: "rent",
+        amount: "",
+        date: format(new Date(), "yyyy-MM-dd"),
+        notes: "",
+      });
+      if (created) setSelectedExpense(created);
+      if (searchParams.get("new")) setSearchParams({});
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to record expense");
+    }
+  };
 
-      <div className="space-y-2">
-        <Label>{t("expenses.amountTsh")}</Label>
-        <Input
-          type="number"
-          placeholder="0.00"
-          value={newExpense.amount}
-          onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-        />
-      </div>
-    </div>
-  );
+  const getCategoryLabel = (val: string) => {
+    const c = EXPENSE_CATEGORIES.find((item) => item.value === val);
+    if (!c) return val;
+    return language === "sw" ? c.labelSw : c.labelEn;
+  };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6">
-      <PageHeader
-        title={t("expenses.title")}
-        subtitle={
-          language === "sw"
-            ? "Andika matumizi muhimu kwa haraka, kisha fuatilia mwenendo wake bila kubanana kwenye simu."
-            : "Capture the important expenses fast, then review trends in a layout that stays calm on mobile."
-        }
-        actions={
-          <Button
-            className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 shadow-lg shadow-teal-500/25 hover:from-teal-600 hover:to-blue-700 dark:shadow-teal-500/30"
-            onClick={() => setAddExpenseOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            {t("expenses.addNewExpense")}
-          </Button>
-        }
-      />
+    <div className="space-y-6 pb-12">
+      {/* 4 Olly KPI Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{t("expenses.totalExpenses")}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <DollarSign className="h-4 w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalAmount)}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{expenses?.length || 0} {language === "sw" ? "miamala ya gharama" : "total transactions"}</p>
+          </div>
+        </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {statsCards.map((stat) => (
-          <Card key={stat.label} className="section-shell">
-            <CardContent className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-foreground/70 dark:text-foreground/80">{stat.label}</p>
-              <p className="mt-2 text-2xl font-bold text-foreground dark:text-foreground">{stat.value}</p>
-              {stat.subtitle ? <p className="mt-1 text-sm text-foreground/70 dark:text-foreground/80">{stat.subtitle}</p> : null}
-            </CardContent>
-          </Card>
-        ))}
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Mwezi Huu" : "This Month"}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <Calendar className="h-4 w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(thisMonthExpenses)}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{format(new Date(), "MMMM yyyy")}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Gharama Kuu" : "Top Category"}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <Tag className="h-4 w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-xl font-bold tracking-tight text-foreground truncate">
+              {categoryBreakdown.length > 0 ? getCategoryLabel(categoryBreakdown[0].cat) : "-"}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {categoryBreakdown.length > 0 ? formatMoney(categoryBreakdown[0].total) : "0"}
+            </p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Aina za Matumizi" : "Categories"}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
+              <Layers className="h-4 w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-2xl font-bold tracking-tight text-foreground">{categoryBreakdown.length}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Makundi yaliyotumika" : "Active categories"}</p>
+          </div>
+        </Card>
       </div>
 
-      <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("common.edit")} {language === "sw" ? "Matumizi" : "Expense"}</DialogTitle>
-          </DialogHeader>
-          {editingExpense && (
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label>{t("expenses.description")}</Label>
-                <Input value={editingExpense.description} onChange={(e) => setEditingExpense({ ...editingExpense, description: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("expenses.category")}</Label>
-                <Input
-                  placeholder={language === "sw" ? "Kategoria" : "Category"}
-                  value={editingExpense.category}
-                  onChange={(e) => setEditingExpense({ ...editingExpense, category: e.target.value })}
-                  list="edit-expense-category-list"
-                />
-                <datalist id="edit-expense-category-list">{categories?.map((category) => <option key={category.id} value={category.name} />)}</datalist>
-              </div>
-              <div className="space-y-2">
-                <Label>{t("expenses.amount")}</Label>
-                <Input type="number" value={editingExpense.amount} onChange={(e) => setEditingExpense({ ...editingExpense, amount: e.target.value })} />
-              </div>
-              <Button
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 font-semibold text-white shadow-lg shadow-teal-500/25 hover:from-teal-600 hover:to-blue-700 dark:shadow-teal-500/30"
-                onClick={handleEditExpense}
-                disabled={updateExpense.isPending}
-              >
-                {updateExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Main Tabs (Expenses vs Billing Plans) */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="bg-muted p-1 rounded-xl mb-4">
+          <TabsTrigger value="expenses" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+            {t("expenses.title")}
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+            {language === "sw" ? "Bili na Vifurushi" : "Subscription & Billing"}
+          </TabsTrigger>
+        </TabsList>
 
-      <AlertDialog open={!!expenseToDeleteId} onOpenChange={(open) => !open && setExpenseToDeleteId(null)}>
+        <TabsContent value="expenses" className="m-0 space-y-6">
+          {/* 2-Column Master-Detail Layout (NO POPUPS) */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left Column (Master Expenses Table - 7 Cols) */}
+            <div className="space-y-4 lg:col-span-7">
+              <Card className="border border-border bg-card shadow-xs">
+                <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative w-full sm:w-44">
+                      <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder={language === "sw" ? "Tafuta..." : "Search..."}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-9 rounded-xl border-border bg-background pl-9 text-xs"
+                      />
+                    </div>
+
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger className="h-9 w-36 rounded-xl border-border bg-background text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                        <SelectItem value="all">{language === "sw" ? "Zote" : "All Categories"}</SelectItem>
+                        {EXPENSE_CATEGORIES.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {language === "sw" ? c.labelSw : c.labelEn}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setIsAddingExpense(true);
+                      setSelectedExpense(null);
+                    }}
+                    className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-accent" />
+                    <span>{t("expenses.addExpense")}</span>
+                  </Button>
+                </div>
+
+                {filteredExpenses.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <Receipt className="h-8 w-8 text-muted-foreground" />
+                    <p className="mt-3 text-sm font-semibold text-foreground">
+                      {language === "sw" ? "Hakuna matumizi yaliyorekodiwa" : "No expenses recorded"}
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setIsAddingExpense(true);
+                        setSelectedExpense(null);
+                      }}
+                      className="mt-3 h-8 rounded-xl text-xs bg-primary text-primary-foreground"
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5 text-accent" />
+                      {t("expenses.addExpense")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("expenses.date")}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("expenses.expenseTitle")}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("expenses.category")}</TableHead>
+                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("expenses.amount")}</TableHead>
+                          <TableHead className="text-right text-xs font-semibold uppercase text-muted-foreground"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredExpenses.map((exp) => {
+                          const isSelected = selectedExpense?.id === exp.id && !isAddingExpense;
+
+                          return (
+                            <TableRow
+                              key={exp.id}
+                              onClick={() => handleSelectExpense(exp)}
+                              className={cn(
+                                "cursor-pointer border-b border-border/60 transition-colors",
+                                isSelected ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-muted/40",
+                              )}
+                            >
+                              <TableCell className="text-xs font-medium text-foreground">
+                                {format(new Date(exp.date || exp.created_at || new Date()), "MMM d, yyyy")}
+                              </TableCell>
+                              <TableCell className="text-xs font-semibold text-foreground">
+                                {exp.title || (language === "sw" ? "Gharama" : "Expense")}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {getCategoryLabel(exp.category || "other")}
+                              </TableCell>
+                              <TableCell className="text-xs font-bold text-foreground">
+                                {formatMoney(exp.amount)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <ChevronRight className={cn("h-4 w-4 transition-transform", isSelected ? "text-accent translate-x-1" : "text-muted-foreground")} />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </Card>
+            </div>
+
+            {/* Right Column (Inline Detail / Add Panel - 5 Cols, NO POPUPS) */}
+            <div className="space-y-4 lg:col-span-5">
+              {/* Case 1: Inline Add Expense Form */}
+              {isAddingExpense && (
+                <Card className="border border-border bg-card shadow-xs">
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+                    <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-accent" />
+                      <span>{t("expenses.addExpense")}</span>
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsAddingExpense(false)}
+                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </CardHeader>
+
+                  <CardContent className="p-4 space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold">{t("expenses.expenseTitle")} *</Label>
+                      <Input
+                        value={newForm.title}
+                        onChange={(e) => setNewForm({ ...newForm, title: e.target.value })}
+                        placeholder="e.g. Kodi ya duka mwezi huu"
+                        className="h-9 rounded-xl border-border bg-background text-xs"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-semibold">{t("expenses.category")}</Label>
+                        <Select
+                          value={newForm.category}
+                          onValueChange={(v) => setNewForm({ ...newForm, category: v })}
+                        >
+                          <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                            {EXPENSE_CATEGORIES.map((c) => (
+                              <SelectItem key={c.value} value={c.value}>
+                                {language === "sw" ? c.labelSw : c.labelEn}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs font-semibold">{t("expenses.amount")} (TSH) *</Label>
+                        <Input
+                          type="number"
+                          value={newForm.amount}
+                          onChange={(e) => setNewForm({ ...newForm, amount: e.target.value })}
+                          placeholder="50000"
+                          className="h-9 rounded-xl border-border bg-background text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold">{t("expenses.date")}</Label>
+                      <Input
+                        type="date"
+                        value={newForm.date}
+                        onChange={(e) => setNewForm({ ...newForm, date: e.target.value })}
+                        className="h-9 rounded-xl border-border bg-background text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold">{language === "sw" ? "Maelezo ya Ziada" : "Notes"}</Label>
+                      <Input
+                        value={newForm.notes}
+                        onChange={(e) => setNewForm({ ...newForm, notes: e.target.value })}
+                        placeholder="Receipt #, vendor..."
+                        className="h-9 rounded-xl border-border bg-background text-xs"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button variant="outline" onClick={() => setIsAddingExpense(false)} className="h-9 rounded-xl text-xs flex-1">
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        onClick={handleCreateExpense}
+                        disabled={createExpense.isPending || !newForm.title.trim() || !Number(newForm.amount)}
+                        className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
+                      >
+                        {createExpense.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                        <span>{language === "sw" ? "Rekodi Gharama" : "Save Expense"}</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Case 2: Inline Selected Expense Details */}
+              {!isAddingExpense && selectedExpense && (
+                <Card className="border border-border bg-card shadow-xs">
+                  <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+                    <div>
+                      <CardTitle className="text-sm font-bold text-foreground">
+                        {selectedExpense.title || "Expense Details"}
+                      </CardTitle>
+                      <p className="text-[11px] text-muted-foreground">{getCategoryLabel(selectedExpense.category || "other")}</p>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setExpenseToDeleteId(selectedExpense.id)}
+                      className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </CardHeader>
+
+                  <CardContent className="p-4 space-y-4">
+                    <div className="rounded-xl bg-muted/30 p-4 space-y-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{t("expenses.amount")}:</span>
+                        <span className="text-lg font-bold text-foreground">{formatMoney(selectedExpense.amount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{t("expenses.date")}:</span>
+                        <span className="font-semibold text-foreground">
+                          {format(new Date(selectedExpense.date || selectedExpense.created_at || new Date()), "PPP")}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{t("expenses.category")}:</span>
+                        <span className="font-semibold text-foreground">{getCategoryLabel(selectedExpense.category || "other")}</span>
+                      </div>
+                      {selectedExpense.notes && (
+                        <div className="pt-2 border-t border-border/60">
+                          <span className="text-muted-foreground">{language === "sw" ? "Maelezo" : "Notes"}:</span>
+                          <p className="mt-1 text-foreground">{selectedExpense.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Billing Tab Content */}
+        <TabsContent value="billing" className="m-0">
+          <Billing />
+        </TabsContent>
+      </Tabs>
+
+      {/* Delete Expense Confirm */}
+      <AlertDialog open={!!expenseToDeleteId} onOpenChange={(o) => !o && setExpenseToDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("common.confirmDeleteTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>{language === "sw" ? "Futa gharama hii?" : "Delete this expense record?"}</AlertDialogTitle>
             <AlertDialogDescription>{t("common.confirmDeleteDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -257,205 +537,11 @@ export default function Expenses() {
               onClick={() => expenseToDeleteId && deleteExpense.mutate(expenseToDeleteId, { onSettled: () => setExpenseToDeleteId(null) })}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
+              {deleteExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Futa" : "Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {isMobile ? (
-        <Drawer open={addExpenseOpen} onOpenChange={(open) => { setAddExpenseOpen(open); if (!open) clearAddExpenseDraft(); }}>
-          <DrawerContent className="max-h-[90vh] rounded-t-[1.6rem]">
-            <DrawerHeader className="text-left">
-              <DrawerTitle>{t("expenses.addNewExpense")}</DrawerTitle>
-              <DrawerDescription>
-                {language === "sw" ? "Andika maelezo muhimu pekee ili kukamilisha matumizi kwa haraka." : "Capture only the important details so this stays quick on mobile."}
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="overflow-y-auto px-4 pb-2">
-              {expenseFormFields}
-            </div>
-            <DrawerFooter>
-              <Button
-                className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 font-semibold text-white hover:from-teal-600 hover:to-blue-700"
-                onClick={handleAddExpense}
-                disabled={!newExpense.description || !newExpense.category.trim() || !newExpense.amount || createExpense.isPending}
-              >
-                {createExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                {t("expenses.saveExpense")}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => { clearAddExpenseDraft(); setAddExpenseOpen(false); }}>
-                {t("common.cancel")}
-              </Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={addExpenseOpen} onOpenChange={(open) => { setAddExpenseOpen(open); if (!open) clearAddExpenseDraft(); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("expenses.addNewExpense")}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              {expenseFormFields}
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => { clearAddExpenseDraft(); setAddExpenseOpen(false); }}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 font-semibold text-white shadow-lg shadow-teal-500/25 transition-all hover:from-teal-600 hover:to-blue-700 dark:shadow-teal-500/30"
-                  onClick={handleAddExpense}
-                  disabled={!newExpense.description || !newExpense.category.trim() || !newExpense.amount || createExpense.isPending}
-                >
-                  {createExpense.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  {t("expenses.saveExpense")}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      <div className={cn("grid gap-6", !isMobile && "lg:grid-cols-3")}>
-        <div className={cn("space-y-4", !isMobile && "lg:col-span-2")}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold">{t("expenses.recentExpenses")}</h2>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70" />
-              <Input placeholder={t("expenses.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-            </div>
-          </div>
-
-          <Card className="section-shell overflow-hidden">
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-              ) : isMobile ? (
-                <div className="grid gap-3 p-4">
-                  {filteredExpenses.length === 0 ? (
-                    <div className="rounded-[1.25rem] border border-dashed border-border/70 bg-background/60 px-4 py-8 text-center text-sm text-muted-foreground">
-                      {expenses?.length === 0 ? (language === "sw" ? "Hakuna matumizi bado." : "No expenses yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}
-                    </div>
-                  ) : (
-                    filteredExpenses.map((expense) => (
-                      <Card key={expense.id} className="border-border/70 bg-background/70 shadow-sm">
-                        <CardContent className="space-y-4 p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold">{expense.description}</p>
-                              <p className="text-xs text-muted-foreground">{format(new Date(expense.date), "dd MMM, yyyy")}</p>
-                            </div>
-                            <p className="text-sm font-semibold text-foreground">Tsh {formatNumber(expense.amount)}</p>
-                          </div>
-
-                          <Badge variant="secondary" className="rounded-full">
-                            {getCategoryLabel(expense.category)}
-                          </Badge>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button variant="outline" className="gap-2" onClick={() => setEditingExpense({ ...expense })}>
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                              {t("common.edit")}
-                            </Button>
-                            <Button variant="outline" className="gap-2 text-destructive hover:text-destructive" onClick={() => setExpenseToDeleteId(expense.id)}>
-                              <Trash2 className="h-4 w-4" />
-                              {t("common.delete")}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <div className="max-w-full overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("expenses.date")}</TableHead>
-                        <TableHead>{t("expenses.description")}</TableHead>
-                        <TableHead>{t("expenses.category")}</TableHead>
-                        <TableHead>{t("expenses.amount")}</TableHead>
-                        <TableHead className="text-right">{t("common.actions")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredExpenses.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="py-8 text-center text-foreground/70 dark:text-foreground/80">
-                            {expenses?.length === 0 ? (language === "sw" ? "Hakuna matumizi bado." : "No expenses yet.") : (language === "sw" ? "Hakuna matokeo." : "No match.")}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredExpenses.map((expense) => (
-                          <TableRow key={expense.id}>
-                            <TableCell className="text-foreground/70 dark:text-foreground/80">{format(new Date(expense.date), "dd MMM, yyyy")}</TableCell>
-                            <TableCell className="font-medium">{expense.description}</TableCell>
-                            <TableCell><Badge variant="secondary">{getCategoryLabel(expense.category)}</Badge></TableCell>
-                            <TableCell className="font-medium">{formatNumber(expense.amount)}</TableCell>
-                            <TableCell>
-                              <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/10 dark:hover:bg-blue-500/20" onClick={() => setEditingExpense({ ...expense })}>
-                                  <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20" onClick={() => setExpenseToDeleteId(expense.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {categoryBreakdown.length > 0 && (
-          <Card className="section-shell">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                {t("expenses.categoryBreakdown")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {categoryBreakdown.map((item, index) => {
-                const colors = [
-                  "bg-teal-500",
-                  "bg-blue-500",
-                  "bg-orange-500",
-                  "bg-pink-500",
-                  "bg-indigo-500",
-                  "bg-emerald-500",
-                ];
-                const color = colors[index % colors.length];
-
-                return (
-                  <div key={item.name} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
-                        <span className="text-sm font-medium text-foreground dark:text-foreground">{item.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-foreground/60 dark:text-foreground/70">{item.percentage.toFixed(1)}%</span>
-                        <span className="text-sm font-semibold text-foreground dark:text-foreground">{formatNumber(item.amount)}</span>
-                      </div>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                      <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${item.percentage}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </motion.div>
+    </div>
   );
 }

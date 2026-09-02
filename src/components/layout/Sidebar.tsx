@@ -1,14 +1,20 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
-  Languages,
   LogOut,
   Moon,
+  Plus,
   Store,
   Sun,
   X,
+  Languages,
+  User,
+  ShoppingBag,
+  DollarSign,
+  ShoppingCart,
+  ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -16,12 +22,11 @@ import { preloadRoute } from "@/lib/routePreload";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePendingOrdersCount } from "@/hooks/useOrders";
 import { useMyPageAccess } from "@/hooks/useUserPageAccess";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,104 +39,47 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  NAVIGATION_SECTIONS,
-  NAV_SECTION_LABELS,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  OLLY_NAVIGATION_ITEMS,
   type AppNavItem,
   filterItemsByAccess,
+  isRouteActive,
 } from "./app-navigation";
-
-function NavSection({
-  title,
-  items,
-  t,
-  pendingOrdersCount,
-  isCompact,
-}: {
-  title: string;
-  items: AppNavItem[];
-  t: (k: string) => string;
-  pendingOrdersCount: number;
-  isCompact: boolean;
-}) {
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    cn(
-      "relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-all duration-150 ease-out [&_svg]:text-inherit",
-      "hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-      isActive && "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.95)]",
-      isCompact && "justify-center px-2",
-    );
-
-  return (
-    <div className={cn("space-y-1 rounded-[1.35rem] border border-sidebar-border/70 bg-sidebar-accent/28 p-2", isCompact && "border-0 bg-transparent p-0")}>
-      {!isCompact && (
-        <span className="mb-1.5 block px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-sidebar-foreground/55">
-          {title}
-        </span>
-      )}
-
-      {items.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          className={navLinkClass}
-          onMouseEnter={() => preloadRoute(item.to)}
-        >
-          {({ isActive }) => (
-            <span className="flex w-full min-w-0 items-center gap-3">
-              {isActive && (
-                <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-sidebar-primary-foreground" />
-              )}
-
-              <item.icon
-                className={cn(
-                  "h-[18px] w-[18px] flex-shrink-0 transition-colors duration-150",
-                  isActive && "drop-shadow-[0_0_6px_rgba(13,148,136,0.35)]",
-                )}
-                strokeWidth={isActive ? 2 : 1.5}
-              />
-
-              {!isCompact && (
-                <>
-                  <span className="flex-1 truncate">{t(item.labelKey)}</span>
-                  {item.to === "/orders" && pendingOrdersCount > 0 && (
-                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-[10px]">
-                      {pendingOrdersCount}
-                    </Badge>
-                  )}
-                </>
-              )}
-            </span>
-          )}
-        </NavLink>
-      ))}
-    </div>
-  );
-}
+import { BrandLogo, BrandGlyph } from "@/components/brand/BrandLogo";
 
 export function Sidebar() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { isCollapsed, toggleSidebar, setCollapsed } = useSidebar();
   const { t, language, setLanguage } = useLanguage();
-  const { signOut, profile } = useAuth();
-  const { data: pendingOrdersCount = 0 } = usePendingOrdersCount();
+  const { signOut, profile, userRole } = useAuth();
   const { data: allowedPages } = useMyPageAccess();
   const { isMobile, isTablet, isDesktop } = useAdaptiveLayout();
   const { theme, toggleTheme } = useTheme();
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
-  const shopName = profile?.shops?.name || "Smart Money";
+  const shopName = profile?.shops?.name || "WiseCash";
+  const userName = profile?.full_name || "Admin";
+  const avatarUrl = profile?.avatar_url;
+  const userInitials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   const collapsedView = isTablet || isCollapsed;
-  const sidebarWidth = collapsedView ? 96 : 280;
+  const sidebarWidth = collapsedView ? 72 : 230;
 
-  const operationsItems = filterItemsByAccess(NAVIGATION_SECTIONS.operations, allowedPages);
-  const managementItems = filterItemsByAccess(NAVIGATION_SECTIONS.management, allowedPages);
-  const adminItems = filterItemsByAccess(NAVIGATION_SECTIONS.admin, allowedPages);
-  const sectionTitles = {
-    operations: NAV_SECTION_LABELS.operations[language],
-    management: NAV_SECTION_LABELS.management[language],
-    admin: NAV_SECTION_LABELS.admin[language],
-  };
+  const navItems = filterItemsByAccess(OLLY_NAVIGATION_ITEMS, allowedPages);
 
+  // Mobile Drawer
   if (isMobile) {
     return (
       <AnimatePresence>
@@ -141,99 +89,108 @@ export function Sidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-[rgba(28,23,18,0.42)] backdrop-blur-[3px]"
               onClick={() => setCollapsed(true)}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs"
             />
 
             <motion.aside
-              data-app-sidebar
-              initial={{ x: -320 }}
+              initial={{ x: -280 }}
               animate={{ x: 0 }}
-              exit={{ x: -320 }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="fixed left-0 top-0 z-50 flex h-screen w-[min(88vw,23.5rem)] flex-col rounded-r-[2rem] border-r border-sidebar-border/80 bg-[linear-gradient(180deg,hsl(var(--sidebar-background)/0.98),hsl(var(--sidebar-background)/0.94))] shadow-[22px_0_80px_-36px_rgba(15,23,42,0.55)] backdrop-blur-xl"
+              exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card shadow-2xl"
             >
-              <div className="border-b border-sidebar-border/80 px-4 pb-4 pt-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[1.1rem] bg-primary/15 ring-1 ring-primary/15">
-                    <Store className="h-5 w-5 text-primary" strokeWidth={1.5} />
-                    </div>
+              {/* Drawer Top */}
+              <div className="flex h-16 items-center justify-between border-b border-border px-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCollapsed(true)}
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Nav List */}
+              <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+                {navItems.map((item) => {
+                  const active = isRouteActive(location.pathname, item);
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setCollapsed(true)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                        active
+                          ? "bg-muted font-semibold text-foreground"
+                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                      )}
+                    >
+                      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-muted-foreground")} />
+                      <span className="truncate">{t(item.labelKey)}</span>
+                    </NavLink>
+                  );
+                })}
+
+                {/* Quick Actions (Mobile) */}
+                <div className="pt-4 mt-4 border-t border-border">
+                  <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {language === "sw" ? "Vitendo vya Haraka" : "Quick Actions"}
+                  </p>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => { setCollapsed(true); navigate("/purchases?new=true"); }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5 text-accent" />
+                      <span>{t("quick.newPurchase")}</span>
+                    </button>
+                    <button
+                      onClick={() => { setCollapsed(true); navigate("/sales"); }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      <ShoppingBag className="h-3.5 w-3.5 text-accent" />
+                      <span>{t("quick.newSale")}</span>
+                    </button>
+                    <button
+                      onClick={() => { setCollapsed(true); navigate("/expenses?new=true"); }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      <DollarSign className="h-3.5 w-3.5 text-accent" />
+                      <span>{t("quick.newExpense")}</span>
+                    </button>
+                  </div>
+                </div>
+              </nav>
+
+              {/* Bottom Profile / Quick Toggle */}
+              <div className="border-t border-border p-3">
+                <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/60 p-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={avatarUrl || undefined} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-sidebar-foreground">{shopName}</p>
+                      <p className="truncate text-xs font-semibold text-foreground">{userName}</p>
+                      <p className="truncate text-[10px] text-muted-foreground capitalize">{userRole || "Admin"}</p>
                     </div>
                   </div>
 
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setCollapsed(true)}
-                    className="h-10 w-10 rounded-full text-sidebar-foreground hover:bg-sidebar-accent/70"
+                    onClick={() => setSignOutConfirmOpen(true)}
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
-                    <X className="h-4 w-4" strokeWidth={1.5} />
+                    <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-
-              <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
-                <NavSection
-                  title={sectionTitles.operations}
-                  items={operationsItems}
-                  t={t}
-                  pendingOrdersCount={pendingOrdersCount}
-                  isCompact={false}
-                />
-                <NavSection
-                  title={sectionTitles.management}
-                  items={managementItems}
-                  t={t}
-                  pendingOrdersCount={pendingOrdersCount}
-                  isCompact={false}
-                />
-                <NavSection
-                  title={sectionTitles.admin}
-                  items={adminItems}
-                  t={t}
-                  pendingOrdersCount={pendingOrdersCount}
-                  isCompact={false}
-                />
-              </nav>
-
-              <div className="space-y-3 border-t border-sidebar-border/80 bg-sidebar-accent/18 p-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="ghost"
-                    className="h-11 justify-start gap-2 rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/35 text-sidebar-foreground hover:bg-sidebar-accent/80"
-                    onClick={toggleTheme}
-                  >
-                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                    {theme === "dark"
-                      ? language === "sw"
-                        ? "Mwanga"
-                        : "Light"
-                      : language === "sw"
-                        ? "Giza"
-                        : "Dark"}
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    className="h-11 justify-start gap-2 rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/35 text-sidebar-foreground hover:bg-sidebar-accent/80"
-                    onClick={() => setLanguage(language === "sw" ? "en" : "sw")}
-                  >
-                    <Languages className="h-4 w-4" />
-                    {language === "sw" ? "English" : "Kiswahili"}
-                  </Button>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  className="h-11 w-full justify-start gap-3 rounded-2xl border border-sidebar-border/70 bg-transparent text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setSignOutConfirmOpen(true)}
-                >
-                  <LogOut className="h-4 w-4" strokeWidth={1.5} />
-                  {language === "sw" ? "Toka" : "Sign Out"}
-                </Button>
               </div>
             </motion.aside>
           </>
@@ -250,10 +207,7 @@ export function Sidebar() {
             <AlertDialogFooter>
               <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
-                  signOut();
-                  setSignOutConfirmOpen(false);
-                }}
+                onClick={() => { signOut(); setSignOutConfirmOpen(false); }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 {language === "sw" ? "Toka" : "Sign Out"}
@@ -265,80 +219,187 @@ export function Sidebar() {
     );
   }
 
+  // Desktop / Tablet Sidebar
   return (
     <aside
       data-app-sidebar
-      className="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar/92 shadow-[16px_0_60px_-38px_rgba(15,23,42,0.6)] backdrop-blur-2xl transition-[width] duration-200"
+      className="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-card transition-all duration-300 ease-in-out"
       style={{ width: sidebarWidth }}
     >
-      <div className="flex h-[76px] items-center border-b border-sidebar-border/80 px-4">
-        <div className="flex min-w-0 items-center gap-3 overflow-hidden">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/14 ring-1 ring-white/10">
-            <Store className="h-5 w-5 text-primary" strokeWidth={1.5} />
-          </div>
-
-          {!collapsedView && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0">
-              <p className="truncate text-sm font-semibold text-sidebar-foreground">{shopName}</p>
-            </motion.div>
+      {/* Top Header / Brand */}
+      <div className={cn("flex h-[72px] items-center border-b border-border", collapsedView ? "justify-center px-2" : "justify-between px-4")}>
+        <div
+          onClick={isDesktop ? toggleSidebar : undefined}
+          className="flex min-w-0 cursor-pointer items-center gap-2.5"
+          title={collapsedView ? "Expand Sidebar" : undefined}
+        >
+          {collapsedView ? (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent shadow-xs">
+              <BrandGlyph className="h-4 w-4" />
+            </div>
+          ) : (
+            <BrandLogo size="md" />
           )}
         </div>
+
+        {isDesktop && !collapsedView && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {isDesktop && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleSidebar}
-          className="absolute -right-3 top-[4.8rem] z-50 h-7 w-7 rounded-full border border-sidebar-border bg-card shadow-lg transition-colors hover:border-primary/30 hover:bg-sidebar-accent"
-        >
-          {collapsedView ? <ChevronRight className="h-3 w-3" strokeWidth={1.5} /> : <ChevronLeft className="h-3 w-3" strokeWidth={1.5} />}
-        </Button>
-      )}
+      {/* 10 Primary Nav Items */}
+      <nav className={cn("flex-1 space-y-1 overflow-y-auto p-2.5", collapsedView && "px-2")}>
+        {navItems.map((item) => {
+          const active = isRouteActive(location.pathname, item);
+          const Icon = item.icon;
+          const label = t(item.labelKey);
 
-      <nav className={cn("mt-2 flex-1 overflow-y-auto px-3 py-3", collapsedView ? "space-y-6" : "space-y-5")}>
-        <NavSection
-          title={sectionTitles.operations}
-          items={operationsItems}
-          t={t}
-          pendingOrdersCount={pendingOrdersCount}
-          isCompact={collapsedView}
-        />
-        <NavSection
-          title={sectionTitles.management}
-          items={managementItems}
-          t={t}
-          pendingOrdersCount={pendingOrdersCount}
-          isCompact={collapsedView}
-        />
-        <NavSection
-          title={sectionTitles.admin}
-          items={adminItems}
-          t={t}
-          pendingOrdersCount={pendingOrdersCount}
-          isCompact={collapsedView}
-        />
+          if (collapsedView) {
+            return (
+              <Tooltip key={item.to} delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to={item.to}
+                    onMouseEnter={() => preloadRoute(item.to)}
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl mx-auto text-sm transition-all duration-150",
+                      active
+                        ? "bg-muted text-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+                  </NavLink>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium text-xs">
+                  {label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onMouseEnter={() => preloadRoute(item.to)}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150",
+                active
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+            >
+              <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-muted-foreground")} strokeWidth={active ? 2.25 : 1.75} />
+              <span className="truncate">{label}</span>
+            </NavLink>
+          );
+        })}
+
+        {/* Quick Actions (Expanded Desktop) */}
+        {!collapsedView && (
+          <div className="pt-4 mt-4 border-t border-border">
+            <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {language === "sw" ? "Vitendo vya Haraka" : "Quick Actions"}
+            </p>
+            <div className="space-y-1">
+              <button
+                onClick={() => navigate("/purchases?new=true")}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5 text-accent" />
+                <span>{t("quick.newPurchase")}</span>
+              </button>
+              <button
+                onClick={() => navigate("/sales")}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5 text-accent" />
+                <span>{t("quick.newSale")}</span>
+              </button>
+              <button
+                onClick={() => navigate("/expenses?new=true")}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5 text-accent" />
+                <span>{t("quick.newExpense")}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
-      <div className="border-t border-sidebar-border p-2">
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full gap-3 rounded-2xl text-sidebar-foreground transition-colors duration-200 hover:bg-destructive/10 hover:text-destructive",
-                collapsedView ? "justify-center px-2" : "justify-start",
-              )}
-              onClick={() => setSignOutConfirmOpen(true)}
-            >
-              <LogOut className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
-              {!collapsedView && (language === "sw" ? "Toka" : "Sign Out")}
-            </Button>
-          </TooltipTrigger>
-          {collapsedView && <TooltipContent side="right">{language === "sw" ? "Toka" : "Sign Out"}</TooltipContent>}
-        </Tooltip>
+      {/* Bottom Profile Block */}
+      <div className={cn("border-t border-border p-2.5", collapsedView ? "flex justify-center" : "")}>
+        {collapsedView ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSignOutConfirmOpen(true)}
+                className="h-10 w-10 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {language === "sw" ? "Toka" : "Sign Out"}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex w-full items-center justify-between gap-2 rounded-xl p-2 text-left hover:bg-muted/70 transition-colors">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={avatarUrl || undefined} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-foreground leading-tight">{userName}</p>
+                    <p className="truncate text-[10px] text-muted-foreground capitalize">{userRole || "Admin"}</p>
+                  </div>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 rounded-xl border-border bg-popover shadow-lg">
+              <DropdownMenuItem onClick={() => navigate("/settings")} className="gap-2 text-xs">
+                <User className="h-3.5 w-3.5" />
+                {language === "sw" ? "Mipangilio ya Akaunti" : "Account Settings"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTheme} className="gap-2 text-xs">
+                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                {theme === "dark" ? (language === "sw" ? "Mandhari ya Mwanga" : "Light Mode") : (language === "sw" ? "Mandhari ya Giza" : "Dark Mode")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage(language === "sw" ? "en" : "sw")} className="gap-2 text-xs">
+                <Languages className="h-3.5 w-3.5" />
+                {language === "sw" ? "Switch to English" : "Badili kwenda Kiswahili"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setSignOutConfirmOpen(true)}
+                className="gap-2 text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                {language === "sw" ? "Toka" : "Sign Out"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
+      {/* Logout Confirmation Dialog */}
       <AlertDialog open={signOutConfirmOpen} onOpenChange={setSignOutConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -350,10 +411,7 @@ export function Sidebar() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                signOut();
-                setSignOutConfirmOpen(false);
-              }}
+              onClick={() => { signOut(); setSignOutConfirmOpen(false); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {language === "sw" ? "Toka" : "Sign Out"}

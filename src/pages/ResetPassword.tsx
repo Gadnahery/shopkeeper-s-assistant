@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { checkPasswordStrength } from "@/lib/validation";
 import { toast } from "sonner";
-import { KeyRound, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export default function ResetPassword() {
+  const { language } = useLanguage();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,11 +20,15 @@ export default function ResetPassword() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (checkPasswordStrength(password).suggestions.length > 0) {
-      toast.error("Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol");
+      toast.error(
+        language === "sw"
+          ? "Nenosiri liwe na angalau herufi 8, litumie herufi kubwa na ndogo, namba, na alama."
+          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.",
+      );
       return;
     }
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error(language === "sw" ? "Nenosiri halilingani" : "Passwords do not match");
       return;
     }
     setLoading(true);
@@ -32,59 +38,60 @@ export default function ResetPassword() {
       toast.error(error.message);
       return;
     }
-    toast.success("Password updated successfully");
+    toast.success(language === "sw" ? "Nenosiri limesasishwa kikamilifu" : "Password updated successfully");
     navigate("/login");
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_30%)] bg-background p-4">
-      <Card className="w-full max-w-md rounded-[2rem] border border-border/60 bg-card/90 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.55)] backdrop-blur-xl">
-        <CardHeader className="space-y-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <KeyRound className="h-6 w-6" />
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-lg space-y-6">
+        <div className="flex flex-col items-center text-center">
+          <Link to="/" className="mb-3 inline-block">
+            <BrandLogo size="lg" />
+          </Link>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
+            {language === "sw" ? "Weka Nenosiri Jipya" : "Reset Password"}
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {language === "sw"
+              ? "Chagua nenosiri jipya na salama kwa ajili ya akaunti yako."
+              : "Choose a strong new password for your account."}
+          </p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{language === "sw" ? "Nenosiri Jipya" : "New Password"}</Label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
+              required
+              minLength={8}
+            />
           </div>
-          <div>
-            <CardTitle className="text-2xl">Reset password</CardTitle>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Choose a strong new password for your account.
-            </p>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">{language === "sw" ? "Thibitisha Nenosiri" : "Confirm Password"}</Label>
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
+              required
+              minLength={8}
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="password">New password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 rounded-2xl"
-                required
-                minLength={8}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="h-12 rounded-2xl"
-                required
-                minLength={8}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Use 8 or more characters with uppercase, lowercase, a number, and a symbol.
-            </p>
-            <Button type="submit" className="h-12 w-full rounded-2xl" disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+
+          <Button type="submit" className="h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90" disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            <span>{language === "sw" ? "Badilisha Nenosiri" : "Update Password"}</span>
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,133 +1,192 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Smartphone, TrendingUp, Receipt, ScanLine } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Factory,
+  Package,
+  ShieldCheck,
+  ShoppingCart,
+  Tag,
+  TrendingUp,
+  Users,
+  Zap,
+} from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { BrandGlyph } from "@/components/brand/BrandLogo";
 
 export function Hero() {
   const { language } = useLanguage();
 
   return (
-    <section className="relative min-h-[90vh] overflow-hidden pb-16 pt-24">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 dark:from-neutral-900 dark:via-neutral-900 dark:to-emerald-950/30" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-200/30 via-transparent to-transparent dark:from-emerald-500/10" />
+    <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24 border-b border-border bg-background">
+      <div className="container relative mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+          {/* Left Column (Hero Copy) */}
+          <div className="text-center lg:text-left lg:col-span-7">
+            {/* Pill Tag */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-semibold text-foreground shadow-xs">
+              <span className="flex h-2 w-2 rounded-full bg-accent" />
+              <span>{language === "sw" ? "Mfumo wa Kisasa wa ERP na POS" : "Complete Small-Business ERP & POS"}</span>
+            </div>
 
-      <motion.div
-        animate={{ y: [0, -12, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-20 top-32 h-24 w-24 rounded-2xl bg-emerald-400/20 blur-2xl"
-      />
-      <motion.div
-        animate={{ y: [0, 12, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        className="absolute bottom-20 left-10 h-32 w-32 rounded-full bg-cyan-400/20 blur-3xl"
-      />
-      <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="absolute right-1/3 top-1/2 h-16 w-16 rounded-xl bg-cyan-400/20 blur-xl"
-      />
-
-      <div className="container relative mx-auto flex flex-col items-center gap-12 px-4 pt-8 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
-        <div className="flex-1 text-center lg:text-left">
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl font-bold leading-tight tracking-tight text-foreground md:text-5xl lg:text-6xl"
-          >
-            {language === "sw" ? (
-              <>
-                Simamia Biashara Yako{" "}
-                <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:to-cyan-400">
-                  Kidigitali
-                </span>
-              </>
-            ) : (
-              <>
-                Manage Your Business{" "}
-                <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent dark:from-emerald-400 dark:to-cyan-400">
-                  Digitally
-                </span>
-              </>
-            )}
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="mt-6 max-w-xl text-lg text-muted-foreground md:text-xl"
-          >
-            {language === "sw"
-              ? "WiseCash ni mfumo wa POS, usimamizi wa stoki, mauzo, ripoti, na uendeshaji wa biashara kwa maduka ya kisasa."
-              : "WiseCash is a POS system, inventory management, sales reporting, and retail business software for modern shops."}
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start"
-          >
-            <Button
-              asChild
-              size="lg"
-              className="h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-600 px-8 text-base font-semibold shadow-lg shadow-emerald-500/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-emerald-500/30"
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
             >
-              <Link to="/signup">{language === "sw" ? "Anza Bure" : "Start Free"}</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="h-12 rounded-xl border-2 px-8 text-base font-semibold">
-              <Link to="/auth">{language === "sw" ? "Tazama Demo" : "View Demo"}</Link>
-            </Button>
-          </motion.div>
-        </div>
+              {language === "sw" ? (
+                <>
+                  Simamia Biashara Yako <br />
+                  <span className="text-accent">Katika Mfumo Mmoja</span>
+                </>
+              ) : (
+                <>
+                  Run Your Entire Business <br />
+                  <span className="text-accent">In One Connected ERP</span>
+                </>
+              )}
+            </motion.h1>
 
-        <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative flex-1 lg:max-w-md"
-        >
-          <div className="relative rounded-3xl border border-white/20 bg-white/60 p-8 shadow-2xl shadow-emerald-500/10 backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg lg:text-xl font-normal"
+            >
+              {language === "sw"
+                ? "Manunuzi, uzalishaji, stoki, mauzo ya POS, wateja, gharama, wafanyakazi na ripoti za fedha — zote zimeunganishwa pamoja kwa urahisi."
+                : "Purchasing, production manufacturing, inventory, POS checkout, receivables, expenses, HR, and financial analytics — all seamlessly unified."}
+            </motion.p>
+
             <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="mx-auto w-48 rounded-3xl border-4 border-neutral-200 bg-neutral-100 p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-800"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start"
             >
-              <div className="space-y-3">
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center gap-2 rounded-lg bg-emerald-500/20 p-2"
-                >
-                  <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-medium">Mauzo +24%</span>
-                </motion.div>
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="flex items-center gap-2 rounded-lg bg-cyan-500/20 p-2"
-                >
-                  <Receipt className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                  <span className="text-xs font-medium">Risiti</span>
-                </motion.div>
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.9 }}
-                  className="flex items-center gap-2 rounded-lg bg-sky-500/20 p-2"
-                >
-                  <ScanLine className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                  <span className="text-xs font-medium">Skana Barcode</span>
-                </motion.div>
+              <Button
+                asChild
+                size="lg"
+                className="h-11 rounded-xl bg-primary px-7 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90"
+              >
+                <Link to="/signup" className="flex items-center gap-2">
+                  <span>{language === "sw" ? "Anza Sasa Bure" : "Get Started Free"}</span>
+                  <ArrowRight className="h-4 w-4 text-accent" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-11 rounded-xl border-border bg-card px-7 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                <Link to="/login">{language === "sw" ? "Ingia Kwenye Akaunti" : "Log In to Workspace"}</Link>
+              </Button>
+            </motion.div>
+
+            {/* Quick feature bullets */}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground lg:justify-start">
+              <div className="flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+                <span>{language === "sw" ? "Inafanya kazi bila intaneti" : "Offline PWA capable"}</span>
               </div>
-              <Smartphone className="absolute -bottom-2 -right-2 h-8 w-8 text-neutral-400/50" />
+              <div className="flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+                <span>{language === "sw" ? "Lugha ya Kiswahili & Kiingereza" : "Swahili & English bilingual"}</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+                <span>{language === "sw" ? "Salama & Haraka" : "Encrypted & Cloud-synced"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column (Live Mockup Card of ERP Overview) */}
+          <div className="lg:col-span-5">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative mx-auto max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl"
+            >
+              {/* Card Header */}
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                    <BrandGlyph className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">WiseCash Overview</h3>
+                    <p className="text-[10px] text-muted-foreground">Biashara Yangu Ltd</p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success-text)]">
+                  Live Online
+                </span>
+              </div>
+
+              {/* 4 Mini Stat Blocks */}
+              <div className="grid grid-cols-2 gap-3 pt-4">
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
+                  <span className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Mauzo ya Leo" : "Today's Sales"}</span>
+                  <p className="mt-1 text-base font-bold text-foreground">TSH 1,480,000</p>
+                  <p className="mt-0.5 text-[10px] text-[var(--success-text)] font-semibold">+18.4% vs jana</p>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
+                  <span className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Thamani ya Stoki" : "Inventory Value"}</span>
+                  <p className="mt-1 text-base font-bold text-foreground">TSH 24.5M</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">342 bidhaa</p>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
+                  <span className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Uzalishaji" : "Active Batches"}</span>
+                  <p className="mt-1 text-base font-bold text-foreground">4 Runs</p>
+                  <p className="mt-0.5 text-[10px] text-accent font-semibold">120 units</p>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
+                  <span className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Madeni ya Wateja" : "Receivables"}</span>
+                  <p className="mt-1 text-base font-bold text-foreground">TSH 350,000</p>
+                  <p className="mt-0.5 text-[10px] text-[var(--warning-text)] font-semibold">3 accounts</p>
+                </div>
+              </div>
+
+              {/* Quick Operation Row */}
+              <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/60 p-3">
+                <span className="text-xs font-semibold text-foreground">{language === "sw" ? "Fungua POS ya Mauzo" : "Quick Checkout POS"}</span>
+                <Button size="sm" asChild className="h-7 rounded-lg bg-primary text-[11px] font-semibold text-primary-foreground">
+                  <Link to="/sales">Fungua</Link>
+                </Button>
+              </div>
             </motion.div>
           </div>
-        </motion.div>
+        </div>
+
+        {/* Trust Bar / ERP Capabilities Strip */}
+        <div className="mt-16 rounded-2xl border border-border bg-muted/40 p-6">
+          <p className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {language === "sw" ? "Moduli 10 Kamili za Kusimamia Biashara Yako" : "10 Unified Modules Built for Modern Commerce"}
+          </p>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 text-center">
+            {[
+              { label: language === "sw" ? "1. Muhtasari (Overview)" : "1. Overview", icon: BarChart3 },
+              { label: language === "sw" ? "2. Manunuzi (Purchases)" : "2. Purchases", icon: ShoppingCart },
+              { label: language === "sw" ? "3. Uzalishaji (Production)" : "3. Production", icon: Factory },
+              { label: language === "sw" ? "4. Mauzo (Sales POS)" : "4. Sales POS", icon: Tag },
+              { label: language === "sw" ? "5. Stoki (Inventory)" : "5. Inventory", icon: Package },
+            ].map((m, i) => {
+              const Icon = m.icon;
+              return (
+                <div key={i} className="flex flex-col items-center justify-center p-2 rounded-xl bg-card border border-border/80">
+                  <Icon className="h-4 w-4 text-accent mb-1.5" />
+                  <span className="text-xs font-semibold text-foreground">{m.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );

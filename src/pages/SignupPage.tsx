@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, Store } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { checkPasswordStrength } from "@/lib/validation";
 import { toast } from "sonner";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export default function SignupPage() {
       toast.error(
         language === "sw"
           ? "Nenosiri liwe na angalau herufi 8, litumie herufi kubwa na ndogo, namba, na alama."
-          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol."
+          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.",
       );
       return;
     }
@@ -61,14 +62,14 @@ export default function SignupPage() {
             ? language === "sw"
               ? "Barua pepe imesajiliwa. Tafadhali ingia."
               : "Email already registered. Please sign in."
-            : error.message
+            : error.message,
         );
       } else {
         setSuccess(true);
         toast.success(
           language === "sw"
             ? "Akaunti imeundwa! Angalia barua pepe yako au ingia."
-            : "Account created! Check your email to verify, or sign in."
+            : "Account created! Check your email to verify, or sign in.",
         );
       }
     } finally {
@@ -89,177 +90,155 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.12),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.12),transparent_32%)]">
-      <div className="grid min-h-screen lg:grid-cols-2">
-        <section className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-slate-950 via-slate-900 to-teal-900 p-12 text-white">
-          <Link to="/" className="inline-flex w-fit items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-sm">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/16">
-              <Store className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-bold">WiseCash</span>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-lg"
+      >
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center">
+          <Link to="/" className="mb-3 inline-block">
+            <BrandLogo size="lg" />
           </Link>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
+            {language === "sw" ? "Fungua Akaunti ya Biashara" : "Create Your Business Account"}
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {language === "sw"
+              ? "Anza kutumia mfumo kamili wa ERP bure."
+              : "Start managing your ERP & POS workspace for free."}
+          </p>
+        </div>
 
-          <div className="space-y-6">
-            <p className="text-sm uppercase tracking-[0.24em] text-white/60">
-              {language === "sw" ? "Anza Leo" : "Start Today"}
-            </p>
-            <h1 className="max-w-lg text-4xl font-bold leading-tight">
-              {language === "sw" ? "Fungua mfumo wako wa biashara ndani ya dakika chache." : "Launch your retail workspace in just a few minutes."}
-            </h1>
-            <p className="max-w-lg text-lg text-white/75">
+        {success ? (
+          <div className="mt-6 space-y-4 rounded-xl bg-muted/40 p-6 text-center border border-border">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--success-bg)] text-[var(--success-text)]">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-foreground">
+              {language === "sw" ? "Akaunti Imeundwa Kikamilifu!" : "Account Created Successfully!"}
+            </h3>
+            <p className="text-xs text-muted-foreground">
               {language === "sw"
-                ? "Unda akaunti, sanidi duka lako, kisha anza kuuza, kufuatilia stoki, na kuona ripoti."
-                : "Create your account, set up your shop, and start selling, tracking stock, and viewing reports."}
+                ? "Tumetuma ujumbe wa uthibitisho kwenye barua pepe yako. Unaweza kuingia sasa."
+                : "A verification email has been sent. You can now proceed to log in."}
             </p>
+            <Button asChild className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+              <Link to="/login">{language === "sw" ? "Ingia Sasa" : "Go to Login"}</Link>
+            </Button>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === "sw" ? "Jina la Duka / Biashara *" : "Business / Shop Name *"}</Label>
+              <Input
+                required
+                placeholder="e.g. Mangi Hardware & Retail"
+                value={form.shopName}
+                onChange={(e) => setForm({ ...form, shopName: e.target.value })}
+                className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
+              />
+            </div>
 
-          <div className="grid max-w-xl grid-cols-2 gap-4">
-            {[
-              language === "sw" ? "Usajili wa haraka" : "Fast onboarding",
-              language === "sw" ? "Duka lako mara moja" : "Your shop instantly",
-              language === "sw" ? "Mwonekano wa kisasa" : "Modern workspace",
-              language === "sw" ? "Tayari kwa ukuaji" : "Ready to scale",
-            ].map((item) => (
-              <div key={item} className="rounded-[1.6rem] border border-white/12 bg-white/8 p-5 backdrop-blur-sm">
-                <p className="text-sm font-medium">{item}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === "sw" ? "Jina Kamili la Mmiliki *" : "Full Name *"}</Label>
+              <Input
+                required
+                placeholder="e.g. Baraka Juma"
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
+              />
+            </div>
 
-        <motion.section
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.45 }}
-          className="flex min-h-screen items-center justify-center overflow-y-auto px-4 py-10 md:px-8"
-        >
-          <div className="w-full max-w-md rounded-[2rem] border border-border/60 bg-card/88 p-8 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.55)] backdrop-blur-xl md:p-10">
-            <div className="mb-8 lg:hidden">
-              <Link to="/" className="inline-flex items-center gap-3 rounded-2xl bg-background/70 px-4 py-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-blue-600 text-white">
-                  <Store className="h-5 w-5" />
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === "sw" ? "Barua Pepe *" : "Email Address *"}</Label>
+              <Input
+                type="email"
+                required
+                placeholder="owner@example.com"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">{language === "sw" ? "Nenosiri *" : "Password *"}</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="h-10 rounded-xl border-border bg-background pr-9 text-xs focus-visible:ring-accent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
                 </div>
-                <span className="text-lg font-bold">WiseCash</span>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">{language === "sw" ? "Thibitisha *" : "Confirm *"}</Label>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  value={form.confirmPassword}
+                  onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                  className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="mt-2 h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              <span>{language === "sw" ? "Kamilisha Usajili" : "Create Account"}</span>
+            </Button>
+
+            {/* Divider */}
+            <div className="relative my-3">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  {language === "sw" ? "au jiunge na" : "or sign up with"}
+                </span>
+              </div>
+            </div>
+
+            {/* Google OAuth Button */}
+            <GoogleAuthButton
+              mode="signup"
+              language={language}
+              loading={googleLoading}
+              onClick={handleGoogleSignup}
+            />
+
+            {/* Switch to Login */}
+            <div className="pt-2 text-center text-xs text-muted-foreground">
+              {language === "sw" ? "Tayari una akaunti? " : "Already have an account? "}
+              <Link to="/login" className="font-bold text-foreground hover:underline">
+                {language === "sw" ? "Ingia Hapa" : "Sign In"}
               </Link>
             </div>
-
-            {success ? (
-              <div className="rounded-[1.75rem] bg-muted/30 px-6 py-10 text-center">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/16">
-                  <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" />
-                </div>
-                <h2 className="text-2xl font-bold">{language === "sw" ? "Akaunti Imeundwa!" : "Account Created!"}</h2>
-                <p className="mt-2 text-muted-foreground">
-                  {language === "sw"
-                    ? "Angalia barua pepe yako kuthibitisha akaunti au ingia sasa."
-                    : "Check your email to verify your account, or sign in now."}
-                </p>
-                <Button asChild className="mt-8 h-12 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600">
-                  <Link to="/login">
-                    {language === "sw" ? "Ingia" : "Sign In"}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-bold text-foreground">
-                    {language === "sw" ? "Fungua akaunti mpya" : "Create your account"}
-                  </h2>
-                  <p className="text-muted-foreground">
-                    {language === "sw" ? "Sanidi duka lako na anza kusimamia biashara." : "Set up your shop and start managing your business."}
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-                  <GoogleAuthButton
-                    loading={googleLoading}
-                    onClick={handleGoogleSignup}
-                    label={language === "sw" ? "Jisajili kwa Google" : "Continue with Google"}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {language === "sw"
-                      ? "Ukichagua Google, tutaomba pia jina lako na jina la duka kabla ya kukupeleka ndani."
-                      : "If you choose Google, we will also ask for your name and shop name before taking you inside."}
-                  </p>
-
-                  <div className="flex items-center gap-3 pt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    <span className="h-px flex-1 bg-border/70" />
-                    <span>{language === "sw" ? "au kwa barua pepe" : "or with email"}</span>
-                    <span className="h-px flex-1 bg-border/70" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{language === "sw" ? "Jina Kamili" : "Full Name"}</Label>
-                    <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="h-12 rounded-2xl text-foreground" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{language === "sw" ? "Jina la Duka" : "Shop Name"}</Label>
-                    <Input value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} className="h-12 rounded-2xl text-foreground" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{language === "sw" ? "Barua Pepe" : "Email"}</Label>
-                    <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-2xl text-foreground" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{language === "sw" ? "Nenosiri" : "Password"}</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="********"
-                        value={form.password}
-                        onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="h-12 rounded-2xl pr-11 text-foreground"
-                        required
-                        minLength={8}
-                      />
-                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{language === "sw" ? "Thibitisha Nenosiri" : "Confirm Password"}</Label>
-                    <Input
-                      type="password"
-                      placeholder="********"
-                      value={form.confirmPassword}
-                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                      className="h-12 rounded-2xl text-foreground"
-                      required
-                      minLength={8}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {language === "sw"
-                      ? "Tumia herufi 8 au zaidi zenye herufi kubwa, ndogo, namba, na alama."
-                      : "Use 8 or more characters with uppercase, lowercase, a number, and a symbol."}
-                  </p>
-                  <Button type="submit" className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 text-base font-semibold" disabled={loading}>
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>
-                      {language === "sw" ? "Fungua Akaunti" : "Create Account"}
-                      <ArrowRight className="h-4 w-4" />
-                    </>}
-                  </Button>
-                </form>
-
-                <p className="mt-6 text-center text-sm text-muted-foreground">
-                  {language === "sw" ? "Tayari una akaunti?" : "Already have an account?"}{" "}
-                  <Link to="/login" className="font-medium text-primary hover:underline">
-                    {language === "sw" ? "Ingia" : "Log in"}
-                  </Link>
-                </p>
-                <p className="mt-4 text-center">
-                  <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                    {"<-"} {language === "sw" ? "Rudi kwenye ukurasa wa kwanza" : "Back to home"}
-                  </Link>
-                </p>
-              </>
-            )}
-          </div>
-        </motion.section>
-      </div>
+          </form>
+        )}
+      </motion.div>
     </div>
   );
 }

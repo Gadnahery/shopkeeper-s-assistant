@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, BarChart3, Eye, EyeOff, Loader2, ShieldCheck, Smartphone, Store } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
@@ -19,13 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { checkPasswordStrength } from "@/lib/validation";
 import { requestPasswordReset } from "@/lib/passwordRecovery";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-
-const features = [
-  { icon: Store, label: "POS & Sales", labelSw: "Mauzo na POS" },
-  { icon: BarChart3, label: "Reports & Analytics", labelSw: "Ripoti na Uchambuzi" },
-  { icon: ShieldCheck, label: "Inventory Control", labelSw: "Udhibiti wa Stoki" },
-  { icon: Smartphone, label: "Works Offline", labelSw: "Inafanya Kazi Nje ya Mtandao" },
-];
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -67,7 +54,7 @@ export default function Auth() {
               ? language === "sw"
                 ? "Barua pepe au nenosiri si sahihi"
                 : "Invalid email or password"
-              : error.message
+              : error.message,
           );
         }
       } else {
@@ -79,7 +66,7 @@ export default function Auth() {
           toast.error(
             language === "sw"
               ? "Nenosiri liwe na herufi 8 au zaidi, herufi kubwa na ndogo, namba, na alama."
-              : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol."
+              : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.",
           );
           return;
         }
@@ -90,44 +77,19 @@ export default function Auth() {
               ? language === "sw"
                 ? "Barua pepe imesajiliwa. Tafadhali ingia."
                 : "Email already registered. Please sign in."
-              : error.message
+              : error.message,
           );
         } else {
           toast.success(
             language === "sw"
               ? "Akaunti imeundwa! Angalia barua pepe yako au ingia."
-              : "Account created! Check your email to verify, or sign in."
+              : "Account created! Check your email to verify, or sign in.",
           );
           setIsLogin(true);
         }
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPassword || checkPasswordStrength(newPassword).suggestions.length > 0) {
-      toast.error(
-        language === "sw"
-          ? "Nenosiri liwe na herufi 8 au zaidi, herufi kubwa na ndogo, namba, na alama."
-          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol."
-      );
-      return;
-    }
-    setUpdatePasswordLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(language === "sw" ? "Nenosiri limebadilishwa. Unaweza kuingia sasa." : "Password updated. You can sign in now.");
-        setRecoveryMode(false);
-        setNewPassword("");
-      }
-    } finally {
-      setUpdatePasswordLoading(false);
     }
   };
 
@@ -140,9 +102,39 @@ export default function Auth() {
       setForgotOpen(false);
       setResetEmail("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : (language === "sw" ? "Imeshindikana kutuma barua pepe." : "Could not send the reset email."));
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : language === "sw"
+          ? "Imeshindikana kutuma barua pepe."
+          : "Could not send the reset email.",
+      );
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (checkPasswordStrength(newPassword).suggestions.length > 0) {
+      toast.error(
+        language === "sw"
+          ? "Nenosiri liwe na angalau herufi 8, litumie herufi kubwa na ndogo, namba, na alama."
+          : "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.",
+      );
+      return;
+    }
+    setUpdatePasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success(language === "sw" ? "Nenosiri jipya limewekwa!" : "New password saved!");
+      setRecoveryMode(false);
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update password");
+    } finally {
+      setUpdatePasswordLoading(false);
     }
   };
 
@@ -150,223 +142,213 @@ export default function Auth() {
     setGoogleLoading(true);
     try {
       const { error } = await signInWithGoogle(isLogin ? "login" : "signup");
-      if (error) {
-        toast.error(error.message);
-      }
+      if (error) toast.error(error.message);
     } finally {
       setGoogleLoading(false);
     }
   };
 
+  if (recoveryMode) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-lg space-y-4">
+          <BrandLogo size="lg" />
+          <h2 className="text-xl font-bold">{language === "sw" ? "Weka Nenosiri Jipya" : "Enter New Password"}</h2>
+          <form onSubmit={handleUpdatePassword} className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === "sw" ? "Nenosiri Jipya" : "New Password"}</Label>
+              <Input
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="h-10 rounded-xl border-border bg-background text-xs"
+              />
+            </div>
+            <Button type="submit" disabled={updatePasswordLoading} className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+              {updatePasswordLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              {language === "sw" ? "Hifadhi Nenosiri" : "Save Password"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.14),transparent_32%)]">
-      <div className="grid min-h-screen lg:grid-cols-2">
-        <section className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-slate-950 via-slate-900 to-teal-900 p-12 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
-              <Store className="h-6 w-6" />
-            </div>
-            <span className="text-2xl font-bold">WiseCash</span>
-          </div>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-lg"
+      >
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center">
+          <Link to="/" className="mb-3 inline-block">
+            <BrandLogo size="lg" />
+          </Link>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
+            {isLogin
+              ? language === "sw"
+                ? "Karibu Tena Kwenye WiseCash"
+                : "Welcome Back to WiseCash"
+              : language === "sw"
+              ? "Fungua Akaunti ya Biashara"
+              : "Create Your Business Account"}
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {isLogin
+              ? language === "sw"
+                ? "Ingia kusimamia ERP na POS ya biashara yako."
+                : "Sign in to access your ERP workspace."
+              : language === "sw"
+              ? "Mfumo kamili wa ERP kwa biashara inayokua."
+              : "All-in-one ERP system for growing businesses."}
+          </p>
+        </div>
 
-          <div className="space-y-8">
-            <div>
-              <h1 className="max-w-lg text-4xl font-bold leading-tight">
-                {language === "sw" ? "Simamia biashara yako kwa urahisi zaidi." : "Manage your business with more clarity and control."}
-              </h1>
-              <p className="mt-4 max-w-lg text-lg text-white/75">
-                {language === "sw"
-                  ? "Mfumo kamili wa POS, hesabu, ripoti, na usimamizi wa duka lako katika muonekano mpya wa kisasa."
-                  : "A complete POS, inventory, reporting, and store management system in a cleaner modern workspace."}
-              </p>
+        {forgotOpen ? (
+          <form onSubmit={handleForgotPassword} className="mt-6 space-y-4">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === "sw" ? "Barua Pepe" : "Email Address"}</Label>
+              <Input
+                type="email"
+                required
+                placeholder="owner@example.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="h-10 rounded-xl border-border bg-background text-xs"
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {features.map((feature) => (
-                <div key={feature.label} className="rounded-[1.6rem] border border-white/12 bg-white/8 p-5 backdrop-blur-sm">
-                  <feature.icon className="h-5 w-5" />
-                  <p className="mt-6 text-sm font-medium">{language === "sw" ? feature.labelSw : feature.label}</p>
+            <Button type="submit" disabled={resetLoading} className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+              {resetLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              {language === "sw" ? "Tuma Kiungo" : "Send Reset Link"}
+            </Button>
+            <div className="text-center pt-2">
+              <button type="button" onClick={() => setForgotOpen(false)} className="text-xs text-muted-foreground hover:text-foreground">
+                {language === "sw" ? "← Rudi" : "← Back"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
+            {!isLogin && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina la Duka / Biashara *" : "Shop Name *"}</Label>
+                  <Input
+                    required
+                    placeholder="e.g. Mangi Hardware"
+                    value={form.shopName}
+                    onChange={(e) => setForm({ ...form, shopName: e.target.value })}
+                    className="h-10 rounded-xl border-border bg-background text-xs"
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="text-sm text-white/55">(c) 2026 WiseCash</p>
-        </section>
-
-        <motion.section
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.45 }}
-          className="flex min-h-screen items-center justify-center overflow-y-auto px-4 py-10 md:px-8"
-        >
-          <div className="w-full max-w-md rounded-[2rem] border border-border/60 bg-card/90 p-8 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.55)] backdrop-blur-xl md:p-10">
-            <div className="mb-8 lg:hidden">
-              <div className="inline-flex items-center gap-3 rounded-2xl bg-background/70 px-4 py-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-blue-600 text-white">
-                  <Store className="h-5 w-5" />
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina Kamili la Mmiliki *" : "Full Name *"}</Label>
+                  <Input
+                    required
+                    placeholder="e.g. Baraka Juma"
+                    value={form.fullName}
+                    onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                    className="h-10 rounded-xl border-border bg-background text-xs"
+                  />
                 </div>
-                <span className="text-lg font-bold">WiseCash</span>
+              </>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === "sw" ? "Barua Pepe *" : "Email Address *"}</Label>
+              <Input
+                type="email"
+                required
+                placeholder="owner@example.com"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="h-10 rounded-xl border-border bg-background text-xs"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">{language === "sw" ? "Nenosiri *" : "Password *"}</Label>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(true)}
+                    className="text-xs font-medium text-muted-foreground hover:text-accent"
+                  >
+                    {language === "sw" ? "Umesahau?" : "Forgot?"}
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="h-10 rounded-xl border-border bg-background pr-9 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </button>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-foreground">
-                {recoveryMode
-                  ? language === "sw" ? "Weka Nenosiri Jipya" : "Set New Password"
-                  : isLogin
-                    ? language === "sw" ? "Ingia kwenye akaunti yako" : "Welcome back"
-                    : language === "sw" ? "Fungua akaunti mpya" : "Create your account"}
-              </h2>
-              <p className="text-muted-foreground">
-                {recoveryMode
-                  ? language === "sw" ? "Chagua nenosiri jipya kwa akaunti yako." : "Choose a new password for your account."
-                  : isLogin
-                    ? language === "sw" ? "Endelea na biashara yako." : "Sign in to continue."
-                    : language === "sw" ? "Anza kusimamia biashara yako." : "Get started with your shop."}
-              </p>
-            </div>
-
-            {recoveryMode ? (
-              <form onSubmit={handleUpdatePassword} className="mt-8 space-y-5">
-                <div className="space-y-2">
-                  <Label>{language === "sw" ? "Nenosiri Jipya" : "New Password"}</Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="********"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="h-12 rounded-2xl pr-11"
-                      required
-                      minLength={8}
-                    />
-                    <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" className="h-12 w-full rounded-2xl" disabled={updatePasswordLoading}>
-                  {updatePasswordLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : language === "sw" ? "Weka Nenosiri Jipya" : "Set new password"}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  {language === "sw"
-                    ? "Tumia herufi 8 au zaidi zenye herufi kubwa, ndogo, namba, na alama."
-                    : "Use 8 or more characters with uppercase, lowercase, a number, and a symbol."}
-                </p>
-              </form>
-            ) : (
-              <>
-                <div className="mt-8 flex rounded-2xl bg-muted p-1">
-                  <button onClick={() => setIsLogin(true)} className={`flex-1 rounded-[1rem] py-2.5 text-sm font-medium transition ${isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
-                    {language === "sw" ? "Ingia" : "Sign In"}
-                  </button>
-                  <button onClick={() => setIsLogin(false)} className={`flex-1 rounded-[1rem] py-2.5 text-sm font-medium transition ${!isLogin ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
-                    {language === "sw" ? "Jisajili" : "Sign Up"}
-                  </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-                  <GoogleAuthButton
-                    loading={googleLoading}
-                    onClick={handleGoogleAuth}
-                    label={
-                      isLogin
-                        ? language === "sw" ? "Endelea na Google" : "Continue with Google"
-                        : language === "sw" ? "Jisajili kwa Google" : "Continue with Google"
-                    }
-                  />
-                  {!isLogin && (
-                    <p className="text-xs text-muted-foreground">
-                      {language === "sw"
-                        ? "Ukichagua Google, tutakuomba kwanza jina lako na jina la duka kabla ya kukamilisha usajili."
-                        : "If you choose Google, we will ask for your name and shop name before finishing setup."}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    <span className="h-px flex-1 bg-border/70" />
-                    <span>{language === "sw" ? "au kwa barua pepe" : "or with email"}</span>
-                    <span className="h-px flex-1 bg-border/70" />
-                  </div>
-
-                  {!isLogin && (
-                    <>
-                      <div className="space-y-2">
-                        <Label>{language === "sw" ? "Jina Kamili" : "Full Name"}</Label>
-                        <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="h-12 rounded-2xl" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{language === "sw" ? "Jina la Duka" : "Shop Name"}</Label>
-                        <Input value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} className="h-12 rounded-2xl" />
-                      </div>
-                    </>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label>{language === "sw" ? "Barua Pepe" : "Email"}</Label>
-                    <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-2xl" required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{language === "sw" ? "Nenosiri" : "Password"}</Label>
-                    <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} placeholder="********" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="h-12 rounded-2xl pr-11" required minLength={isLogin ? undefined : 8} />
-                      <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {isLogin && (
-                      <button type="button" onClick={() => { setResetEmail(form.email); setForgotOpen(true); }} className="text-sm text-primary hover:text-primary/80">
-                        {language === "sw" ? "Umesahau nenosiri?" : "Forgot password?"}
-                      </button>
-                    )}
-                    {!isLogin && (
-                      <p className="text-xs text-muted-foreground">
-                        {language === "sw"
-                          ? "Tumia herufi 8 au zaidi zenye herufi kubwa, ndogo, namba, na alama."
-                          : "Use 8 or more characters with uppercase, lowercase, a number, and a symbol."}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button type="submit" className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 text-base font-semibold" disabled={loading}>
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>
-                      {isLogin ? language === "sw" ? "Ingia" : "Sign In" : language === "sw" ? "Fungua Akaunti" : "Create Account"}
-                      <ArrowRight className="h-4 w-4" />
-                    </>}
-                  </Button>
-                </form>
-              </>
-            )}
-          </div>
-        </motion.section>
-      </div>
-
-      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-        <DialogContent className="sm:max-w-md rounded-[1.75rem]">
-          <DialogHeader>
-            <DialogTitle>{language === "sw" ? "Badilisha Nenosiri" : "Reset Password"}</DialogTitle>
-            <DialogDescription>
-              {language === "sw"
-                ? "Ingiza barua pepe yako. Tutakutumia kiungo cha kubadilisha nenosiri."
-                : "Enter your email. We'll send you a link to reset your password."}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleForgotPassword} className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label>{language === "sw" ? "Barua Pepe" : "Email"}</Label>
-              <Input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} className="h-12 rounded-2xl" required />
-            </div>
-            <Button type="submit" className="h-12 w-full rounded-2xl" disabled={resetLoading}>
-              {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : language === "sw" ? "Tuma Kiungo" : "Send reset link"}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="mt-2 h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              <span>{isLogin ? (language === "sw" ? "Ingia Sasa" : "Log In") : (language === "sw" ? "Kamilisha Usajili" : "Create Account")}</span>
             </Button>
-            <p className="text-xs text-muted-foreground">
-              {language === "sw"
-                ? "Kwa usalama, unaweza kuomba kiungo kingine baada ya takribani dakika moja."
-                : "For security, you can request another reset link after about one minute."}
-            </p>
+
+            {/* Divider */}
+            <div className="relative my-3">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  {language === "sw" ? "au endelea na" : "or continue with"}
+                </span>
+              </div>
+            </div>
+
+            {/* Google OAuth Button */}
+            <GoogleAuthButton
+              mode={isLogin ? "login" : "signup"}
+              language={language}
+              loading={googleLoading}
+              onClick={handleGoogleAuth}
+            />
+
+            {/* Toggle Mode */}
+            <div className="pt-2 text-center text-xs text-muted-foreground">
+              {isLogin
+                ? (language === "sw" ? "Huna akaunti? " : "Don't have an account? ")
+                : (language === "sw" ? "Tayari una akaunti? " : "Already have an account? ")}
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="font-bold text-foreground hover:underline"
+              >
+                {isLogin
+                  ? (language === "sw" ? "Jisajili Bure" : "Sign Up")
+                  : (language === "sw" ? "Ingia Hapa" : "Log In")}
+              </button>
+            </div>
           </form>
-        </DialogContent>
-      </Dialog>
+        )}
+      </motion.div>
     </div>
   );
 }

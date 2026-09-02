@@ -18,7 +18,7 @@ export function MobileBottomNav() {
   return (
     <nav className="safe-bottom fixed inset-x-3 bottom-3 z-30 md:hidden">
       <div
-        className="mx-auto grid max-w-xl gap-1 rounded-[1.85rem] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--card)/0.96),hsl(var(--card)/0.88))] px-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.45rem)] pt-2 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur-2xl"
+        className="mx-auto grid max-w-xl gap-1 rounded-2xl border border-border bg-card/95 px-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.45rem)] pt-2 shadow-lg backdrop-blur-xl"
         style={{ gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))` }}
       >
         {items.map((item) => {
@@ -29,8 +29,8 @@ export function MobileBottomNav() {
               key={item.to}
               to={item.to}
               className={cn(
-                "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition-colors",
-                active ? "bg-primary text-primary-foreground shadow-[0_16px_34px_-20px_hsl(var(--primary)/0.75)]" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                "flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors",
+                active ? "bg-muted font-semibold text-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
               )}
             >
               <item.icon className="h-[18px] w-[18px]" strokeWidth={active ? 2 : 1.75} />

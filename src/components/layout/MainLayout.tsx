@@ -49,14 +49,11 @@ function LayoutContent() {
   const location = useLocation();
   const { isMobile, isTablet, isDesktop } = useAdaptiveLayout();
   const shellMeta = getShellMeta(location.pathname);
-  const sidebarOffset = isDesktop ? (isCollapsed ? 96 : 280) : isTablet ? 96 : 0;
+  const sidebarOffset = isDesktop ? (isCollapsed ? 72 : 230) : isTablet ? 72 : 0;
   const showMobileNav = isMobile && shellMeta.showMobileNav;
 
   return (
     <div className="min-h-screen max-w-full overflow-x-clip bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 -z-20 bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--background)))]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(255,214,153,0.14),transparent_26%),radial-gradient(circle_at_bottom_left,hsl(var(--primary)/0.08),transparent_30%),linear-gradient(180deg,transparent,rgba(255,255,255,0.02))]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 opacity-[0.22] [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:28px_28px]" />
       <GlobalProgressBar />
       <OfflineBanner />
       <Sidebar />
