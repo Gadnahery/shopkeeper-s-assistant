@@ -70,7 +70,9 @@ export default function Sales() {
   const [mpesaAmount, setMpesaAmount] = useState("");
   const [mpesaCode, setMpesaCode] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("walk-in");
+  const [customerMode, setCustomerMode] = useState<"walk-in" | "existing" | "custom">("walk-in");
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
   const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
@@ -194,13 +196,16 @@ export default function Sales() {
 
     const paymentMethod = cashPaid > 0 && mpesaPaid > 0 ? "Split" : mpesaPaid > 0 ? "M-Pesa" : "Cash";
     const custName =
-      selectedCustomer === "walk-in"
-        ? customerName.trim() || null
-        : customers?.find((c) => c.id === selectedCustomer)?.name || customerName || null;
+      customerMode === "walk-in"
+        ? null
+        : customerMode === "existing"
+        ? customers?.find((c) => c.id === selectedCustomer)?.name || null
+        : customerName.trim() || null;
+    const custId = customerMode === "existing" && selectedCustomer !== "walk-in" ? selectedCustomer : null;
 
     try {
       const sale = await createSale.mutateAsync({
-        customer_id: selectedCustomer === "walk-in" ? null : selectedCustomer,
+        customer_id: custId,
         customer_name: custName,
         payment_method: paymentMethod,
         mpesa_code: mpesaCode || null,
@@ -431,20 +436,81 @@ export default function Sales() {
             </CardHeader>
 
             <CardContent className="p-4 space-y-4">
-              {/* Customer Selector */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">{t("sales.customer")}</Label>
-                <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                  <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
-                    <SelectItem value="walk-in">{t("sales.walkIn")}</SelectItem>
-                    {(customers || []).map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Flexible Customer Selector */}
+              <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-2.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-foreground">{t("sales.customer")}</Label>
+                  <div className="flex rounded-lg bg-muted p-0.5 text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setCustomerMode("walk-in")}
+                      className={cn(
+                        "rounded-md px-2 py-0.5 transition-colors",
+                        customerMode === "walk-in" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {language === "sw" ? "Mteja wa Kawaida" : "Walk-in"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomerMode("existing");
+                        if (customers && customers.length > 0 && selectedCustomer === "walk-in") {
+                          setSelectedCustomer(customers[0].id);
+                        }
+                      }}
+                      className={cn(
+                        "rounded-md px-2 py-0.5 transition-colors",
+                        customerMode === "existing" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {language === "sw" ? "Mteja Aliyepo" : "Existing"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCustomerMode("custom")}
+                      className={cn(
+                        "rounded-md px-2 py-0.5 transition-colors",
+                        customerMode === "custom" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {language === "sw" ? "Andika Jina" : "Type Name"}
+                    </button>
+                  </div>
+                </div>
+
+                {customerMode === "walk-in" && (
+                  <div className="flex items-center justify-between rounded-lg bg-background px-3 py-2 border border-border text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{language === "sw" ? "Mteja wa Kawaida (Walk-in)" : "Walk-in Customer"}</span>
+                    <span className="text-[10px] text-muted-foreground">{language === "sw" ? "Hakuna deni" : "No credit linked"}</span>
+                  </div>
+                )}
+
+                {customerMode === "existing" && (
+                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                    <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                      <SelectValue placeholder={language === "sw" ? "Chagua mteja..." : "Select customer..."} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56 rounded-xl border-border bg-popover text-xs">
+                      {(customers || []).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} {c.phone ? `(${c.phone})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {customerMode === "custom" && (
+                  <div className="space-y-1.5">
+                    <Input
+                      placeholder={language === "sw" ? "Jina la Mteja (mf. Juma Hamisi)..." : "Customer Name (e.g. John Doe)..."}
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="h-9 rounded-xl border-border bg-background text-xs font-semibold"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Cart Items List */}
