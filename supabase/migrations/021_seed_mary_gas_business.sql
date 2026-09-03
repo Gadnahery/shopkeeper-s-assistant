@@ -300,7 +300,7 @@ BEGIN
     invoice_number,
     created_at
   ) VALUES (
-    's1000000-0000-0000-0000-000000000001'::UUID,
+    '51000000-0000-0000-0000-000000000001'::UUID,
     v_shop_id,
     v_cust_wholesale,
     'Wateja wa Jumla (Retailers / Maduka Madogo)',
@@ -316,10 +316,10 @@ BEGIN
 
   INSERT INTO public.sale_items (sale_id, shop_id, product_id, product_name, quantity, unit_price, total)
   VALUES
-    ('s1000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_ox15, 'Oryx Gas 15kg', 30, 54000, 1620000),
-    ('s1000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_ox6, 'Oryx Gas 6kg', 89, 23500, 2091500),
-    ('s1000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_t15, 'Taifa Gas 15kg', 16, 53000, 848000),
-    ('s1000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_t6, 'Taifa Gas 6kg', 60, 22500, 1350000)
+    ('51000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_ox15, 'Oryx Gas 15kg', 30, 54000, 1620000),
+    ('51000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_ox6, 'Oryx Gas 6kg', 89, 23500, 2091500),
+    ('51000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_t15, 'Taifa Gas 15kg', 16, 53000, 848000),
+    ('51000000-0000-0000-0000-000000000001'::UUID, v_shop_id, v_p_t6, 'Taifa Gas 6kg', 60, 22500, 1350000)
   ON CONFLICT DO NOTHING;
 
   -- Wholesale Sale 2 (O-Gas, Lake, Puma, Cam)
@@ -336,7 +336,7 @@ BEGIN
     invoice_number,
     created_at
   ) VALUES (
-    's1000000-0000-0000-0000-000000000002'::UUID,
+    '51000000-0000-0000-0000-000000000002'::UUID,
     v_shop_id,
     v_cust_wholesale,
     'Wateja wa Jumla (Retailers / Maduka Madogo)',
@@ -352,14 +352,14 @@ BEGIN
 
   INSERT INTO public.sale_items (sale_id, shop_id, product_id, product_name, quantity, unit_price, total)
   VALUES
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_og15, 'O-Gas 15kg', 2, 52000, 104000),
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_og6, 'O-Gas 6kg', 33, 23500, 775500),
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_l15, 'Lake Gas 15kg', 5, 53000, 265000),
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_l6, 'Lake Gas 6kg', 5, 22500, 112500),
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_p15, 'Puma Gas 15kg', 5, 53000, 265000),
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_p6, 'Puma Gas 6kg', 4, 22500, 90000),
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_c15, 'Cam Gas 15kg', 5, 53000, 265000),
-    ('s1000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_c6, 'Cam Gas 6kg', 6, 22000, 132000)
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_og15, 'O-Gas 15kg', 2, 52000, 104000),
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_og6, 'O-Gas 6kg', 33, 23500, 775500),
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_l15, 'Lake Gas 15kg', 5, 53000, 265000),
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_l6, 'Lake Gas 6kg', 5, 22500, 112500),
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_p15, 'Puma Gas 15kg', 5, 53000, 265000),
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_p6, 'Puma Gas 6kg', 4, 22500, 90000),
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_c15, 'Cam Gas 15kg', 5, 53000, 265000),
+    ('51000000-0000-0000-0000-000000000002'::UUID, v_shop_id, v_p_c6, 'Cam Gas 6kg', 6, 22000, 132000)
   ON CONFLICT DO NOTHING;
 
   -- Retail Sales (Walk-in Rejareja: 4 OX-15, 2 OX-6, 3 T-6, 2 OG-6, 1 P-6, 3 C-38)
@@ -376,7 +376,7 @@ BEGIN
     invoice_number,
     created_at
   ) VALUES (
-    's1000000-0000-0000-0000-000000000003'::UUID,
+    '51000000-0000-0000-0000-000000000003'::UUID,
     v_shop_id,
     NULL,
     'Mteja wa Nyumbani (Rejareja)',
@@ -392,12 +392,12 @@ BEGIN
 
   INSERT INTO public.sale_items (sale_id, shop_id, product_id, product_name, quantity, unit_price, total)
   VALUES
-    ('s1000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_ox15, 'Oryx Gas 15kg', 4, 54000, 216000),
-    ('s1000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_ox6, 'Oryx Gas 6kg', 2, 23500, 47000),
-    ('s1000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_t6, 'Taifa Gas 6kg', 3, 22500, 67500),
-    ('s1000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_og6, 'O-Gas 6kg', 2, 23500, 47000),
-    ('s1000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_p6, 'Puma Gas 6kg', 1, 22500, 22500),
-    ('s1000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_c38, 'Cam Gas 38kg', 3, 150000, 450000)
+    ('51000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_ox15, 'Oryx Gas 15kg', 4, 54000, 216000),
+    ('51000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_ox6, 'Oryx Gas 6kg', 2, 23500, 47000),
+    ('51000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_t6, 'Taifa Gas 6kg', 3, 22500, 67500),
+    ('51000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_og6, 'O-Gas 6kg', 2, 23500, 47000),
+    ('51000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_p6, 'Puma Gas 6kg', 1, 22500, 22500),
+    ('51000000-0000-0000-0000-000000000003'::UUID, v_shop_id, v_p_c38, 'Cam Gas 38kg', 3, 150000, 450000)
   ON CONFLICT DO NOTHING;
 
 END;
