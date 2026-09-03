@@ -48,7 +48,7 @@ DECLARE
   v_po_id UUID;
   v_sale_id UUID;
 BEGIN
-  -- 1. Create / Upsert Auth User (Password: WiseCash@2026)
+  -- 1. Create / Upsert Auth User & Identity (Password: WiseCash@2026)
   INSERT INTO auth.users (
     id,
     instance_id,
@@ -60,7 +60,11 @@ BEGIN
     created_at,
     updated_at,
     role,
-    aud
+    aud,
+    confirmation_token,
+    email_change,
+    email_change_token_new,
+    recovery_token
   ) VALUES (
     v_user_id,
     '00000000-0000-0000-0000-000000000000',
@@ -72,11 +76,40 @@ BEGIN
     NOW(),
     NOW(),
     'authenticated',
-    'authenticated'
+    'authenticated',
+    '',
+    '',
+    '',
+    ''
   )
   ON CONFLICT (id) DO UPDATE SET
     encrypted_password = crypt('WiseCash@2026', gen_salt('bf')),
+    email_confirmed_at = NOW(),
     raw_user_meta_data = '{"full_name":"Mary Stanislaus Mlay","shop_name":"Mary Stanislaus Mlay Gas Supply"}';
+
+  -- 1b. Identity record for GoTrue Email auth provider
+  INSERT INTO auth.identities (
+    id,
+    user_id,
+    identity_data,
+    provider,
+    provider_id,
+    last_sign_in_at,
+    created_at,
+    updated_at
+  ) VALUES (
+    v_user_id,
+    v_user_id,
+    jsonb_build_object('sub', v_user_id::text, 'email', 'mary.mlay@wisecash.app'),
+    'email',
+    v_user_id::text,
+    NOW(),
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (provider, provider_id) DO UPDATE SET
+    identity_data = jsonb_build_object('sub', v_user_id::text, 'email', 'mary.mlay@wisecash.app'),
+    last_sign_in_at = NOW();
 
   -- 2. Create / Upsert Shop
   INSERT INTO public.shops (
