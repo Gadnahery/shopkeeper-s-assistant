@@ -136,20 +136,20 @@ BEGIN
     role = 'owner';
 
   -- 4. Shop Settings
+  DELETE FROM public.shop_settings WHERE shop_id = v_shop_id;
   INSERT INTO public.shop_settings (
     shop_id,
+    shop_name,
+    phone,
     currency,
-    locale,
-    country_code
+    language
   ) VALUES (
     v_shop_id,
+    'Mary Stanislaus Mlay Gas Supply',
+    '+255 754 000 111',
     'TZS',
-    'sw-TZ',
-    'TZ'
-  )
-  ON CONFLICT (shop_id) DO UPDATE SET
-    currency = 'TZS',
-    locale = 'sw-TZ';
+    'sw'
+  );
 
   -- 5. Categories
   INSERT INTO public.categories (id, shop_id, name, description)
