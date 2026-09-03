@@ -33,7 +33,7 @@ async function generateLegacyOrderNumber(): Promise<string> {
   }
 }
 
-async function createOrderLegacy(shopId: string, input: { customer_name?: string; customer_phone?: string; priority?: string; due_date?: string | null; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) {
+async function createOrderLegacy(shopId: string, input: { customer_name?: string; customer_phone?: string; status?: string; priority?: string; due_date?: string | null; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) {
   const orderNumber = await generateLegacyOrderNumber();
   const total = input.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
   const payload: Record<string, unknown> = {
@@ -41,7 +41,7 @@ async function createOrderLegacy(shopId: string, input: { customer_name?: string
     order_number: orderNumber,
     customer_name: input.customer_name || null,
     customer_phone: input.customer_phone || null,
-    status: "pending",
+    status: input.status || "pending",
     total,
     notes: input.notes || null,
   };
@@ -129,7 +129,7 @@ export function useOrder(id: string | null) {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { customer_name?: string; customer_phone?: string; priority?: string; due_date?: string | null; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) => {
+    mutationFn: async (input: { customer_name?: string; customer_phone?: string; status?: string; priority?: string; due_date?: string | null; items: { product_id?: string; product_name: string; quantity: number; unit_price: number }[]; notes?: string }) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
       let order: any;
