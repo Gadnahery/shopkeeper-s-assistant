@@ -61,8 +61,8 @@ export function FloatingActions() {
         <Button
           size="icon"
           className={cn(
-            "h-14 w-14 rounded-2xl shadow-xl bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700",
-            "border-0 text-white transition-all duration-200 hover:scale-105"
+            "h-14 w-14 rounded-2xl shadow-xl bg-primary hover:bg-primary/90",
+            "border-0 text-primary-foreground transition-all duration-200 hover:scale-105"
           )}
           onClick={() => {
             playSound("click");
@@ -70,7 +70,7 @@ export function FloatingActions() {
           }}
           aria-label="Quick actions"
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-6 w-6 text-accent" />
         </Button>
       </motion.div>
     </div>

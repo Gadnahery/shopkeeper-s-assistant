@@ -70,29 +70,29 @@ export default function Categories() {
         title={language === "sw" ? "Kategoria za Bidhaa" : "Product Categories"}
         subtitle={language === "sw" ? "Panga bidhaa zako kwa makundi safi na rahisi kutafuta." : "Organize inventory into clear categories that are easier to browse and manage."}
         actions={
-          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={openAdd}>
-            <Plus className="h-4 w-4" />
+          <Button className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90" onClick={openAdd}>
+            <Plus className="h-4 w-4 text-accent" />
             {language === "sw" ? "Ongeza Kategoria" : "Add Category"}
           </Button>
         }
       />
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>{t("common.edit")} {language === "sw" ? "Kategoria" : "Category"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label>{language === "sw" ? "Jina" : "Name"}</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, name_sw: e.target.value })} />
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, name_sw: e.target.value })} className="rounded-xl" />
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
-              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={language === "sw" ? "Si lazima" : "Optional"} />
+              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={language === "sw" ? "Si lazima" : "Optional"} className="rounded-xl" />
             </div>
             <Button 
-              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" 
               onClick={handleSave} 
               disabled={!form.name || updateCat.isPending}
             >
@@ -103,25 +103,25 @@ export default function Categories() {
       </Dialog>
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>{language === "sw" ? "Ongeza Kategoria Mpya" : "Add New Category"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label>{language === "sw" ? "Jina" : "Name"}</Label>
-              <Input value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value, name_sw: e.target.value })} />
+              <Input value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value, name_sw: e.target.value })} className="rounded-xl" />
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
-              <Input value={addForm.description} onChange={(e) => setAddForm({ ...addForm, description: e.target.value })} placeholder={language === "sw" ? "Si lazima" : "Optional"} />
+              <Input value={addForm.description} onChange={(e) => setAddForm({ ...addForm, description: e.target.value })} placeholder={language === "sw" ? "Si lazima" : "Optional"} className="rounded-xl" />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={() => { clearAddCategoryDraft(); setIsAddOpen(false); }}>
+              <Button type="button" variant="outline" onClick={() => { clearAddCategoryDraft(); setIsAddOpen(false); }} className="rounded-xl">
                 {t("common.cancel")}
               </Button>
               <Button 
-                className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" 
                 onClick={handleSave} 
                 disabled={!addForm.name || createCat.isPending}
               >

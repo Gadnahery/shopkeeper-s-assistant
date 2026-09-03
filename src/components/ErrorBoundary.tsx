@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex gap-3 justify-center pt-4">
               <Button
                 onClick={() => window.location.reload()}
-                className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700"
+                className="rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
               >
                 Reload Page
               </Button>

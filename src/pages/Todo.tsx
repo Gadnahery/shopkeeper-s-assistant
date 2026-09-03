@@ -148,11 +148,11 @@ export default function Todo() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60 dark:text-foreground/70 dark:drop-shadow-[0_0_4px_rgba(59,130,246,0.3)]" />
             <Input placeholder={language === "sw" ? "Tafuta..." : "Search..."} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
           </div>
-          <div className="flex gap-1 border rounded-lg p-1 bg-muted/30">
+          <div className="flex gap-1 border rounded-xl p-1 bg-muted/30">
             <Button
               variant={filter === "all" ? "default" : "ghost"}
               size="sm"
-              className={filter === "all" ? "bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white shadow-md" : ""}
+              className={filter === "all" ? "bg-primary text-primary-foreground rounded-lg shadow-2xs font-bold" : "rounded-lg text-xs"}
               onClick={() => setFilter("all")}
             >
               {language === "sw" ? "Zote" : "All"}
@@ -160,7 +160,7 @@ export default function Todo() {
             <Button
               variant={filter === "active" ? "default" : "ghost"}
               size="sm"
-              className={filter === "active" ? "bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white shadow-md" : ""}
+              className={filter === "active" ? "bg-primary text-primary-foreground rounded-lg shadow-2xs font-bold" : "rounded-lg text-xs"}
               onClick={() => setFilter("active")}
             >
               {language === "sw" ? "Hazijakamilika" : "Active"}
@@ -168,14 +168,14 @@ export default function Todo() {
             <Button
               variant={filter === "completed" ? "default" : "ghost"}
               size="sm"
-              className={filter === "completed" ? "bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white shadow-md" : ""}
+              className={filter === "completed" ? "bg-primary text-primary-foreground rounded-lg shadow-2xs font-bold" : "rounded-lg text-xs"}
               onClick={() => setFilter("completed")}
             >
               {language === "sw" ? "Zimekamilika" : "Completed"}
             </Button>
           </div>
-          <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30" onClick={() => setAddOpen(true)} disabled={!shopId} title={!shopId ? (language === "sw" ? "Hakuna duka limetambuliwa" : "No shop identified") : undefined}>
-            <Plus className="h-4 w-4" />{language === "sw" ? "Ongeza" : "Add"}
+          <Button className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90" onClick={() => setAddOpen(true)} disabled={!shopId} title={!shopId ? (language === "sw" ? "Hakuna duka limetambuliwa" : "No shop identified") : undefined}>
+            <Plus className="h-4 w-4 text-accent" />{language === "sw" ? "Ongeza" : "Add"}
           </Button>
         </div>
         }
@@ -260,9 +260,9 @@ export default function Todo() {
               </div>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={() => { clearAddTodoDraft(); setAddOpen(false); }}>{t("common.cancel")}</Button>
+              <Button type="button" variant="outline" onClick={() => { clearAddTodoDraft(); setAddOpen(false); }} className="rounded-xl">{t("common.cancel")}</Button>
               <Button 
-                className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" 
                 onClick={handleAdd} 
                 disabled={!addForm.title.trim() || createTodo.isPending}
               >
@@ -275,28 +275,28 @@ export default function Todo() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingTodo} onOpenChange={(open) => { if (!open) { setEditingTodo(null); resetForm(); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader><DialogTitle>{language === "sw" ? "Hariri Kazi" : "Edit To-Do"}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label>{language === "sw" ? "Kichwa" : "Title"} *</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={language === "sw" ? "Kichwa cha kazi" : "Task title"} />
+              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={language === "sw" ? "Kichwa cha kazi" : "Task title"} className="rounded-xl" />
             </div>
             <div className="space-y-2">
               <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
-              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={language === "sw" ? "Maelezo mafupi" : "Brief description"} />
+              <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={language === "sw" ? "Maelezo mafupi" : "Brief description"} className="rounded-xl" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" />{language === "sw" ? "Tarehe" : "Due date"}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.due_date && "text-muted-foreground")}>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl", !form.due_date && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {form.due_date ? format(new Date(form.due_date), "PPP") : (language === "sw" ? "Chagua tarehe" : "Pick date")}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
                     <Calendar mode="single" selected={form.due_date ? new Date(form.due_date) : undefined} onSelect={(d) => setForm({ ...form, due_date: d ? format(d, "yyyy-MM-dd") : "" })} />
                   </PopoverContent>
                 </Popover>
@@ -304,8 +304,8 @@ export default function Todo() {
               <div className="space-y-2">
                 <Label>{language === "sw" ? "Saa" : "Time"}</Label>
                 <Select value={form.due_time} onValueChange={(v) => setForm({ ...form, due_time: v })}>
-                  <SelectTrigger><SelectValue placeholder={language === "sw" ? "Chagua saa" : "Pick time"} /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder={language === "sw" ? "Chagua saa" : "Pick time"} /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
                     {TIME_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -314,8 +314,8 @@ export default function Todo() {
             <div className="space-y-2">
               <Label>{language === "sw" ? "Tuma kwa" : "Assign to"}</Label>
               <Select value={form.assigned_to_user_id || "__none__"} onValueChange={(v) => setForm({ ...form, assigned_to_user_id: v === "__none__" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder={language === "sw" ? "Mteja wa kawaida (si lazima)" : "Unassigned (optional)"} /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder={language === "sw" ? "Mteja wa kawaida (si lazima)" : "Unassigned (optional)"} /></SelectTrigger>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="__none__">{language === "sw" ? "Hakuna (kazi yangu)" : "None (my task)"}</SelectItem>
                   {shopUsers?.map((u) => (
                     <SelectItem key={(u as any).user_id} value={(u as any).user_id}>{(u as any).full_name}</SelectItem>
@@ -323,19 +323,19 @@ export default function Todo() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+            <div className="space-y-2 rounded-xl border bg-muted/30 p-3">
               <Label className="flex items-center gap-1 text-primary"><Bell className="h-4 w-4" />{language === "sw" ? "Alerti" : "Alert"}</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-foreground/70 dark:text-foreground/80">{language === "sw" ? "Tarehe" : "Date"}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal", !form.alert_date && "text-muted-foreground")}>
+                      <Button variant="outline" size="sm" className={cn("w-full justify-start text-left font-normal rounded-xl", !form.alert_date && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {form.alert_date ? format(new Date(form.alert_date), "PPP") : (language === "sw" ? "Chagua" : "Pick")}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
                       <Calendar mode="single" selected={form.alert_date ? new Date(form.alert_date) : undefined} onSelect={(d) => setForm({ ...form, alert_date: d ? format(d, "yyyy-MM-dd") : "" })} />
                     </PopoverContent>
                   </Popover>
@@ -343,8 +343,8 @@ export default function Todo() {
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{language === "sw" ? "Saa" : "Time"}</Label>
                   <Select value={form.alert_time} onValueChange={(v) => setForm({ ...form, alert_time: v })}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder={language === "sw" ? "Saa" : "Time"} /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="h-9 rounded-xl"><SelectValue placeholder={language === "sw" ? "Saa" : "Time"} /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
                       {TIME_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -352,7 +352,7 @@ export default function Todo() {
               </div>
             </div>
             <Button 
-              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+              className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" 
               onClick={handleEdit} 
               disabled={!form.title.trim() || updateTodo.isPending}
             >

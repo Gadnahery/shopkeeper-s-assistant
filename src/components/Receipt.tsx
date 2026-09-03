@@ -237,8 +237,8 @@ export function Receipt({ data, onClose }: ReceiptProps) {
         </div>
 
         {/* Print Button */}
-        <Button onClick={handlePrint} className="mt-4 w-full gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white hover:from-teal-600 hover:to-blue-700">
-          <Printer className="h-4 w-4" />
+        <Button onClick={handlePrint} className="mt-4 w-full gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90">
+          <Printer className="h-4 w-4 text-accent" />
           {t("sales.printReceipt")}
         </Button>
       </div>

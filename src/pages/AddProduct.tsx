@@ -353,15 +353,15 @@ export default function AddProduct() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button type="button" variant="outline" onClick={() => { clearProductDraft(); navigate("/inventory"); }}>
+              <Button type="button" variant="outline" onClick={() => { clearProductDraft(); navigate("/inventory"); }} className="rounded-xl">
                 {t("addProduct.cancel")}
               </Button>
               <Button
                 type="submit"
-                className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 font-semibold text-white shadow-lg shadow-teal-500/25 transition-all hover:from-teal-600 hover:to-blue-700 dark:shadow-teal-500/30"
+                className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all"
                 disabled={createProduct.isPending}
               >
-                {createProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {createProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 text-accent" />}
                 {t("addProduct.save")}
               </Button>
             </div>
@@ -370,7 +370,7 @@ export default function AddProduct() {
       </form>
 
       <Dialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>{language === "sw" ? "Ongeza Kategoria Mpya" : "Add New Category"}</DialogTitle>
           </DialogHeader>
@@ -381,6 +381,7 @@ export default function AddProduct() {
                 value={categoryForm.name}
                 onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value, name_sw: e.target.value })}
                 placeholder={language === "sw" ? "Jina la kategoria" : "Category name"}
+                className="rounded-xl"
               />
             </div>
             <div className="space-y-2">
@@ -389,11 +390,12 @@ export default function AddProduct() {
                 value={categoryForm.description}
                 onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                 placeholder={language === "sw" ? "Si lazima" : "Optional"}
+                className="rounded-xl"
               />
             </div>
             <Button
               type="button"
-              className="w-full bg-gradient-to-r from-teal-500 to-blue-600 font-semibold text-white hover:from-teal-600 hover:to-blue-700"
+              className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all"
               onClick={handleAddCategory}
               disabled={!categoryForm.name.trim() || createCategory.isPending}
             >

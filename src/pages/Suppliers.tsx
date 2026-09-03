@@ -94,20 +94,20 @@ export default function Suppliers() {
               <Input placeholder={t("suppliers.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{t("suppliers.addSupplier")}</Button></DialogTrigger>
-              <DialogContent>
+              <DialogTrigger asChild><Button className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"><Plus className="h-4 w-4 text-accent" />{t("suppliers.addSupplier")}</Button></DialogTrigger>
+              <DialogContent className="rounded-2xl">
                 <DialogHeader><DialogTitle>{t("suppliers.addSupplier")}</DialogTitle></DialogHeader>
                 <div className="space-y-4 pt-4">
-                  <div className="space-y-2"><Label>{t("suppliers.supplierName")}</Label><Input value={newSupplier.name} onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })} /></div>
+                  <div className="space-y-2"><Label>{t("suppliers.supplierName")}</Label><Input value={newSupplier.name} onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })} className="rounded-xl" /></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Phone</Label><Input value={newSupplier.phone} onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })} /></div>
-                    <div className="space-y-2"><Label>Email</Label><Input value={newSupplier.email} onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })} /></div>
+                    <div className="space-y-2"><Label>Phone</Label><Input value={newSupplier.phone} onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })} className="rounded-xl" /></div>
+                    <div className="space-y-2"><Label>Email</Label><Input value={newSupplier.email} onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })} className="rounded-xl" /></div>
                   </div>
-                  <div className="space-y-2"><Label>Contact Person</Label><Input value={newSupplier.contact_person} onChange={(e) => setNewSupplier({ ...newSupplier, contact_person: e.target.value })} /></div>
-                  <div className="space-y-2"><Label>Address</Label><Input value={newSupplier.address} onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })} /></div>
+                  <div className="space-y-2"><Label>Contact Person</Label><Input value={newSupplier.contact_person} onChange={(e) => setNewSupplier({ ...newSupplier, contact_person: e.target.value })} className="rounded-xl" /></div>
+                  <div className="space-y-2"><Label>Address</Label><Input value={newSupplier.address} onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })} className="rounded-xl" /></div>
                   <div className="flex gap-2 justify-end">
-                    <Button type="button" variant="outline" onClick={() => { clearAddSupplierDraft(); setIsAddOpen(false); }}>{t("common.cancel")}</Button>
-                    <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" onClick={handleAddSupplier} disabled={!newSupplier.name || createSupplier.isPending}>
+                    <Button type="button" variant="outline" onClick={() => { clearAddSupplierDraft(); setIsAddOpen(false); }} className="rounded-xl">{t("common.cancel")}</Button>
+                    <Button className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" onClick={handleAddSupplier} disabled={!newSupplier.name || createSupplier.isPending}>
                       {createSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
                     </Button>
                   </div>
@@ -131,19 +131,19 @@ export default function Suppliers() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingSupplier} onOpenChange={(o) => !o && setEditingSupplier(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader><DialogTitle>{t("common.edit")} {language === "sw" ? "Msambazaji" : "Supplier"}</DialogTitle></DialogHeader>
           {editingSupplier && (
             <div className="space-y-4 pt-4">
-              <div className="space-y-2"><Label>{t("suppliers.supplierName")}</Label><Input value={editingSupplier.name} onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("suppliers.supplierName")}</Label><Input value={editingSupplier.name} onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })} className="rounded-xl" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Phone</Label><Input value={editingSupplier.phone || ""} onChange={(e) => setEditingSupplier({ ...editingSupplier, phone: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Email</Label><Input value={editingSupplier.email || ""} onChange={(e) => setEditingSupplier({ ...editingSupplier, email: e.target.value })} /></div>
+                <div className="space-y-2"><Label>Phone</Label><Input value={editingSupplier.phone || ""} onChange={(e) => setEditingSupplier({ ...editingSupplier, phone: e.target.value })} className="rounded-xl" /></div>
+                <div className="space-y-2"><Label>Email</Label><Input value={editingSupplier.email || ""} onChange={(e) => setEditingSupplier({ ...editingSupplier, email: e.target.value })} className="rounded-xl" /></div>
               </div>
-              <div className="space-y-2"><Label>Contact Person</Label><Input value={editingSupplier.contact_person || ""} onChange={(e) => setEditingSupplier({ ...editingSupplier, contact_person: e.target.value })} /></div>
-              <div className="space-y-2"><Label>{t("suppliers.pendingPayment")}</Label><Input type="number" value={editingSupplier.pending_payment} onChange={(e) => setEditingSupplier({ ...editingSupplier, pending_payment: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Contact Person</Label><Input value={editingSupplier.contact_person || ""} onChange={(e) => setEditingSupplier({ ...editingSupplier, contact_person: e.target.value })} className="rounded-xl" /></div>
+              <div className="space-y-2"><Label>{t("suppliers.pendingPayment")}</Label><Input type="number" value={editingSupplier.pending_payment} onChange={(e) => setEditingSupplier({ ...editingSupplier, pending_payment: e.target.value })} className="rounded-xl" /></div>
               <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" 
                 onClick={handleEditSupplier} 
                 disabled={updateSupplier.isPending}
               >
@@ -156,14 +156,14 @@ export default function Suppliers() {
 
       {/* Pay Dialog */}
       <Dialog open={!!payDialog} onOpenChange={(o) => !o && setPayDialog(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader><DialogTitle>{t("customers.pay")} - {payDialog?.name}</DialogTitle></DialogHeader>
           {payDialog && (
             <div className="space-y-4 pt-4">
               <p className="text-sm text-muted-foreground">{language === "sw" ? "Deni la sasa" : "Pending"}: <span className="font-bold text-destructive">Tsh {formatNumber(payDialog.pending_payment)}</span></p>
-              <div className="space-y-2"><Label>{language === "sw" ? "Kiasi" : "Amount"}</Label><Input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "sw" ? "Kiasi" : "Amount"}</Label><Input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className="rounded-xl" /></div>
               <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" 
                 onClick={handlePaySupplier} 
                 disabled={!payAmount || updateSupplier.isPending}
               >

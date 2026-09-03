@@ -183,6 +183,7 @@ BEGIN
     shop_id,
     category_id,
     name,
+    code,
     barcode,
     sku,
     buying_price,
@@ -190,21 +191,22 @@ BEGIN
     stock,
     low_stock_alert
   ) VALUES
-    (v_p_ox15, v_shop_id, v_cat_refill, 'Oryx Gas 15kg', 'OX-15', 'OX-15', 48000, 54000, 3, 5),
-    (v_p_ox6, v_shop_id, v_cat_refill, 'Oryx Gas 6kg', 'OX-6', 'OX-6', 20000, 23500, 9, 10),
-    (v_p_t15, v_shop_id, v_cat_refill, 'Taifa Gas 15kg', 'T-15', 'T-15', 47000, 53000, 7, 5),
-    (v_p_t6, v_shop_id, v_cat_refill, 'Taifa Gas 6kg', 'T-6', 'T-6', 19500, 22500, 16, 10),
-    (v_p_og15, v_shop_id, v_cat_refill, 'O-Gas 15kg', 'OG-15', 'OG-15', 46000, 52000, 3, 3),
-    (v_p_og6, v_shop_id, v_cat_refill, 'O-Gas 6kg', 'OG-6', 'OG-6', 20000, 23500, 5, 5),
-    (v_p_l15, v_shop_id, v_cat_refill, 'Lake Gas 15kg', 'L-15', 'L-15', 47000, 53000, 0, 3),
-    (v_p_l6, v_shop_id, v_cat_refill, 'Lake Gas 6kg', 'L-6', 'L-6', 19500, 22500, 0, 3),
-    (v_p_p15, v_shop_id, v_cat_refill, 'Puma Gas 15kg', 'P-15', 'P-15', 47000, 53000, 0, 3),
-    (v_p_p6, v_shop_id, v_cat_refill, 'Puma Gas 6kg', 'P-6', 'P-6', 19500, 22500, 0, 3),
-    (v_p_c38, v_shop_id, v_cat_refill, 'Cam Gas 38kg', 'C-38', 'C-38', 130000, 150000, 0, 2),
-    (v_p_c15, v_shop_id, v_cat_refill, 'Cam Gas 15kg', 'C-15', 'C-15', 47000, 53000, 0, 3),
-    (v_p_c6, v_shop_id, v_cat_refill, 'Cam Gas 6kg', 'C-6', 'C-6', 19000, 22000, 4, 3)
+    (v_p_ox15, v_shop_id, v_cat_refill, 'Oryx Gas 15kg', 'OX-15', 'OX-15', 'OX-15', 48000, 54000, 3, 5),
+    (v_p_ox6, v_shop_id, v_cat_refill, 'Oryx Gas 6kg', 'OX-6', 'OX-6', 'OX-6', 20000, 23500, 9, 10),
+    (v_p_t15, v_shop_id, v_cat_refill, 'Taifa Gas 15kg', 'T-15', 'T-15', 'T-15', 47000, 53000, 7, 5),
+    (v_p_t6, v_shop_id, v_cat_refill, 'Taifa Gas 6kg', 'T-6', 'T-6', 'T-6', 19500, 22500, 16, 10),
+    (v_p_og15, v_shop_id, v_cat_refill, 'O-Gas 15kg', 'OG-15', 'OG-15', 'OG-15', 46000, 52000, 3, 3),
+    (v_p_og6, v_shop_id, v_cat_refill, 'O-Gas 6kg', 'OG-6', 'OG-6', 'OG-6', 20000, 23500, 5, 5),
+    (v_p_l15, v_shop_id, v_cat_refill, 'Lake Gas 15kg', 'L-15', 'L-15', 'L-15', 47000, 53000, 0, 3),
+    (v_p_l6, v_shop_id, v_cat_refill, 'Lake Gas 6kg', 'L-6', 'L-6', 'L-6', 19500, 22500, 0, 3),
+    (v_p_p15, v_shop_id, v_cat_refill, 'Puma Gas 15kg', 'P-15', 'P-15', 'P-15', 47000, 53000, 0, 3),
+    (v_p_p6, v_shop_id, v_cat_refill, 'Puma Gas 6kg', 'P-6', 'P-6', 'P-6', 19500, 22500, 0, 3),
+    (v_p_c38, v_shop_id, v_cat_refill, 'Cam Gas 38kg', 'C-38', 'C-38', 'C-38', 130000, 150000, 0, 2),
+    (v_p_c15, v_shop_id, v_cat_refill, 'Cam Gas 15kg', 'C-15', 'C-15', 'C-15', 47000, 53000, 0, 3),
+    (v_p_c6, v_shop_id, v_cat_refill, 'Cam Gas 6kg', 'C-6', 'C-6', 'C-6', 19000, 22000, 4, 3)
   ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
+    code = EXCLUDED.code,
     buying_price = EXCLUDED.buying_price,
     selling_price = EXCLUDED.selling_price,
     stock = EXCLUDED.stock;

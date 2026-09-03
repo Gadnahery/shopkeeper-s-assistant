@@ -104,27 +104,27 @@ export default function Assets() {
         subtitle={language === "sw" ? "Fuatilia mali, thamani ya sasa, na kushuka kwa thamani katika sehemu moja." : "Track business assets, current value, and depreciation in one cleaner view."}
         actions={
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild><Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30"><Plus className="h-4 w-4" />{language === "sw" ? "Ongeza Mali" : "Add Asset"}</Button></DialogTrigger>
-            <DialogContent>
+            <DialogTrigger asChild><Button className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"><Plus className="h-4 w-4 text-accent" />{language === "sw" ? "Ongeza Mali" : "Add Asset"}</Button></DialogTrigger>
+            <DialogContent className="rounded-2xl">
               <DialogHeader><DialogTitle>{language === "sw" ? "Ongeza Mali Mpya" : "Add New Asset"}</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-4">
-                <div className="space-y-2"><Label>{language === "sw" ? "Jina" : "Asset Name"}</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
+                <div className="space-y-2"><Label>{language === "sw" ? "Jina" : "Asset Name"}</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="rounded-xl" /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>{language === "sw" ? "Kategoria" : "Category"}</Label><Select value={form.category} onValueChange={v => setForm({...form, category: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Equipment">Equipment</SelectItem><SelectItem value="Furniture">Furniture</SelectItem><SelectItem value="Vehicle">Vehicle</SelectItem><SelectItem value="Electronics">Electronics</SelectItem><SelectItem value="Building">Building</SelectItem></SelectContent></Select></div>
-                  <div className="space-y-2"><Label>{language === "sw" ? "Hali" : "Condition"}</Label><Select value={form.condition} onValueChange={v => setForm({...form, condition: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Fair">Fair</SelectItem><SelectItem value="Poor">Poor</SelectItem></SelectContent></Select></div>
+                  <div className="space-y-2"><Label>{language === "sw" ? "Kategoria" : "Category"}</Label><Select value={form.category} onValueChange={v => setForm({...form, category: v})}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Equipment">Equipment</SelectItem><SelectItem value="Furniture">Furniture</SelectItem><SelectItem value="Vehicle">Vehicle</SelectItem><SelectItem value="Electronics">Electronics</SelectItem><SelectItem value="Building">Building</SelectItem></SelectContent></Select></div>
+                  <div className="space-y-2"><Label>{language === "sw" ? "Hali" : "Condition"}</Label><Select value={form.condition} onValueChange={v => setForm({...form, condition: v})}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Fair">Fair</SelectItem><SelectItem value="Poor">Poor</SelectItem></SelectContent></Select></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Purchase Price</Label><Input type="number" value={form.purchase_price} onChange={e => setForm({...form, purchase_price: e.target.value})} /></div>
-                  <div className="space-y-2"><Label>Current Value</Label><Input type="number" value={form.current_value} onChange={e => setForm({...form, current_value: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Purchase Price</Label><Input type="number" value={form.purchase_price} onChange={e => setForm({...form, purchase_price: e.target.value})} className="rounded-xl" /></div>
+                  <div className="space-y-2"><Label>Current Value</Label><Input type="number" value={form.current_value} onChange={e => setForm({...form, current_value: e.target.value})} className="rounded-xl" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Depreciation %/yr</Label><Input type="number" value={form.depreciation_rate} onChange={e => setForm({...form, depreciation_rate: e.target.value})} /></div>
-                  <div className="space-y-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Depreciation %/yr</Label><Input type="number" value={form.depreciation_rate} onChange={e => setForm({...form, depreciation_rate: e.target.value})} className="rounded-xl" /></div>
+                  <div className="space-y-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="rounded-xl" /></div>
                 </div>
-                <div className="space-y-2"><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
+                <div className="space-y-2"><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="rounded-xl" /></div>
                 <div className="flex gap-2 justify-end">
-                  <Button type="button" variant="outline" onClick={() => { clearAddAssetDraft(); setIsAddOpen(false); }}>{language === "sw" ? "Ghairi" : "Cancel"}</Button>
-                  <Button className="gap-2 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" onClick={handleAdd} disabled={!form.name || addAsset.isPending}>
+                  <Button type="button" variant="outline" onClick={() => { clearAddAssetDraft(); setIsAddOpen(false); }} className="rounded-xl">{language === "sw" ? "Ghairi" : "Cancel"}</Button>
+                  <Button className="gap-2 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" onClick={handleAdd} disabled={!form.name || addAsset.isPending}>
                     {addAsset.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === "sw" ? "Hifadhi" : "Save Asset")}
                   </Button>
                 </div>
@@ -143,28 +143,28 @@ export default function Assets() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={language === "sw" ? "Tafuta mali..." : "Search assets..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          <Input placeholder={language === "sw" ? "Tafuta mali..." : "Search assets..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 rounded-xl" />
         </div>
       </div>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingAsset} onOpenChange={(o) => !o && setEditingAsset(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader><DialogTitle>{language === "sw" ? "Hariri Mali" : "Edit Asset"}</DialogTitle></DialogHeader>
           {editingAsset && (
             <div className="space-y-4 pt-4">
-              <div className="space-y-2"><Label>Name</Label><Input value={editingAsset.name} onChange={e => setEditingAsset({...editingAsset, name: e.target.value})} /></div>
+              <div className="space-y-2"><Label>Name</Label><Input value={editingAsset.name} onChange={e => setEditingAsset({...editingAsset, name: e.target.value})} className="rounded-xl" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Category</Label><Select value={editingAsset.category || "Equipment"} onValueChange={v => setEditingAsset({...editingAsset, category: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Equipment">Equipment</SelectItem><SelectItem value="Furniture">Furniture</SelectItem><SelectItem value="Vehicle">Vehicle</SelectItem><SelectItem value="Electronics">Electronics</SelectItem></SelectContent></Select></div>
-                <div className="space-y-2"><Label>Condition</Label><Select value={editingAsset.condition || "Good"} onValueChange={v => setEditingAsset({...editingAsset, condition: v})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Fair">Fair</SelectItem><SelectItem value="Poor">Poor</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>Category</Label><Select value={editingAsset.category || "Equipment"} onValueChange={v => setEditingAsset({...editingAsset, category: v})}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Equipment">Equipment</SelectItem><SelectItem value="Furniture">Furniture</SelectItem><SelectItem value="Vehicle">Vehicle</SelectItem><SelectItem value="Electronics">Electronics</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>Condition</Label><Select value={editingAsset.condition || "Good"} onValueChange={v => setEditingAsset({...editingAsset, condition: v})}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Fair">Fair</SelectItem><SelectItem value="Poor">Poor</SelectItem></SelectContent></Select></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Purchase Price</Label><Input type="number" value={editingAsset.purchase_price} onChange={e => setEditingAsset({...editingAsset, purchase_price: e.target.value})} /></div>
-                <div className="space-y-2"><Label>Current Value</Label><Input type="number" value={editingAsset.current_value} onChange={e => setEditingAsset({...editingAsset, current_value: e.target.value})} /></div>
+                <div className="space-y-2"><Label>Purchase Price</Label><Input type="number" value={editingAsset.purchase_price} onChange={e => setEditingAsset({...editingAsset, purchase_price: e.target.value})} className="rounded-xl" /></div>
+                <div className="space-y-2"><Label>Current Value</Label><Input type="number" value={editingAsset.current_value} onChange={e => setEditingAsset({...editingAsset, current_value: e.target.value})} className="rounded-xl" /></div>
               </div>
-              <div className="space-y-2"><Label>Notes</Label><Input value={editingAsset.notes || ""} onChange={e => setEditingAsset({...editingAsset, notes: e.target.value})} /></div>
+              <div className="space-y-2"><Label>Notes</Label><Input value={editingAsset.notes || ""} onChange={e => setEditingAsset({...editingAsset, notes: e.target.value})} className="rounded-xl" /></div>
               <Button 
-                className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-semibold shadow-lg shadow-teal-500/25 dark:shadow-teal-500/30 transition-all" 
+                className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all" 
                 onClick={handleEditSave} 
                 disabled={updateAsset.isPending}
               >
