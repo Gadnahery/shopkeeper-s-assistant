@@ -105,13 +105,13 @@ BEGIN
   INSERT INTO public.shop_settings (shop_id, shop_name, phone, currency, language)
   VALUES (v_shop_id, 'Mary Stanislaus Mlay Gas Supply', '+255 754 000 111', 'TZS', 'sw');
 
-  -- 5. Wipe old demo data from this shop cleanly
-  DELETE FROM public.sale_items WHERE shop_id = v_shop_id;
+  -- 5. Wipe old demo data from this shop and clean up any global SKU collisions from migration 021
+  DELETE FROM public.sale_items WHERE shop_id = v_shop_id OR product_id IN (SELECT id FROM public.products WHERE sku IN ('OX-15','OX-6','T-15','T-6','OG-15','OG-6','L-15','L-6','P-15','P-6','C-38','C-15','C-6'));
   DELETE FROM public.sales WHERE shop_id = v_shop_id;
-  DELETE FROM public.stock_received_items WHERE stock_received_id IN (SELECT id FROM public.stock_received WHERE shop_id = v_shop_id);
+  DELETE FROM public.stock_received_items WHERE stock_received_id IN (SELECT id FROM public.stock_received WHERE shop_id = v_shop_id) OR product_id IN (SELECT id FROM public.products WHERE sku IN ('OX-15','OX-6','T-15','T-6','OG-15','OG-6','L-15','L-6','P-15','P-6','C-38','C-15','C-6'));
   DELETE FROM public.stock_received WHERE shop_id = v_shop_id;
   DELETE FROM public.expenses WHERE shop_id = v_shop_id;
-  DELETE FROM public.products WHERE shop_id = v_shop_id;
+  DELETE FROM public.products WHERE shop_id = v_shop_id OR sku IN ('OX-15','OX-6','T-15','T-6','OG-15','OG-6','L-15','L-6','P-15','P-6','C-38','C-15','C-6') OR code IN ('OX-15','OX-6','T-15','T-6','OG-15','OG-6','L-15','L-6','P-15','P-6','C-38','C-15','C-6');
   DELETE FROM public.categories WHERE shop_id = v_shop_id;
   DELETE FROM public.suppliers WHERE shop_id = v_shop_id;
   DELETE FROM public.customers WHERE shop_id = v_shop_id;
