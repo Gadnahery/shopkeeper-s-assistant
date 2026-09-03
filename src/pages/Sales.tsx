@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import {
   CheckCircle,
+  ClipboardList,
   CreditCard,
   History,
   Loader2,
@@ -14,6 +16,7 @@ import {
   Search,
   ShoppingBag,
   ShoppingCart,
+  Tag,
   Trash2,
   Wallet,
   X,
@@ -41,6 +44,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useCreateSale, useDeleteDraftSale, useDraftSales, useSaveDraftSale } from "@/hooks/useSales";
+import { useOrders } from "@/hooks/useOrders";
 import { useShopSettings } from "@/hooks/useShopSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt } from "@/components/Receipt";
@@ -49,6 +53,7 @@ import { MobileCameraScanner } from "@/components/common/MobileCameraScanner";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
+import Orders from "./Orders";
 
 interface CartItem {
   id: string;
@@ -81,11 +86,26 @@ export default function Sales() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeView = searchParams.get("tab") === "orders" ? "orders" : "pos";
+  const setActiveView = (view: "pos" | "orders") => {
+    if (view === "orders") {
+      setSearchParams({ tab: "orders" });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: customers } = useCustomers();
   const { data: shopSettings } = useShopSettings();
   const { profile } = useAuth();
   const { data: drafts } = useDraftSales();
+  const { data: orders } = useOrders();
+
+  const pendingOrdersCount = useMemo(() => {
+    return (orders || []).filter((o: any) => o.status === "pending" || o.status === "processing").length;
+  }, [orders]);
 
   const createSale = useCreateSale();
   const saveDraft = useSaveDraftSale();
@@ -310,10 +330,43 @@ export default function Sales() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 2-Column POS Layout */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left 7 Columns: Product Catalog & Quick Picker */}
-        <div className="space-y-4 lg:col-span-7">
+      {/* Top Module Sub-Navigation (POS vs Customer Orders) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={activeView === "pos" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveView("pos")}
+            className="h-8 rounded-xl text-xs font-bold gap-1.5 shadow-xs"
+          >
+            <Tag className="h-3.5 w-3.5 text-accent" />
+            <span>{language === "sw" ? "POS / Mauzo ya Papo Hapo" : "POS / Instant Sale"}</span>
+          </Button>
+          <Button
+            variant={activeView === "orders" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveView("orders")}
+            className="h-8 rounded-xl text-xs font-bold gap-1.5 shadow-xs"
+          >
+            <ClipboardList className="h-3.5 w-3.5 text-accent" />
+            <span>{language === "sw" ? "Maagizo ya Wateja" : "Customer Orders"}</span>
+            {pendingOrdersCount > 0 && (
+              <Badge className="ml-1 bg-amber-500 text-white text-[10px] px-1.5 py-0 h-4">
+                {pendingOrdersCount}
+              </Badge>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {activeView === "orders" ? (
+        <Orders />
+      ) : (
+        <>
+          {/* 2-Column POS Layout */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left 7 Columns: Product Catalog & Quick Picker */}
+            <div className="space-y-4 lg:col-span-7">
           <Card className="border border-border bg-card p-4 shadow-xs">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -632,6 +685,8 @@ export default function Sales() {
           </Card>
         </div>
       </div>
+      </>
+      )}
 
       {/* Receipt Modal */}
       {showReceipt && lastSale && (

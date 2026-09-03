@@ -132,8 +132,7 @@ BEGIN
     v_shop_id,
     'owner'
   )
-  ON CONFLICT (user_id) DO UPDATE SET
-    shop_id = v_shop_id,
+  ON CONFLICT (user_id, shop_id) DO UPDATE SET
     role = 'owner';
 
   -- 4. Shop Settings
