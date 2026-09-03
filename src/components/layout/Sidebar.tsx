@@ -58,7 +58,7 @@ export function Sidebar() {
   const navigate = useNavigate();
   const { isCollapsed, toggleSidebar, setCollapsed } = useSidebar();
   const { t, language, setLanguage } = useLanguage();
-  const { signOut, profile, userRole } = useAuth();
+  const { signOut, profile, role } = useAuth();
   const { data: allowedPages } = useMyPageAccess();
   const { isMobile, isTablet, isDesktop } = useAdaptiveLayout();
   const { theme, toggleTheme } = useTheme();
@@ -178,7 +178,7 @@ export function Sidebar() {
                     </Avatar>
                     <div className="min-w-0">
                       <p className="truncate text-xs font-semibold text-foreground">{userName}</p>
-                      <p className="truncate text-[10px] text-muted-foreground capitalize">{userRole || "Admin"}</p>
+                      <p className="truncate text-[10px] text-muted-foreground capitalize">{role || "Admin"}</p>
                     </div>
                   </div>
 
@@ -367,7 +367,7 @@ export function Sidebar() {
                   </Avatar>
                   <div className="min-w-0">
                     <p className="truncate text-xs font-semibold text-foreground leading-tight">{userName}</p>
-                    <p className="truncate text-[10px] text-muted-foreground capitalize">{userRole || "Admin"}</p>
+                    <p className="truncate text-[10px] text-muted-foreground capitalize">{role || "Admin"}</p>
                   </div>
                 </div>
                 <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

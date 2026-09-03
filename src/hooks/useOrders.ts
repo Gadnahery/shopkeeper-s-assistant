@@ -50,7 +50,7 @@ async function createOrderLegacy(shopId: string, input: { customer_name?: string
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .insert(payload)
+    .insert(payload as any)
     .select()
     .single();
   if (orderErr) throw orderErr;
@@ -58,12 +58,10 @@ async function createOrderLegacy(shopId: string, input: { customer_name?: string
   const items = input.items.map((i) => ({
     order_id: order.id,
     product_id: i.product_id || null,
-    product_name: i.product_name,
     quantity: i.quantity,
     unit_price: i.unit_price,
-    total: i.quantity * i.unit_price,
   }));
-  const { error: itemsErr } = await supabase.from("order_items").insert(items);
+  const { error: itemsErr } = await supabase.from("order_items").insert(items as any);
   if (itemsErr) throw itemsErr;
 
   return order;

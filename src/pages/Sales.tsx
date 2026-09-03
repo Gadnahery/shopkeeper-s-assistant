@@ -97,9 +97,8 @@ export default function Sales() {
     const q = searchTerm.toLowerCase();
     return (
       p.name.toLowerCase().includes(q) ||
-      p.code.toLowerCase().includes(q) ||
-      (p.name_sw && p.name_sw.toLowerCase().includes(q)) ||
-      (p.barcode && p.barcode.toLowerCase().includes(q))
+      (p.barcode && p.barcode.toLowerCase().includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q))
     );
   });
 
@@ -356,7 +355,7 @@ export default function Sales() {
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{product.code}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{product.barcode || product.sku || "PROD"}</span>
                         <span
                           className={cn(
                             "rounded-full px-2 py-0.5 text-[10px] font-bold",
@@ -371,7 +370,7 @@ export default function Sales() {
                         </span>
                       </div>
                       <p className="mt-1.5 text-xs font-bold text-foreground line-clamp-2">
-                        {language === "sw" && product.name_sw ? product.name_sw : product.name}
+                        {product.name}
                       </p>
                     </div>
 
@@ -570,7 +569,7 @@ export default function Sales() {
 
       {/* Receipt Modal */}
       {showReceipt && lastSale && (
-        <Receipt sale={lastSale} open={showReceipt} onOpenChange={setShowReceipt} />
+        <Receipt data={lastSale} onClose={() => setShowReceipt(false)} />
       )}
 
       {/* Mobile Camera Scanner */}
@@ -578,7 +577,7 @@ export default function Sales() {
         <MobileCameraScanner
           open={cameraScannerOpen}
           onOpenChange={setCameraScannerOpen}
-          onScan={(code) => {
+          onDetected={(code) => {
             setSearchTerm(code);
             setCameraScannerOpen(false);
           }}

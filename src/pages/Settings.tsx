@@ -72,7 +72,7 @@ export default function Settings() {
     if (!shopSettings) return;
 
     setShopForm({
-      shop_name: shopSettings.shop_name || "",
+      shop_name: shopSettings.name || "",
       phone: shopSettings.phone || "",
       address: shopSettings.address || "",
       currency: shopSettings.currency || "USD",
@@ -116,8 +116,7 @@ export default function Settings() {
         .eq("id", shopId);
 
       await updateSettings.mutateAsync({
-        id: shopSettings?.id || undefined,
-        shop_name: shopForm.shop_name,
+        name: shopForm.shop_name,
         phone: shopForm.phone,
         address: shopForm.address,
       });
@@ -260,7 +259,7 @@ export default function Settings() {
               />
               <div>
                 <h3 className="text-base font-bold text-foreground">{profile?.full_name || "Business Owner"}</h3>
-                <p className="text-xs text-muted-foreground">{profile?.email || "owner@example.com"}</p>
+                <p className="text-xs text-muted-foreground">{profile?.phone || "owner@wisecash.app"}</p>
               </div>
             </div>
 
@@ -314,7 +313,7 @@ export default function Settings() {
                   <SelectContent className="rounded-xl border-border bg-popover text-xs">
                     {SHOP_CURRENCY_OPTIONS.map((c) => (
                       <SelectItem key={c.value} value={c.value}>
-                        {c.label} ({c.symbol})
+                        {c.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -12,10 +12,21 @@ interface BarcodeGeneratorProps {
   width?: number;
   height?: number;
   format?: "code128" | "qr";
+  type?: "barcode" | "qr" | "code128";
 }
 
 /** Barcode (Code 128) or QR Code generator - uses JsBarcode for scannable Code 128 */
-export function BarcodeGenerator({ value, productId, productName, price, width = 200, height = 80, format = "code128" }: BarcodeGeneratorProps) {
+export function BarcodeGenerator({
+  value,
+  productId,
+  productName,
+  price,
+  width = 200,
+  height = 80,
+  format = "code128",
+  type,
+}: BarcodeGeneratorProps) {
+  const actualFormat = type === "qr" || format === "qr" ? "qr" : "code128";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
@@ -23,15 +34,15 @@ export function BarcodeGenerator({ value, productId, productName, price, width =
   const qrData = JSON.stringify({ id: productId || value, name: productName || value, code: value });
 
   useEffect(() => {
-    if (format === "qr" && value) {
+    if (actualFormat === "qr" && value) {
       QRCode.toDataURL(qrData, { width: Math.min(200, width), margin: 1 }).then(setQrUrl).catch(() => setQrUrl(null));
     } else {
       setQrUrl(null);
     }
-  }, [format, value, qrData, width]);
+  }, [actualFormat, value, qrData, width]);
 
   useEffect(() => {
-    if (format !== "code128" || !value || !canvasRef.current) {
+    if (actualFormat !== "code128" || !value || !canvasRef.current) {
       setBarcodeError(null);
       return;
     }

@@ -78,6 +78,10 @@ vi.mock("@/hooks/useProduction", () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
+  useDeleteProductionBatch: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
   useUpdateBatchStatus: () => ({
     mutateAsync: vi.fn(),
     isPending: false,

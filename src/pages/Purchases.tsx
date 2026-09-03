@@ -20,6 +20,8 @@ import {
   X,
   ChevronRight,
   ArrowRight,
+  Pencil,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,7 +37,14 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useSuppliers, useCreateSupplier, type Supplier } from "@/hooks/useSuppliers";
-import { usePurchases, useCreatePurchase, type PurchaseOrder, type PurchaseItem } from "@/hooks/usePurchases";
+import {
+  usePurchases,
+  useCreatePurchase,
+  useUpdatePurchase,
+  useDeletePurchase,
+  type PurchaseOrder,
+  type PurchaseItem,
+} from "@/hooks/usePurchases";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
@@ -54,9 +63,12 @@ export default function Purchases() {
   const [activeTab, setActiveTab] = useState<string>("orders");
   const [searchTerm, setSearchTerm] = useState("");
   const [supplierSearch, setSupplierSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Inline Master-Detail Panel State (NO POPUPS)
   const [isCreatingPurchase, setIsCreatingPurchase] = useState(searchParams.get("new") === "true");
+  const [isEditingPurchase, setIsEditingPurchase] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isAddingSupplier, setIsAddingSupplier] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -64,8 +76,9 @@ export default function Purchases() {
   // New Supplier Form
   const [newSupplier, setNewSupplier] = useState({ name: "", contact_person: "", phone: "", email: "", address: "" });
 
-  // New Purchase Form
+  // New / Edit Purchase Form
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>("none");
+  const [purchaseStatus, setPurchaseStatus] = useState<"received" | "pending" | "cancelled">("received");
   const [purchaseNotes, setPurchaseNotes] = useState("");
   const [itemsList, setItemsList] = useState<FormItem[]>([
     { productId: "", quantity: "1", buyingPrice: "" },
@@ -76,13 +89,18 @@ export default function Purchases() {
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: suppliers, isLoading: suppliersLoading } = useSuppliers();
   const createPurchase = useCreatePurchase();
+  const updatePurchase = useUpdatePurchase();
+  const deletePurchase = useDeletePurchase();
   const createSupplier = useCreateSupplier();
 
   // Listen to header action
   useEffect(() => {
     const handleOpen = () => {
       setIsCreatingPurchase(true);
+      setIsEditingPurchase(false);
+      setIsConfirmingDelete(false);
       setSelectedOrder(null);
+      resetPurchaseForm();
     };
     window.addEventListener("open-new-purchase", handleOpen);
     return () => window.removeEventListener("open-new-purchase", handleOpen);
@@ -92,37 +110,107 @@ export default function Purchases() {
   useEffect(() => {
     if (searchParams.get("new") === "true") {
       setIsCreatingPurchase(true);
+      setIsEditingPurchase(false);
+      setIsConfirmingDelete(false);
       setSelectedOrder(null);
+      resetPurchaseForm();
     }
   }, [searchParams]);
 
   // Auto-select first order if none selected and not creating
   useEffect(() => {
-    if (purchases && purchases.length > 0 && !selectedOrder && !isCreatingPurchase) {
+    if (!selectedOrder && purchases && purchases.length > 0 && !isCreatingPurchase) {
       setSelectedOrder(purchases[0]);
     }
+  }, [purchases, selectedOrder, isCreatingPurchase]);
+
+  // Reset Purchase form
+  const resetPurchaseForm = () => {
+    setSelectedSupplierId("none");
+    setPurchaseStatus("received");
+    setPurchaseNotes("");
+    setItemsList([{ productId: "", quantity: "1", buyingPrice: "" }]);
+  };
+
+  // Populate form for editing
+  const startEditPurchase = (order: PurchaseOrder) => {
+    setSelectedOrder(order);
+    setIsEditingPurchase(true);
+    setIsCreatingPurchase(false);
+    setIsConfirmingDelete(false);
+    setSelectedSupplierId(order.supplier_id || "none");
+    setPurchaseStatus(order.status);
+    setPurchaseNotes(order.notes || "");
+    setItemsList(
+      order.items.map((it) => ({
+        productId: it.product_id,
+        quantity: String(it.quantity),
+        buyingPrice: String(it.buying_price),
+      })),
+    );
+  };
+
+  // KPI Calculations
+  const totalPurchasesAmount = useMemo(() => {
+    return (purchases || []).reduce((sum, p) => sum + (p.total_amount || 0), 0);
   }, [purchases]);
 
-  // Handle product selection in purchase item row
+  const totalPaidAmount = useMemo(() => {
+    return (purchases || []).reduce((sum, p) => sum + (p.paid_amount || 0), 0);
+  }, [purchases]);
+
+  const totalOutstanding = useMemo(() => {
+    return (purchases || []).reduce((sum, p) => sum + (p.outstanding || 0), 0);
+  }, [purchases]);
+
+  const totalReceivedItems = useMemo(() => {
+    return (purchases || []).reduce((sum, p) => sum + (p.items_count || 1), 0);
+  }, [purchases]);
+
+  // Filtered Orders
+  const filteredOrders = useMemo(() => {
+    if (!purchases) return [];
+    return purchases.filter((p) => {
+      const matchSearch =
+        p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.supplier_name && p.supplier_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (p.notes && p.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchStatus = statusFilter === "all" || p.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [purchases, searchTerm, statusFilter]);
+
+  // Filtered Suppliers
+  const filteredSuppliers = useMemo(() => {
+    if (!suppliers) return [];
+    return suppliers.filter(
+      (s) =>
+        s.name.toLowerCase().includes(supplierSearch.toLowerCase()) ||
+        (s.phone && s.phone.toLowerCase().includes(supplierSearch.toLowerCase())) ||
+        (s.contact_person && s.contact_person.toLowerCase().includes(supplierSearch.toLowerCase())),
+    );
+  }, [suppliers, supplierSearch]);
+
+  // Form helpers
   const handleProductChange = (index: number, productId: string) => {
-    const product = products?.find((p) => p.id === productId);
+    const prod = products?.find((p) => p.id === productId);
     const updated = [...itemsList];
     updated[index].productId = productId;
-    if (product && !updated[index].buyingPrice) {
-      updated[index].buyingPrice = String(product.buying_price || "");
+    if (prod && prod.buying_price) {
+      updated[index].buyingPrice = String(prod.buying_price);
     }
     setItemsList(updated);
   };
 
-  const handleQuantityChange = (index: number, val: string) => {
+  const handleQuantityChange = (index: number, quantity: string) => {
     const updated = [...itemsList];
-    updated[index].quantity = val;
+    updated[index].quantity = quantity;
     setItemsList(updated);
   };
 
-  const handlePriceChange = (index: number, val: string) => {
+  const handlePriceChange = (index: number, buyingPrice: string) => {
     const updated = [...itemsList];
-    updated[index].buyingPrice = val;
+    updated[index].buyingPrice = buyingPrice;
     setItemsList(updated);
   };
 
@@ -136,94 +224,126 @@ export default function Purchases() {
   };
 
   const totalPurchaseCost = useMemo(() => {
-    return itemsList.reduce((sum, item) => {
-      const qty = Number(item.quantity) || 0;
-      const price = Number(item.buyingPrice) || 0;
-      return sum + qty * price;
+    return itemsList.reduce((acc, curr) => {
+      const q = Number(curr.quantity) || 0;
+      const p = Number(curr.buyingPrice) || 0;
+      return acc + q * p;
     }, 0);
   }, [itemsList]);
 
-  // KPI Calculations
-  const kpiStats = useMemo(() => {
-    const list = purchases || [];
-    const totalAmount = list.reduce((sum, p) => sum + (p.total_amount || 0), 0);
-    const supplierCount = suppliers?.length || 0;
-    const totalOrders = list.length;
-    const avgOrder = totalOrders > 0 ? Math.round(totalAmount / totalOrders) : 0;
-
-    return {
-      totalAmount,
-      totalOrders,
-      supplierCount,
-      avgOrder,
-    };
-  }, [purchases, suppliers]);
-
-  const filteredPurchases = useMemo(() => {
-    if (!purchases) return [];
-    if (!searchTerm.trim()) return purchases;
-    const q = searchTerm.toLowerCase();
-    return purchases.filter(
-      (p) =>
-        p.id.toLowerCase().includes(q) ||
-        (p.supplier_name && p.supplier_name.toLowerCase().includes(q)) ||
-        (p.notes && p.notes.toLowerCase().includes(q)) ||
-        p.items.some((it) => it.product_name?.toLowerCase().includes(q)),
-    );
-  }, [purchases, searchTerm]);
-
-  const filteredSuppliers = useMemo(() => {
-    if (!suppliers) return [];
-    if (!supplierSearch.trim()) return suppliers;
-    const q = supplierSearch.toLowerCase();
-    return suppliers.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.phone && s.phone.includes(q)) ||
-        (s.contact_person && s.contact_person.toLowerCase().includes(q)),
-    );
-  }, [suppliers, supplierSearch]);
-
+  // Save new purchase
   const handleSavePurchase = async () => {
-    const validItems = itemsList.filter((it) => it.productId && Number(it.quantity) > 0);
+    const validItems = itemsList.filter((i) => i.productId && Number(i.quantity) > 0);
     if (validItems.length === 0) {
-      toast.error(language === "sw" ? "Tafadhali chagua angalau bidhaa moja" : "Please select at least one valid product item");
+      toast.error(language === "sw" ? "Tafadhali ongeza angalau bidhaa moja." : "Please add at least one valid item.");
       return;
     }
 
     try {
       await createPurchase.mutateAsync({
         supplierId: selectedSupplierId === "none" ? null : selectedSupplierId,
-        items: validItems.map((it) => ({
-          productId: it.productId,
-          quantity: Number(it.quantity),
-          buyingPrice: Number(it.buyingPrice) || 0,
-        })),
+        status: purchaseStatus,
         notes: purchaseNotes.trim() || undefined,
+        items: validItems.map((i) => ({
+          productId: i.productId,
+          quantity: Number(i.quantity),
+          buyingPrice: Number(i.buyingPrice) || 0,
+        })),
       });
 
-      toast.success(language === "sw" ? "Stoki imepokelewa na kuongezwa stoo!" : "Stock received and saved successfully!");
+      toast.success(
+        language === "sw"
+          ? purchaseStatus === "received"
+            ? "Mzigo umepokelewa na stoki kuongezwa!"
+            : "Agizo la ununuzi limehifadhiwa kama linasubiri!"
+          : purchaseStatus === "received"
+          ? "Purchase received and inventory updated!"
+          : "Purchase order saved as pending!",
+      );
+
       setIsCreatingPurchase(false);
-      setItemsList([{ productId: "", quantity: "1", buyingPrice: "" }]);
-      setPurchaseNotes("");
-      setSelectedSupplierId("none");
-      if (searchParams.get("new")) {
-        setSearchParams({});
-      }
+      resetPurchaseForm();
     } catch (err: any) {
-      toast.error(err?.message || "Failed to save purchase");
+      toast.error(err.message || "Failed to record purchase order");
     }
   };
 
-  const handleSaveSupplier = async () => {
-    if (!newSupplier.name.trim()) return;
+  // Update existing purchase
+  const handleUpdatePurchase = async () => {
+    if (!selectedOrder) return;
+    const validItems = itemsList.filter((i) => i.productId && Number(i.quantity) > 0);
+    if (validItems.length === 0) {
+      toast.error(language === "sw" ? "Tafadhali ongeza angalau bidhaa moja." : "Please add at least one valid item.");
+      return;
+    }
+
     try {
-      await createSupplier.mutateAsync(newSupplier);
-      toast.success(language === "sw" ? "Msambazaji ameongezwa" : "Supplier added");
-      setIsAddingSupplier(false);
-      setNewSupplier({ name: "", contact_person: "", phone: "", email: "", address: "" });
+      await updatePurchase.mutateAsync({
+        purchaseId: selectedOrder.id,
+        supplierId: selectedSupplierId === "none" ? null : selectedSupplierId,
+        status: purchaseStatus,
+        notes: purchaseNotes.trim() || undefined,
+        items: validItems.map((i) => ({
+          productId: i.productId,
+          quantity: Number(i.quantity),
+          buyingPrice: Number(i.buyingPrice) || 0,
+        })),
+      });
+
+      toast.success(language === "sw" ? "Agizo limesasishwa kikamilifu!" : "Purchase order updated successfully!");
+      setIsEditingPurchase(false);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to create supplier");
+      toast.error(err.message || "Failed to update purchase order");
+    }
+  };
+
+  // Mark pending purchase as received
+  const handleMarkAsReceived = async (order: PurchaseOrder) => {
+    try {
+      await updatePurchase.mutateAsync({
+        purchaseId: order.id,
+        status: "received",
+      });
+      toast.success(language === "sw" ? "Agizo limewekwa kama limepokelewa na stoki kusasishwa!" : "Purchase marked as received and stock updated!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to mark as received");
+    }
+  };
+
+  // Delete purchase
+  const handleDeletePurchase = async () => {
+    if (!selectedOrder) return;
+    try {
+      await deletePurchase.mutateAsync(selectedOrder.id);
+      toast.success(language === "sw" ? "Agizo limefutwa na stoki kurekebishwa!" : "Purchase deleted and inventory reversed!");
+      setIsConfirmingDelete(false);
+      setSelectedOrder(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete purchase");
+    }
+  };
+
+  // Save Supplier
+  const handleSaveSupplier = async () => {
+    if (!newSupplier.name.trim()) {
+      toast.error(language === "sw" ? "Weka jina la msambazaji." : "Enter supplier name.");
+      return;
+    }
+
+    try {
+      await createSupplier.mutateAsync({
+        name: newSupplier.name.trim(),
+        contact_person: newSupplier.contact_person.trim() || null,
+        phone: newSupplier.phone.trim() || null,
+        email: newSupplier.email.trim() || null,
+        address: newSupplier.address.trim() || null,
+      } as any);
+
+      toast.success(language === "sw" ? "Msambazaji ameongezwa kikamilifu!" : "Supplier added successfully!");
+      setNewSupplier({ name: "", contact_person: "", phone: "", email: "", address: "" });
+      setIsAddingSupplier(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add supplier");
     }
   };
 
@@ -231,271 +351,263 @@ export default function Purchases() {
     return <PageLoader message="Loading purchases..." messageSw="Inapakia manunuzi..." language={language} />;
   }
 
+  const getStatusBadge = (status: "received" | "pending" | "cancelled") => {
+    switch (status) {
+      case "received":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--success-text)]">
+            <CheckCircle2 className="h-3 w-3" />
+            {language === "sw" ? "Imepokelewa" : "Received"}
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--warning-text)]">
+            <Clock className="h-3 w-3" />
+            {language === "sw" ? "Inasubiri" : "Pending"}
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--danger-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--danger-text)]">
+            <X className="h-3 w-3" />
+            {language === "sw" ? "Imeghairiwa" : "Cancelled"}
+          </span>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
-      {/* 4 Olly KPI Cards */}
+      {/* 4 KPI Top Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* KPI 1 */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("purchases.totalPurchases")}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <ShoppingCart className="h-4 w-4 text-accent" />
-            </div>
+        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-50">
+            <ShoppingCart className="w-5 h-5 text-blue-600" />
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(kpiStats.totalAmount)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{kpiStats.totalOrders} {language === "sw" ? "maagizo yaliyorekodiwa" : "total orders"}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}</h3>
+            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatMoney(totalPurchasesAmount)}</p>
+            <p className="text-[11px] text-gray-400 mt-1">{purchases?.length || 0} {language === "sw" ? "maagizo yote" : "total orders"}</p>
           </div>
-        </Card>
+        </div>
 
-        {/* KPI 2 */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Idadi ya Manunuzi" : "Total Orders"}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <Package className="h-4 w-4 text-accent" />
-            </div>
+        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-50">
+            <DollarSign className="w-5 h-5 text-emerald-600" />
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatNumber(kpiStats.totalOrders)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Stoki zilizopokelewa" : "Stock receipts"}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Zilizolipwa" : "Total Paid"}</h3>
+            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatMoney(totalPaidAmount)}</p>
+            <p className="text-[11px] text-emerald-600 font-medium mt-1">{language === "sw" ? "Malipo yaliyokamilika" : "Settled payments"}</p>
           </div>
-        </Card>
+        </div>
 
-        {/* KPI 3 */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("purchases.activeSuppliers")}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <Truck className="h-4 w-4 text-accent" />
-            </div>
+        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-50">
+            <Clock className="w-5 h-5 text-amber-600" />
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{kpiStats.supplierCount}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Wasambazaji waliosajiliwa" : "Registered suppliers"}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Madeni ya Wasambazaji" : "Outstanding / Due"}</h3>
+            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatMoney(totalOutstanding)}</p>
+            <p className="text-[11px] text-amber-600 font-medium mt-1">{language === "sw" ? "Inayosubiri kulipwa" : "Pending balance"}</p>
           </div>
-        </Card>
+        </div>
 
-        {/* KPI 4 */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Wastani wa Agizo" : "Avg. Order Value"}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <DollarSign className="h-4 w-4 text-accent" />
-            </div>
+        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-50">
+            <Package className="w-5 h-5 text-purple-600" />
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(kpiStats.avgOrder)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Kwa kila ununuzi" : "Per purchase order"}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Bidhaa Zilizopokelewa" : "Total Items Received"}</h3>
+            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{totalReceivedItems}</p>
+            <p className="text-[11px] text-gray-400 mt-1">{suppliers?.length || 0} {language === "sw" ? "wasambazaji hai" : "active suppliers"}</p>
           </div>
-        </Card>
+        </div>
       </div>
 
-      {/* 2-Column Master-Detail Layout (NO POPUPS) */}
+      {/* Main 2-Column Master-Detail Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column (Master Table - 7 Cols) */}
+        {/* Left Column (Master List - 7 Cols) */}
         <div className="space-y-4 lg:col-span-7">
           <Card className="border border-border bg-card shadow-xs">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={(val) => {
+              setActiveTab(val);
+              setIsCreatingPurchase(false);
+              setIsEditingPurchase(false);
+              setIsConfirmingDelete(false);
+            }}>
               <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-                <TabsList className="bg-muted p-1 rounded-xl">
-                  <TabsTrigger value="orders" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
-                    {t("purchases.tabOrders")} ({purchases?.length || 0})
+                <TabsList className="h-9 rounded-xl bg-muted/60 p-1">
+                  <TabsTrigger value="orders" className="rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground">
+                    <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                    <span>{language === "sw" ? "Maagizo ya Manunuzi" : "Purchase Orders"}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="suppliers" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
-                    {t("purchases.tabSuppliers")} ({suppliers?.length || 0})
+                  <TabsTrigger value="suppliers" className="rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground">
+                    <Truck className="h-3.5 w-3.5 mr-1.5" />
+                    <span>{language === "sw" ? "Wasambazaji" : "Suppliers"}</span>
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="flex items-center gap-2">
-                  {activeTab === "orders" ? (
-                    <>
-                      <div className="relative w-full sm:w-48">
-                        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          placeholder={language === "sw" ? "Tafuta..." : "Search..."}
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="h-9 rounded-xl border-border bg-background pl-9 text-xs"
-                        />
-                      </div>
-                      <Button
-                        onClick={() => {
-                          setIsCreatingPurchase(true);
-                          setSelectedOrder(null);
-                        }}
-                        className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
-                      >
-                        <Plus className="h-3.5 w-3.5 text-accent" />
-                        <span>{t("purchases.newPurchase")}</span>
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="relative w-full sm:w-48">
-                        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          placeholder={language === "sw" ? "Tafuta..." : "Search..."}
-                          value={supplierSearch}
-                          onChange={(e) => setSupplierSearch(e.target.value)}
-                          className="h-9 rounded-xl border-border bg-background pl-9 text-xs"
-                        />
-                      </div>
-                      <Button
-                        onClick={() => {
-                          setIsAddingSupplier(true);
-                          setSelectedSupplier(null);
-                        }}
-                        className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
-                      >
-                        <Plus className="h-3.5 w-3.5 text-accent" />
-                        <span>{language === "sw" ? "+ Msambazaji" : "+ Supplier"}</span>
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* TAB 1: Purchase Orders Table */}
-              <TabsContent value="orders" className="m-0 p-0">
-                {filteredPurchases.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center p-12 text-center">
-                    <ShoppingCart className="h-8 w-8 text-muted-foreground" />
-                    <p className="mt-3 text-sm font-semibold text-foreground">{t("purchases.noPurchases")}</p>
+                {activeTab === "orders" && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-48">
+                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder={language === "sw" ? "Tafuta ununuzi..." : "Search purchases..."}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 pl-8 text-xs rounded-xl border-border bg-background"
+                      />
+                    </div>
                     <Button
+                      size="sm"
                       onClick={() => {
                         setIsCreatingPurchase(true);
+                        setIsEditingPurchase(false);
+                        setIsConfirmingDelete(false);
                         setSelectedOrder(null);
+                        resetPurchaseForm();
                       }}
-                      className="mt-3 h-8 gap-1.5 rounded-xl bg-primary text-xs text-primary-foreground"
+                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
                     >
                       <Plus className="h-3.5 w-3.5 text-accent" />
                       <span>{t("purchases.newPurchase")}</span>
                     </Button>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
-                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("purchases.date")}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("purchases.supplier")}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("purchases.items")}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{t("purchases.totalCost")}</TableHead>
-                          <TableHead className="text-right text-xs font-semibold uppercase text-muted-foreground"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredPurchases.map((order) => {
-                          const isSelected = selectedOrder?.id === order.id && !isCreatingPurchase;
-                          const itemsSummary = order.items.map((it) => `${it.product_name} (x${it.quantity})`).join(", ");
+                )}
 
+                {activeTab === "suppliers" && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-48">
+                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder={language === "sw" ? "Tafuta msambazaji..." : "Search suppliers..."}
+                        value={supplierSearch}
+                        onChange={(e) => setSupplierSearch(e.target.value)}
+                        className="h-8 pl-8 text-xs rounded-xl border-border bg-background"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingSupplier(true);
+                        setSelectedSupplier(null);
+                      }}
+                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-accent" />
+                      <span>{language === "sw" ? "Msambazaji Mpya" : "New Supplier"}</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* TAB 1: PURCHASE ORDERS */}
+              <TabsContent value="orders" className="m-0 p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
+                        <TableHead className="font-semibold">{language === "sw" ? "Namba / Tarehe" : "PO / Date"}</TableHead>
+                        <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
+                        <TableHead className="text-center font-semibold">{t("purchases.items")}</TableHead>
+                        <TableHead className="text-right font-semibold">{t("purchases.totalCost")}</TableHead>
+                        <TableHead className="text-center font-semibold">{language === "sw" ? "Hali" : "Status"}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrders.length > 0 ? (
+                        filteredOrders.map((order) => {
+                          const isSelected = selectedOrder?.id === order.id && !isCreatingPurchase && !isEditingPurchase;
                           return (
                             <TableRow
                               key={order.id}
                               onClick={() => {
                                 setSelectedOrder(order);
                                 setIsCreatingPurchase(false);
+                                setIsEditingPurchase(false);
+                                setIsConfirmingDelete(false);
                               }}
                               className={cn(
-                                "cursor-pointer border-b border-border/60 transition-colors",
-                                isSelected ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-muted/40",
+                                "cursor-pointer transition-colors text-xs",
+                                isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
                               )}
                             >
-                              <TableCell className="text-xs font-medium text-foreground">
-                                {format(new Date(order.created_at), "MMM d, yyyy")}
+                              <TableCell>
+                                <p className="font-bold text-foreground">PO-{order.id.slice(0, 6).toUpperCase()}</p>
+                                <p className="text-[10px] text-muted-foreground">{format(new Date(order.created_at), "dd MMM yyyy")}</p>
                               </TableCell>
-                              <TableCell className="text-xs font-semibold text-foreground">
-                                {order.supplier_name || (language === "sw" ? "Moja kwa moja" : "Walk-in")}
+                              <TableCell className="font-semibold text-foreground">
+                                {order.supplier_name || <span className="text-muted-foreground italic">Direct / Walk-in</span>}
                               </TableCell>
-                              <TableCell className="max-w-[140px] truncate text-xs text-muted-foreground" title={itemsSummary}>
-                                {itemsSummary || `${order.items_count} items`}
-                              </TableCell>
-                              <TableCell className="text-xs font-bold text-foreground">
+                              <TableCell className="text-center font-semibold">{order.items_count}</TableCell>
+                              <TableCell className="text-right font-bold text-foreground">
                                 {formatMoney(order.total_amount)}
                               </TableCell>
-                              <TableCell className="text-right">
-                                <ChevronRight className={cn("h-4 w-4 transition-transform", isSelected ? "text-accent translate-x-1" : "text-muted-foreground")} />
-                              </TableCell>
+                              <TableCell className="text-center">{getStatusBadge(order.status)}</TableCell>
                             </TableRow>
                           );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="py-12 text-center text-xs text-muted-foreground">
+                            {language === "sw" ? "Hakuna manunuzi yaliyopatikana." : "No purchase orders found."}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </TabsContent>
 
-              {/* TAB 2: Suppliers Table */}
+              {/* TAB 2: SUPPLIERS */}
               <TabsContent value="suppliers" className="m-0 p-0">
-                {filteredSuppliers.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center p-12 text-center">
-                    <Truck className="h-8 w-8 text-muted-foreground" />
-                    <p className="mt-3 text-sm font-semibold text-foreground">
-                      {language === "sw" ? "Hakuna wasambazaji waliopatikana" : "No suppliers found"}
-                    </p>
-                    <Button
-                      onClick={() => {
-                        setIsAddingSupplier(true);
-                        setSelectedSupplier(null);
-                      }}
-                      className="mt-3 h-8 rounded-xl text-xs bg-primary text-primary-foreground"
-                    >
-                      {language === "sw" ? "+ Ongeza Msambazaji" : "+ Add Supplier"}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
-                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{language === "sw" ? "Msambazaji" : "Supplier"}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{language === "sw" ? "Simu" : "Phone"}</TableHead>
-                          <TableHead className="text-xs font-semibold uppercase text-muted-foreground">{language === "sw" ? "Deni" : "Balance"}</TableHead>
-                          <TableHead className="text-right text-xs font-semibold uppercase text-muted-foreground"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredSuppliers.map((s) => {
-                          const isSelected = selectedSupplier?.id === s.id && !isAddingSupplier;
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
+                        <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
+                        <TableHead className="font-semibold">{language === "sw" ? "Mawasiliano" : "Contact"}</TableHead>
+                        <TableHead className="font-semibold">{language === "sw" ? "Simu" : "Phone"}</TableHead>
+                        <TableHead className="text-right font-semibold">{language === "sw" ? "Deni" : "Pending Balance"}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSuppliers.length > 0 ? (
+                        filteredSuppliers.map((sup) => {
+                          const isSelected = selectedSupplier?.id === sup.id && !isAddingSupplier;
                           return (
                             <TableRow
-                              key={s.id}
+                              key={sup.id}
                               onClick={() => {
-                                setSelectedSupplier(s);
+                                setSelectedSupplier(sup);
                                 setIsAddingSupplier(false);
                               }}
                               className={cn(
-                                "cursor-pointer border-b border-border/60 transition-colors",
-                                isSelected ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-muted/40",
+                                "cursor-pointer transition-colors text-xs",
+                                isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
                               )}
                             >
-                              <TableCell className="text-xs font-semibold text-foreground">
-                                {s.name}
-                              </TableCell>
-                              <TableCell className="text-xs text-foreground">
-                                {s.phone || "-"}
-                              </TableCell>
-                              <TableCell className="text-xs font-medium text-foreground">
-                                {Number(s.pending_payment) > 0 ? (
-                                  <span className="inline-flex rounded-full bg-[var(--warning-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--warning-text)]">
-                                    {formatMoney(s.pending_payment)}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">{formatMoney(0)}</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <ChevronRight className={cn("h-4 w-4 transition-transform", isSelected ? "text-accent translate-x-1" : "text-muted-foreground")} />
+                              <TableCell className="font-bold text-foreground">{sup.name}</TableCell>
+                              <TableCell className="text-muted-foreground">{sup.contact_person || "-"}</TableCell>
+                              <TableCell className="text-muted-foreground">{sup.phone || "-"}</TableCell>
+                              <TableCell className="text-right font-bold text-foreground">
+                                {formatMoney((sup as any).pending_payment || 0)}
                               </TableCell>
                             </TableRow>
                           );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-12 text-center text-xs text-muted-foreground">
+                            {language === "sw" ? "Hakuna wasambazaji waliopatikana." : "No suppliers found."}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </TabsContent>
             </Tabs>
           </Card>
@@ -503,18 +615,21 @@ export default function Purchases() {
 
         {/* Right Column (Inline Detail / Create Panel - 5 Cols, NO POPUPS) */}
         <div className="space-y-4 lg:col-span-5">
-          {/* Case 1: Inline "New Purchase" Create Panel */}
-          {isCreatingPurchase && (
+          {/* Case 1: Inline "New Purchase" or "Edit Purchase" Form */}
+          {(isCreatingPurchase || isEditingPurchase) && (
             <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
                 <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4 text-accent" />
-                  <span>{t("purchases.newPurchase")}</span>
+                  <span>{isEditingPurchase ? (language === "sw" ? "Hariri Agizo la Ununuzi" : "Edit Purchase Order") : t("purchases.newPurchase")}</span>
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsCreatingPurchase(false)}
+                  onClick={() => {
+                    setIsCreatingPurchase(false);
+                    setIsEditingPurchase(false);
+                  }}
                   className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
@@ -531,6 +646,8 @@ export default function Purchases() {
                       onClick={() => {
                         setActiveTab("suppliers");
                         setIsAddingSupplier(true);
+                        setIsCreatingPurchase(false);
+                        setIsEditingPurchase(false);
                       }}
                       className="text-xs font-medium text-accent hover:underline"
                     >
@@ -548,6 +665,27 @@ export default function Purchases() {
                           {s.name} {s.phone ? `(${s.phone})` : ""}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status Picker */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">{language === "sw" ? "Hali ya Mzigo" : "Order Status"}</Label>
+                  <Select value={purchaseStatus} onValueChange={(val: any) => setPurchaseStatus(val)}>
+                    <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs font-semibold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                      <SelectItem value="received">
+                        {language === "sw" ? "✓ Imepokelewa (Ongeza stoki mara moja)" : "✓ Received (Add to stock immediately)"}
+                      </SelectItem>
+                      <SelectItem value="pending">
+                        {language === "sw" ? "⏳ Inasubiri (Bado haijafika stoo)" : "⏳ Pending (Awaiting delivery)"}
+                      </SelectItem>
+                      <SelectItem value="cancelled">
+                        {language === "sw" ? "✕ Imeghairiwa" : "✕ Cancelled"}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -570,7 +708,7 @@ export default function Purchases() {
                             <SelectContent className="max-h-52 rounded-xl border-border bg-popover text-xs">
                               {(products || []).map((p) => (
                                 <SelectItem key={p.id} value={p.id}>
-                                  {p.name} ({p.code}) — Stk: {p.stock}
+                                  {p.name} — Stk: {p.stock}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -591,7 +729,7 @@ export default function Purchases() {
                                 placeholder="Price"
                                 value={item.buyingPrice}
                                 onChange={(e) => handlePriceChange(index, e.target.value)}
-                                className="h-8 flex-1 rounded-lg border-border bg-background text-xs"
+                                className="h-8 flex-1 rounded-lg border-border bg-background text-xs font-semibold"
                               />
                             </div>
 
@@ -650,19 +788,26 @@ export default function Purchases() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsCreatingPurchase(false)}
+                    onClick={() => {
+                      setIsCreatingPurchase(false);
+                      setIsEditingPurchase(false);
+                    }}
                     className="h-9 rounded-xl text-xs flex-1"
                   >
                     {t("common.cancel")}
                   </Button>
                   <Button
                     type="button"
-                    onClick={handleSavePurchase}
-                    disabled={createPurchase.isPending || totalPurchaseCost <= 0}
+                    onClick={isEditingPurchase ? handleUpdatePurchase : handleSavePurchase}
+                    disabled={createPurchase.isPending || updatePurchase.isPending || totalPurchaseCost <= 0}
                     className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2] shadow-xs hover:bg-primary/90"
                   >
-                    {createPurchase.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 text-accent" />}
-                    <span>{t("purchases.completePurchase")}</span>
+                    {(createPurchase.isPending || updatePurchase.isPending) ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
+                    )}
+                    <span>{isEditingPurchase ? (language === "sw" ? "Hifadhi Mabadiliko" : "Save Changes") : t("purchases.completePurchase")}</span>
                   </Button>
                 </div>
               </CardContent>
@@ -670,20 +815,58 @@ export default function Purchases() {
           )}
 
           {/* Case 2: Inline Selected Purchase Order Details */}
-          {!isCreatingPurchase && activeTab === "orders" && selectedOrder && (
+          {!isCreatingPurchase && !isEditingPurchase && activeTab === "orders" && selectedOrder && (
             <Card className="border border-border bg-card shadow-xs">
               <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
-                <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-accent" />
-                  <span>{language === "sw" ? "Maelezo ya Agizo" : "Order Summary"}</span>
-                </CardTitle>
-                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--success-text)]">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {t("purchases.received")}
-                </span>
+                <div className="space-y-0.5">
+                  <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-accent" />
+                    <span>PO-{selectedOrder.id.slice(0, 6).toUpperCase()}</span>
+                  </CardTitle>
+                  <p className="text-[11px] text-muted-foreground">{selectedOrder.supplier_name || "Direct / Walk-in"}</p>
+                </div>
+                {getStatusBadge(selectedOrder.status)}
               </CardHeader>
 
               <CardContent className="p-4 space-y-4">
+                {/* Inline Delete Confirmation Banner */}
+                {isConfirmingDelete ? (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 space-y-2.5">
+                    <div className="flex items-center gap-2 text-destructive font-bold text-xs">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>{language === "sw" ? "Thibitisha kufuta ununuzi huu?" : "Confirm deleting this purchase?"}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {selectedOrder.status === "received"
+                        ? language === "sw"
+                          ? "Kufuta agizo hili kutapunguza stoki zilizoongezwa moja kwa moja kwenye bidhaa."
+                          : "Deleting this order will automatically reverse and deduct added inventory quantities."
+                        : language === "sw"
+                        ? "Agizo hili linaondolewa kwenye rekodi."
+                        : "This order will be removed from your records."}
+                    </p>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsConfirmingDelete(false)}
+                        className="h-8 rounded-xl text-xs flex-1"
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleDeletePurchase}
+                        disabled={deletePurchase.isPending}
+                        className="h-8 rounded-xl bg-destructive text-xs font-bold text-destructive-foreground hover:bg-destructive/90 flex-1"
+                      >
+                        {deletePurchase.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                        <span>{language === "sw" ? "Futa Kabisa" : "Confirm Delete"}</span>
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="grid grid-cols-2 gap-3 rounded-xl bg-muted/30 p-3 text-xs">
                   <div>
                     <span className="text-muted-foreground">{t("purchases.supplier")}:</span>
@@ -716,7 +899,7 @@ export default function Purchases() {
                         {selectedOrder.items.map((it, idx) => (
                           <TableRow key={idx} className="text-xs">
                             <TableCell className="font-medium text-foreground">{it.product_name}</TableCell>
-                            <TableCell className="text-center">{it.quantity}</TableCell>
+                            <TableCell className="text-center font-semibold">{it.quantity}</TableCell>
                             <TableCell className="text-right font-bold text-foreground">
                               {formatMoney((it.quantity || 0) * (it.buying_price || 0))}
                             </TableCell>
@@ -731,6 +914,42 @@ export default function Purchases() {
                   <span className="text-xs font-semibold text-foreground">{t("purchases.totalCost")}</span>
                   <span className="text-lg font-bold text-foreground">{formatMoney(selectedOrder.total_amount)}</span>
                 </div>
+
+                {/* Actions Row */}
+                {!isConfirmingDelete && (
+                  <div className="flex flex-col gap-2 border-t border-border pt-3">
+                    {selectedOrder.status === "pending" && (
+                      <Button
+                        onClick={() => handleMarkAsReceived(selectedOrder)}
+                        disabled={updatePurchase.isPending}
+                        className="h-9 w-full gap-1.5 rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>{language === "sw" ? "Weka Kama Imepokelewa (Ongeza Stoki)" : "Mark as Received (Add to Stock)"}</span>
+                      </Button>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => startEditPurchase(selectedOrder)}
+                        className="h-8 gap-1 rounded-xl text-xs flex-1"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span>{language === "sw" ? "Hariri Agizo" : "Edit Order"}</span>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsConfirmingDelete(true)}
+                        className="h-8 gap-1 rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>{language === "sw" ? "Futa Agizo" : "Delete Order"}</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -822,6 +1041,7 @@ export default function Purchases() {
                   size="sm"
                   onClick={() => {
                     setIsCreatingPurchase(true);
+                    setIsEditingPurchase(false);
                     setSelectedSupplierId(selectedSupplier.id);
                     setActiveTab("orders");
                   }}
@@ -850,7 +1070,7 @@ export default function Purchases() {
 
                 <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3">
                   <span className="font-semibold text-foreground">{language === "sw" ? "Deni Linalosubiri" : "Pending Balance"}</span>
-                  <span className="font-bold text-foreground">{formatMoney(selectedSupplier.pending_payment || 0)}</span>
+                  <span className="font-bold text-foreground">{formatMoney((selectedSupplier as any).pending_payment || 0)}</span>
                 </div>
               </CardContent>
             </Card>

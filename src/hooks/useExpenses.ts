@@ -52,7 +52,8 @@ export function useCreateExpense() {
         metadata: {
           category: data.category,
           amount: Number(data.amount || 0),
-          description: data.description,
+          title: data.title,
+          notes: data.notes,
         },
       });
       return data;
@@ -75,7 +76,8 @@ export function useUpdateExpense() {
         metadata: {
           category: data.category,
           amount: Number(data.amount || 0),
-          description: data.description,
+          title: data.title,
+          notes: data.notes,
         },
       });
       return data;

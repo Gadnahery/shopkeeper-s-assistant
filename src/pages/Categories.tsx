@@ -40,11 +40,11 @@ export default function Categories() {
 
   const handleSave = async () => {
     if (editing) {
-      await updateCat.mutateAsync({ id: editing.id, name: form.name, name_sw: form.name_sw || null, description: form.description || null });
+      await updateCat.mutateAsync({ id: editing.id, name: form.name, description: form.description || null });
       setEditing(null);
       setForm(initialCategoryForm);
     } else {
-      await createCat.mutateAsync({ name: addForm.name, name_sw: addForm.name_sw || null, description: addForm.description || null });
+      await createCat.mutateAsync({ name: addForm.name, description: addForm.description || null });
       clearAddCategoryDraft();
       setIsAddOpen(false);
     }
@@ -52,7 +52,7 @@ export default function Categories() {
 
   const openEdit = (cat: any) => {
     setEditing(cat);
-    setForm({ name: cat.name, name_sw: cat.name_sw || "", description: cat.description || "" });
+    setForm({ name: cat.name, name_sw: "", description: cat.description || "" });
   };
 
   const openAdd = () => {
@@ -157,7 +157,7 @@ export default function Categories() {
                   categories.map((cat) => (
                     <TableRow key={cat.id}>
                       <TableCell className="font-medium">
-                        {language === "sw" && cat.name_sw ? cat.name_sw : cat.name}
+                        {cat.name}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-foreground/70 dark:text-foreground/80 truncate max-w-xs">
                         {cat.description || "—"}

@@ -1,14 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
-
-export type ShopSettings = Tables<"shop_settings">;
 
 async function getUserShopId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("profiles").select("shop_id").eq("user_id", user.id).maybeSingle();
+  const { data } = await supabase
+    .from("profiles")
+    .select("shop_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
   return data?.shop_id || null;
 }
 
@@ -19,34 +20,12 @@ export function useShopSettings() {
       const shopId = await getUserShopId();
       if (!shopId) return null;
       const { data, error } = await supabase
-        .from("shop_settings")
-        .select("*")
-        .eq("shop_id", shopId)
-        .maybeSingle();
-      if (error) throw error;
-      const { data: shops } = await supabase
         .from("shops")
-        .select("name, phone, address, receipt_header, receipt_footer, logo_url, tax_rate, currency, locale, country_code")
+        .select("*")
         .eq("id", shopId)
         .maybeSingle();
-      const shopBase = shops
-        ? {
-            shop_name: shops.name,
-            phone: shops.phone,
-            address: shops.address,
-            receipt_header: shops.receipt_header,
-            receipt_footer: shops.receipt_footer,
-            logo_url: shops.logo_url,
-            tax_rate: shops.tax_rate ?? 0,
-            currency: shops.currency ?? "USD",
-            locale: shops.locale ?? "en-US",
-            country_code: shops.country_code ?? "US",
-          }
-        : null;
-      if (!data) {
-        return shopBase ? { id: null, shop_id: shopId, ...shopBase, language: "en" } : null;
-      }
-      return { ...data, ...shopBase };
+      if (error) throw error;
+      return data;
     },
   });
 }
@@ -57,20 +36,13 @@ export function useUpdatePreferences() {
     mutationFn: async (prefs: { enable_low_stock_alerts?: boolean; auto_print_receipt?: boolean }) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
-      const { data: existing } = await supabase.from("shop_settings").select("id").eq("shop_id", shopId).maybeSingle();
-      if (existing) {
-        const { data, error } = await supabase
-          .from("shop_settings")
-          .update(prefs)
-          .eq("shop_id", shopId)
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      }
-      const { data, error } = await supabase
-        .from("shop_settings")
-        .insert({ shop_id: shopId, shop_name: "", ...prefs })
+      const { data, error } = await (supabase.from("shop_settings" as any) as any)
+        .upsert({
+          shop_id: shopId,
+          key: "preferences",
+          value: prefs,
+          updated_at: new Date().toISOString(),
+        })
         .select()
         .single();
       if (error) throw error;
@@ -80,43 +52,24 @@ export function useUpdatePreferences() {
       queryClient.invalidateQueries({ queryKey: ["shop_settings"] });
       toast.success("Preferences saved");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 }
 
 export function useUpdateShopSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (updates: TablesUpdate<"shop_settings"> & { id?: string | null }) => {
+    mutationFn: async (updates: any) => {
       const shopId = await getUserShopId();
       if (!shopId) throw new Error("No shop found");
-      const { id, ...rest } = updates;
-      if (id) {
-        const { data, error } = await supabase
-          .from("shop_settings")
-          .update({ shop_name: rest.shop_name, phone: rest.phone, address: rest.address })
-          .eq("id", id)
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      }
-      const { data: existing } = await supabase.from("shop_settings").select("id").eq("shop_id", shopId).maybeSingle();
-      if (existing) {
-        const { data, error } = await supabase
-          .from("shop_settings")
-          .update({ shop_name: rest.shop_name, phone: rest.phone, address: rest.address })
-          .eq("shop_id", shopId)
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      }
+
       const { data, error } = await supabase
-        .from("shop_settings")
-        .insert({ shop_id: shopId, shop_name: rest.shop_name || "", phone: rest.phone || null, address: rest.address || null, language: "en" })
+        .from("shops")
+        .update(updates)
+        .eq("id", shopId)
         .select()
         .single();
+
       if (error) throw error;
       return data;
     },
@@ -124,7 +77,7 @@ export function useUpdateShopSettings() {
       queryClient.invalidateQueries({ queryKey: ["shop_settings"] });
       toast.success("Settings saved successfully");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Failed to save settings: " + error.message);
     },
   });

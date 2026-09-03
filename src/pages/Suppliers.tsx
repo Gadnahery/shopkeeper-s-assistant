@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/common/PageHeader";
+import { Badge } from "@/components/ui/badge";
 
 export default function Suppliers() {
   const navigate = useNavigate();
@@ -51,25 +52,25 @@ export default function Suppliers() {
   ) || [];
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
-  const totalPending = suppliers?.reduce((sum, s) => sum + Number(s.pending_payment), 0) || 0;
+  const totalPending = suppliers?.reduce((sum, s) => sum + Number((s as any).pending_payment || 0), 0) || 0;
 
   const handleAddSupplier = async () => {
-    await createSupplier.mutateAsync({ name: newSupplier.name, phone: newSupplier.phone || null, email: newSupplier.email || null, contact_person: newSupplier.contact_person || null, address: newSupplier.address || null, pending_payment: 0 });
+    await createSupplier.mutateAsync({ name: newSupplier.name, phone: newSupplier.phone || null, email: newSupplier.email || null, contact_person: newSupplier.contact_person || null, address: newSupplier.address || null });
     clearAddSupplierDraft();
     setIsAddOpen(false);
   };
 
   const handleEditSupplier = async () => {
     if (!editingSupplier) return;
-    await updateSupplier.mutateAsync({ id: editingSupplier.id, name: editingSupplier.name, phone: editingSupplier.phone || null, email: editingSupplier.email || null, contact_person: editingSupplier.contact_person || null, address: editingSupplier.address || null, pending_payment: parseFloat(editingSupplier.pending_payment) || 0 });
+    await updateSupplier.mutateAsync({ id: editingSupplier.id, name: editingSupplier.name, phone: editingSupplier.phone || null, email: editingSupplier.email || null, contact_person: editingSupplier.contact_person || null, address: editingSupplier.address || null });
     setEditingSupplier(null);
   };
 
   const handlePaySupplier = async () => {
     if (!payDialog) return;
     const amount = parseFloat(payAmount) || 0;
-    const newBalance = Math.max(0, payDialog.pending_payment - amount);
-    await updateSupplier.mutateAsync({ id: payDialog.id, pending_payment: newBalance });
+    const newBalance = Math.max(0, Number((payDialog as any).pending_payment || 0) - amount);
+    await updateSupplier.mutateAsync({ id: payDialog.id, pending_payment: newBalance } as any);
     toast.success(language === "sw" ? "Malipo yamefanikiwa" : "Payment recorded");
     setPayDialog(null);
     setPayAmount("");
@@ -196,10 +197,10 @@ export default function Suppliers() {
                   <TableRow key={supplier.id}>
                     <TableCell><div><p className="font-medium">{supplier.name}</p>{supplier.contact_person && <p className="text-sm text-muted-foreground">{supplier.contact_person}</p>}</div></TableCell>
                     <TableCell><div><p>{supplier.phone || "-"}</p>{supplier.email && <p className="text-sm text-muted-foreground">{supplier.email}</p>}</div></TableCell>
-                    <TableCell>{supplier.pending_payment > 0 ? <span className="font-medium text-destructive">{formatNumber(supplier.pending_payment)}</span> : <span className="text-success font-medium">{t("suppliers.paid")}</span>}</TableCell>
+                    <TableCell>{Number((supplier as any).pending_payment || 0) > 0 ? <span className="font-medium text-destructive">{formatNumber(Number((supplier as any).pending_payment || 0))}</span> : <span className="text-success font-medium">{t("suppliers.paid")}</span>}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        {supplier.pending_payment > 0 && (
+                        {Number((supplier as any).pending_payment || 0) > 0 && (
                           <Button variant="outline" size="sm" className="gap-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setPayDialog(supplier)}>
                             <CreditCard className="h-3 w-3" />{t("customers.pay")}
                           </Button>
@@ -233,10 +234,10 @@ export default function Suppliers() {
                       {supplier.email && <p className="text-sm text-muted-foreground">{supplier.email}</p>}
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{t("suppliers.pendingPayment")}</span>
-                        <span className={supplier.pending_payment > 0 ? "font-semibold text-destructive" : "font-semibold text-success"}>{supplier.pending_payment > 0 ? formatNumber(supplier.pending_payment) : t("suppliers.paid")}</span>
+                        <span className={Number((supplier as any).pending_payment || 0) > 0 ? "font-semibold text-destructive" : "font-semibold text-success"}>{Number((supplier as any).pending_payment || 0) > 0 ? formatNumber(Number((supplier as any).pending_payment || 0)) : t("suppliers.paid")}</span>
                       </div>
                       <div className="flex flex-wrap justify-end gap-2">
-                        {supplier.pending_payment > 0 && (
+                        {Number((supplier as any).pending_payment || 0) > 0 && (
                           <Button variant="outline" size="sm" className="gap-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => setPayDialog(supplier)}>
                             <CreditCard className="h-3 w-3" />{t("customers.pay")}
                           </Button>

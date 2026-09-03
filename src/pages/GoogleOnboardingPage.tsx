@@ -88,7 +88,6 @@ export default function GoogleOnboardingPage() {
         .from("profiles")
         .update({
           full_name: form.fullName.trim(),
-          email: user.email ?? profile.email ?? null,
         })
         .eq("user_id", user.id)
         .eq("shop_id", profile.shop_id);

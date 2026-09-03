@@ -27,8 +27,7 @@ export function useSales() {
   return useQuery({
     queryKey: ["sales"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales")
+      const { data, error } = await (supabase.from("sales" as any) as any)
         .select("*, customers(name), sale_items(*)")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -42,8 +41,7 @@ export function useSalesByCustomer(customerId: string | null) {
     queryKey: ["sales", "customer", customerId],
     queryFn: async () => {
       if (!customerId) return [];
-      const { data, error } = await supabase
-        .from("sales")
+      const { data, error } = await (supabase.from("sales" as any) as any)
         .select("*, sale_items(*)")
         .eq("customer_id", customerId)
         .eq("status", "completed")
@@ -61,8 +59,7 @@ export function useSalesByDateRange(startDate: string | null, endDate: string | 
     queryKey: ["sales", "range", startDate, endDate],
     queryFn: async () => {
       if (!startDate || !endDate) return [];
-      const { data, error } = await supabase
-        .from("sales")
+      const { data, error } = await (supabase.from("sales" as any) as any)
         .select("*, customers(name), sale_items(*)")
         .eq("status", "completed")
         .gte("created_at", `${startDate}T00:00:00`)
@@ -86,8 +83,7 @@ export function useSalesSummaryByRange(start: string, end: string) {
   return useQuery({
     queryKey: ["sales", "summary", start, end],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales")
+      const { data, error } = await (supabase.from("sales" as any) as any)
         .select("*")
         .eq("status", "completed")
         .gte("created_at", `${start}T00:00:00`)
@@ -105,17 +101,12 @@ export function useTodaySales() {
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       
-      const { data, error } = await supabase
-        .from("sales")
+      const { data, error } = await (supabase.from("sales" as any) as any)
         .select("*")
         .gte("created_at", `${today}T00:00:00`)
         .lte("created_at", `${today}T23:59:59`);
       
       if (error) throw error;
-      
-      const totalSales = data?.reduce((sum, s) => sum + Number(s.total), 0) || 0;
-      const cashSales = data?.filter(s => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total), 0) || 0;
-      const mpesaSales = data?.filter(s => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total), 0) || 0;
       
       return aggregateSales(data || []);
     },
@@ -156,8 +147,7 @@ export function useDraftSales() {
   return useQuery({
     queryKey: ["sales", "drafts"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales")
+      const { data, error } = await (supabase.from("sales" as any) as any)
         .select("*, sale_items(*)")
         .eq("status", "draft")
         .order("created_at", { ascending: false });

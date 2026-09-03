@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
-export type Supplier = Tables<"suppliers">;
-export type SupplierInsert = TablesInsert<"suppliers">;
-export type SupplierUpdate = TablesUpdate<"suppliers">;
+export type Supplier = Tables<"suppliers"> & { pending_payment?: number };
+export type SupplierInsert = TablesInsert<"suppliers"> & { pending_payment?: number };
+export type SupplierUpdate = TablesUpdate<"suppliers"> & { pending_payment?: number };
 
 async function getUserShopId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -17,10 +17,10 @@ async function getUserShopId(): Promise<string | null> {
 export function useSuppliers() {
   return useQuery({
     queryKey: ["suppliers"],
-    queryFn: async () => {
+    queryFn: async (): Promise<Supplier[]> => {
       const { data, error } = await supabase.from("suppliers").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return (data || []).map((s) => ({ ...s, pending_payment: 0 }));
     },
   });
 }
@@ -28,9 +28,19 @@ export function useSuppliers() {
 export function useCreateSupplier() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (supplier: SupplierInsert) => {
-      const final = { ...supplier };
-      if (!final.shop_id) { final.shop_id = await getUserShopId(); }
+    mutationFn: async (supplier: Partial<SupplierInsert> & { name: string }) => {
+      const shopId = supplier.shop_id || (await getUserShopId());
+      if (!shopId) throw new Error("No shop found");
+      const { pending_payment, ...cleanSupplier } = supplier;
+      const final: TablesInsert<"suppliers"> = {
+        name: cleanSupplier.name,
+        shop_id: shopId,
+        contact_person: cleanSupplier.contact_person || null,
+        phone: cleanSupplier.phone || null,
+        email: cleanSupplier.email || null,
+        address: cleanSupplier.address || null,
+        notes: cleanSupplier.notes || null,
+      };
       const { data, error } = await supabase.from("suppliers").insert(final).select().single();
       if (error) throw error;
       return data;
@@ -43,8 +53,9 @@ export function useCreateSupplier() {
 export function useUpdateSupplier() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: SupplierUpdate & { id: string }) => {
-      const { data, error } = await supabase.from("suppliers").update(updates).eq("id", id).select().single();
+    mutationFn: async ({ id, ...updates }: Partial<SupplierUpdate> & { id: string }) => {
+      const { pending_payment, ...cleanUpdates } = updates;
+      const { data, error } = await supabase.from("suppliers").update(cleanUpdates).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },

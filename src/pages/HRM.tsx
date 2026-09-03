@@ -87,7 +87,7 @@ export default function HRM() {
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
 
   // User Accounts
-  const { users, isLoading: usersLoading, updateRole } = useShopUsers();
+  const { data: users, isLoading: usersLoading } = useShopUsers(shopId);
 
   // Local Staff List (persisted with fallback mock)
   const [staffList, setStaffList] = useState<StaffMember[]>([
@@ -527,7 +527,7 @@ export default function HRM() {
                   {(users || []).map((u) => (
                     <TableRow key={u.id} className="border-b border-border/60">
                       <TableCell className="text-xs font-semibold text-foreground">
-                        {u.full_name || u.email || "System User"}
+                        {u.full_name || u.phone || "System User"}
                       </TableCell>
                       <TableCell>
                         <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-foreground capitalize">

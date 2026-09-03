@@ -116,15 +116,15 @@ export default function Inventory() {
     return <PageLoader message="Loading inventory..." messageSw="Inapakia hesabu ya stoki..." language={language} />;
   }
 
-  const categoryMap = new Map((categories || []).map((c) => [c.id, language === "sw" && c.name_sw ? c.name_sw : c.name]));
+  const categoryMap = new Map((categories || []).map((c) => [c.id, c.name]));
 
   const filteredProducts = useMemo(() => {
     return (products || []).filter((p) => {
       const q = searchTerm.toLowerCase();
       const matchesSearch =
         p.name.toLowerCase().includes(q) ||
-        p.code.toLowerCase().includes(q) ||
-        (p.name_sw && p.name_sw.toLowerCase().includes(q));
+        (p.barcode && p.barcode.toLowerCase().includes(q)) ||
+        (p.sku && p.sku.toLowerCase().includes(q));
 
       const matchesCategory = categoryFilter === "all" || p.category_id === categoryFilter;
       const alertLimit = p.low_stock_alert ?? 5;
@@ -191,8 +191,7 @@ export default function Inventory() {
       const created = await createProduct.mutateAsync({
         shop_id: shopId,
         name: newProduct.name.trim(),
-        name_sw: newProduct.name_sw.trim() || newProduct.name.trim(),
-        code: newProduct.code.trim(),
+        barcode: newProduct.code.trim() || undefined,
         category_id: newProduct.category_id === "none" ? null : newProduct.category_id,
         buying_price: Number(newProduct.buying_price) || 0,
         selling_price: Number(newProduct.selling_price) || 0,
@@ -224,8 +223,7 @@ export default function Inventory() {
       await updateProduct.mutateAsync({
         id: editForm.id,
         name: editForm.name,
-        name_sw: editForm.name_sw || null,
-        code: editForm.code,
+        barcode: (editForm as any).code || editForm.barcode || undefined,
         category_id: editForm.category_id === "none" ? null : editForm.category_id,
         buying_price: Number(editForm.buying_price) || 0,
         selling_price: Number(editForm.selling_price) || 0,
@@ -255,7 +253,7 @@ export default function Inventory() {
     if (!toExport.length) return;
     exportToCSV(
       toExport.map((p) => ({
-        Code: p.code,
+        Code: p.barcode || p.sku || "PROD",
         Name: p.name,
         Stock: p.stock,
         "Buying Price": p.buying_price,
@@ -350,7 +348,7 @@ export default function Inventory() {
                     <SelectItem value="all">{language === "sw" ? "Makundi Yote" : "All Categories"}</SelectItem>
                     {(categories || []).map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {language === "sw" && c.name_sw ? c.name_sw : c.name}
+                        {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -440,9 +438,9 @@ export default function Inventory() {
                               onCheckedChange={() => toggleSelect(p.id)}
                             />
                           </TableCell>
-                          <TableCell className="text-xs font-bold text-foreground">{p.code}</TableCell>
+                          <TableCell className="text-xs font-bold text-foreground">{p.barcode || p.sku || "PROD"}</TableCell>
                           <TableCell className="text-xs font-semibold text-foreground">
-                            {language === "sw" && p.name_sw ? p.name_sw : p.name}
+                            {p.name}
                           </TableCell>
                           <TableCell className="text-xs font-bold text-foreground">{formatMoney(p.selling_price)}</TableCell>
                           <TableCell>
@@ -527,7 +525,7 @@ export default function Inventory() {
                         <SelectItem value="none">{language === "sw" ? "Bila Kundi" : "None"}</SelectItem>
                         {(categories || []).map((c) => (
                           <SelectItem key={c.id} value={c.id}>
-                            {language === "sw" && c.name_sw ? c.name_sw : c.name}
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -585,7 +583,7 @@ export default function Inventory() {
                   </Button>
                   <Button
                     onClick={handleCreateProduct}
-                    disabled={createProduct.isPending || !newProduct.name.trim() || !newProduct.code.trim()}
+                    disabled={createProduct.isPending || !newProduct.name.trim()}
                     className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
                   >
                     {createProduct.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
@@ -604,7 +602,7 @@ export default function Inventory() {
                   <CardTitle className="text-sm font-bold text-foreground">
                     {editForm.name}
                   </CardTitle>
-                  <p className="text-[11px] text-muted-foreground">{editForm.code}</p>
+                  <p className="text-[11px] text-muted-foreground">{editForm.barcode || editForm.sku || "PROD"}</p>
                 </div>
 
                 <div className="flex items-center gap-1">
@@ -632,7 +630,7 @@ export default function Inventory() {
                 {/* Barcode & QR Code Inline View */}
                 {showBarcodePreview && (
                   <div className="flex flex-col items-center justify-center rounded-xl bg-muted/40 p-4 border border-border space-y-2">
-                    <BarcodeGenerator value={editForm.barcode || editForm.code} type={barcodeType} />
+                    <BarcodeGenerator value={editForm.barcode || editForm.name} type={barcodeType} />
                     <div className="flex gap-2 pt-1">
                       <Button
                         size="sm"
@@ -667,8 +665,8 @@ export default function Inventory() {
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold">{t("inventory.code")}</Label>
                     <Input
-                      value={editForm.code}
-                      onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
+                      value={editForm.barcode || editForm.sku || ""}
+                      onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
                       className="h-9 rounded-xl border-border bg-background text-xs"
                     />
                   </div>
@@ -686,7 +684,7 @@ export default function Inventory() {
                         <SelectItem value="none">{language === "sw" ? "Bila Kundi" : "None"}</SelectItem>
                         {(categories || []).map((c) => (
                           <SelectItem key={c.id} value={c.id}>
-                            {language === "sw" && c.name_sw ? c.name_sw : c.name}
+                            {c.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

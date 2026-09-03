@@ -136,7 +136,7 @@ export default function Reports() {
       sales.map((s) => ({
         ID: s.id,
         Date: format(new Date(s.created_at), "yyyy-MM-dd HH:mm"),
-        Customer: s.customer_name || "Walk-in",
+        Customer: (s as any).customer_name || "Walk-in",
         Total: s.total,
         Payment: s.payment_method,
       })),
@@ -155,7 +155,7 @@ export default function Reports() {
       ],
       items: (sales || []).map((s) => ({
         date: format(new Date(s.created_at), "yyyy-MM-dd HH:mm"),
-        customer: s.customer_name || "Walk-in",
+        customer: (s as any).customer_name || "Walk-in",
         method: s.payment_method,
         total: formatMoney(s.total),
       })),
@@ -402,7 +402,7 @@ export default function Reports() {
                           {format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {s.customer_name || (language === "sw" ? "Moja kwa moja" : "Walk-in")}
+                          {(s as any).customer_name || (language === "sw" ? "Moja kwa moja" : "Walk-in")}
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground">
@@ -454,7 +454,7 @@ export default function Reports() {
                   </TableRow>
                   {(expenses || []).map((e) => (
                     <TableRow key={e.id} className="text-xs">
-                      <TableCell className="text-muted-foreground">{e.description} ({e.category})</TableCell>
+                      <TableCell className="text-muted-foreground">{e.title || e.category} ({e.category})</TableCell>
                       <TableCell className="text-right font-medium text-destructive">-{formatMoney(e.amount)}</TableCell>
                     </TableRow>
                   ))}
@@ -489,7 +489,7 @@ export default function Reports() {
                     const lineVal = Number(p.stock || 0) * Number(p.buying_price || 0);
                     return (
                       <TableRow key={p.id} className="text-xs">
-                        <TableCell className="font-bold text-foreground">{p.code}</TableCell>
+                        <TableCell className="font-bold text-foreground">{p.barcode || p.sku || "PROD"}</TableCell>
                         <TableCell className="font-medium text-foreground">{p.name}</TableCell>
                         <TableCell className="text-center font-bold text-foreground">{p.stock} pcs</TableCell>
                         <TableCell className="text-right text-muted-foreground">{formatMoney(p.buying_price)}</TableCell>

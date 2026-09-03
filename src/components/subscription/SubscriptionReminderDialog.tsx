@@ -36,7 +36,7 @@ export function SubscriptionReminderDialog() {
 
   const reminderStorageKey = useMemo(() => {
     if (!subscription || !reminderTarget || !reminderStage) return null;
-    return `subscription-reminder:${subscription.id}:${reminderTarget}:${reminderStage}`;
+    return `subscription-reminder:${subscription.shop_id}:${reminderTarget}:${reminderStage}`;
   }, [subscription, reminderTarget, reminderStage]);
 
   const shouldOpen = useMemo(() => {

@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
-export type Customer = Tables<"customers">;
-export type CustomerInsert = TablesInsert<"customers">;
-export type CustomerUpdate = TablesUpdate<"customers">;
+export type Customer = Tables<"customers"> & { customer_type?: string };
+export type CustomerInsert = TablesInsert<"customers"> & { customer_type?: string };
+export type CustomerUpdate = TablesUpdate<"customers"> & { customer_type?: string };
 
 async function getUserShopId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -17,13 +17,13 @@ async function getUserShopId(): Promise<string | null> {
 export function useCustomers() {
   return useQuery({
     queryKey: ["customers"],
-    queryFn: async () => {
+    queryFn: async (): Promise<Customer[]> => {
       const { data, error } = await supabase
         .from("customers")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return (data || []).map((c) => ({ ...c, customer_type: "Retail" }));
     },
   });
 }
@@ -31,11 +31,22 @@ export function useCustomers() {
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (customer: CustomerInsert) => {
-      const final = { ...customer };
-      if (!final.shop_id) {
-        final.shop_id = await getUserShopId();
-      }
+    mutationFn: async (customer: Partial<CustomerInsert> & { name: string }) => {
+      const shopId = customer.shop_id || (await getUserShopId());
+      if (!shopId) throw new Error("No shop found");
+      const { customer_type, ...cleanCustomer } = customer;
+      const final: TablesInsert<"customers"> = {
+        name: cleanCustomer.name,
+        shop_id: shopId,
+        phone: cleanCustomer.phone || null,
+        email: cleanCustomer.email || null,
+        address: cleanCustomer.address || null,
+        notes: cleanCustomer.notes || null,
+        credit_balance: cleanCustomer.credit_balance || 0,
+        credit_limit: cleanCustomer.credit_limit || 0,
+        loyalty_points: cleanCustomer.loyalty_points || 0,
+        total_spent: cleanCustomer.total_spent || 0,
+      };
       const { data, error } = await supabase.from("customers").insert(final).select().single();
       if (error) throw error;
       return data;
@@ -48,8 +59,9 @@ export function useCreateCustomer() {
 export function useUpdateCustomer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: CustomerUpdate & { id: string }) => {
-      const { data, error } = await supabase.from("customers").update(updates).eq("id", id).select().single();
+    mutationFn: async ({ id, ...updates }: Partial<CustomerUpdate> & { id: string }) => {
+      const { customer_type, ...cleanUpdates } = updates;
+      const { data, error } = await supabase.from("customers").update(cleanUpdates).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
 
 export interface ProductionMaterial {
   product_id: string;
@@ -61,7 +60,7 @@ export function useProductionBatches() {
       if (!shopId) return [];
 
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from("production_batches")
           .select(`
             id,
@@ -81,7 +80,7 @@ export function useProductionBatches() {
             products:output_product_id (
               id,
               name,
-              code
+              barcode
             )
           `)
           .eq("shop_id", shopId)
@@ -98,12 +97,12 @@ export function useProductionBatches() {
           batch_number: b.batch_number,
           output_product_id: b.output_product_id,
           output_product_name: b.products?.name || "Product",
-          output_product_code: b.products?.code || "",
+          output_product_code: b.products?.barcode || "",
           quantity_to_produce: Number(b.quantity_to_produce || 0),
           quantity_produced: Number(b.quantity_produced || 0),
-          input_materials: Array.isArray(b.input_materials) ? b.input_materials : [],
+          input_materials: Array.isArray(b.input_materials) ? (b.input_materials as ProductionMaterial[]) : [],
           total_cost: Number(b.total_cost || 0),
-          status: b.status,
+          status: b.status as "planned" | "in_progress" | "completed" | "cancelled",
           notes: b.notes,
           started_at: b.started_at,
           completed_at: b.completed_at,
@@ -111,7 +110,6 @@ export function useProductionBatches() {
           updated_at: b.updated_at,
         }));
 
-        // Keep local cache synced
         saveLocalBatches(shopId, batches);
         return batches;
       } catch (err) {
@@ -149,35 +147,16 @@ export function useCreateProductionBatch() {
       const batchNumber = `BAT-${Date.now().toString().slice(-6)}`;
       const now = new Date().toISOString();
 
-      const newBatch: ProductionBatch = {
-        id: crypto.randomUUID(),
-        shop_id: shopId,
-        batch_number: batchNumber,
-        output_product_id: outputProductId,
-        output_product_name: outputProductName,
-        output_product_code: outputProductCode,
-        quantity_to_produce: quantityToProduce,
-        quantity_produced: 0,
-        input_materials: inputMaterials,
-        total_cost: totalCost,
-        status: "planned",
-        notes: notes || null,
-        started_at: now,
-        created_at: now,
-        updated_at: now,
-      };
-
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from("production_batches")
           .insert({
-            id: newBatch.id,
             shop_id: shopId,
             batch_number: batchNumber,
             output_product_id: outputProductId,
             quantity_to_produce: quantityToProduce,
             quantity_produced: 0,
-            input_materials: inputMaterials,
+            input_materials: inputMaterials as any,
             total_cost: totalCost,
             status: "planned",
             notes: notes || null,
@@ -186,19 +165,117 @@ export function useCreateProductionBatch() {
           .select()
           .single();
 
-        if (error) {
-          console.warn("Supabase insert failed, storing in local state:", error);
-          const current = getLocalBatches(shopId);
-          saveLocalBatches(shopId, [newBatch, ...current]);
-          return newBatch;
-        }
-
+        if (error) throw error;
         return data;
-      } catch {
-        const current = getLocalBatches(shopId);
-        saveLocalBatches(shopId, [newBatch, ...current]);
+      } catch (e: any) {
+        console.warn("Could not insert production_batch to Supabase, falling back to local storage:", e.message);
+        const newBatch: ProductionBatch = {
+          id: `local-batch-${Date.now()}`,
+          shop_id: shopId,
+          batch_number: batchNumber,
+          output_product_id: outputProductId,
+          output_product_name: outputProductName || "Finished Product",
+          output_product_code: outputProductCode || "",
+          quantity_to_produce: quantityToProduce,
+          quantity_produced: 0,
+          input_materials: inputMaterials,
+          total_cost: totalCost,
+          status: "planned",
+          notes: notes || null,
+          started_at: now,
+          created_at: now,
+          updated_at: now,
+        };
+
+        const existing = getLocalBatches(shopId);
+        saveLocalBatches(shopId, [newBatch, ...existing]);
         return newBatch;
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["production_batches"] });
+    },
+  });
+}
+
+export function useUpdateProductionBatch() {
+  const queryClient = useQueryClient();
+  const { shopId } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      batchId,
+      quantityToProduce,
+      inputMaterials,
+      notes,
+      status,
+    }: {
+      batchId: string;
+      quantityToProduce?: number;
+      inputMaterials?: ProductionMaterial[];
+      notes?: string;
+      status?: "planned" | "in_progress" | "completed" | "cancelled";
+    }) => {
+      if (!shopId) throw new Error("Shop ID is required");
+
+      const now = new Date().toISOString();
+      const payload: any = { updated_at: now };
+      if (quantityToProduce !== undefined) payload.quantity_to_produce = quantityToProduce;
+      if (inputMaterials !== undefined) {
+        payload.input_materials = inputMaterials as any;
+        payload.total_cost = inputMaterials.reduce((sum, m) => sum + (m.total_cost || 0), 0);
+      }
+      if (notes !== undefined) payload.notes = notes;
+      if (status !== undefined) payload.status = status;
+
+      try {
+        const { data, error } = await supabase
+          .from("production_batches")
+          .update(payload)
+          .eq("id", batchId)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (e: any) {
+        console.warn("Could not update production_batch in Supabase, using local:", e);
+        const local = getLocalBatches(shopId);
+        const updated = local.map((b) => (b.id === batchId ? { ...b, ...payload } : b));
+        saveLocalBatches(shopId, updated);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["production_batches"] });
+    },
+  });
+}
+
+export function useDeleteProductionBatch() {
+  const queryClient = useQueryClient();
+  const { shopId } = useAuth();
+
+  return useMutation({
+    mutationFn: async (batch: ProductionBatch) => {
+      if (!shopId) throw new Error("Shop ID is required");
+      if (batch.status === "completed") {
+        throw new Error("Cannot delete a completed production batch. It has already updated inventory.");
+      }
+
+      try {
+        const { error } = await supabase
+          .from("production_batches")
+          .delete()
+          .eq("id", batch.id);
+
+        if (error) throw error;
+      } catch (e: any) {
+        console.warn("Supabase delete failed, removing from local storage:", e);
+      }
+
+      const local = getLocalBatches(shopId);
+      const updated = local.filter((b) => b.id !== batch.id);
+      saveLocalBatches(shopId, updated);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["production_batches"] });
@@ -286,7 +363,7 @@ export function useCompleteProductionBatch() {
 
       // 3. Update batch record
       try {
-        await (supabase as any)
+        await supabase
           .from("production_batches")
           .update({
             status: "completed",
@@ -299,7 +376,6 @@ export function useCompleteProductionBatch() {
         console.warn("Supabase update error, updating local store", e);
       }
 
-      // Also update local storage cache
       const localBatches = getLocalBatches(shopId);
       const updated = localBatches.map((b) =>
         b.id === batch.id
@@ -339,7 +415,7 @@ export function useUpdateBatchStatus() {
       const now = new Date().toISOString();
 
       try {
-        await (supabase as any)
+        await supabase
           .from("production_batches")
           .update({
             status,

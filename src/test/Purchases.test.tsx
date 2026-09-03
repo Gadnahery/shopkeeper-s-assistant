@@ -63,6 +63,14 @@ vi.mock("@/hooks/usePurchases", () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
+  useUpdatePurchase: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useDeletePurchase: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/hooks/useProducts", () => ({

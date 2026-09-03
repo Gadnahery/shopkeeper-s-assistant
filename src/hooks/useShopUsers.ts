@@ -1,45 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-function isMissingColumnError(error: unknown, column: string) {
-  const message = (error as Error | null)?.message?.toLowerCase() ?? "";
-  return message.includes(column.toLowerCase()) && (message.includes("column") || message.includes("schema cache"));
-}
-
 export async function getShopUsers(shopId: string) {
-  let profiles:
-    | Array<{ id: string; user_id: string; full_name: string; email?: string | null; phone?: string | null; created_at: string }>
-    | null = null;
-
-  const profilesWithEmail = await supabase
+  const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("id, user_id, full_name, email, phone, created_at")
+    .select("id, user_id, full_name, phone, avatar_url, created_at")
     .eq("shop_id", shopId)
     .order("created_at", { ascending: false });
 
-  if (profilesWithEmail.error && isMissingColumnError(profilesWithEmail.error, "email")) {
-    const fallbackProfiles = await supabase
-      .from("profiles")
-      .select("id, user_id, full_name, phone, created_at")
-      .eq("shop_id", shopId)
-      .order("created_at", { ascending: false });
-    if (fallbackProfiles.error) throw fallbackProfiles.error;
-    profiles = (fallbackProfiles.data ?? []).map((profile) => ({ ...profile, email: null }));
-  } else if (profilesWithEmail.error) {
-    throw profilesWithEmail.error;
-  } else {
-    profiles = profilesWithEmail.data ?? [];
-  }
+  if (error) throw error;
 
-  const { data: roles, error: re } = await supabase
+  const { data: roles } = await supabase
     .from("user_roles")
-    .select("user_id, role")
-    .eq("shop_id", shopId);
-  if (re) throw re;
+    .select("user_id, role");
+
   const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role]));
+
   return (profiles ?? []).map((p) => ({
-    ...p,
-    role: roleMap.get((p as { user_id: string }).user_id) ?? "staff",
+    id: p.id,
+    user_id: p.user_id,
+    full_name: p.full_name || "User",
+    phone: p.phone,
+    avatar_url: p.avatar_url,
+    created_at: p.created_at || new Date().toISOString(),
+    role: (roleMap.get(p.user_id) ?? "staff") as "owner" | "manager" | "cashier" | "staff" | "hr",
   }));
 }
 

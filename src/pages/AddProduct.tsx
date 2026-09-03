@@ -72,12 +72,10 @@ export default function AddProduct() {
     e.preventDefault();
     await createProduct.mutateAsync({
       name: formData.name,
-      name_sw: formData.name_sw || null,
-      code: generateCode(),
       category_id: formData.category_id || null,
-      barcode: formData.barcode || null,
+      barcode: formData.barcode || generateCode(),
       image_url: formData.image_url || null,
-      unit_type: formData.unit_type,
+      unit: formData.unit_type || "pcs",
       buying_price: parseFloat(formData.buying_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
       stock: parseInt(formData.stock) || 0,
@@ -89,14 +87,13 @@ export default function AddProduct() {
   };
 
   const getCategoryName = (category: NonNullable<typeof categories>[0]) => {
-    return language === "sw" && category.name_sw ? category.name_sw : category.name;
+    return category.name;
   };
 
   const handleAddCategory = async () => {
     if (!categoryForm.name.trim()) return;
     const created = await createCategory.mutateAsync({
       name: categoryForm.name.trim(),
-      name_sw: categoryForm.name_sw || null,
       description: categoryForm.description || null,
     });
     setFormData((current) => ({ ...current, category_id: created.id }));

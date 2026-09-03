@@ -172,22 +172,18 @@ export default function UserManagement() {
     if (!editUser || !shopId) return;
     setUpdating(true);
     try {
-      const { error: pe } = await supabase
-        .from("profiles")
+      const { error: pe } = await (supabase.from("profiles" as any) as any)
         .update({
           full_name: editForm.full_name.trim(),
-          email: editForm.email.trim() || null,
           phone: editForm.phone.trim() || null,
         })
         .eq("user_id", editUser.user_id)
         .eq("shop_id", shopId);
       if (pe) throw pe;
 
-      const { error: re } = await supabase
-        .from("user_roles")
-        .update({ role: editForm.role as "owner" | "manager" | "cashier" | "staff" | "hr" })
-        .eq("user_id", editUser.user_id)
-        .eq("shop_id", shopId);
+      const { error: re } = await (supabase.from("user_roles" as any) as any)
+        .update({ role: editForm.role })
+        .eq("user_id", editUser.user_id);
       if (re) throw re;
 
       await logAudit({
@@ -222,15 +218,12 @@ export default function UserManagement() {
 
     setDeleting(true);
     try {
-      const { error: re } = await supabase
-        .from("user_roles")
+      const { error: re } = await (supabase.from("user_roles" as any) as any)
         .delete()
-        .eq("user_id", userToDelete.user_id)
-        .eq("shop_id", shopId);
+        .eq("user_id", userToDelete.user_id);
       if (re) throw re;
 
-      const { error: pe } = await supabase
-        .from("profiles")
+      const { error: pe } = await (supabase.from("profiles" as any) as any)
         .delete()
         .eq("user_id", userToDelete.user_id)
         .eq("shop_id", shopId);

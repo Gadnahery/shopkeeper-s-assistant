@@ -77,11 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(resolvedProfile);
       setShopId(resolvedProfile.shop_id);
 
-      const { data: roleData } = await supabase
-        .from("user_roles")
+      const { data: roleData } = await (supabase.from("user_roles" as any) as any)
         .select("role")
         .eq("user_id", userId)
-        .eq("shop_id", resolvedProfile.shop_id)
         .maybeSingle();
 
       setRole((roleData?.role as AppRole) ?? null);

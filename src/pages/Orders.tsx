@@ -63,6 +63,7 @@ export default function Orders() {
   const { isMobile } = useAdaptiveLayout();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
   const [editing, setEditing] = useState<any>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -107,14 +108,15 @@ export default function Orders() {
       list = list.filter(
         (o) =>
           o.order_number?.toLowerCase().includes(q) ||
-          o.customer_name?.toLowerCase().includes(q) ||
+          (o as any).customer_name?.toLowerCase().includes(q) ||
           (o as any).customer_phone?.toLowerCase?.()?.includes(q)
       );
     }
     if (statusFilter !== "all") list = list.filter((o) => o.status === statusFilter);
     if (dateRangeFilter.from) list = list.filter((o) => new Date(o.created_at) >= dateRangeFilter.from! && new Date(o.created_at) <= dateRangeFilter.to!);
+    if (priorityFilter !== "all") list = list.filter((o) => ((o as any).priority ?? "medium") === priorityFilter);
     return list;
-  }, [orders, search, statusFilter, dateRangeFilter]);
+  }, [orders, search, statusFilter, dateRangeFilter, priorityFilter]);
 
   const stats = useMemo(() => {
     const list = filteredOrders;
@@ -170,7 +172,7 @@ export default function Orders() {
   const quantityExceedsStock = selectedProduct != null && addQtyNum > availableStock;
 
   const addProductToOrderWithQuantity = (p: NonNullable<typeof products>[0], qty: number) => {
-    const name = language === "sw" && p.name_sw ? p.name_sw : p.name;
+    const name = p.name;
     const existing = addItems.find((i) => i.product_id === p.id);
     if (existing) {
       setAddItems((prev) => prev.map((i) => (i.product_id === p.id ? { ...i, quantity: i.quantity + qty } : i)));
@@ -195,7 +197,7 @@ export default function Orders() {
     const headers = [language === "sw" ? "Nambari" : "Order #", language === "sw" ? "Mteja" : "Customer", language === "sw" ? "Simu" : "Phone", language === "sw" ? "Hali" : "Status", language === "sw" ? "Kipaumbele" : "Priority", language === "sw" ? "Tarehe" : "Date", language === "sw" ? "Jumla" : "Total"];
     const rows = filteredOrders.map((o) => [
       o.order_number,
-      o.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in"),
+      (o as any).customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in"),
       (o as any).customer_phone ?? "",
       o.status,
       (o as any).priority ?? "medium",
@@ -353,7 +355,7 @@ export default function Orders() {
                 <SelectContent>
                   <SelectItem value="__none__">{language === "sw" ? "Chagua bidhaa..." : "Select product..."}</SelectItem>
                   {products?.map((p) => {
-                    const name = language === "sw" && p.name_sw ? p.name_sw : p.name;
+                    const name = p.name;
                     return (
                       <SelectItem key={p.id} value={p.id}>
                         {name} - {formatNumber(p.selling_price)}
@@ -561,7 +563,7 @@ export default function Orders() {
                   filteredOrders.map((o) => (
                     <TableRow key={o.id}>
                       <TableCell className="font-medium">{o.order_number}</TableCell>
-                      <TableCell>{o.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}</TableCell>
+                      <TableCell>{(o as any).customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}</TableCell>
                       <TableCell className="text-foreground/70 dark:text-foreground/80">{format(new Date(o.created_at), "dd MMM yyyy")}</TableCell>
                       <TableCell>{formatNumber(Number(o.total))}</TableCell>
                       <TableCell><Badge variant="outline" className={statusColors[o.status] || ""}>{language === "sw" ? STATUS_LEGEND.find((s) => s.key === o.status)?.sw ?? o.status : o.status}</Badge></TableCell>
@@ -588,7 +590,7 @@ export default function Orders() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="font-semibold">{o.order_number}</p>
-                          <p className="text-sm text-muted-foreground">{o.customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}</p>
+                          <p className="text-sm text-muted-foreground">{(o as any).customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}</p>
                         </div>
                         <Badge variant="outline" className={statusColors[o.status] || ""}>
                           {language === "sw" ? STATUS_LEGEND.find((s) => s.key === o.status)?.sw ?? o.status : o.status}

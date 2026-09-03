@@ -137,7 +137,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     queryKey: ["shop-subscription", shopId],
     queryFn: async () => {
       if (!shopId) return null;
-      await supabase.rpc("ensure_subscription_notifications");
+      await (supabase.rpc as any)("ensure_subscription_notifications");
       const { data, error } = await supabase
         .from("shop_subscriptions")
         .select("*")

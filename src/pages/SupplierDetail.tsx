@@ -41,7 +41,7 @@ export default function SupplierDetail() {
     );
   }
 
-  const pendingPayment = Number(supplier.pending_payment || 0);
+  const pendingPayment = Number((supplier as any).pending_payment || 0);
 
   return (
     <div className="min-w-0 space-y-6">

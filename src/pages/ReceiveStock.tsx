@@ -83,7 +83,7 @@ export default function ReceiveStock() {
               <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
               <SelectContent>
                 {(products || []).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name} ({p.code})</SelectItem>
+                  <SelectItem key={p.id} value={p.id}>{p.name} {p.barcode ? `(${p.barcode})` : ""}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
