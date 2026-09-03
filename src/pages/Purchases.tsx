@@ -428,8 +428,8 @@ export default function Purchases() {
 
       {/* Main 2-Column Master-Detail Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column (Master List - 7 Cols) */}
-        <div className="space-y-4 lg:col-span-7">
+        {/* Left Column (Master List - expands to 12 cols when unselected) */}
+        <div className={cn("space-y-4 transition-all duration-200", (isCreatingPurchase || isEditingPurchase || selectedOrder || isAddingSupplier || selectedSupplier) ? "lg:col-span-7" : "lg:col-span-12")}>
           <Card className="border border-border bg-card shadow-xs">
             <Tabs value={activeTab} onValueChange={(val) => {
               setActiveTab(val);
@@ -437,7 +437,7 @@ export default function Purchases() {
               setIsEditingPurchase(false);
               setIsConfirmingDelete(false);
             }}>
-              <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
                 <TabsList className="h-9 rounded-xl bg-muted/60 p-1">
                   <TabsTrigger value="orders" className="rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground">
                     <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
@@ -450,7 +450,7 @@ export default function Purchases() {
                 </TabsList>
 
                 {activeTab === "orders" && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="relative w-48">
                       <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -478,7 +478,7 @@ export default function Purchases() {
                 )}
 
                 {activeTab === "suppliers" && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="relative w-48">
                       <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -505,8 +505,8 @@ export default function Purchases() {
 
               {/* TAB 1: PURCHASE ORDERS */}
               <TabsContent value="orders" className="m-0 p-0">
-                <div className="overflow-x-auto">
-                  <Table>
+                <div className="overflow-x-auto w-full">
+                  <Table className="min-w-[650px] w-full">
                     <TableHeader>
                       <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
                         <TableHead className="font-semibold">{language === "sw" ? "Namba / Tarehe" : "PO / Date"}</TableHead>
@@ -563,8 +563,8 @@ export default function Purchases() {
 
               {/* TAB 2: SUPPLIERS */}
               <TabsContent value="suppliers" className="m-0 p-0">
-                <div className="overflow-x-auto">
-                  <Table>
+                <div className="overflow-x-auto w-full">
+                  <Table className="min-w-[650px] w-full">
                     <TableHeader>
                       <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
                         <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
@@ -825,7 +825,21 @@ export default function Purchases() {
                   </CardTitle>
                   <p className="text-[11px] text-muted-foreground">{selectedOrder.supplier_name || "Direct / Walk-in"}</p>
                 </div>
-                {getStatusBadge(selectedOrder.status)}
+                <div className="flex items-center gap-2">
+                  {getStatusBadge(selectedOrder.status)}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedOrder(null);
+                      setIsConfirmingDelete(false);
+                    }}
+                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                    title={language === "sw" ? "Funga jopo" : "Close panel"}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
 
               <CardContent className="p-4 space-y-4">
@@ -1036,20 +1050,31 @@ export default function Purchases() {
                   <Truck className="h-4 w-4 text-accent" />
                   <span>{selectedSupplier.name}</span>
                 </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsCreatingPurchase(true);
-                    setIsEditingPurchase(false);
-                    setSelectedSupplierId(selectedSupplier.id);
-                    setActiveTab("orders");
-                  }}
-                  className="h-7 text-xs rounded-lg gap-1"
-                >
-                  <Plus className="h-3 w-3 text-accent" />
-                  <span>{language === "sw" ? "Agiza Stoki" : "Order Stock"}</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsCreatingPurchase(true);
+                      setIsEditingPurchase(false);
+                      setSelectedSupplierId(selectedSupplier.id);
+                      setActiveTab("orders");
+                    }}
+                    className="h-7 text-xs rounded-lg gap-1"
+                  >
+                    <Plus className="h-3 w-3 text-accent" />
+                    <span>{language === "sw" ? "Agiza Stoki" : "Order Stock"}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedSupplier(null)}
+                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                    title={language === "sw" ? "Funga jopo" : "Close panel"}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
 
               <CardContent className="p-4 space-y-3 text-xs">

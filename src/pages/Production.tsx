@@ -364,11 +364,11 @@ export default function Production() {
 
       {/* Main 2-Column Master-Detail Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column (Master Batches Table - 7 Cols) */}
-        <div className="space-y-4 lg:col-span-7">
+        {/* Left Column (Master Batches Table - expands to 12 cols when no detail panel is open) */}
+        <div className={cn("space-y-4 transition-all duration-200", (selectedBatch || isCreatingRun) ? "lg:col-span-7" : "lg:col-span-12")}>
           <Card className="border border-border bg-card shadow-xs">
-            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   size="sm"
                   variant={statusFilter === "all" ? "default" : "outline"}
@@ -395,7 +395,7 @@ export default function Production() {
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="relative w-44">
                   <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -421,8 +421,8 @@ export default function Production() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto w-full">
+              <Table className="min-w-[650px] w-full">
                 <TableHeader>
                   <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
                     <TableHead className="font-semibold">{t("production.batchNumber")}</TableHead>
@@ -640,7 +640,23 @@ export default function Production() {
                   </CardTitle>
                   <p className="text-[11px] text-muted-foreground">{selectedBatch.output_product_name}</p>
                 </div>
-                {getStatusBadge(selectedBatch.status)}
+                <div className="flex items-center gap-2">
+                  {getStatusBadge(selectedBatch.status)}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedBatch(null);
+                      setIsConfirmingDelete(false);
+                      setIsCompleting(false);
+                      setIsConfirmingComplete(false);
+                    }}
+                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                    title={language === "sw" ? "Funga jopo" : "Close panel"}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
 
               <CardContent className="p-4 space-y-4">

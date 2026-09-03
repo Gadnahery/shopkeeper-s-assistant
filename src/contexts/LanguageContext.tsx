@@ -49,6 +49,29 @@ const translations: Record<Language, Record<string, string>> = {
     "header.thisYear": "This Year",
     "header.custom": "Custom Period",
 
+    // Common Terms
+    "common.all": "All",
+    "common.cancel": "Cancel",
+    "common.save": "Save",
+    "common.delete": "Delete",
+    "common.edit": "Edit",
+    "common.search": "Search",
+    "common.filter": "Filter",
+    "common.export": "Export",
+    "common.import": "Import",
+    "common.loading": "Loading...",
+    "common.status": "Status",
+    "common.actions": "Actions",
+    "common.view": "View",
+    "common.details": "Details",
+    "common.close": "Close",
+    "common.back": "Back",
+    "common.confirm": "Confirm",
+    "common.yes": "Yes",
+    "common.no": "No",
+    "common.confirmDelete": "Confirm Delete",
+    "common.confirmDeleteDescription": "Are you sure you want to delete this? This action cannot be undone.",
+
     // Purchases
     "purchases.title": "Purchases",
     "purchases.subtitle": "Manage supplier purchase orders, stock receipts, and supplier accounts.",
@@ -68,6 +91,12 @@ const translations: Record<Language, Record<string, string>> = {
     "purchases.received": "Received",
     "purchases.pending": "Pending",
     "purchases.cancelled": "Cancelled",
+
+    // Production Aliases
+    "production.inProgress": "In Progress",
+    "production.completed": "Completed",
+    "production.planned": "Planned",
+    "production.cancelled": "Cancelled",
     "purchases.selectSupplier": "Select Supplier",
     "purchases.noSupplier": "No Supplier (Direct / Walk-in)",
     "purchases.selectProduct": "Select Product",
@@ -167,15 +196,23 @@ const translations: Record<Language, Record<string, string>> = {
     "inventory.import": "Import",
     "inventory.export": "Export",
     "inventory.addProduct": "Add Product",
-    "inventory.code": "Code",
-    "inventory.name": "Name",
-    "inventory.stock": "Stock",
+    "inventory.category": "Category",
+    "inventory.categories": "Categories",
+    "inventory.code": "Code / SKU",
+    "inventory.name": "Product Name",
+    "inventory.stock": "Stock Quantity",
+    "inventory.sellingPrice": "Selling Price",
+    "inventory.buyingPrice": "Buying Price",
     "inventory.priceCol": "Price",
     "inventory.actions": "Actions",
     "inventory.low": "LOW",
     "inventory.profit": "Profit",
     "inventory.profitPercent": "Profit %",
     "inventory.totalStockValue": "Total Stock Value",
+    "inventory.all": "All Inventory",
+    "inventory.inStock": "In Stock",
+    "inventory.lowStock": "Low Stock",
+    "inventory.outOfStock": "Out of Stock",
 
     // Add Product
     "addProduct.title": "Add New Product",
@@ -369,23 +406,7 @@ const translations: Record<Language, Record<string, string>> = {
     "receipt.thankYou": "Thank you for shopping with us!",
     "receipt.comeAgain": "Karibu tena!",
 
-    // Common
-    "common.or": "or",
-    "common.actions": "Actions",
-    "common.edit": "Edit",
-    "common.delete": "Delete",
-    "common.search": "Search",
-    "common.loading": "Loading...",
-    "common.error": "Error",
-    "common.success": "Success",
-    "common.cancel": "Cancel",
-    "common.confirmDeleteTitle": "Are you sure?",
-    "common.confirmDeleteDescription": "This action cannot be undone.",
-    "common.save": "Save",
-    "common.close": "Close",
-    "common.items": "Items",
-    "common.selected": "selected",
-    "common.apply": "Apply",
+    // Inventory Category Bulk
     "inventory.changeCategory": "Change Category",
     "inventory.deleteSelected": "Delete Selected",
     "inventory.exportSelected": "Export Selected",
@@ -434,6 +455,29 @@ const translations: Record<Language, Record<string, string>> = {
     "header.thisYear": "Mwaka Huu",
     "header.custom": "Kipindi Maalum",
 
+    // Common Terms
+    "common.all": "Zote",
+    "common.cancel": "Ghairi",
+    "common.save": "Hifadhi",
+    "common.delete": "Futa",
+    "common.edit": "Hariri",
+    "common.search": "Tafuta",
+    "common.filter": "Chuja",
+    "common.export": "Pakua",
+    "common.import": "Ingiza",
+    "common.loading": "Inapakia...",
+    "common.status": "Hali",
+    "common.actions": "Vitendo",
+    "common.view": "Tazama",
+    "common.details": "Maelezo",
+    "common.close": "Funga",
+    "common.back": "Rudi",
+    "common.confirm": "Thibitisha",
+    "common.yes": "Ndiyo",
+    "common.no": "Hapana",
+    "common.confirmDelete": "Thibitisha Kufuta",
+    "common.confirmDeleteDescription": "Je, una uhakika unataka kufuta hii? Kitendo hiki hakiwezi kurudishwa.",
+
     // Purchases
     "purchases.title": "Manunuzi",
     "purchases.subtitle": "Simamia maagizo ya manunuzi kutoka kwa wasambazaji, stoki iliyoingia, na akaunti za wasambazaji.",
@@ -453,6 +497,12 @@ const translations: Record<Language, Record<string, string>> = {
     "purchases.received": "Imepokelewa",
     "purchases.pending": "Inasubiri",
     "purchases.cancelled": "Imeghairiwa",
+
+    // Production Aliases
+    "production.inProgress": "Inaendelea",
+    "production.completed": "Zimekamilika",
+    "production.planned": "Iliyopangwa",
+    "production.cancelled": "Imeghairiwa",
     "purchases.selectSupplier": "Chagua Msambazaji",
     "purchases.noSupplier": "Bila Msambazaji (Manunuzi ya Moja kwa Moja)",
     "purchases.selectProduct": "Chagua Bidhaa",
@@ -547,20 +597,28 @@ const translations: Record<Language, Record<string, string>> = {
     "sales.selectCustomer": "Chagua mteja",
 
     // Inventory
-    "inventory.title": "Usimamizi wa Stoo",
+    "inventory.title": "Hesabu ya Stoo",
     "inventory.searchPlaceholder": "Tafuta bidhaa...",
     "inventory.import": "Leta",
-    "inventory.export": "Hamisha",
+    "inventory.export": "Pakua",
     "inventory.addProduct": "Ongeza Bidhaa",
-    "inventory.code": "Kodi",
-    "inventory.name": "Jina",
-    "inventory.stock": "Stoki",
+    "inventory.category": "Kundi",
+    "inventory.categories": "Makundi",
+    "inventory.code": "Kodi / Barcode",
+    "inventory.name": "Jina la Bidhaa",
+    "inventory.stock": "Hesabu ya Stoki",
+    "inventory.sellingPrice": "Bei ya Kuuza",
+    "inventory.buyingPrice": "Bei ya Kununua",
     "inventory.priceCol": "Bei",
     "inventory.actions": "Vitendo",
     "inventory.low": "CHINI",
     "inventory.profit": "Faida",
     "inventory.profitPercent": "Faida %",
     "inventory.totalStockValue": "Thamani ya Stoki",
+    "inventory.all": "Bidhaa Zote",
+    "inventory.inStock": "Zilizopo Stoo",
+    "inventory.lowStock": "Stoki Chini",
+    "inventory.outOfStock": "Zimeisha",
 
     // Add Product
     "addProduct.title": "Ongeza Bidhaa Mpya",
@@ -754,23 +812,7 @@ const translations: Record<Language, Record<string, string>> = {
     "receipt.thankYou": "Asante kwa kununua kwetu!",
     "receipt.comeAgain": "Karibu tena!",
 
-    // Common
-    "common.or": "au",
-    "common.actions": "Vitendo",
-    "common.edit": "Hariri",
-    "common.delete": "Futa",
-    "common.search": "Tafuta",
-    "common.loading": "Inapakia...",
-    "common.error": "Kosa",
-    "common.success": "Imefanikiwa",
-    "common.cancel": "Ghairi",
-    "common.confirmDeleteTitle": "Una uhakika?",
-    "common.confirmDeleteDescription": "Kitendo hiki hakiwezi kufutwa.",
-    "common.save": "Hifadhi",
-    "common.close": "Funga",
-    "common.items": "Bidhaa",
-    "common.selected": "zimechaguliwa",
-    "common.apply": "Tumia",
+    // Inventory Category Bulk
     "inventory.changeCategory": "Badilisha Kategoria",
     "inventory.deleteSelected": "Futa Zilizochaguliwa",
     "inventory.exportSelected": "Pakua Zilizochaguliwa",
@@ -794,8 +836,68 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("app-language", lang);
   };
 
+  const swahiliTermsMap: Record<string, string> = {
+    all: "Zote",
+    cancel: "Ghairi",
+    save: "Hifadhi",
+    delete: "Futa",
+    edit: "Hariri",
+    search: "Tafuta",
+    category: "Kundi",
+    categories: "Makundi",
+    code: "Kodi",
+    name: "Jina",
+    stock: "Stoki",
+    price: "Bei",
+    sellingprice: "Bei ya Kuuza",
+    buyingprice: "Bei ya Kununua",
+    inprogress: "Inaendelea",
+    completed: "Zimekamilika",
+    planned: "Iliyopangwa",
+    cancelled: "Imeghairiwa",
+    received: "Imepokelewa",
+    pending: "Inasubiri",
+    status: "Hali",
+    actions: "Vitendo",
+    total: "Jumla",
+    add: "Ongeza",
+    addproduct: "Ongeza Bidhaa",
+    addcustomer: "Ongeza Mteja",
+    addexpense: "Ongeza Matumizi",
+    newpurchase: "Ununuzi Mpya",
+    newrun: "Uzalishaji Mpya",
+    date: "Tarehe",
+    phone: "Simu",
+    notes: "Maelezo",
+    quantity: "Idadi",
+    customer: "Mteja",
+    supplier: "Msambazaji",
+  };
+
+  const formatKeyFallback = (k: string, lang: Language): string => {
+    const lastPart = k.includes(".") ? k.split(".").pop() || k : k;
+    const cleanLower = lastPart.toLowerCase().replace(/[_\s-]/g, "");
+
+    if (lang === "sw" && swahiliTermsMap[cleanLower]) {
+      return swahiliTermsMap[cleanLower];
+    }
+
+    return lastPart
+      .replace(/([A-Z])/g, " $1")
+      .replace(/[_-]/g, " ")
+      .replace(/^\w/, (c) => c.toUpperCase())
+      .trim();
+  };
+
   const t = (key: string): string => {
-    return translations[language][key] || key;
+    if (!key) return "";
+    const curLang = translations[language] || {};
+    if (curLang[key]) return curLang[key];
+
+    const fallbackLang = language === "sw" ? translations["en"] : translations["sw"];
+    if (fallbackLang && fallbackLang[key]) return fallbackLang[key];
+
+    return formatKeyFallback(key, language);
   };
 
   useEffect(() => {

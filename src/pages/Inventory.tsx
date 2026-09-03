@@ -325,10 +325,10 @@ export default function Inventory() {
 
       {/* 2-Column Master-Detail Layout (NO POPUPS) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column (Master Products Table - 7 Cols) */}
-        <div className="space-y-4 lg:col-span-7">
+        {/* Left Column (Master Products Table - expands to 12 cols when unselected) */}
+        <div className={cn("space-y-4 transition-all duration-200", (isAddingProduct || editForm) ? "lg:col-span-7" : "lg:col-span-12")}>
           <Card className="border border-border bg-card shadow-xs">
-            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative w-full sm:w-48">
                   <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -372,6 +372,7 @@ export default function Inventory() {
                   onClick={() => {
                     setIsAddingProduct(true);
                     setSelectedProduct(null);
+                    setEditForm(null);
                   }}
                   className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
                 >
@@ -391,6 +392,7 @@ export default function Inventory() {
                   onClick={() => {
                     setIsAddingProduct(true);
                     setSelectedProduct(null);
+                    setEditForm(null);
                   }}
                   className="mt-3 h-8 rounded-xl text-xs bg-primary text-primary-foreground"
                 >
@@ -399,8 +401,8 @@ export default function Inventory() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto w-full">
+                <Table className="min-w-[650px] w-full">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
                       <TableHead className="w-10">
@@ -622,6 +624,18 @@ export default function Inventory() {
                     className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setEditForm(null);
+                      setSelectedProduct(null);
+                    }}
+                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                    title={language === "sw" ? "Funga jopo" : "Close panel"}
+                  >
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
