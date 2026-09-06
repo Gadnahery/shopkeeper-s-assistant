@@ -278,27 +278,29 @@ export default function Dashboard() {
   const expensesLabelKey = language === "sw" ? "Matumizi" : "Expenses";
   const profitLabelKey = language === "sw" ? "Faida" : "Profit";
 
+  const [mobileTab, setMobileTab] = useState<"activity" | "trends" | "alerts">("activity");
+
   return (
-    <div className="space-y-5 pb-12">
+    <div className="space-y-4 sm:space-y-5 pb-12">
       {/* Page Header */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {language === "sw" ? `Habari, ${shopName}` : `Overview — ${shopName}`}
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {format(new Date(), language === "sw" ? "EEEE, dd MMMM yyyy" : "EEEE, MMMM dd yyyy")}
           </p>
         </div>
 
         {/* Period selector */}
-        <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1 shadow-xs self-start sm:self-auto">
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-xs self-start sm:self-auto">
           {(["today", "week", "month", "year"] as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                "rounded-lg px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-medium transition-all",
                 period === p
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -310,95 +312,328 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Primary KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        {kpiLoading ? (
-          <>
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-          </>
-        ) : (
-          <>
-            <StatCard
-              title={language === "sw" ? "Jumla ya Mauzo" : "Total Sales"}
-              value={formatMoney(totalSalesVal)}
-              icon={ShoppingBag}
-              colorClass="text-blue-600"
-              bgColorClass="bg-blue-50 dark:bg-blue-950/40"
+      {/* MOBILE COMPACT VIEW (md:hidden) — Simple, light, no excessive scrolling */}
+      <div className="space-y-3.5 md:hidden">
+        {/* Mobile Hero Card */}
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              {language === "sw" ? "Mauzo ya Kipindi" : "Period Sales"}
+            </span>
+            <span className="badge-neutral text-[10px]">
+              {PERIOD_LABELS[period][language]}
+            </span>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-black tracking-tight text-foreground">{formatMoney(totalSalesVal)}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {salesList?.length || 0} {language === "sw" ? "miamala ya mauzo" : "sales completed"}
+              </p>
+            </div>
+            <Button
+              size="sm"
               onClick={() => navigate("/sales")}
-            />
-            <StatCard
-              title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
-              value={formatMoney(totalSalesVal)}
-              icon={Wallet}
-              colorClass="text-emerald-600"
-              bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
-            />
-            <StatCard
-              title={language === "sw" ? "Madeni ya Wateja" : "Outstanding"}
-              value={formatMoney(customersOweVal)}
-              icon={Users}
-              colorClass="text-amber-600"
-              bgColorClass="bg-amber-50 dark:bg-amber-950/40"
-              onClick={() => navigate("/customers")}
-            />
-            <StatCard
-              title={language === "sw" ? "Faida Halisi" : "Net Profit"}
-              value={formatMoney(netProfitVal)}
-              icon={TrendingUp}
-              colorClass="text-emerald-600"
-              bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
-              onClick={() => navigate("/expenses")}
-            />
-          </>
+              className="h-8 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1 text-accent" />
+              <span>{language === "sw" ? "Uza" : "Sell"}</span>
+            </Button>
+          </div>
+
+          {/* 3-Column Mini Metrics */}
+          <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-border/60 pt-3">
+            <div className="rounded-xl bg-muted/40 p-2 text-center">
+              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Iliyolipwa" : "Cash In"}</p>
+              <p className="text-xs font-bold text-emerald-600 truncate mt-0.5">{formatMoney(totalSalesVal)}</p>
+            </div>
+            <div className="rounded-xl bg-muted/40 p-2 text-center cursor-pointer" onClick={() => navigate("/customers")}>
+              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Madeni" : "Due"}</p>
+              <p className="text-xs font-bold text-amber-600 truncate mt-0.5">{formatMoney(customersOweVal)}</p>
+            </div>
+            <div className="rounded-xl bg-muted/40 p-2 text-center cursor-pointer" onClick={() => navigate("/expenses")}>
+              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Faida" : "Net Profit"}</p>
+              <p className="text-xs font-bold text-foreground truncate mt-0.5">{formatMoney(netProfitVal)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Primary Touch Actions */}
+        <div className="grid grid-cols-4 gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/sales")}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-2xs">
+              <ShoppingBag className="h-4 w-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "Mauzo" : "Sale"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/inventory?new=true")}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
+              <Package className="h-4 w-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "+ Stoki" : "+ Stock"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/customers")}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
+              <Users className="h-4 w-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "Madeni" : "Debts"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/expenses?new=true")}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600">
+              <Receipt className="h-4 w-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "+ Gharama" : "+ Expense"}</span>
+          </button>
+        </div>
+
+        {/* Mobile Segmented Control */}
+        <div className="flex rounded-xl border border-border bg-muted/40 p-1">
+          <button
+            type="button"
+            onClick={() => setMobileTab("activity")}
+            className={cn(
+              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all",
+              mobileTab === "activity" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {language === "sw" ? "Miamala" : "Activity"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("trends")}
+            className={cn(
+              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all",
+              mobileTab === "trends" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {language === "sw" ? "Mwelekeo" : "Trends"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("alerts")}
+            className={cn(
+              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all flex items-center justify-center gap-1.5",
+              mobileTab === "alerts" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span>{language === "sw" ? "Stoki Ndogo" : "Alerts"}</span>
+            {lowStockProducts && lowStockProducts.length > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+                {lowStockProducts.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Segment Content */}
+        {mobileTab === "activity" && (
+          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {language === "sw" ? "Miamala ya Karibuni" : "Recent Activity"}
+              </span>
+              <button
+                onClick={() => navigate("/sales")}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                {language === "sw" ? "Zote" : "View All"}
+              </button>
+            </div>
+            {recentActivities.length === 0 ? (
+              <div className="p-6 text-center text-xs text-muted-foreground">
+                {language === "sw" ? "Hakuna miamala kwa sasa." : "No transactions recorded yet."}
+              </div>
+            ) : (
+              <div className="divide-y divide-border/60">
+                {recentActivities.slice(0, 5).map((act, index) => (
+                  <div key={index} className="flex items-center gap-3 px-4 py-3">
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${act.bg}`}>
+                      <act.icon className={`h-3.5 w-3.5 ${act.color}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-foreground">{act.title}</p>
+                      <p className="text-[10px] text-muted-foreground">{act.subtitle}</p>
+                    </div>
+                    <span className={cn("text-xs font-bold shrink-0", act.isPositive ? "text-emerald-600" : "text-foreground")}>
+                      {act.amount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {mobileTab === "trends" && (
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
+              {language === "sw" ? "Mwelekeo wa Mauzo na Faida (Siku 7)" : "7-Day Sales & Profit Trend"}
+            </h3>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} dy={6} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} width={34} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 10 }}
+                    formatter={(val: unknown) => formatMoney(Number(val) || 0)}
+                  />
+                  <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 10, paddingTop: 6 }} />
+                  <Line type="monotone" dataKey={salesLabelKey} stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} />
+                  <Line type="monotone" dataKey={profitLabelKey} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {mobileTab === "alerts" && (
+          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {language === "sw" ? "Bidhaa Zenye Stoki Ndogo" : "Low Stock Alerts"}
+              </span>
+              <button
+                onClick={() => navigate("/inventory")}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                {language === "sw" ? "Stoki" : "View Inventory"}
+              </button>
+            </div>
+            {lowStockProducts && lowStockProducts.length > 0 ? (
+              <div className="divide-y divide-border/60">
+                {lowStockProducts.slice(0, 6).map((item) => (
+                  <div key={item.id} className="flex items-center justify-between px-4 py-3">
+                    <div className="min-w-0 pr-2">
+                      <p className="text-xs font-semibold text-foreground truncate">{item.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{language === "sw" ? "Kiwango cha tahadhari" : "Limit"}: {item.low_stock_alert ?? 5}</p>
+                    </div>
+                    <span className="badge-warning shrink-0">{item.stock} pcs</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 text-center text-xs text-muted-foreground">
+                {language === "sw" ? "Stoki yote iko katika kiwango cha kuridhisha." : "All stock levels are healthy."}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Secondary KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {kpiLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
-        ) : (
-          <>
-            <StatCard
-              title={language === "sw" ? "Jumla ya Manunuzi" : "Purchases"}
-              value={formatMoney(totalPurchasesVal)}
-              icon={ShoppingCart}
-              colorClass="text-violet-600"
-              bgColorClass="bg-violet-50 dark:bg-violet-950/40"
-              onClick={() => navigate("/purchases")}
-            />
-            <StatCard
-              title={language === "sw" ? "Jumla ya Matumizi" : "Expenses"}
-              value={formatMoney(totalExpensesVal)}
-              icon={Receipt}
-              colorClass="text-rose-600"
-              bgColorClass="bg-rose-50 dark:bg-rose-950/40"
-              onClick={() => navigate("/expenses")}
-            />
-            <StatCard
-              title={language === "sw" ? "Thamani ya Stoki" : "Stock Value"}
-              value={formatMoney(stockValueVal)}
-              icon={Package}
-              colorClass="text-cyan-600"
-              bgColorClass="bg-cyan-50 dark:bg-cyan-950/40"
-              onClick={() => navigate("/inventory")}
-            />
-            <StatCard
-              title={language === "sw" ? "Faida ya Jumla" : "Gross Profit"}
-              value={formatMoney(grossProfitVal)}
-              icon={Banknote}
-              colorClass="text-teal-600"
-              bgColorClass="bg-teal-50 dark:bg-teal-950/40"
-            />
-          </>
-        )}
+      {/* DESKTOP EXPANDED VIEW (hidden md:block) */}
+      <div className="hidden md:block space-y-5">
+        {/* Primary KPIs */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          {kpiLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title={language === "sw" ? "Jumla ya Mauzo" : "Total Sales"}
+                value={formatMoney(totalSalesVal)}
+                icon={ShoppingBag}
+                colorClass="text-blue-600"
+                bgColorClass="bg-blue-50 dark:bg-blue-950/40"
+                onClick={() => navigate("/sales")}
+              />
+              <StatCard
+                title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
+                value={formatMoney(totalSalesVal)}
+                icon={Wallet}
+                colorClass="text-emerald-600"
+                bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
+              />
+              <StatCard
+                title={language === "sw" ? "Madeni ya Wateja" : "Outstanding"}
+                value={formatMoney(customersOweVal)}
+                icon={Users}
+                colorClass="text-amber-600"
+                bgColorClass="bg-amber-50 dark:bg-amber-950/40"
+                onClick={() => navigate("/customers")}
+              />
+              <StatCard
+                title={language === "sw" ? "Faida Halisi" : "Net Profit"}
+                value={formatMoney(netProfitVal)}
+                icon={TrendingUp}
+                colorClass="text-emerald-600"
+                bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
+                onClick={() => navigate("/expenses")}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Secondary KPIs */}
+        <div className="grid grid-cols-4 gap-3">
+          {kpiLoading ? (
+            Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+          ) : (
+            <>
+              <StatCard
+                title={language === "sw" ? "Jumla ya Manunuzi" : "Purchases"}
+                value={formatMoney(totalPurchasesVal)}
+                icon={ShoppingCart}
+                colorClass="text-violet-600"
+                bgColorClass="bg-violet-50 dark:bg-violet-950/40"
+                onClick={() => navigate("/purchases")}
+              />
+              <StatCard
+                title={language === "sw" ? "Jumla ya Matumizi" : "Expenses"}
+                value={formatMoney(totalExpensesVal)}
+                icon={Receipt}
+                colorClass="text-rose-600"
+                bgColorClass="bg-rose-50 dark:bg-rose-950/40"
+                onClick={() => navigate("/expenses")}
+              />
+              <StatCard
+                title={language === "sw" ? "Thamani ya Stoki" : "Stock Value"}
+                value={formatMoney(stockValueVal)}
+                icon={Package}
+                colorClass="text-cyan-600"
+                bgColorClass="bg-cyan-50 dark:bg-cyan-950/40"
+                onClick={() => navigate("/inventory")}
+              />
+              <StatCard
+                title={language === "sw" ? "Faida ya Jumla" : "Gross Profit"}
+                value={formatMoney(grossProfitVal)}
+                icon={Banknote}
+                colorClass="text-teal-600"
+                bgColorClass="bg-teal-50 dark:bg-teal-950/40"
+              />
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Charts Row (Desktop) */}
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4">
         {salesListLoading || expensesLoading ? (
           <>
             <ChartSkeleton />
@@ -460,8 +695,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Bottom Row: Low Stock + Recent Activities */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Bottom Row: Low Stock + Recent Activities (Desktop) */}
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Low Stock Alerts */}
         <SectionCard
           title={language === "sw" ? "Tahadhari za Stoki Ndogo" : "Low Stock Alerts"}

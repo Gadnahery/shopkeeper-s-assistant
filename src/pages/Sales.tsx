@@ -20,9 +20,11 @@ import {
   Trash2,
   Wallet,
   X,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +86,7 @@ export default function Sales() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showReceipt, setShowReceipt] = useState(false);
   const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
 
@@ -272,6 +275,7 @@ export default function Sales() {
       });
 
       setShowReceipt(true);
+      setMobileCartOpen(false);
       setCartItems([]);
       setDiscountAmount("0");
       setDiscountPercent("0");
@@ -308,6 +312,7 @@ export default function Sales() {
       });
 
       setCartItems([]);
+      setMobileCartOpen(false);
       setCustomerName("");
       setCashAmount("");
       setMpesaAmount("");
@@ -336,6 +341,223 @@ export default function Sales() {
     setActiveDraftId(draft.id);
     toast.info(language === "sw" ? "Rasimu imerejeshwa kwenye kikapu" : "Draft restored to cart");
   };
+
+  const renderCartCard = () => (
+    <Card className="border border-border bg-card shadow-xs">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+        <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+          <ShoppingCart className="h-4 w-4 text-accent" />
+          <span>{t("sales.cart")} ({cartItems.reduce((sum, it) => sum + it.quantity, 0)})</span>
+        </CardTitle>
+        {cartItems.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCartItems([])}
+            className="h-7 text-xs text-muted-foreground hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            <span>{language === "sw" ? "Futa Yote" : "Clear"}</span>
+          </Button>
+        )}
+      </CardHeader>
+
+      <CardContent className="p-4 space-y-4">
+        {/* Flexible Customer Selector */}
+        <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-2.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold text-foreground">{t("sales.customer")}</Label>
+            <div className="flex rounded-lg bg-muted p-0.5 text-[10px] font-bold">
+              <button
+                type="button"
+                onClick={() => setCustomerMode("walk-in")}
+                className={cn(
+                  "rounded-md px-2 py-0.5 transition-colors",
+                  customerMode === "walk-in" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {language === "sw" ? "Mteja wa Kawaida" : "Walk-in"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomerMode("existing");
+                  if (customers && customers.length > 0 && selectedCustomer === "walk-in") {
+                    setSelectedCustomer(customers[0].id);
+                  }
+                }}
+                className={cn(
+                  "rounded-md px-2 py-0.5 transition-colors",
+                  customerMode === "existing" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {language === "sw" ? "Mteja Aliyepo" : "Existing"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomerMode("custom")}
+                className={cn(
+                  "rounded-md px-2 py-0.5 transition-colors",
+                  customerMode === "custom" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {language === "sw" ? "Andika Jina" : "Type Name"}
+              </button>
+            </div>
+          </div>
+
+          {customerMode === "walk-in" && (
+            <div className="flex items-center justify-between rounded-lg bg-background px-3 py-2 border border-border text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{language === "sw" ? "Mteja wa Kawaida (Walk-in)" : "Walk-in Customer"}</span>
+              <span className="text-[10px] text-muted-foreground">{language === "sw" ? "Hakuna deni" : "No credit linked"}</span>
+            </div>
+          )}
+
+          {customerMode === "existing" && (
+            <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+              <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                <SelectValue placeholder={language === "sw" ? "Chagua mteja..." : "Select customer..."} />
+              </SelectTrigger>
+              <SelectContent className="max-h-56 rounded-xl border-border bg-popover text-xs">
+                {(customers || []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} {c.phone ? `(${c.phone})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {customerMode === "custom" && (
+            <div className="space-y-1.5">
+              <Input
+                placeholder={language === "sw" ? "Jina la Mteja (mf. Juma Hamisi)..." : "Customer Name (e.g. John Doe)..."}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="h-9 rounded-xl border-border bg-background text-xs font-semibold"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Cart Items List */}
+        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+          {cartItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-muted-foreground">
+              <ShoppingBag className="h-6 w-6 mb-1 text-muted-foreground/60" />
+              <span>{language === "sw" ? "Kikapu kiko tupu. Bonyeza bidhaa kuongeza." : "Cart is empty. Tap items to add."}</span>
+            </div>
+          ) : (
+            cartItems.map((item) => (
+              <div key={item.product_id} className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-2.5">
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="truncate text-xs font-semibold text-foreground">{item.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{formatMoney(item.price)}</p>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                    className="h-7 w-7 rounded-lg border-border"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="w-6 text-center text-xs font-bold text-foreground">{item.quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                    className="h-7 w-7 rounded-lg border-border"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                <div className="w-20 text-right text-xs font-bold text-foreground">
+                  {formatMoney(item.price * item.quantity)}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Financial Breakdown */}
+        <div className="space-y-1.5 rounded-xl bg-muted/40 p-3 text-xs border border-border/60">
+          <div className="flex justify-between text-muted-foreground">
+            <span>{t("sales.subtotal")}</span>
+            <span>{formatMoney(subtotal)}</span>
+          </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-[var(--danger-text)] font-semibold">
+              <span>{t("sales.discount")}</span>
+              <span>-{formatMoney(discount)}</span>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-border pt-1.5 text-sm font-bold text-foreground">
+            <span>{t("sales.total")}</span>
+            <span className="text-base">{formatMoney(total)}</span>
+          </div>
+        </div>
+
+        {/* Payment Amount & Method */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-[11px] font-semibold text-foreground">Cash (TSH)</Label>
+              <Input
+                type="number"
+                value={cashAmount}
+                onChange={(e) => setCashAmount(e.target.value)}
+                placeholder="0"
+                className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] font-semibold text-foreground">M-Pesa / Mobile (TSH)</Label>
+              <Input
+                type="number"
+                value={mpesaAmount}
+                onChange={(e) => setMpesaAmount(e.target.value)}
+                placeholder="0"
+                className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+              />
+            </div>
+          </div>
+
+          {changeDue > 0 && (
+            <div className="flex justify-between rounded-xl bg-[var(--success-bg)] p-2.5 text-xs font-bold text-[var(--success-text)]">
+              <span>{language === "sw" ? "Chenji ya Mteja" : "Change Due"}</span>
+              <span>{formatMoney(changeDue)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <Button
+            variant="outline"
+            onClick={handleHoldDraft}
+            disabled={cartItems.length === 0}
+            className="h-10 rounded-xl text-xs flex-1"
+          >
+            <History className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+            <span>{t("sales.saveAsDraft")}</span>
+          </Button>
+
+          <Button
+            onClick={handleCompleteSale}
+            disabled={cartItems.length === 0 || createSale.isPending}
+            className="h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2] shadow-xs hover:bg-primary/90"
+          >
+            {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1 text-accent" />}
+            <span>{language === "sw" ? "Kamilisha Mauzo" : "Complete Sale"}</span>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6 pb-12">
@@ -499,224 +721,50 @@ export default function Sales() {
           )}
         </div>
 
-        {/* Right 5 Columns: Checkout Cart & Summary */}
-        <div className="space-y-4 lg:col-span-5">
-          <Card className="border border-border bg-card shadow-xs">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
-              <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4 text-accent" />
-                <span>{t("sales.cart")} ({cartItems.reduce((sum, it) => sum + it.quantity, 0)})</span>
-              </CardTitle>
-              {cartItems.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCartItems([])}
-                  className="h-7 text-xs text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  <span>{language === "sw" ? "Futa Yote" : "Clear"}</span>
-                </Button>
-              )}
-            </CardHeader>
-
-            <CardContent className="p-4 space-y-4">
-              {/* Flexible Customer Selector */}
-              <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-2.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-foreground">{t("sales.customer")}</Label>
-                  <div className="flex rounded-lg bg-muted p-0.5 text-[10px] font-bold">
-                    <button
-                      type="button"
-                      onClick={() => setCustomerMode("walk-in")}
-                      className={cn(
-                        "rounded-md px-2 py-0.5 transition-colors",
-                        customerMode === "walk-in" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {language === "sw" ? "Mteja wa Kawaida" : "Walk-in"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCustomerMode("existing");
-                        if (customers && customers.length > 0 && selectedCustomer === "walk-in") {
-                          setSelectedCustomer(customers[0].id);
-                        }
-                      }}
-                      className={cn(
-                        "rounded-md px-2 py-0.5 transition-colors",
-                        customerMode === "existing" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {language === "sw" ? "Mteja Aliyepo" : "Existing"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCustomerMode("custom")}
-                      className={cn(
-                        "rounded-md px-2 py-0.5 transition-colors",
-                        customerMode === "custom" ? "bg-background text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {language === "sw" ? "Andika Jina" : "Type Name"}
-                    </button>
-                  </div>
-                </div>
-
-                {customerMode === "walk-in" && (
-                  <div className="flex items-center justify-between rounded-lg bg-background px-3 py-2 border border-border text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{language === "sw" ? "Mteja wa Kawaida (Walk-in)" : "Walk-in Customer"}</span>
-                    <span className="text-[10px] text-muted-foreground">{language === "sw" ? "Hakuna deni" : "No credit linked"}</span>
-                  </div>
-                )}
-
-                {customerMode === "existing" && (
-                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                    <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
-                      <SelectValue placeholder={language === "sw" ? "Chagua mteja..." : "Select customer..."} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-56 rounded-xl border-border bg-popover text-xs">
-                      {(customers || []).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name} {c.phone ? `(${c.phone})` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                {customerMode === "custom" && (
-                  <div className="space-y-1.5">
-                    <Input
-                      placeholder={language === "sw" ? "Jina la Mteja (mf. Juma Hamisi)..." : "Customer Name (e.g. John Doe)..."}
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="h-9 rounded-xl border-border bg-background text-xs font-semibold"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Cart Items List */}
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {cartItems.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-muted-foreground">
-                    <ShoppingBag className="h-6 w-6 mb-1 text-muted-foreground/60" />
-                    <span>{language === "sw" ? "Kikapu kiko tupu. Bonyeza bidhaa kuongeza." : "Cart is empty. Tap items on the left to add."}</span>
-                  </div>
-                ) : (
-                  cartItems.map((item) => (
-                    <div key={item.product_id} className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-2.5">
-                      <div className="min-w-0 flex-1 pr-2">
-                        <p className="truncate text-xs font-semibold text-foreground">{item.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{formatMoney(item.price)}</p>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                          className="h-7 w-7 rounded-lg border-border"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="w-6 text-center text-xs font-bold text-foreground">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                          className="h-7 w-7 rounded-lg border-border"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-
-                      <div className="w-20 text-right text-xs font-bold text-foreground">
-                        {formatMoney(item.price * item.quantity)}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Financial Breakdown */}
-              <div className="space-y-1.5 rounded-xl bg-muted/40 p-3 text-xs border border-border/60">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{t("sales.subtotal")}</span>
-                  <span>{formatMoney(subtotal)}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-[var(--danger-text)] font-semibold">
-                    <span>{t("sales.discount")}</span>
-                    <span>-{formatMoney(discount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t border-border pt-1.5 text-sm font-bold text-foreground">
-                  <span>{t("sales.total")}</span>
-                  <span className="text-base">{formatMoney(total)}</span>
-                </div>
-              </div>
-
-              {/* Payment Amount & Method */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-foreground">Cash (TSH)</Label>
-                    <Input
-                      type="number"
-                      value={cashAmount}
-                      onChange={(e) => setCashAmount(e.target.value)}
-                      placeholder="0"
-                      className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-foreground">M-Pesa / Mobile (TSH)</Label>
-                    <Input
-                      type="number"
-                      value={mpesaAmount}
-                      onChange={(e) => setMpesaAmount(e.target.value)}
-                      placeholder="0"
-                      className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
-                    />
-                  </div>
-                </div>
-
-                {changeDue > 0 && (
-                  <div className="flex justify-between rounded-xl bg-[var(--success-bg)] p-2.5 text-xs font-bold text-[var(--success-text)]">
-                    <span>{language === "sw" ? "Chenji ya Mteja" : "Change Due"}</span>
-                    <span>{formatMoney(changeDue)}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-1">
-                <Button
-                  variant="outline"
-                  onClick={handleHoldDraft}
-                  disabled={cartItems.length === 0}
-                  className="h-10 rounded-xl text-xs flex-1"
-                >
-                  <History className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                  <span>{t("sales.saveAsDraft")}</span>
-                </Button>
-
-                <Button
-                  onClick={handleCompleteSale}
-                  disabled={cartItems.length === 0 || createSale.isPending}
-                  className="h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2] shadow-xs hover:bg-primary/90"
-                >
-                  {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1 text-accent" />}
-                  <span>{language === "sw" ? "Kamilisha Mauzo" : "Complete Sale"}</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Right 5 Columns (Desktop only): Checkout Cart & Summary */}
+        <div className="hidden lg:block space-y-4 lg:col-span-5">
+          {renderCartCard()}
         </div>
       </div>
+
+      {/* Floating Sticky Cart Bar for Mobile (Above Bottom Nav) */}
+      {cartItems.length > 0 && (
+        <div className="fixed bottom-[74px] inset-x-3 z-30 lg:hidden safe-bottom">
+          <div className="flex items-center justify-between rounded-2xl bg-primary text-primary-foreground p-3 shadow-xl border border-primary/20">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-accent shrink-0">
+                <ShoppingCart className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium opacity-85 truncate">
+                  {cartItems.reduce((sum, it) => sum + it.quantity, 0)} {language === "sw" ? "bidhaa" : "items"}
+                </p>
+                <p className="text-sm font-black text-accent truncate">
+                  {formatMoney(total)}
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setMobileCartOpen(true)}
+              className="h-9 shrink-0 rounded-xl bg-accent px-3.5 text-xs font-bold text-primary shadow-xs hover:bg-accent/90"
+            >
+              <span>{language === "sw" ? "Lipa Sasa" : "Checkout"}</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-1 text-primary" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Cart Bottom Sheet */}
+      <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-[1.75rem] p-4 safe-bottom">
+          <div className="mx-auto mb-3 h-1 w-8 rounded-full bg-border" />
+          <SheetHeader className="mb-2 text-left sr-only">
+            <SheetTitle>{t("sales.cart")}</SheetTitle>
+          </SheetHeader>
+          {renderCartCard()}
+        </SheetContent>
+      </Sheet>
       </>
       )}
 
