@@ -13,6 +13,15 @@ const PAGE_PATHS = [
   { path: "/hrm", label: "Employees / HR" },
   { path: "/reports", label: "Reports" },
   { path: "/settings", label: "Settings" },
+  { path: "/orders", label: "Orders" },
+  { path: "/suppliers", label: "Suppliers" },
+  { path: "/categories", label: "Categories" },
+  { path: "/todo", label: "To-Do" },
+  { path: "/loyalty", label: "Loyalty" },
+  { path: "/assets", label: "Assets" },
+  { path: "/notifications", label: "Notifications" },
+  { path: "/user-management", label: "User Management" },
+  { path: "/appointments", label: "Appointments" },
 ];
 
 export { PAGE_PATHS };
