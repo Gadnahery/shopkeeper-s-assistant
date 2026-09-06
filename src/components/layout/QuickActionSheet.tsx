@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   CalendarPlus,
   CircleDollarSign,
@@ -19,10 +19,15 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 
 export function QuickActionSheet() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { language } = useLanguage();
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const capabilities = profile?.shops?.capabilities;
+
+  if (location.pathname === "/sales" || location.pathname.startsWith("/sales/")) {
+    return null;
+  }
 
   const actions = [
     {

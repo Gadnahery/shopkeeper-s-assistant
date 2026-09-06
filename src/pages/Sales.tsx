@@ -730,8 +730,8 @@ export default function Sales() {
 
       {/* Floating Sticky Cart Bar for Mobile (Above Bottom Nav) */}
       {cartItems.length > 0 && (
-        <div className="fixed bottom-[74px] inset-x-3 z-30 lg:hidden safe-bottom">
-          <div className="flex items-center justify-between rounded-2xl bg-primary text-primary-foreground p-3 shadow-xl border border-primary/20">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.85rem)] inset-x-3 z-40 lg:hidden">
+          <div className="flex items-center justify-between rounded-2xl bg-neutral-950 text-white p-3 shadow-2xl border border-neutral-800 dark:bg-card dark:border-border">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-accent shrink-0">
                 <ShoppingCart className="h-4.5 w-4.5" />
@@ -747,10 +747,10 @@ export default function Sales() {
             </div>
             <Button
               onClick={() => setMobileCartOpen(true)}
-              className="h-9 shrink-0 rounded-xl bg-accent px-3.5 text-xs font-bold text-primary shadow-xs hover:bg-accent/90"
+              className="h-10 shrink-0 rounded-xl bg-white text-neutral-950 hover:bg-white/90 dark:bg-white dark:text-neutral-950 px-4 text-xs font-bold shadow-md active:scale-95 transition-all"
             >
               <span>{language === "sw" ? "Lipa Sasa" : "Checkout"}</span>
-              <ArrowRight className="h-3.5 w-3.5 ml-1 text-primary" />
+              <ArrowRight className="h-3.5 w-3.5 ml-1 text-neutral-950" />
             </Button>
           </div>
         </div>

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,8 +69,10 @@ export default function HRM() {
 
   const [activeTab, setActiveTab] = useState<string>("staff");
   const [searchTerm, setSearchTerm] = useState("");
+  const [mobileStaffPage, setMobileStaffPage] = useState(1);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  // Inline Master-Detail Panel State (NO POPUPS)
+  // Master-Detail Panel State
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [staffToDeleteId, setStaffToDeleteId] = useState<string | null>(null);
@@ -139,6 +142,17 @@ export default function HRM() {
     );
   }, [staffList, searchTerm]);
 
+  const MOBILE_STAFF_PAGE_SIZE = 4;
+  const totalMobileStaffPages = Math.ceil(filteredStaff.length / MOBILE_STAFF_PAGE_SIZE) || 1;
+  const currentMobileStaff = useMemo(() => {
+    const start = (mobileStaffPage - 1) * MOBILE_STAFF_PAGE_SIZE;
+    return filteredStaff.slice(start, start + MOBILE_STAFF_PAGE_SIZE);
+  }, [filteredStaff, mobileStaffPage]);
+
+  useEffect(() => {
+    setMobileStaffPage(1);
+  }, [searchTerm]);
+
   const totalPayroll = useMemo(() => {
     return staffList.reduce((sum, s) => sum + (s.active ? s.salary : 0), 0);
   }, [staffList]);
@@ -147,6 +161,13 @@ export default function HRM() {
     setSelectedStaff(s);
     setEditStaff({ ...s });
     setIsAddingStaff(false);
+    setMobileDrawerOpen(true);
+  };
+
+  const handleStartAddStaff = () => {
+    setIsAddingStaff(true);
+    setSelectedStaff(null);
+    setMobileDrawerOpen(true);
   };
 
   const handleSaveNewStaff = () => {
@@ -169,6 +190,7 @@ export default function HRM() {
     setStaffList([...staffList, created]);
     toast.success(language === "sw" ? "Mfanyakazi ameongezwa" : "Staff member added");
     setIsAddingStaff(false);
+    setMobileDrawerOpen(false);
     setNewStaff({ name: "", phone: "", role: "Cashier", salary: "", department: "Sales" });
     handleSelectStaff(created);
   };
@@ -177,6 +199,7 @@ export default function HRM() {
     if (!editStaff) return;
     setStaffList(staffList.map((s) => (s.id === editStaff.id ? editStaff : s)));
     setSelectedStaff({ ...editStaff });
+    setMobileDrawerOpen(false);
     toast.success(language === "sw" ? "Taarifa zimesasishwa" : "Staff details updated");
   };
 
@@ -187,20 +210,268 @@ export default function HRM() {
     toast.success(language === "sw" ? "Mfanyakazi ameondolewa" : "Staff member removed");
   };
 
-  return (
-    <div className="space-y-6 pb-12">
-      {/* 4 Olly KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Wafanyakazi Wote" : "Total Staff"}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <Users className="h-4 w-4 text-accent" />
+  const renderAddStaffForm = () => (
+    <Card className="border border-border bg-card shadow-xs">
+      <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border">
+        <div>
+          <CardTitle className="text-sm font-semibold text-foreground">
+            {language === "sw" ? "Ongeza Mfanyakazi Mpya" : "Add New Staff Member"}
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {language === "sw" ? "Jaza taarifa za mfanyakazi mpya" : "Enter details for the new staff member"}
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground"
+          onClick={() => {
+            setIsAddingStaff(false);
+            setMobileDrawerOpen(false);
+          }}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-foreground">
+            {language === "sw" ? "Jina Kamili *" : "Full Name *"}
+          </Label>
+          <Input
+            value={newStaff.name}
+            onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+            placeholder={language === "sw" ? "Mfano: Juma Rashid" : "e.g. John Doe"}
+            className="h-9 text-xs"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-foreground">
+            {language === "sw" ? "Namba ya Simu" : "Phone Number"}
+          </Label>
+          <Input
+            value={newStaff.phone}
+            onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+            placeholder="0712 345 678"
+            className="h-9 text-xs"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {language === "sw" ? "Wadhifa (Role)" : "Role"}
+            </Label>
+            <Input
+              value={newStaff.role}
+              onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
+              placeholder="Cashier"
+              className="h-9 text-xs"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {language === "sw" ? "Idara (Department)" : "Department"}
+            </Label>
+            <Input
+              value={newStaff.department}
+              onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
+              placeholder="Sales"
+              className="h-9 text-xs"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-foreground">
+            {language === "sw" ? "Mshahara wa Mwezi (TZS)" : "Monthly Salary (TZS)"}
+          </Label>
+          <Input
+            type="number"
+            value={newStaff.salary}
+            onChange={(e) => setNewStaff({ ...newStaff, salary: e.target.value })}
+            placeholder="350000"
+            className="h-9 text-xs"
+          />
+        </div>
+
+        <div className="pt-2 flex flex-col gap-2">
+          <Button
+            onClick={handleSaveNewStaff}
+            className="w-full h-10 rounded-xl bg-neutral-950 font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 text-xs shadow-xs"
+          >
+            {language === "sw" ? "Hifadhi Mfanyakazi" : "Save Staff Member"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsAddingStaff(false);
+              setMobileDrawerOpen(false);
+            }}
+            className="w-full h-9 rounded-xl text-xs"
+          >
+            {language === "sw" ? "Ghairi" : "Cancel"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStaffDetail = () => {
+    if (!editStaff) return null;
+
+    return (
+      <Card className="border border-border bg-card shadow-xs">
+        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 text-white font-bold text-sm">
+              {editStaff.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <CardTitle className="text-sm font-semibold text-foreground">
+                {editStaff.name}
+              </CardTitle>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="badge-neutral text-[10px] px-1.5 py-0">{editStaff.role}</span>
+                <span className={cn(
+                  "text-[10px] font-medium px-1.5 py-0 rounded-full",
+                  editStaff.active ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-neutral-500/10 text-neutral-500"
+                )}>
+                  {editStaff.active ? (language === "sw" ? "Hai" : "Active") : (language === "sw" ? "Amesitishwa" : "Inactive")}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{staffList.length}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{staffList.filter((s) => s.active).length} {language === "sw" ? "wafanyakazi hai" : "active staff"}</p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground"
+            onClick={() => {
+              setSelectedStaff(null);
+              setEditStaff(null);
+              setMobileDrawerOpen(false);
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+
+        <CardContent className="pt-4 space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {language === "sw" ? "Jina Kamili" : "Full Name"}
+            </Label>
+            <Input
+              value={editStaff.name}
+              onChange={(e) => setEditStaff({ ...editStaff, name: e.target.value })}
+              className="h-9 text-xs"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {language === "sw" ? "Namba ya Simu" : "Phone"}
+            </Label>
+            <Input
+              value={editStaff.phone}
+              onChange={(e) => setEditStaff({ ...editStaff, phone: e.target.value })}
+              className="h-9 text-xs"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">
+                {language === "sw" ? "Wadhifa" : "Role"}
+              </Label>
+              <Input
+                value={editStaff.role}
+                onChange={(e) => setEditStaff({ ...editStaff, role: e.target.value })}
+                className="h-9 text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">
+                {language === "sw" ? "Idara" : "Department"}
+              </Label>
+              <Input
+                value={editStaff.department}
+                onChange={(e) => setEditStaff({ ...editStaff, department: e.target.value })}
+                className="h-9 text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {language === "sw" ? "Mshahara wa Mwezi (TZS)" : "Monthly Salary (TZS)"}
+            </Label>
+            <Input
+              type="number"
+              value={editStaff.salary}
+              onChange={(e) => setEditStaff({ ...editStaff, salary: Number(e.target.value) || 0 })}
+              className="h-9 text-xs"
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+            <div>
+              <p className="text-xs font-medium text-foreground">
+                {language === "sw" ? "Hali ya Mfanyakazi" : "Staff Status"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {editStaff.active ? (language === "sw" ? "Anaendelea na kazi" : "Currently employed") : (language === "sw" ? "Hayupo kazini" : "Suspended or left")}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setEditStaff({ ...editStaff, active: !editStaff.active })}
+              className={cn("h-7 px-2.5 text-xs font-medium", editStaff.active ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}
+            >
+              {editStaff.active ? (language === "sw" ? "Badilisha: Sitisha" : "Set Inactive") : (language === "sw" ? "Badilisha: Washa" : "Set Active")}
+            </Button>
+          </div>
+
+          <div className="pt-2 flex flex-col gap-2">
+            <Button
+              onClick={handleUpdateStaff}
+              className="w-full h-10 rounded-xl bg-neutral-950 font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 text-xs shadow-xs"
+            >
+              {language === "sw" ? "Sasisha Taarifa" : "Update Staff Details"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setStaffToDeleteId(editStaff.id)}
+              className="w-full h-9 rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              {language === "sw" ? "Futa Mfanyakazi" : "Delete Staff Member"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  return (
+    <div className="space-y-6 pb-12">
+      {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Wafanyakazi Wote" : "Total Staff"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{staffList.length}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{staffList.filter((s) => s.active).length} {language === "sw" ? "hai" : "active"}</p>
           </div>
         </Card>
 
@@ -275,18 +546,85 @@ export default function HRM() {
                   </div>
 
                   <Button
-                    onClick={() => {
-                      setIsAddingStaff(true);
-                      setSelectedStaff(null);
-                    }}
-                    className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
+                    onClick={handleStartAddStaff}
+                    className="h-9 gap-1.5 rounded-xl bg-neutral-950 text-xs font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950"
                   >
                     <Plus className="h-3.5 w-3.5 text-accent" />
                     <span>{language === "sw" ? "+ Mfanyakazi" : "+ Add Staff"}</span>
                   </Button>
                 </div>
 
-                <div className="internal-table-scroll overflow-x-auto">
+                {/* Mobile View: 4 Compact Cards per page */}
+                <div className="md:hidden">
+                  <div className="divide-y divide-border/60">
+                    {currentMobileStaff.map((s) => {
+                      const isSelected = selectedStaff?.id === s.id && !isAddingStaff;
+
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => handleSelectStaff(s)}
+                          className={cn(
+                            "flex items-center justify-between p-3.5 transition-colors active:bg-muted/60 cursor-pointer",
+                            isSelected ? "bg-accent/10" : ""
+                          )}
+                        >
+                          <div className="min-w-0 flex-1 pr-3">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-xs text-foreground truncate">{s.name}</p>
+                              <span className="badge-neutral text-[10px] px-1.5 py-0">{s.role}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground">
+                              <span>{s.department}</span>
+                              {s.phone && (
+                                <>
+                                  <span>•</span>
+                                  <span>{s.phone}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="font-bold text-xs text-foreground">
+                              {formatMoney(s.salary)}
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {totalMobileStaffPages > 1 && (
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-border/60 bg-muted/20 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileStaffPage <= 1}
+                        onClick={() => setMobileStaffPage((p) => Math.max(1, p - 1))}
+                        className="h-7 px-2 text-xs"
+                      >
+                        Prev
+                      </Button>
+                      <span className="text-muted-foreground">
+                        {mobileStaffPage} / {totalMobileStaffPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileStaffPage >= totalMobileStaffPages}
+                        onClick={() => setMobileStaffPage((p) => Math.min(totalMobileStaffPages, p + 1))}
+                        className="h-7 px-2 text-xs"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop View: Full Master Table */}
+                <div className="hidden md:block internal-table-scroll overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
@@ -328,180 +666,22 @@ export default function HRM() {
               </Card>
             </div>
 
-            {/* Right Column (Inline Detail / Add Panel - 5 Cols, NO POPUPS) */}
-            <div className="space-y-4 lg:col-span-5">
-              {/* Case 1: Inline Add Staff Form */}
-              {isAddingStaff && (
-                <Card className="border border-border bg-card shadow-xs">
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
-                    <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <UserPlus className="h-4 w-4 text-accent" />
-                      <span>{language === "sw" ? "Ongeza Mfanyakazi" : "Add Staff Member"}</span>
-                    </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsAddingStaff(false)}
-                      className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </CardHeader>
-
-                  <CardContent className="p-4 space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-semibold">{t("hrm.name")} *</Label>
-                      <Input
-                        value={newStaff.name}
-                        onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                        placeholder="e.g. Amani Mwita"
-                        className="h-9 rounded-xl border-border bg-background text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{t("hrm.phone")}</Label>
-                        <Input
-                          value={newStaff.phone}
-                          onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
-                          placeholder="0712345678"
-                          className="h-9 rounded-xl border-border bg-background text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{t("hrm.role")}</Label>
-                        <Input
-                          value={newStaff.role}
-                          onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
-                          placeholder="Cashier"
-                          className="h-9 rounded-xl border-border bg-background text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{language === "sw" ? "Idara" : "Department"}</Label>
-                        <Input
-                          value={newStaff.department}
-                          onChange={(e) => setNewStaff({ ...newStaff, department: e.target.value })}
-                          placeholder="Sales"
-                          className="h-9 rounded-xl border-border bg-background text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{language === "sw" ? "Mshahara (TSH)" : "Monthly Salary"}</Label>
-                        <Input
-                          type="number"
-                          value={newStaff.salary}
-                          onChange={(e) => setNewStaff({ ...newStaff, salary: e.target.value })}
-                          placeholder="350000"
-                          className="h-9 rounded-xl border-border bg-background text-xs font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button variant="outline" onClick={() => setIsAddingStaff(false)} className="h-9 rounded-xl text-xs flex-1">
-                        {t("common.cancel")}
-                      </Button>
-                      <Button
-                        onClick={handleSaveNewStaff}
-                        disabled={!newStaff.name.trim()}
-                        className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
-                      >
-                        {language === "sw" ? "Hifadhi Mfanyakazi" : "Save Staff"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Case 2: Inline Selected Staff Details & Edit */}
-              {!isAddingStaff && editStaff && (
-                <Card className="border border-border bg-card shadow-xs">
-                  <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
-                    <div>
-                      <CardTitle className="text-sm font-bold text-foreground">
-                        {editStaff.name}
-                      </CardTitle>
-                      <p className="text-[11px] text-muted-foreground">{editStaff.role} · {editStaff.department}</p>
-                    </div>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setStaffToDeleteId(editStaff.id)}
-                      className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </CardHeader>
-
-                  <CardContent className="p-4 space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-semibold">{t("hrm.name")}</Label>
-                      <Input
-                        value={editStaff.name}
-                        onChange={(e) => setEditStaff({ ...editStaff, name: e.target.value })}
-                        className="h-9 rounded-xl border-border bg-background text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{t("hrm.phone")}</Label>
-                        <Input
-                          value={editStaff.phone}
-                          onChange={(e) => setEditStaff({ ...editStaff, phone: e.target.value })}
-                          className="h-9 rounded-xl border-border bg-background text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{t("hrm.role")}</Label>
-                        <Input
-                          value={editStaff.role}
-                          onChange={(e) => setEditStaff({ ...editStaff, role: e.target.value })}
-                          className="h-9 rounded-xl border-border bg-background text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{language === "sw" ? "Idara" : "Department"}</Label>
-                        <Input
-                          value={editStaff.department}
-                          onChange={(e) => setEditStaff({ ...editStaff, department: e.target.value })}
-                          className="h-9 rounded-xl border-border bg-background text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold">{language === "sw" ? "Mshahara (TSH)" : "Salary"}</Label>
-                        <Input
-                          type="number"
-                          value={editStaff.salary}
-                          onChange={(e) => setEditStaff({ ...editStaff, salary: Number(e.target.value) })}
-                          className="h-9 rounded-xl border-border bg-background text-xs font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <Button
-                        onClick={handleUpdateStaff}
-                        className="h-9 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 text-accent mr-1" />
-                        <span>{language === "sw" ? "Hifadhi Mabadiliko" : "Save Changes"}</span>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+            {/* Desktop Right Column: Inline Detail / Add Panel */}
+            <div className="hidden lg:block lg:col-span-5 space-y-4">
+              {isAddingStaff && renderAddStaffForm()}
+              {!isAddingStaff && editStaff && renderStaffDetail()}
             </div>
           </div>
+
+          {/* Mobile Bottom Sheet for Adding / Editing Staff (NO SCROLLING DOWN) */}
+          <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+            <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
+              <div className="p-1">
+                {isAddingStaff && renderAddStaffForm()}
+                {!isAddingStaff && editStaff && renderStaffDetail()}
+              </div>
+            </SheetContent>
+          </Sheet>
         </TabsContent>
 
         {/* TAB 2: User Access & Roles */}

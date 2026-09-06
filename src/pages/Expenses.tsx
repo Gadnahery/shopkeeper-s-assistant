@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useExpenses, useCreateExpense, useDeleteExpense, type Expense } from "@/hooks/useExpenses";
+import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense, type Expense } from "@/hooks/useExpenses";
 import { useSalesByDateRange } from "@/hooks/useSales";
 import { usePurchases } from "@/hooks/usePurchases";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
@@ -99,7 +99,58 @@ export default function Expenses() {
   );
   const { data: purchasesList } = usePurchases();
   const createExpense = useCreateExpense();
+  const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
+
+  // Edit Expense Form State
+  const [isEditingExpense, setIsEditingExpense] = useState(false);
+  const [editForm, setEditForm] = useState({
+    id: "",
+    title: "",
+    category: "rent",
+    amount: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    notes: "",
+  });
+
+  const handleStartEditExpense = (e?: Expense) => {
+    const target = e || selectedExpense;
+    if (!target) return;
+    setEditForm({
+      id: target.id,
+      title: target.title || "",
+      category: target.category || "rent",
+      amount: String(target.amount || ""),
+      date: target.date || format(new Date(), "yyyy-MM-dd"),
+      notes: target.notes || "",
+    });
+    setIsEditingExpense(true);
+    setIsAddingExpense(false);
+    setMobileDrawerOpen(true);
+  };
+
+  const handleUpdateExpense = async () => {
+    if (!editForm.title.trim() || !Number(editForm.amount)) {
+      toast.error(language === "sw" ? "Jaza jina na kiasi cha matumizi" : "Please fill in title and amount");
+      return;
+    }
+    try {
+      const updated = await updateExpense.mutateAsync({
+        id: editForm.id,
+        title: editForm.title.trim(),
+        category: editForm.category,
+        amount: Number(editForm.amount),
+        date: editForm.date,
+        notes: editForm.notes.trim() || undefined,
+      } as any);
+      toast.success(language === "sw" ? "Gharama imesasishwa" : "Expense updated successfully");
+      setIsEditingExpense(false);
+      setMobileDrawerOpen(false);
+      if (updated) setSelectedExpense(updated);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update expense");
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
@@ -340,8 +391,111 @@ export default function Expenses() {
     </Card>
   );
 
+  const renderEditExpenseForm = () => {
+    if (!selectedExpense) return null;
+    return (
+      <Card className="border border-border bg-card shadow-xs">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+          <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-accent" />
+            <span>{language === "sw" ? "Hariri Gharama" : "Edit Expense"}</span>
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsEditingExpense(false)}
+            className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+
+        <CardContent className="p-4 space-y-3">
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">{language === "sw" ? "Jina la Gharama" : "Expense Title"} *</Label>
+            <Input
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              className="h-9 rounded-xl border-border bg-background text-xs"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{t("expenses.category")}</Label>
+              <Select
+                value={editForm.category}
+                onValueChange={(val) => setEditForm({ ...editForm, category: val })}
+              >
+                <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value} className="text-xs">
+                      {language === "sw" ? c.labelSw : c.labelEn}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{t("expenses.amount")} (TSH) *</Label>
+              <Input
+                type="number"
+                value={editForm.amount}
+                onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                className="h-9 rounded-xl border-border bg-background text-xs font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">{t("expenses.date")}</Label>
+            <Input
+              type="date"
+              value={editForm.date}
+              onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+              className="h-9 rounded-xl border-border bg-background text-xs"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">{language === "sw" ? "Maelezo ya Ziada" : "Notes"}</Label>
+            <Input
+              value={editForm.notes}
+              onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+              className="h-9 rounded-xl border-border bg-background text-xs"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditingExpense(false)}
+              className="h-9 rounded-xl text-xs flex-1"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleUpdateExpense}
+              disabled={updateExpense.isPending || !editForm.title.trim() || !Number(editForm.amount)}
+              className="h-9 rounded-xl bg-neutral-950 text-xs font-bold text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 flex-[2]"
+            >
+              {updateExpense.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              <span>{language === "sw" ? "Sasisha Gharama" : "Update Expense"}</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderExpenseDetail = () => {
     if (!selectedExpense) return null;
+    if (isEditingExpense) return renderEditExpenseForm();
+
     return (
       <Card className="border border-border bg-card shadow-xs">
         <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
@@ -356,8 +510,18 @@ export default function Expenses() {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => handleStartEditExpense(selectedExpense)}
+              className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              title={language === "sw" ? "Hariri" : "Edit"}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setExpenseToDeleteId(selectedExpense.id)}
               className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              title={language === "sw" ? "Futa" : "Delete"}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -397,6 +561,18 @@ export default function Expenses() {
                 <p className="mt-1 text-foreground">{selectedExpense.notes}</p>
               </div>
             )}
+          </div>
+
+          <div className="pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleStartEditExpense(selectedExpense)}
+              className="w-full gap-1.5 rounded-xl border-border text-xs font-semibold"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              <span>{language === "sw" ? "Hariri Taarifa za Gharama" : "Edit Expense Information"}</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
