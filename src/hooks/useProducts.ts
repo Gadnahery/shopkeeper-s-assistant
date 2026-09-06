@@ -50,10 +50,20 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: async (product: ProductInsert) => {
       // Ensure shop_id is set
-      const finalProduct = { ...product };
+      const finalProduct: any = { ...product };
       if (!finalProduct.shop_id) {
         const shopId = await getUserShopId();
         if (shopId) finalProduct.shop_id = shopId;
+      }
+      // Ensure code is always set to avoid not-null constraint errors
+      if (!finalProduct.code) {
+        finalProduct.code = finalProduct.barcode || `PRD-${Date.now().toString().slice(-6)}`;
+      }
+      if (!finalProduct.item_type) {
+        finalProduct.item_type = "product";
+      }
+      if (finalProduct.track_inventory === undefined) {
+        finalProduct.track_inventory = finalProduct.item_type === "product";
       }
       const { data, error } = await supabase
         .from("products")

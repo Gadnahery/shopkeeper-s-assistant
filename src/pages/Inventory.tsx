@@ -14,6 +14,7 @@ import {
   Plus,
   QrCode,
   Search,
+  Sparkles,
   Trash2,
   Upload,
   X,
@@ -59,6 +60,7 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") ?? "");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [stockFilter, setStockFilter] = useState<"all" | "in-stock" | "low" | "out">("all");
+  const [itemTypeFilter, setItemTypeFilter] = useState<"all" | "product" | "service">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mobileProductPage, setMobileProductPage] = useState(1);
 
@@ -69,8 +71,9 @@ export default function Inventory() {
   const [showBarcodePreview, setShowBarcodePreview] = useState(false);
   const [barcodeType, setBarcodeType] = useState<"barcode" | "qr">("barcode");
 
-  // New Product Form
+  // New Product / Service Form
   const [newProduct, setNewProduct] = useState({
+    item_type: "product" as "product" | "service",
     name: "",
     name_sw: "",
     code: "",
@@ -79,6 +82,8 @@ export default function Inventory() {
     selling_price: "",
     stock: "0",
     low_stock_alert: "5",
+    duration_minutes: "",
+    description: "",
   });
 
   // Edit Product Form State
@@ -129,15 +134,21 @@ export default function Inventory() {
 
       const matchesCategory = categoryFilter === "all" || p.category_id === categoryFilter;
       const alertLimit = p.low_stock_alert ?? 5;
+      const tracksInventory = p.track_inventory !== false && p.item_type !== "service";
       const matchesStock =
         stockFilter === "all" ||
-        (stockFilter === "in-stock" && (p.track_inventory === false || p.stock > alertLimit)) ||
-        (stockFilter === "low" && p.track_inventory !== false && p.stock > 0 && p.stock <= alertLimit) ||
-        (stockFilter === "out" && p.track_inventory !== false && p.stock <= 0);
+        (stockFilter === "in-stock" && (!tracksInventory || p.stock > alertLimit)) ||
+        (stockFilter === "low" && tracksInventory && p.stock > 0 && p.stock <= alertLimit) ||
+        (stockFilter === "out" && tracksInventory && p.stock <= 0);
 
-      return matchesSearch && matchesCategory && matchesStock;
+      const matchesType =
+        itemTypeFilter === "all" ||
+        (itemTypeFilter === "service" && (p.item_type === "service" || p.track_inventory === false)) ||
+        (itemTypeFilter === "product" && p.item_type !== "service" && p.track_inventory !== false);
+
+      return matchesSearch && matchesCategory && matchesStock && matchesType;
     });
-  }, [products, searchTerm, categoryFilter, stockFilter]);
+  }, [products, searchTerm, categoryFilter, stockFilter, itemTypeFilter]);
 
   const MOBILE_PRODUCT_PAGE_SIZE = 4;
   const totalMobileProductPages = Math.ceil(filteredProducts.length / MOBILE_PRODUCT_PAGE_SIZE) || 1;
@@ -148,7 +159,7 @@ export default function Inventory() {
 
   useEffect(() => {
     setMobileProductPage(1);
-  }, [searchTerm, categoryFilter, stockFilter]);
+  }, [searchTerm, categoryFilter, stockFilter, itemTypeFilter]);
 
   const totalStockValue = useMemo(() => {
     return (products || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0), 0);
@@ -199,10 +210,12 @@ export default function Inventory() {
   };
 
   const handleCreateProduct = async () => {
-    if (!newProduct.name.trim() || !newProduct.code.trim()) {
-      toast.error(language === "sw" ? "Jaza jina na kodi ya bidhaa" : "Fill in product name and code");
+    if (!newProduct.name.trim()) {
+      toast.error(language === "sw" ? "Jaza jina la bidhaa au huduma" : "Fill in item name");
       return;
     }
+    const isService = newProduct.item_type === "service";
+    const codeVal = newProduct.code.trim() || `${isService ? "SRV" : "PRD"}-${Date.now().toString().slice(-6)}`;
 
     try {
       const { data: auth } = await supabase.auth.getUser();
@@ -214,19 +227,26 @@ export default function Inventory() {
 
       const created = await createProduct.mutateAsync({
         shop_id: shopId,
+        code: codeVal,
         name: newProduct.name.trim(),
-        barcode: newProduct.code.trim() || undefined,
+        name_sw: newProduct.name_sw.trim() || undefined,
+        barcode: codeVal,
+        item_type: newProduct.item_type,
+        track_inventory: !isService,
         category_id: newProduct.category_id === "none" ? null : newProduct.category_id,
-        buying_price: Number(newProduct.buying_price) || 0,
+        buying_price: isService ? 0 : (Number(newProduct.buying_price) || 0),
         selling_price: Number(newProduct.selling_price) || 0,
-        stock: Number(newProduct.stock) || 0,
-        low_stock_alert: Number(newProduct.low_stock_alert) || 5,
-      });
+        stock: isService ? 0 : (Number(newProduct.stock) || 0),
+        low_stock_alert: isService ? 0 : (Number(newProduct.low_stock_alert) || 5),
+        duration_minutes: isService && newProduct.duration_minutes ? parseInt(newProduct.duration_minutes, 10) : null,
+        description: newProduct.description.trim() || null,
+      } as any);
 
-      toast.success(language === "sw" ? "Bidhaa imeongezwa stoo" : "Product added to inventory");
+      toast.success(isService ? (language === "sw" ? "Huduma imeongezwa" : "Service added successfully") : (language === "sw" ? "Bidhaa imeongezwa stoo" : "Product added to inventory"));
       setIsAddingProduct(false);
       setMobileDrawerOpen(false);
       setNewProduct({
+        item_type: "product",
         name: "",
         name_sw: "",
         code: "",
@@ -235,31 +255,39 @@ export default function Inventory() {
         selling_price: "",
         stock: "0",
         low_stock_alert: "5",
+        duration_minutes: "",
+        description: "",
       });
       if (created) handleSelectProduct(created);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to add product");
+      toast.error(err?.message || "Failed to add item");
     }
   };
 
   const handleUpdateProduct = async () => {
     if (!editForm) return;
+    const isService = editForm.item_type === "service";
+    const codeVal = editForm.code || editForm.barcode || `PRD-${Date.now().toString().slice(-6)}`;
     try {
       await updateProduct.mutateAsync({
         id: editForm.id,
+        code: codeVal,
         name: editForm.name,
-        barcode: (editForm as any).code || editForm.barcode || undefined,
+        barcode: codeVal,
+        item_type: editForm.item_type || "product",
+        track_inventory: !isService,
         category_id: editForm.category_id === "none" ? null : editForm.category_id,
-        buying_price: Number(editForm.buying_price) || 0,
+        buying_price: isService ? 0 : (Number(editForm.buying_price) || 0),
         selling_price: Number(editForm.selling_price) || 0,
-        stock: Number(editForm.stock) || 0,
-        low_stock_alert: Number(editForm.low_stock_alert) || 5,
-      });
+        stock: isService ? 0 : (Number(editForm.stock) || 0),
+        low_stock_alert: isService ? 0 : (Number(editForm.low_stock_alert) || 5),
+        duration_minutes: isService && editForm.duration_minutes ? parseInt(editForm.duration_minutes, 10) : null,
+      } as any);
 
-      toast.success(language === "sw" ? "Bidhaa imesasishwa" : "Product updated");
+      toast.success(language === "sw" ? "Imesasishwa kikamilifu" : "Updated successfully");
       setMobileDrawerOpen(false);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to update product");
+      toast.error(err?.message || "Failed to update item");
     }
   };
 
@@ -290,136 +318,206 @@ export default function Inventory() {
     );
   };
 
-  const renderAddProductForm = () => (
-    <Card className="border border-border bg-card shadow-xs">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
-        <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-          <Package className="h-4 w-4 text-accent" />
-          <span>{t("inventory.addProduct")}</span>
-        </CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setIsAddingProduct(false);
-            setMobileDrawerOpen(false);
-          }}
-          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
+  const renderAddProductForm = () => {
+    const isService = newProduct.item_type === "service";
 
-      <CardContent className="p-4 space-y-3">
-        <div className="space-y-1">
-          <Label className="text-xs font-semibold">{t("inventory.name")} *</Label>
-          <Input
-            value={newProduct.name}
-            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-            placeholder="e.g. Twiga Cement 50kg"
-            className="h-9 rounded-xl border-border bg-background text-xs"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">{t("inventory.code")} *</Label>
-            <Input
-              value={newProduct.code}
-              onChange={(e) => setNewProduct({ ...newProduct, code: e.target.value })}
-              placeholder="e.g. CEM-01"
-              className="h-9 rounded-xl border-border bg-background text-xs"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">{t("inventory.category")}</Label>
-            <Select
-              value={newProduct.category_id}
-              onValueChange={(v) => setNewProduct({ ...newProduct, category_id: v })}
-            >
-              <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border bg-popover text-xs">
-                <SelectItem value="none">{language === "sw" ? "Bila Kundi" : "None"}</SelectItem>
-                {(categories || []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">{t("inventory.buyingPrice")} (TSH)</Label>
-            <Input
-              type="number"
-              value={newProduct.buying_price}
-              onChange={(e) => setNewProduct({ ...newProduct, buying_price: e.target.value })}
-              placeholder="20000"
-              className="h-9 rounded-xl border-border bg-background text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">{t("inventory.sellingPrice")} (TSH)</Label>
-            <Input
-              type="number"
-              value={newProduct.selling_price}
-              onChange={(e) => setNewProduct({ ...newProduct, selling_price: e.target.value })}
-              placeholder="25000"
-              className="h-9 rounded-xl border-border bg-background text-xs font-bold"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">{t("inventory.stock")}</Label>
-            <Input
-              type="number"
-              value={newProduct.stock}
-              onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-              className="h-9 rounded-xl border-border bg-background text-xs text-center"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs font-semibold">{language === "sw" ? "Alert ya Chini" : "Low Alert"}</Label>
-            <Input
-              type="number"
-              value={newProduct.low_stock_alert}
-              onChange={(e) => setNewProduct({ ...newProduct, low_stock_alert: e.target.value })}
-              className="h-9 rounded-xl border-border bg-background text-xs text-center"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2 pt-2">
+    return (
+      <Card className="border border-border bg-card shadow-xs">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+          <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+            {isService ? <Sparkles className="h-4 w-4 text-amber-500" /> : <Package className="h-4 w-4 text-accent" />}
+            <span>{isService ? (language === "sw" ? "Ongeza Huduma Mpya" : "Add New Service") : t("inventory.addProduct")}</span>
+          </CardTitle>
           <Button
-            variant="outline"
+            variant="ghost"
+            size="icon"
             onClick={() => {
               setIsAddingProduct(false);
               setMobileDrawerOpen(false);
             }}
-            className="h-9 rounded-xl text-xs flex-1"
+            className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
           >
-            {t("common.cancel")}
+            <X className="h-4 w-4" />
           </Button>
-          <Button
-            onClick={handleCreateProduct}
-            disabled={createProduct.isPending || !newProduct.name.trim()}
-            className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
-          >
-            {createProduct.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-            <span>{language === "sw" ? "Hifadhi Bidhaa" : "Save Product"}</span>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardHeader>
+
+        <CardContent className="p-4 space-y-3.5">
+          {/* Item Type Switcher: Physical Product vs Service */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-muted/60 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setNewProduct((prev) => ({ ...prev, item_type: "product" }))}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all",
+                !isService
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Package className="h-3.5 w-3.5" />
+              <span>{language === "sw" ? "Bidhaa (Stoo)" : "Physical Product"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewProduct((prev) => ({ ...prev, item_type: "service" }))}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all",
+                isService
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <span>{language === "sw" ? "Huduma" : "Service"}</span>
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">
+              {isService ? (language === "sw" ? "Jina la Huduma" : "Service Name") : t("inventory.name")} *
+            </Label>
+            <Input
+              value={newProduct.name}
+              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+              placeholder={isService ? "e.g. Haircut & Wash, Car Oil Change, Repair" : "e.g. Twiga Cement 50kg, Coca Cola 500ml"}
+              className="h-9 rounded-xl border-border bg-background text-xs"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">
+                {isService ? (language === "sw" ? "Kodi (Hiari)" : "Code / SKU (Optional)") : `${t("inventory.code")} *`}
+              </Label>
+              <Input
+                value={newProduct.code}
+                onChange={(e) => setNewProduct({ ...newProduct, code: e.target.value })}
+                placeholder={isService ? "SRV-01 (Auto if blank)" : "e.g. CEM-01"}
+                className="h-9 rounded-xl border-border bg-background text-xs"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{t("inventory.category")}</Label>
+              <Select
+                value={newProduct.category_id}
+                onValueChange={(v) => setNewProduct({ ...newProduct, category_id: v })}
+              >
+                <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                  <SelectItem value="none">{language === "sw" ? "Bila Kundi" : "None"}</SelectItem>
+                  {(categories || []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Pricing Row */}
+          <div className="grid grid-cols-2 gap-2">
+            {!isService ? (
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">{t("inventory.buyingPrice")} (TSH)</Label>
+                <Input
+                  type="number"
+                  value={newProduct.buying_price}
+                  onChange={(e) => setNewProduct({ ...newProduct, buying_price: e.target.value })}
+                  placeholder="20000"
+                  className="h-9 rounded-xl border-border bg-background text-xs"
+                />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">{language === "sw" ? "Muda (Dakika)" : "Duration (Mins)"}</Label>
+                <Input
+                  type="number"
+                  value={newProduct.duration_minutes}
+                  onChange={(e) => setNewProduct({ ...newProduct, duration_minutes: e.target.value })}
+                  placeholder="e.g. 30, 60"
+                  className="h-9 rounded-xl border-border bg-background text-xs"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">
+                {isService ? (language === "sw" ? "Gharama ya Huduma (TSH) *" : "Service Fee (TSH) *") : `${t("inventory.sellingPrice")} (TSH) *`}
+              </Label>
+              <Input
+                type="number"
+                value={newProduct.selling_price}
+                onChange={(e) => setNewProduct({ ...newProduct, selling_price: e.target.value })}
+                placeholder="25000"
+                className="h-9 rounded-xl border-border bg-background text-xs font-bold"
+              />
+            </div>
+          </div>
+
+          {/* Physical Inventory Controls (Hidden for Services) */}
+          {!isService && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">{t("inventory.stock")}</Label>
+                <Input
+                  type="number"
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                  className="h-9 rounded-xl border-border bg-background text-xs text-center"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">{language === "sw" ? "Alert ya Chini" : "Low Alert"}</Label>
+                <Input
+                  type="number"
+                  value={newProduct.low_stock_alert}
+                  onChange={(e) => setNewProduct({ ...newProduct, low_stock_alert: e.target.value })}
+                  className="h-9 rounded-xl border-border bg-background text-xs text-center"
+                />
+              </div>
+            </div>
+          )}
+
+          {isService && (
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">{language === "sw" ? "Maelezo (Hiari)" : "Description (Optional)"}</Label>
+              <Input
+                value={newProduct.description}
+                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                placeholder={language === "sw" ? "Maelezo ya kile huduma inajumuisha..." : "Details of what this service covers..."}
+                className="h-9 rounded-xl border-border bg-background text-xs"
+              />
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddingProduct(false);
+                setMobileDrawerOpen(false);
+              }}
+              className="h-9 rounded-xl text-xs flex-1"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleCreateProduct}
+              disabled={createProduct.isPending || !newProduct.name.trim()}
+              className="h-9 rounded-xl bg-neutral-950 text-xs font-bold text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200 flex-[2]"
+            >
+              {createProduct.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              <span>{isService ? (language === "sw" ? "Hifadhi Huduma" : "Save Service") : (language === "sw" ? "Hifadhi Bidhaa" : "Save Product")}</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderEditProductForm = () => {
     if (!editForm) return null;
@@ -493,8 +591,40 @@ export default function Inventory() {
             </div>
           )}
 
+          {/* Item Type Switcher for Edit */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-muted/60 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setEditForm({ ...editForm, item_type: "product" })}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
+                editForm.item_type !== "service"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Package className="h-3.5 w-3.5" />
+              <span>{language === "sw" ? "Bidhaa" : "Product"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditForm({ ...editForm, item_type: "service" })}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
+                editForm.item_type === "service"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <span>{language === "sw" ? "Huduma" : "Service"}</span>
+            </button>
+          </div>
+
           <div className="space-y-1">
-            <Label className="text-xs font-semibold">{t("inventory.name")}</Label>
+            <Label className="text-xs font-semibold">
+              {editForm.item_type === "service" ? (language === "sw" ? "Jina la Huduma" : "Service Name") : t("inventory.name")}
+            </Label>
             <Input
               value={editForm.name}
               onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
@@ -504,10 +634,12 @@ export default function Inventory() {
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">{t("inventory.code")}</Label>
+              <Label className="text-xs font-semibold">
+                {editForm.item_type === "service" ? (language === "sw" ? "Kodi ya Huduma" : "Service Code") : t("inventory.code")}
+              </Label>
               <Input
-                value={editForm.barcode || editForm.sku || ""}
-                onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
+                value={editForm.code || editForm.barcode || editForm.sku || ""}
+                onChange={(e) => setEditForm({ ...editForm, code: e.target.value, barcode: e.target.value })}
                 className="h-9 rounded-xl border-border bg-background text-xs"
               />
             </div>
@@ -533,53 +665,83 @@ export default function Inventory() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">{t("inventory.buyingPrice")}</Label>
-              <Input
-                type="number"
-                value={editForm.buying_price}
-                onChange={(e) => setEditForm({ ...editForm, buying_price: e.target.value })}
-                className="h-9 rounded-xl border-border bg-background text-xs"
-              />
+          {editForm.item_type === "service" ? (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">
+                  {language === "sw" ? "Gharama ya Huduma (TSH)" : "Service Fee (TSH)"}
+                </Label>
+                <Input
+                  type="number"
+                  value={editForm.selling_price}
+                  onChange={(e) => setEditForm({ ...editForm, selling_price: e.target.value })}
+                  className="h-9 rounded-xl border-border bg-background text-xs font-bold"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">
+                  {language === "sw" ? "Muda (Dakika)" : "Duration (Mins)"}
+                </Label>
+                <Input
+                  type="number"
+                  value={editForm.duration_minutes || ""}
+                  onChange={(e) => setEditForm({ ...editForm, duration_minutes: e.target.value })}
+                  placeholder="30"
+                  className="h-9 rounded-xl border-border bg-background text-xs"
+                />
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">{t("inventory.sellingPrice")}</Label>
-              <Input
-                type="number"
-                value={editForm.selling_price}
-                onChange={(e) => setEditForm({ ...editForm, selling_price: e.target.value })}
-                className="h-9 rounded-xl border-border bg-background text-xs font-bold"
-              />
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{t("inventory.buyingPrice")}</Label>
+                  <Input
+                    type="number"
+                    value={editForm.buying_price}
+                    onChange={(e) => setEditForm({ ...editForm, buying_price: e.target.value })}
+                    className="h-9 rounded-xl border-border bg-background text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{t("inventory.sellingPrice")}</Label>
+                  <Input
+                    type="number"
+                    value={editForm.selling_price}
+                    onChange={(e) => setEditForm({ ...editForm, selling_price: e.target.value })}
+                    className="h-9 rounded-xl border-border bg-background text-xs font-bold"
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">{t("inventory.stock")}</Label>
-              <Input
-                type="number"
-                value={editForm.stock}
-                onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
-                className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">{language === "sw" ? "Alert ya Chini" : "Low Alert"}</Label>
-              <Input
-                type="number"
-                value={editForm.low_stock_alert}
-                onChange={(e) => setEditForm({ ...editForm, low_stock_alert: e.target.value })}
-                className="h-9 rounded-xl border-border bg-background text-xs text-center"
-              />
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{t("inventory.stock")}</Label>
+                  <Input
+                    type="number"
+                    value={editForm.stock}
+                    onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
+                    className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Alert ya Chini" : "Low Alert"}</Label>
+                  <Input
+                    type="number"
+                    value={editForm.low_stock_alert}
+                    onChange={(e) => setEditForm({ ...editForm, low_stock_alert: e.target.value })}
+                    className="h-9 rounded-xl border-border bg-background text-xs text-center"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="pt-2">
             <Button
               onClick={handleUpdateProduct}
               disabled={updateProduct.isPending}
-              className="h-9 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+              className="h-9 w-full rounded-xl bg-neutral-950 text-xs font-bold text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200"
             >
               {updateProduct.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 text-accent mr-1" />}
               <span>{language === "sw" ? "Hifadhi Mabadiliko" : "Save Changes"}</span>
@@ -677,6 +839,17 @@ export default function Inventory() {
                         {c.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={itemTypeFilter} onValueChange={(v: any) => setItemTypeFilter(v)}>
+                  <SelectTrigger className="h-9 w-32 rounded-xl border-border bg-background text-xs">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                    <SelectItem value="all">{language === "sw" ? "Aina Zote" : "All Items"}</SelectItem>
+                    <SelectItem value="product">{language === "sw" ? "Bidhaa Pekee" : "Products Only"}</SelectItem>
+                    <SelectItem value="service">{language === "sw" ? "Huduma Pekee" : "Services Only"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -21,6 +21,9 @@ import {
   Wallet,
   X,
   ArrowRight,
+  LayoutGrid,
+  LayoutList,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +87,8 @@ export default function Sales() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [itemTypeFilter, setItemTypeFilter] = useState<"all" | "product" | "service">("all");
+  const [catalogViewMode, setCatalogViewMode] = useState<"rows" | "grid">("rows");
   const [showReceipt, setShowReceipt] = useState(false);
   const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
@@ -122,11 +127,20 @@ export default function Sales() {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
       p.name.toLowerCase().includes(q) ||
+      (p.name_sw && p.name_sw.toLowerCase().includes(q)) ||
       (p.barcode && p.barcode.toLowerCase().includes(q)) ||
-      (p.sku && p.sku.toLowerCase().includes(q));
+      (p.sku && p.sku.toLowerCase().includes(q)) ||
+      (p.code && p.code.toLowerCase().includes(q));
     const matchesCategory =
       selectedCategory === "all" || p.category_id === selectedCategory || p.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const isService = p.item_type === "service" || p.track_inventory === false;
+    const matchesType =
+      itemTypeFilter === "all"
+        ? true
+        : itemTypeFilter === "service"
+        ? isService
+        : !isService;
+    return matchesSearch && matchesCategory && matchesType;
   });
 
   const addToCart = (product: any) => {
@@ -623,6 +637,73 @@ export default function Sales() {
             </div>
           </Card>
 
+          {/* Catalog Filter Controls Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Item Type Segmented Filter (All, Products, Services) */}
+            <div className="flex items-center rounded-xl bg-muted/60 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setItemTypeFilter("all")}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                  itemTypeFilter === "all" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {language === "sw" ? "Vyote" : "All"} ({products?.length || 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setItemTypeFilter("product")}
+                className={cn(
+                  "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                  itemTypeFilter === "product" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Package className="h-3 w-3 text-accent" />
+                <span>{language === "sw" ? "Bidhaa" : "Products"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setItemTypeFilter("service")}
+                className={cn(
+                  "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                  itemTypeFilter === "service" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Sparkles className="h-3 w-3 text-amber-500" />
+                <span>{language === "sw" ? "Huduma" : "Services"}</span>
+              </button>
+            </div>
+
+            {/* View Mode Toggle: Rows (5 visible rows with inward scroll) vs Grid */}
+            <div className="flex items-center gap-1 rounded-xl bg-muted/60 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setCatalogViewMode("rows")}
+                className={cn(
+                  "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                  catalogViewMode === "rows" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+                title="5 Rows Table View"
+              >
+                <LayoutList className="h-3.5 w-3.5 text-accent" />
+                <span>{language === "sw" ? "Mistari (5)" : "Rows (5)"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCatalogViewMode("grid")}
+                className={cn(
+                  "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                  catalogViewMode === "grid" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+                title="Grid View"
+              >
+                <LayoutGrid className="h-3.5 w-3.5 text-accent" />
+                <span>{language === "sw" ? "Gridi" : "Grid"}</span>
+              </button>
+            </div>
+          </div>
+
           {/* Category Chip Scroller */}
           {categories && categories.length > 0 && (
             <div className="category-chips">
@@ -644,42 +725,130 @@ export default function Sales() {
             </div>
           )}
 
-          {/* Product Grid */}
-          <div className="product-grid">
-            {filteredProducts.length === 0 ? (
-              <div className="col-span-full empty-state py-10">
-                <div className="empty-state-icon">
-                  <Package className="h-7 w-7" />
-                </div>
-                <p className="text-sm font-medium text-foreground">{language === "sw" ? "Hakuna bidhaa" : "No products found"}</p>
-                <p className="text-xs text-muted-foreground">{language === "sw" ? "Jaribu kutafuta tena au badilisha aina." : "Try a different search or category."}</p>
+          {/* Catalog Content: 5 Rows Inward Scroll Table or Grid View */}
+          {filteredProducts.length === 0 ? (
+            <Card className="border border-border bg-card p-8 text-center shadow-xs">
+              <div className="empty-state-icon mx-auto mb-2">
+                <Package className="h-6 w-6" />
               </div>
-            ) : (
-              filteredProducts.slice(0, 30).map((product) => {
+              <p className="text-sm font-semibold text-foreground">{language === "sw" ? "Hakuna bidhaa au huduma" : "No items found"}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {language === "sw" ? "Jaribu kubadilisha kundi au neno la kutafuta." : "Try a different search or category filter."}
+              </p>
+            </Card>
+          ) : catalogViewMode === "rows" ? (
+            /* 5-Row Inward Scrollable Table Container */
+            <Card className="border border-border bg-card shadow-xs overflow-hidden">
+              <div className="internal-table-scroll max-h-[315px] overflow-y-auto w-full">
+                <Table className="w-full text-xs">
+                  <TableHeader className="sticky top-0 z-10 bg-muted/80 backdrop-blur-xs border-b border-border">
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="py-2.5 text-xs font-bold text-muted-foreground w-28">{t("inventory.code")}</TableHead>
+                      <TableHead className="py-2.5 text-xs font-bold text-muted-foreground">{language === "sw" ? "Bidhaa / Huduma" : "Item / Service"}</TableHead>
+                      <TableHead className="py-2.5 text-xs font-bold text-muted-foreground w-24 text-center">{language === "sw" ? "Hali" : "Status"}</TableHead>
+                      <TableHead className="py-2.5 text-xs font-bold text-muted-foreground text-right w-28">{t("inventory.sellingPrice")}</TableHead>
+                      <TableHead className="py-2.5 text-xs font-bold text-muted-foreground text-center w-20">{language === "sw" ? "Weka" : "Add"}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-border/60">
+                    {filteredProducts.map((product) => {
+                      const isService = product.item_type === "service" || product.track_inventory === false;
+                      const trackInventory = !isService;
+                      const isOut = trackInventory && product.stock <= 0;
+                      const isLow = trackInventory && product.stock > 0 && product.stock <= (product.low_stock_alert ?? 5);
+                      const cartItem = cartItems.find((ci) => ci.product_id === product.id);
+
+                      return (
+                        <TableRow
+                          key={product.id}
+                          onClick={() => {
+                            if (!isOut) addToCart(product);
+                          }}
+                          className={cn(
+                            "cursor-pointer transition-colors hover:bg-muted/40 h-[56px]",
+                            isOut ? "opacity-50 cursor-not-allowed" : "",
+                            cartItem ? "bg-accent/5 font-medium" : ""
+                          )}
+                        >
+                          <TableCell className="py-2 font-mono text-[11px] text-muted-foreground">
+                            {product.code || product.barcode || product.sku || "PRD"}
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-xs text-foreground truncate">{product.name}</p>
+                              {product.name_sw && product.name_sw !== product.name && (
+                                <p className="text-[10px] text-muted-foreground truncate">{product.name_sw}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2 text-center">
+                            {isService ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                <Sparkles className="h-2.5 w-2.5" />
+                                <span>{language === "sw" ? "Huduma" : "Service"}</span>
+                              </span>
+                            ) : isOut ? (
+                              <span className="badge-danger text-[10px] px-2 py-0.5">{language === "sw" ? "Imeisha" : "Out"}</span>
+                            ) : isLow ? (
+                              <span className="badge-warning text-[10px] px-2 py-0.5">{product.stock} pcs</span>
+                            ) : (
+                              <span className="badge-success text-[10px] px-2 py-0.5">{product.stock} pcs</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-bold text-foreground">
+                            {formatMoney(product.selling_price)}
+                          </TableCell>
+                          <TableCell className="py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              size="sm"
+                              disabled={isOut}
+                              onClick={() => addToCart(product)}
+                              className="h-7 w-7 p-0 rounded-lg bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          ) : (
+            /* Inward Scrollable Grid View */
+            <div className="product-grid max-h-[480px] overflow-y-auto internal-table-scroll pr-1">
+              {filteredProducts.map((product) => {
                 const isService = product.item_type === "service" || product.track_inventory === false;
                 const trackInventory = !isService;
                 const isOut = trackInventory && product.stock <= 0;
                 const isLow = trackInventory && product.stock > 0 && product.stock <= (product.low_stock_alert ?? 5);
+                const cartItem = cartItems.find((ci) => ci.product_id === product.id);
+
                 return (
                   <button
                     key={product.id}
                     disabled={isOut}
                     onClick={() => addToCart(product)}
                     className={cn(
-                      "product-card text-left",
+                      "product-card text-left relative",
                       isOut ? "opacity-50 cursor-not-allowed" : "",
+                      cartItem ? "border-foreground ring-1 ring-foreground/20" : ""
                     )}
                   >
                     <div className="flex items-center justify-between gap-1 mb-1.5">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase truncate">
-                        {isService ? (language === "sw" ? "Huduma" : "Service") : (product.barcode || product.sku || "PROD")}
+                        {isService ? (language === "sw" ? "Huduma" : "Service") : (product.code || product.barcode || product.sku || "PRD")}
                       </span>
-                      {isOut ? (
+                      {isService ? (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 shrink-0">
+                          <Sparkles className="h-2 w-2" />
+                          <span>∞</span>
+                        </span>
+                      ) : isOut ? (
                         <span className="badge-danger shrink-0">{language === "sw" ? "Imeisha" : "Out"}</span>
                       ) : isLow ? (
                         <span className="badge-warning shrink-0">{product.stock}</span>
-                      ) : isService ? (
-                        <span className="badge-neutral shrink-0">∞</span>
                       ) : (
                         <span className="badge-neutral shrink-0">{product.stock}</span>
                       )}
@@ -689,15 +858,15 @@ export default function Sales() {
                     </p>
                     <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-border/50">
                       <span className="text-xs font-bold text-foreground">{formatMoney(product.selling_price)}</span>
-                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-neutral-950 text-white dark:bg-white dark:text-neutral-950">
                         <Plus className="h-3.5 w-3.5" />
                       </div>
                     </div>
                   </button>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
 
           {/* Held Drafts section */}
           {drafts && drafts.length > 0 && (
