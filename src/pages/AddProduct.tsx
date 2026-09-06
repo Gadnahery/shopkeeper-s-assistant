@@ -72,18 +72,20 @@ export default function AddProduct() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const codeVal = formData.barcode || generateCode();
     await createProduct.mutateAsync({
+      code: codeVal,
       name: formData.name,
       item_type: formData.item_type,
       description: null,
       category_id: formData.category_id || null,
-      barcode: formData.barcode || generateCode(),
+      barcode: codeVal,
       image_url: formData.image_url || null,
       unit: formData.unit_type || "pcs",
       buying_price: parseFloat(formData.buying_price) || 0,
       selling_price: parseFloat(formData.selling_price) || 0,
-      stock: parseInt(formData.stock) || 0,
-      low_stock_alert: parseInt(formData.low_stock_alert) || 5,
+      stock: formData.item_type === "service" ? 0 : (parseInt(formData.stock) || 0),
+      low_stock_alert: formData.item_type === "service" ? 0 : (parseInt(formData.low_stock_alert) || 5),
       track_inventory: formData.item_type === "product",
       duration_minutes: formData.item_type === "service" && formData.duration_minutes
         ? parseInt(formData.duration_minutes)

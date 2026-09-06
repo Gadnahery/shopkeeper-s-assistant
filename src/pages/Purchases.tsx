@@ -489,11 +489,13 @@ export default function Purchases() {
                               <SelectValue placeholder={t("purchases.selectProduct")} />
                             </SelectTrigger>
                             <SelectContent className="max-h-52 rounded-xl border-border bg-popover text-xs">
-                              {(products || []).map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.name} — Stk: {p.stock}
-                                </SelectItem>
-                              ))}
+                              {(products || [])
+                                .filter((p) => p.item_type !== "service" && p.track_inventory !== false)
+                                .map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name} — Stk: {p.stock}
+                                  </SelectItem>
+                                ))}
                             </SelectContent>
                           </Select>
 

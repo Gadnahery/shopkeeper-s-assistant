@@ -226,7 +226,9 @@ export default function Reports() {
           </div>
           <div className="mt-2 sm:mt-3">
             <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(stockValuation)}</p>
-            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{products?.length || 0} {language === "sw" ? "bidhaa zilizopo" : "in stock"}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">
+              {(products || []).filter((p) => p.item_type !== "service" && p.track_inventory !== false).length} {language === "sw" ? "bidhaa za stoo" : "physical items"}
+            </p>
           </div>
         </Card>
       </div>
@@ -494,14 +496,28 @@ export default function Reports() {
                 </TableHeader>
                 <TableBody>
                   {(products || []).map((p) => {
+                    const isService = p.item_type === "service" || p.track_inventory === false;
                     const lineVal = Number(p.stock || 0) * Number(p.buying_price || 0);
                     return (
                       <TableRow key={p.id} className="text-xs">
                         <TableCell className="font-bold text-foreground">{p.barcode || p.sku || "PROD"}</TableCell>
-                        <TableCell className="font-medium text-foreground">{p.name}</TableCell>
-                        <TableCell className="text-center font-bold text-foreground">{p.stock} pcs</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{formatMoney(p.buying_price)}</TableCell>
-                        <TableCell className="text-right font-bold text-foreground">{formatMoney(lineVal)}</TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          <span>{p.name}</span>
+                          {isService && (
+                            <span className="ml-2 inline-flex items-center rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                              {language === "sw" ? "Huduma" : "Service"}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-foreground">
+                          {isService ? <span className="text-muted-foreground font-normal">—</span> : `${p.stock} pcs`}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {isService ? "—" : formatMoney(p.buying_price)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-foreground">
+                          {isService ? "—" : formatMoney(lineVal)}
+                        </TableCell>
                       </TableRow>
                     );
                   })}

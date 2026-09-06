@@ -82,9 +82,11 @@ export default function ReceiveStock() {
             <Select value={productId} onValueChange={setProductId}>
               <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
               <SelectContent>
-                {(products || []).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name} {p.barcode ? `(${p.barcode})` : ""}</SelectItem>
-                ))}
+                {(products || [])
+                  .filter((p) => p.item_type !== "service" && p.track_inventory !== false)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name} {p.barcode ? `(${p.barcode})` : ""}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

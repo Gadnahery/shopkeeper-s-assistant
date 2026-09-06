@@ -136,7 +136,7 @@ export function useLowStockProducts() {
         .from("products")
         .select("*");
       if (error) throw error;
-      return data?.filter(p => p.stock <= p.low_stock_alert) || [];
+      return data?.filter(p => p.item_type !== "service" && p.track_inventory !== false && p.stock <= (p.low_stock_alert ?? 5)) || [];
     },
   });
 }
