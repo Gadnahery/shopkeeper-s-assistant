@@ -505,7 +505,7 @@ export default function Purchases() {
 
               {/* TAB 1: PURCHASE ORDERS */}
               <TabsContent value="orders" className="m-0 p-0">
-                <div className="overflow-x-auto w-full">
+                <div className="internal-table-scroll w-full">
                   <Table className="min-w-[650px] w-full">
                     <TableHeader>
                       <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
@@ -563,7 +563,7 @@ export default function Purchases() {
 
               {/* TAB 2: SUPPLIERS */}
               <TabsContent value="suppliers" className="m-0 p-0">
-                <div className="overflow-x-auto w-full">
+                <div className="internal-table-scroll w-full">
                   <Table className="min-w-[650px] w-full">
                     <TableHeader>
                       <TableRow className="bg-[#f9fafb] text-[11px] uppercase">

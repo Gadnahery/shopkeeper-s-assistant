@@ -279,7 +279,7 @@ export default function Customers() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="internal-table-scroll">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">

@@ -389,7 +389,7 @@ export default function UserManagement() {
             </div>
           ) : (
             <>
-              <div className="hidden md:block">
+              <div className="internal-table-scroll hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>

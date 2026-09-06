@@ -242,6 +242,19 @@
 }
 
 @layer utilities {
+  .internal-table-scroll {
+    max-height: 320px;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .internal-table-scroll thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: hsl(var(--card));
+  }
+
   .text-balance {
     text-wrap: balance;
   }

@@ -177,7 +177,7 @@ export default function Assets() {
 
       <Card className="section-shell overflow-hidden"><CardContent className="p-0">
         {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : (
-          <div className="max-w-full overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>Purchase Price</TableHead><TableHead>Current Value</TableHead><TableHead>Condition</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+          <div className="internal-table-scroll max-w-full"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>Purchase Price</TableHead><TableHead>Current Value</TableHead><TableHead>Condition</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-foreground/70 dark:text-foreground/80">No assets yet</TableCell></TableRow> :
             filtered.map(a => (

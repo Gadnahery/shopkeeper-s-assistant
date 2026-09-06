@@ -401,7 +401,7 @@ export default function Inventory() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto w-full">
+              <div className="internal-table-scroll w-full">
                 <Table className="min-w-[650px] w-full">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">

@@ -180,7 +180,7 @@ export default function Suppliers() {
             <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : (
             <>
-            <div className="hidden max-w-full overflow-x-auto md:block">
+            <div className="internal-table-scroll hidden max-w-full md:block">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -421,7 +421,7 @@ export default function Production() {
               </div>
             </div>
 
-            <div className="overflow-x-auto w-full">
+            <div className="internal-table-scroll w-full">
               <Table className="min-w-[650px] w-full">
                 <TableHeader>
                   <TableRow className="bg-[#f9fafb] text-[11px] uppercase">

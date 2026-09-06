@@ -397,7 +397,7 @@ export default function Orders() {
             </div>
 
             {/* Orders Table */}
-            <div className="overflow-x-auto w-full">
+            <div className="internal-table-scroll w-full">
               <Table className="min-w-[650px] w-full">
                 <TableHeader>
                   <TableRow className="bg-[#f9fafb] text-[11px] uppercase tracking-wider text-muted-foreground">

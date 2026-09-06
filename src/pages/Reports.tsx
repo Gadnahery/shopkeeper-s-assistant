@@ -378,7 +378,7 @@ export default function Reports() {
             </div>
 
             {/* Transactions Table */}
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="internal-table-scroll rounded-xl border border-border">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 text-xs font-semibold">
@@ -439,7 +439,7 @@ export default function Reports() {
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="internal-table-scroll rounded-xl border border-border">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 text-xs font-semibold">
@@ -473,7 +473,7 @@ export default function Reports() {
         {/* Tab 3: Inventory Health */}
         {reportTab === "inventory" && (
           <div className="p-5 space-y-4">
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="internal-table-scroll rounded-xl border border-border">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 text-xs font-semibold">

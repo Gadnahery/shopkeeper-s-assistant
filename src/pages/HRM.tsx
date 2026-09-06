@@ -286,7 +286,7 @@ export default function HRM() {
                   </Button>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="internal-table-scroll overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
