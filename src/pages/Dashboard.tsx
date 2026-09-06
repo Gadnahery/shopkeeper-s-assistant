@@ -36,6 +36,7 @@ import { useSalesSummaryByRange, useSalesByDateRange } from "@/hooks/useSales";
 import { usePurchases } from "@/hooks/usePurchases";
 import { useProductionBatches } from "@/hooks/useProduction";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useOtherIncome } from "@/hooks/useOtherIncome";
 import { useProducts, useLowStockProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
@@ -111,6 +112,7 @@ export default function Dashboard() {
   const { data: purchasesList } = usePurchases();
   const { data: productionList } = useProductionBatches();
   const { data: expensesList } = useExpenses();
+  const { data: otherIncomeList } = useOtherIncome();
   const { data: allProducts, isLoading: productsLoading } = useProducts();
   const { data: lowStockProducts } = useLowStockProducts();
   const { data: customersList } = useCustomers();
@@ -143,7 +145,12 @@ export default function Dashboard() {
     return (expensesList || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   }, [expensesList]);
 
-  const netProfitVal = Math.max(0, totalSalesVal - totalExpensesVal);
+  const otherIncomeVal = useMemo(() => {
+    return (otherIncomeList || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  }, [otherIncomeList]);
+
+  const totalRevenueVal = totalSalesVal + otherIncomeVal;
+  const netProfitVal = Math.max(0, totalRevenueVal - totalExpensesVal);
 
   // Group last 7 days chart data
   const chartData = useMemo(() => {
@@ -191,6 +198,16 @@ export default function Dashboard() {
         bg: "bg-purple-50",
         icon: ShoppingCart,
       })),
+      ...(otherIncomeList || []).map((income) => ({
+        type: "income",
+        title: income.title,
+        subtitle: income.category,
+        date: income.date,
+        amount: `+${formatMoney(income.amount)}`,
+        color: "text-emerald-600",
+        bg: "bg-emerald-50",
+        icon: Banknote,
+      })),
       ...(expensesList || []).map((e) => ({
         type: "expense",
         title: e.title || "Gharama",
@@ -204,7 +221,7 @@ export default function Dashboard() {
     ];
 
     return acts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
-  }, [salesList, purchasesList, expensesList, formatMoney]);
+  }, [salesList, purchasesList, expensesList, otherIncomeList, formatMoney]);
 
   // Top products
   const topProducts = useMemo(() => {

@@ -46,6 +46,8 @@ import { useShopFormatting } from "@/hooks/useShopFormatting";
 import Billing from "@/pages/Billing";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import { useOtherIncome } from "@/hooks/useOtherIncome";
+import { OtherIncomePanel } from "@/components/finance/OtherIncomePanel";
 
 const EXPENSE_CATEGORIES = [
   { value: "rent", labelEn: "Rent / Premises", labelSw: "Kodi ya Pango" },
@@ -83,6 +85,7 @@ export default function Expenses() {
   });
 
   const { data: expenses, isLoading } = useExpenses();
+  const { data: otherIncome = [], isLoading: otherIncomeLoading } = useOtherIncome();
   const createExpense = useCreateExpense();
   const deleteExpense = useDeleteExpense();
 
@@ -136,7 +139,7 @@ export default function Expenses() {
       .sort((a, b) => b.total - a.total);
   }, [expenses]);
 
-  if (expenses === undefined || isLoading) {
+  if (expenses === undefined || isLoading || otherIncomeLoading) {
     return <PageLoader message="Loading expenses..." messageSw="Inapakia matumizi..." language={language} />;
   }
 
@@ -252,6 +255,9 @@ export default function Expenses() {
           </TabsTrigger>
           <TabsTrigger value="billing" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
             {language === "sw" ? "Bili na Vifurushi" : "Subscription & Billing"}
+          </TabsTrigger>
+          <TabsTrigger value="income" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+            {language === "sw" ? "Mapato Mengine" : "Other Income"}
           </TabsTrigger>
         </TabsList>
 
@@ -521,6 +527,10 @@ export default function Expenses() {
         {/* Billing Tab Content */}
         <TabsContent value="billing" className="m-0">
           <Billing />
+        </TabsContent>
+
+        <TabsContent value="income" className="m-0 space-y-6">
+          <OtherIncomePanel income={otherIncome} />
         </TabsContent>
       </Tabs>
 

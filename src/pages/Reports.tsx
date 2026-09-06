@@ -36,6 +36,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSalesByDateRange } from "@/hooks/useSales";
 import { useExpensesByDateRange } from "@/hooks/useExpenses";
+import { useOtherIncomeByDateRange } from "@/hooks/useOtherIncome";
 import { useProducts } from "@/hooks/useProducts";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
@@ -91,21 +92,24 @@ export default function Reports() {
 
   const { data: sales, isLoading: salesLoading } = useSalesByDateRange(start, end);
   const { data: expenses, isLoading: expensesLoading } = useExpensesByDateRange(start, end);
+  const { data: otherIncome, isLoading: otherIncomeLoading } = useOtherIncomeByDateRange(start, end);
   const { data: products, isLoading: productsLoading } = useProducts();
 
-  if (sales === undefined || salesLoading || expensesLoading || productsLoading) {
+  if (sales === undefined || salesLoading || expensesLoading || otherIncomeLoading || productsLoading) {
     return <PageLoader message="Loading reports..." messageSw="Inapakia ripoti..." language={language} />;
   }
 
   const totalSales = (sales || []).reduce((sum, s) => sum + Number(s.total || 0), 0);
+  const totalOtherIncome = (otherIncome || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalRevenue = totalSales + totalOtherIncome;
   const totalExpenses = (expenses || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  const netProfit = totalSales - totalExpenses;
+  const netProfit = totalRevenue - totalExpenses;
   const stockValuation = (products || []).reduce((sum, p) => sum + Number(p.buying_price || 0) * Number(p.stock || 0), 0);
 
   // Payment Breakdown
   const cashTotal = (sales || []).filter((s) => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total || 0), 0);
   const mpesaTotal = (sales || []).filter((s) => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total || 0), 0);
-  const otherPayTotal = totalSales - cashTotal - mpesaTotal;
+  const otherPayTotal = totalRevenue - cashTotal - mpesaTotal;
 
   const paymentChartData = [
     { name: "Cash", value: cashTotal, color: "#1a1d29" },
@@ -149,7 +153,7 @@ export default function Reports() {
       title: `${language === "sw" ? "Ripoti ya Biashara" : "Business Performance Report"} (${rangeType.toUpperCase()})`,
       period: `${start} to ${end}`,
       stats: [
-        { label: language === "sw" ? "Jumla ya Mauzo" : "Total Revenue", value: formatMoney(totalSales) },
+        { label: language === "sw" ? "Jumla ya Mapato" : "Total Revenue", value: formatMoney(totalRevenue) },
         { label: language === "sw" ? "Jumla ya Matumizi" : "Total Expenses", value: formatMoney(totalExpenses) },
         { label: language === "sw" ? "Faida Halisi" : "Net Profit", value: formatMoney(netProfit) },
       ],
@@ -175,8 +179,8 @@ export default function Reports() {
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalSales)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{sales?.length || 0} {language === "sw" ? "stakabadhi za mauzo" : "sales receipts"}</p>
+            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalRevenue)}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{sales?.length || 0} sales + {otherIncome?.length || 0} other income</p>
           </div>
         </Card>
 
@@ -425,7 +429,7 @@ export default function Reports() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-border bg-muted/20 p-4">
                 <span className="text-xs font-medium text-muted-foreground">{t("reports.grossSales")}</span>
-                <p className="mt-2 text-xl font-bold text-foreground">{formatMoney(totalSales)}</p>
+                <p className="mt-2 text-xl font-bold text-foreground">{formatMoney(totalRevenue)}</p>
               </div>
               <div className="rounded-xl border border-border bg-muted/20 p-4">
                 <span className="text-xs font-medium text-muted-foreground">{t("reports.operatingExpenses")}</span>
@@ -451,6 +455,10 @@ export default function Reports() {
                   <TableRow className="text-xs">
                     <TableCell className="font-semibold text-foreground">{language === "sw" ? "Mapato ya Mauzo" : "Sales Revenue"}</TableCell>
                     <TableCell className="text-right font-bold text-[var(--success-text)]">+{formatMoney(totalSales)}</TableCell>
+                  </TableRow>
+                  <TableRow className="text-xs">
+                    <TableCell className="font-semibold text-foreground">{language === "sw" ? "Mapato Mengine" : "Other Income"}</TableCell>
+                    <TableCell className="text-right font-bold text-[var(--success-text)]">+{formatMoney(totalOtherIncome)}</TableCell>
                   </TableRow>
                   {(expenses || []).map((e) => (
                     <TableRow key={e.id} className="text-xs">

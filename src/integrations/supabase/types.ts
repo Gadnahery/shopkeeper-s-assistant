@@ -12,6 +12,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      other_income: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          payment_method: string
+          shop_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          shop_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          shop_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "other_income_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           appointment_at: string
