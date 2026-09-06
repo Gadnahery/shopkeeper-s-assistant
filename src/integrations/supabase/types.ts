@@ -1434,6 +1434,8 @@ export type Database = {
       shops: {
         Row: {
           address: string | null
+          business_type: string
+          capabilities: Json
           country_code: string | null
           created_at: string | null
           currency: string | null
@@ -1450,6 +1452,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          business_type?: string
+          capabilities?: Json
           country_code?: string | null
           created_at?: string | null
           currency?: string | null
@@ -1466,6 +1470,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          business_type?: string
+          capabilities?: Json
           country_code?: string | null
           created_at?: string | null
           currency?: string | null

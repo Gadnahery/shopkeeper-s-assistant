@@ -12,6 +12,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { matchPath } from "react-router-dom";
+import { hasCapability } from "@/lib/businessCapabilities";
 
 export type LanguageCode = "en" | "sw";
 
@@ -22,17 +23,18 @@ export type AppNavItem = {
   labelKey: string;
   icon: LucideIcon;
   mobileLabel?: LocalizedCopy;
+  capability?: Parameters<typeof hasCapability>[1];
 };
 
 export const OLLY_NAVIGATION_ITEMS: AppNavItem[] = [
   { to: "/dashboard", labelKey: "nav.overview", icon: LayoutDashboard, mobileLabel: { en: "Overview", sw: "Muhtasari" } },
   { to: "/purchases", labelKey: "nav.purchases", icon: ShoppingCart, mobileLabel: { en: "Purchases", sw: "Manunuzi" } },
-  { to: "/production", labelKey: "nav.production", icon: Factory, mobileLabel: { en: "Production", sw: "Uzalishaji" } },
+  { to: "/production", labelKey: "nav.production", icon: Factory, mobileLabel: { en: "Production", sw: "Uzalishaji" }, capability: "manufacturing" },
   { to: "/sales", labelKey: "nav.sales", icon: Tag, mobileLabel: { en: "Sales", sw: "Mauzo" } },
   { to: "/inventory", labelKey: "nav.inventory", icon: Package, mobileLabel: { en: "Inventory", sw: "Stoki" } },
   { to: "/customers", labelKey: "nav.customers", icon: Users, mobileLabel: { en: "Customers", sw: "Wateja" } },
-  { to: "/expenses", labelKey: "nav.finance", icon: DollarSign, mobileLabel: { en: "Finance", sw: "Fedha" } },
-  { to: "/hrm", labelKey: "nav.hrm", icon: UsersRound, mobileLabel: { en: "HR", sw: "HR" } },
+  { to: "/expenses", labelKey: "nav.finance", icon: DollarSign, mobileLabel: { en: "Finance", sw: "Fedha" }, capability: "expenses" },
+  { to: "/hrm", labelKey: "nav.hrm", icon: UsersRound, mobileLabel: { en: "HR", sw: "HR" }, capability: "employees" },
   { to: "/reports", labelKey: "nav.reports", icon: FileText, mobileLabel: { en: "Reports", sw: "Ripoti" } },
   { to: "/settings", labelKey: "nav.settings", icon: Settings, mobileLabel: { en: "Settings", sw: "Mipangilio" } },
 ];
@@ -41,7 +43,7 @@ export const MOBILE_PRIMARY_NAV: AppNavItem[] = [
   OLLY_NAVIGATION_ITEMS[0], // Overview
   OLLY_NAVIGATION_ITEMS[3], // Sales
   OLLY_NAVIGATION_ITEMS[4], // Inventory
-  OLLY_NAVIGATION_ITEMS[8], // Reports
+  OLLY_NAVIGATION_ITEMS[5], // Customers
 ];
 
 const MOBILE_FOCUS_ROUTES = [
@@ -51,9 +53,10 @@ const MOBILE_FOCUS_ROUTES = [
   { pattern: "/suppliers/:id", backTo: "/purchases" },
 ];
 
-export function filterItemsByAccess(items: AppNavItem[], allowedPages?: string[]) {
-  if (!allowedPages || allowedPages.length === 0) return items;
-  return items.filter((item) => {
+export function filterItemsByAccess(items: AppNavItem[], allowedPages?: string[], capabilities?: unknown) {
+  const capabilityFiltered = items.filter((item) => !item.capability || hasCapability(capabilities, item.capability));
+  if (!allowedPages || allowedPages.length === 0) return capabilityFiltered;
+  return capabilityFiltered.filter((item) => {
     // If user has access to /dashboard, /expenses, etc. or if it's new pages
     return (
       allowedPages.includes(item.to) ||

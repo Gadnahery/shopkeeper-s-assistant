@@ -111,10 +111,6 @@ export default function Sales() {
   const saveDraft = useSaveDraftSale();
   const deleteDraft = useDeleteDraftSale();
 
-  if (products === undefined || productsLoading) {
-    return <PageLoader message="Loading POS..." messageSw="Inapakia mfumo wa mauzo..." language={language} />;
-  }
-
   const filteredProducts = (products || []).filter((p) => {
     const q = searchTerm.toLowerCase();
     return (
@@ -203,6 +199,10 @@ export default function Sales() {
       setCashAmount(String(total));
     }
   }, [total]);
+
+  if (products === undefined || productsLoading) {
+    return <PageLoader message="Loading POS..." messageSw="Inapakia mfumo wa mauzo..." language={language} />;
+  }
 
   const handleCompleteSale = async () => {
     if (cartItems.length === 0) {

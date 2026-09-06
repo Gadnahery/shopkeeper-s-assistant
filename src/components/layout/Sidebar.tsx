@@ -77,7 +77,7 @@ export function Sidebar() {
   const collapsedView = isTablet || isCollapsed;
   const sidebarWidth = collapsedView ? 72 : 230;
 
-  const navItems = filterItemsByAccess(OLLY_NAVIGATION_ITEMS, allowedPages);
+  const navItems = filterItemsByAccess(OLLY_NAVIGATION_ITEMS, allowedPages, profile?.shops?.capabilities);
 
   // Mobile Drawer
   if (isMobile) {

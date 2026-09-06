@@ -161,9 +161,9 @@ export default function Dashboard() {
 
       return {
         name: format(new Date(dayStr), "dd MMM"),
-        sales: daySales || Math.round(Math.random() * 800000 + 400000),
-        expenses: dayExpenses || Math.round(Math.random() * 300000 + 100000),
-        profit: profit || Math.round(Math.random() * 500000 + 200000),
+        sales: daySales,
+        expenses: dayExpenses,
+        profit,
       };
     });
   }, [salesList, expensesList]);
@@ -226,8 +226,6 @@ export default function Dashboard() {
         <StatCard
           title={language === "sw" ? "Jumla ya Mauzo" : "Total Sales"}
           value={formatMoney(totalSalesVal)}
-          delta="+12.4%"
-          deltaType="positive"
           icon={ShoppingBag}
           colorClass="text-blue-600"
           bgColorClass="bg-blue-50"
@@ -235,8 +233,6 @@ export default function Dashboard() {
         <StatCard
           title={language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}
           value={formatMoney(totalPurchasesVal)}
-          delta="-5.2%"
-          deltaType="negative"
           icon={ShoppingCart}
           colorClass="text-purple-600"
           bgColorClass="bg-purple-50"
@@ -244,8 +240,6 @@ export default function Dashboard() {
         <StatCard
           title={language === "sw" ? "Gharama ya Uzalishaji" : "Total Production Cost"}
           value={formatMoney(totalProductionCostVal)}
-          delta="-3.8%"
-          deltaType="negative"
           icon={Factory}
           colorClass="text-amber-600"
           bgColorClass="bg-amber-50"
@@ -253,8 +247,6 @@ export default function Dashboard() {
         <StatCard
           title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
           value={formatMoney(totalSalesVal)}
-          delta="+8.6%"
-          deltaType="positive"
           icon={Banknote}
           colorClass="text-emerald-600"
           bgColorClass="bg-emerald-50"
@@ -269,8 +261,6 @@ export default function Dashboard() {
         <StatCard
           title={language === "sw" ? "Madeni ya Wateja" : "Customers Owe"}
           value={formatMoney(customersOweVal)}
-          delta="+2.1%"
-          deltaType="negative"
           icon={Users}
           colorClass="text-rose-600"
           bgColorClass="bg-rose-50"
@@ -278,8 +268,6 @@ export default function Dashboard() {
         <StatCard
           title={language === "sw" ? "Jumla ya Matumizi" : "Total Expenses"}
           value={formatMoney(totalExpensesVal)}
-          delta="-4.7%"
-          deltaType="negative"
           icon={Receipt}
           colorClass="text-orange-600"
           bgColorClass="bg-orange-50"
@@ -287,8 +275,6 @@ export default function Dashboard() {
         <StatCard
           title={language === "sw" ? "Faida Halisi" : "Net Profit"}
           value={formatMoney(netProfitVal)}
-          delta="+15.2%"
-          deltaType="positive"
           icon={TrendingUp}
           colorClass="text-emerald-600"
           bgColorClass="bg-emerald-50"

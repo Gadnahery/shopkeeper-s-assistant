@@ -38,6 +38,7 @@ import { getCameraPermissionState, requestCameraPermission } from "@/lib/cameraP
 import { SHOP_COUNTRY_OPTIONS, SHOP_CURRENCY_OPTIONS, SHOP_LOCALE_OPTIONS } from "@/lib/international";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import { type BusinessType, type CapabilityKey, resolveCapabilities } from "@/lib/businessCapabilities";
 
 export default function Settings() {
   const { t, language, setLanguage } = useLanguage();
@@ -56,6 +57,8 @@ export default function Settings() {
     locale: "en-US",
     country_code: "US",
   });
+  const [businessType, setBusinessType] = useState<BusinessType>("retail");
+  const [capabilities, setCapabilities] = useState<Record<CapabilityKey, boolean>>(resolveCapabilities(null));
 
   const [receiptForm, setReceiptForm] = useState({
     receipt_header: "",
@@ -79,6 +82,8 @@ export default function Settings() {
       locale: shopSettings.locale || "en-US",
       country_code: shopSettings.country_code || "US",
     });
+    setBusinessType((shopSettings.business_type as BusinessType) || "retail");
+    setCapabilities(resolveCapabilities(shopSettings.capabilities));
 
     const settings = shopSettings as any;
     setReceiptForm({
@@ -112,6 +117,8 @@ export default function Settings() {
           currency: shopForm.currency,
           locale: shopForm.locale,
           country_code: shopForm.country_code,
+          business_type: businessType,
+          capabilities,
         })
         .eq("id", shopId);
 
@@ -318,6 +325,54 @@ export default function Settings() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">{language === "sw" ? "Aina ya Biashara" : "Business Type"}</Label>
+                <Select value={businessType} onValueChange={(value: BusinessType) => setBusinessType(value)}>
+                  <SelectTrigger className="h-10 rounded-xl border-border bg-background text-xs font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                    <SelectItem value="retail">{language === "sw" ? "Rejareja" : "Retail"}</SelectItem>
+                    <SelectItem value="wholesale">{language === "sw" ? "Jumla" : "Wholesale"}</SelectItem>
+                    <SelectItem value="service">{language === "sw" ? "Huduma" : "Service"}</SelectItem>
+                    <SelectItem value="hybrid">{language === "sw" ? "Bidhaa na huduma" : "Products + services"}</SelectItem>
+                    <SelectItem value="manufacturing">{language === "sw" ? "Uzalishaji" : "Manufacturing"}</SelectItem>
+                    <SelectItem value="pharmacy">{language === "sw" ? "Duka la dawa" : "Pharmacy"}</SelectItem>
+                    <SelectItem value="other">{language === "sw" ? "Nyingine" : "Other"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-background p-4">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-foreground">{language === "sw" ? "Moduli za biashara" : "Business modules"}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {language === "sw" ? "Onyesha tu zana ambazo biashara yako inatumia." : "Show only the tools your business uses."}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {([
+                  ["products", language === "sw" ? "Bidhaa" : "Products"],
+                  ["services", language === "sw" ? "Huduma" : "Services"],
+                  ["inventory", language === "sw" ? "Stoki" : "Inventory"],
+                  ["purchases", language === "sw" ? "Manunuzi" : "Purchases"],
+                  ["customers", language === "sw" ? "Wateja" : "Customers"],
+                  ["appointments", language === "sw" ? "Miadi" : "Appointments"],
+                  ["manufacturing", language === "sw" ? "Uzalishaji" : "Production"],
+                  ["loyalty", language === "sw" ? "Uaminifu" : "Loyalty"],
+                ] as [CapabilityKey, string][]).map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2.5">
+                    <Label htmlFor={`capability-${key}`} className="text-xs font-medium">{label}</Label>
+                    <Switch
+                      id={`capability-${key}`}
+                      checked={capabilities[key]}
+                      onCheckedChange={(checked) => setCapabilities((current) => ({ ...current, [key]: checked }))}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 

@@ -100,10 +100,6 @@ export default function Expenses() {
     }
   }, [expenses]);
 
-  if (expenses === undefined || isLoading) {
-    return <PageLoader message="Loading expenses..." messageSw="Inapakia matumizi..." language={language} />;
-  }
-
   const filteredExpenses = useMemo(() => {
     return (expenses || []).filter((e) => {
       const q = searchTerm.toLowerCase();
@@ -139,6 +135,10 @@ export default function Expenses() {
       .map(([cat, total]) => ({ cat, total }))
       .sort((a, b) => b.total - a.total);
   }, [expenses]);
+
+  if (expenses === undefined || isLoading) {
+    return <PageLoader message="Loading expenses..." messageSw="Inapakia matumizi..." language={language} />;
+  }
 
   const handleSelectExpense = (e: Expense) => {
     setSelectedExpense(e);

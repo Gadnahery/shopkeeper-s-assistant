@@ -1,10 +1,12 @@
 import { Menu } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useMyPageAccess } from "@/hooks/useUserPageAccess";
 import { MOBILE_PRIMARY_NAV, filterItemsByAccess, isRouteActive } from "./app-navigation";
 import { cn } from "@/lib/utils";
+import { QuickActionSheet } from "./QuickActionSheet";
 
 export function MobileBottomNav() {
   const location = useLocation();
@@ -12,16 +14,19 @@ export function MobileBottomNav() {
   const { setCollapsed, isCollapsed } = useSidebar();
   const { data: allowedPages } = useMyPageAccess();
 
-  const items = filterItemsByAccess(MOBILE_PRIMARY_NAV, allowedPages);
+  const { profile } = useAuth();
+  const items = filterItemsByAccess(MOBILE_PRIMARY_NAV, allowedPages, profile?.shops?.capabilities);
   const totalColumns = items.length + 1;
 
   return (
-    <nav className="safe-bottom fixed inset-x-3 bottom-3 z-30 md:hidden">
-      <div
-        className="mx-auto grid max-w-xl gap-1 rounded-2xl border border-border bg-card/95 px-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.45rem)] pt-2 shadow-lg backdrop-blur-xl"
-        style={{ gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))` }}
-      >
-        {items.map((item) => {
+    <>
+      <QuickActionSheet />
+      <nav className="safe-bottom fixed inset-x-3 bottom-3 z-30 md:hidden">
+        <div
+          className="mx-auto grid max-w-xl gap-1 rounded-2xl border border-border bg-card/95 px-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.45rem)] pt-2 shadow-lg backdrop-blur-xl"
+          style={{ gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))` }}
+        >
+          {items.map((item) => {
           const active = isRouteActive(location.pathname, item);
 
           return (
@@ -39,9 +44,9 @@ export function MobileBottomNav() {
               </span>
             </NavLink>
           );
-        })}
+          })}
 
-        <button
+          <button
           type="button"
           onClick={() => setCollapsed(false)}
           className={cn(
@@ -51,8 +56,9 @@ export function MobileBottomNav() {
         >
           <Menu className="h-[18px] w-[18px]" strokeWidth={!isCollapsed ? 2 : 1.75} />
           <span className="truncate">{language === "sw" ? "Menyu" : "Menu"}</span>
-        </button>
-      </div>
-    </nav>
+          </button>
+        </div>
+      </nav>
+    </>
   );
 }

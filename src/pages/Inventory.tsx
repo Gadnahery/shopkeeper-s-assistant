@@ -112,10 +112,6 @@ export default function Inventory() {
     }
   }, [products]);
 
-  if (products === undefined || isLoading) {
-    return <PageLoader message="Loading inventory..." messageSw="Inapakia hesabu ya stoki..." language={language} />;
-  }
-
   const categoryMap = new Map((categories || []).map((c) => [c.id, c.name]));
 
   const filteredProducts = useMemo(() => {
@@ -149,6 +145,10 @@ export default function Inventory() {
   const outOfStockCount = useMemo(() => {
     return (products || []).filter((p) => p.stock <= 0).length;
   }, [products]);
+
+  if (products === undefined || isLoading) {
+    return <PageLoader message="Loading inventory..." messageSw="Inapakia hesabu ya stoki..." language={language} />;
+  }
 
   const toggleSelectAll = () => {
     if (selectedIds.size === filteredProducts.length) {
