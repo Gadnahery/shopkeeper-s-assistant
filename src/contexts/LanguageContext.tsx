@@ -21,6 +21,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.hrm": "Employees / HR",
     "nav.reports": "Reports",
     "nav.settings": "Settings",
+    "nav.appointments": "Appointments",
 
     // Legacy / Sub Navigation Keys
     "nav.dashboard": "Overview",
@@ -427,6 +428,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.hrm": "Wafanyakazi / HR",
     "nav.reports": "Ripoti",
     "nav.settings": "Mipangilio",
+    "nav.appointments": "Miadi",
 
     // Legacy / Sub Navigation Keys
     "nav.dashboard": "Muhtasari",

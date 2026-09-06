@@ -37,6 +37,7 @@ const Inventory = lazy(() => import("./pages/Inventory"));
 const AddProduct = lazy(() => import("./pages/AddProduct"));
 const ReceiveStock = lazy(() => import("./pages/ReceiveStock"));
 const Customers = lazy(() => import("./pages/Customers"));
+const Appointments = lazy(() => import("./pages/Appointments"));
 const CustomerDetail = lazy(() => import("./pages/CustomerDetail"));
 const Suppliers = lazy(() => import("./pages/Suppliers"));
 const SupplierDetail = lazy(() => import("./pages/SupplierDetail"));
@@ -148,6 +149,7 @@ const App = () => (
                             <Route path="/todo" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Todo /></Suspense></ProtectedRoute>} />
                             <Route path="/customers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Customers /></Suspense></ProtectedRoute>} />
                             <Route path="/customers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><CustomerDetail /></Suspense></ProtectedRoute>} />
+                            <Route path="/appointments" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Appointments /></Suspense></ProtectedRoute>} />
                             <Route path="/suppliers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Suppliers /></Suspense></ProtectedRoute>} />
                             <Route path="/suppliers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><SupplierDetail /></Suspense></ProtectedRoute>} />
                             <Route path="/expenses" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Expenses /></Suspense></ProtectedRoute>} />

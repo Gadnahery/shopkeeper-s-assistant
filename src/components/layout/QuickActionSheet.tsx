@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { CircleDollarSign, PackagePlus, Plus, ShoppingCart, WalletCards } from "lucide-react";
+import { CalendarPlus, CircleDollarSign, PackagePlus, Plus, ShoppingCart, WalletCards } from "lucide-react";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ export function QuickActionSheet() {
     { label: language === "sw" ? "Rekodi ununuzi" : "Record purchase", icon: WalletCards, to: "/purchases?new=true", show: hasCapability(capabilities, "purchases") },
     { label: language === "sw" ? "Pokea malipo" : "Receive payment", icon: CircleDollarSign, to: "/customers", show: hasCapability(capabilities, "payments") },
     { label: language === "sw" ? "Ongeza gharama" : "Add expense", icon: CircleDollarSign, to: "/expenses?new=true", show: hasCapability(capabilities, "expenses") },
+    { label: language === "sw" ? "Weka miadi" : "Book appointment", icon: CalendarPlus, to: "/appointments?new=true", show: hasCapability(capabilities, "appointments") },
   ].filter((action) => action.show);
 
   function go(to: string) {

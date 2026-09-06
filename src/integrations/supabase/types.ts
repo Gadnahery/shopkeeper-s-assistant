@@ -12,6 +12,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          appointment_at: string
+          created_at: string
+          customer_id: string | null
+          customer_name: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          service_id: string | null
+          service_name: string
+          shop_id: string
+          staff_name: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_at: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          service_name: string
+          shop_id: string
+          staff_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_at?: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          service_id?: string | null
+          service_name?: string
+          shop_id?: string
+          staff_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           category: string | null
