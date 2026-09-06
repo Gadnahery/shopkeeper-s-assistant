@@ -99,7 +99,7 @@ export default function Appointments() {
                   <div className="min-w-0 flex-1 border-l border-border pl-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-foreground">{appointment.customer_name}</p>
-                      <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", appointment.status === "completed" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800")}>
+                      <span className={appointment.status === "completed" ? "badge-success" : "badge-warning"}>
                         {appointment.status}
                       </span>
                     </div>

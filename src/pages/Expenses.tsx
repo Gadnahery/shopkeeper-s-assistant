@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import {
   DollarSign,
   TrendingDown,
+  TrendingUp,
   Plus,
   Search,
   Filter,
@@ -20,6 +21,7 @@ import {
   CheckCircle2,
   PieChart as PieChartIcon,
   Tag,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +44,8 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useExpenses, useCreateExpense, useDeleteExpense, type Expense } from "@/hooks/useExpenses";
+import { useSalesByDateRange } from "@/hooks/useSales";
+import { usePurchases } from "@/hooks/usePurchases";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import Billing from "@/pages/Billing";
 import { PageLoader } from "@/components/PageLoader";
@@ -86,6 +90,11 @@ export default function Expenses() {
 
   const { data: expenses, isLoading } = useExpenses();
   const { data: otherIncome = [], isLoading: otherIncomeLoading } = useOtherIncome();
+  const { data: salesList } = useSalesByDateRange(
+    format(new Date(new Date().getFullYear(), 0, 1), "yyyy-MM-dd"),
+    format(new Date(), "yyyy-MM-dd")
+  );
+  const { data: purchasesList } = usePurchases();
   const createExpense = useCreateExpense();
   const deleteExpense = useDeleteExpense();
 
@@ -138,6 +147,22 @@ export default function Expenses() {
       .map(([cat, total]) => ({ cat, total }))
       .sort((a, b) => b.total - a.total);
   }, [expenses]);
+
+  // Profit KPI calculations
+  const totalRevenue = useMemo(() => {
+    const sales = (salesList || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+    const other = (otherIncome || []).reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+    return sales + other;
+  }, [salesList, otherIncome]);
+
+  const totalCOGS = useMemo(() => {
+    return (purchasesList || []).reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
+  }, [purchasesList]);
+
+  const grossProfit = Math.max(0, totalRevenue - totalCOGS);
+  const netProfit = Math.max(0, grossProfit - totalAmount);
+  const grossMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : "0.0";
+  const netMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : "0.0";
 
   if (expenses === undefined || isLoading || otherIncomeLoading) {
     return <PageLoader message="Loading expenses..." messageSw="Inapakia matumizi..." language={language} />;
@@ -253,6 +278,9 @@ export default function Expenses() {
           <TabsTrigger value="expenses" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
             {t("expenses.title")}
           </TabsTrigger>
+          <TabsTrigger value="profit" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+            {language === "sw" ? "Faida" : "Profit"}
+          </TabsTrigger>
           <TabsTrigger value="billing" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
             {language === "sw" ? "Bili na Vifurushi" : "Subscription & Billing"}
           </TabsTrigger>
@@ -260,6 +288,89 @@ export default function Expenses() {
             {language === "sw" ? "Mapato Mengine" : "Other Income"}
           </TabsTrigger>
         </TabsList>
+
+        {/* Profit Breakdown Tab */}
+        <TabsContent value="profit" className="m-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* P&L Statement */}
+            <div className="page-section">
+              <div className="border-b border-border px-5 py-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  {language === "sw" ? "Taarifa ya Faida na Hasara" : "Profit & Loss Statement"}
+                </h3>
+              </div>
+              <div className="p-5">
+                <div className="profit-row">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{language === "sw" ? "Mapato ya Mauzo" : "Sales Revenue"}</p>
+                    <p className="text-xs text-muted-foreground">{language === "sw" ? "Mwaka huu" : "Year to date"}</p>
+                  </div>
+                  <span className="money-display-sm text-emerald-600">{formatMoney(totalRevenue)}</span>
+                </div>
+                <div className="profit-row">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{language === "sw" ? "Gharama za Bidhaa (COGS)" : "Cost of Goods (COGS)"}</p>
+                    <p className="text-xs text-muted-foreground">{language === "sw" ? "Manunuzi yote" : "All purchases"}</p>
+                  </div>
+                  <span className="money-display-sm text-rose-600">-{formatMoney(totalCOGS)}</span>
+                </div>
+                <div className="profit-row bg-muted/30 rounded-lg px-3 -mx-2">
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{language === "sw" ? "Faida ya Jumla" : "Gross Profit"}</p>
+                    <p className="text-xs text-muted-foreground">{grossMargin}% {language === "sw" ? "ukingo" : "margin"}</p>
+                  </div>
+                  <span className="money-display-sm font-bold">{formatMoney(grossProfit)}</span>
+                </div>
+                <div className="profit-row">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{language === "sw" ? "Matumizi ya Uendeshaji" : "Operating Expenses"}</p>
+                    <p className="text-xs text-muted-foreground">{expenses?.length || 0} {language === "sw" ? "gharama" : "entries"}</p>
+                  </div>
+                  <span className="money-display-sm text-rose-600">-{formatMoney(totalAmount)}</span>
+                </div>
+                <div className="profit-row bg-primary/5 rounded-lg px-3 -mx-2 border border-primary/20">
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{language === "sw" ? "Faida Halisi" : "Net Profit"}</p>
+                    <p className="text-xs text-muted-foreground">{netMargin}% {language === "sw" ? "ukingo" : "margin"}</p>
+                  </div>
+                  <span className="money-display-sm font-bold text-emerald-600">{formatMoney(netProfit)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Category Breakdown */}
+            <div className="page-section">
+              <div className="border-b border-border px-5 py-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  {language === "sw" ? "Gharama kwa Aina" : "Expenses by Category"}
+                </h3>
+              </div>
+              <div className="p-5 space-y-3">
+                {categoryBreakdown.length === 0 ? (
+                  <div className="empty-state py-8">
+                    <div className="empty-state-icon"><BarChart3 className="h-7 w-7" /></div>
+                    <p className="text-sm font-medium text-foreground">{language === "sw" ? "Hakuna data" : "No data yet"}</p>
+                  </div>
+                ) : (
+                  categoryBreakdown.map(({ cat, total }) => (
+                    <div key={cat} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-foreground">{getCategoryLabel(cat)}</span>
+                        <span className="text-xs font-bold text-foreground">{formatMoney(total)}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${Math.min(100, (total / totalAmount) * 100).toFixed(1)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
 
         <TabsContent value="expenses" className="m-0 space-y-6">
           {/* 2-Column Master-Detail Layout (NO POPUPS) */}

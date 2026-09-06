@@ -381,47 +381,47 @@ export default function Purchases() {
     <div className="space-y-6 pb-12">
       {/* 4 KPI Top Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-50">
-            <ShoppingCart className="w-5 h-5 text-blue-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-600">
+            <ShoppingCart className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatMoney(totalPurchasesAmount)}</p>
-            <p className="text-[11px] text-gray-400 mt-1">{purchases?.length || 0} {language === "sw" ? "maagizo yote" : "total orders"}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalPurchasesAmount)}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{purchases?.length || 0} {language === "sw" ? "maagizo yote" : "total orders"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-50">
-            <DollarSign className="w-5 h-5 text-emerald-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600">
+            <DollarSign className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Zilizolipwa" : "Total Paid"}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatMoney(totalPaidAmount)}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zilizolipwa" : "Total Paid"}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalPaidAmount)}</p>
             <p className="text-[11px] text-emerald-600 font-medium mt-1">{language === "sw" ? "Malipo yaliyokamilika" : "Settled payments"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-50">
-            <Clock className="w-5 h-5 text-amber-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600">
+            <Clock className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Madeni ya Wasambazaji" : "Outstanding / Due"}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatMoney(totalOutstanding)}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Madeni ya Wasambazaji" : "Outstanding / Due"}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalOutstanding)}</p>
             <p className="text-[11px] text-amber-600 font-medium mt-1">{language === "sw" ? "Inayosubiri kulipwa" : "Pending balance"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-50">
-            <Package className="w-5 h-5 text-purple-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-500/10 text-purple-600">
+            <Package className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Bidhaa Zilizopokelewa" : "Total Items Received"}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{totalReceivedItems}</p>
-            <p className="text-[11px] text-gray-400 mt-1">{suppliers?.length || 0} {language === "sw" ? "wasambazaji hai" : "active suppliers"}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Bidhaa Zilizopokelewa" : "Total Items Received"}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{totalReceivedItems}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{suppliers?.length || 0} {language === "sw" ? "wasambazaji hai" : "active suppliers"}</p>
           </div>
         </div>
       </div>

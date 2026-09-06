@@ -12,8 +12,9 @@ import {
   ArrowUp,
   ArrowDown,
   AlertTriangle,
-  Boxes,
   Plus,
+  ChevronRight,
+  Wallet,
 } from "lucide-react";
 import {
   LineChart,
@@ -27,9 +28,9 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { format, subDays } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format, subDays, startOfWeek, startOfMonth, startOfYear } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSalesSummaryByRange, useSalesByDateRange } from "@/hooks/useSales";
@@ -40,8 +41,24 @@ import { useOtherIncome } from "@/hooks/useOtherIncome";
 import { useProducts, useLowStockProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
-import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+
+type Period = "today" | "week" | "month" | "year";
+
+function StatCardSkeleton() {
+  return (
+    <div className="stat-card">
+      <div className="flex gap-4">
+        <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function StatCard({
   title,
@@ -51,45 +68,39 @@ function StatCard({
   icon: Icon,
   colorClass,
   bgColorClass,
+  onClick,
 }: {
   title: string;
   value: string;
   delta?: string;
   deltaType?: "positive" | "negative" | "neutral";
-  icon: any;
+  icon: React.ElementType;
   colorClass: string;
   bgColorClass: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-[#eef0f3] p-5 shadow-xs transition-all hover:shadow-sm min-w-0">
+    <div
+      className={cn("stat-card", onClick && "cursor-pointer")}
+      onClick={onClick}
+    >
       <div className="flex gap-4">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${bgColorClass}`}>
-          <Icon className={`w-5 h-5 ${colorClass}`} />
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${bgColorClass}`}>
+          <Icon className={`h-5 w-5 ${colorClass}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-xs font-medium text-gray-500 truncate" title={title}>
-            {title}
-          </h3>
-          <p className="text-xl font-bold text-[#1a1d29] mt-1 truncate" title={value}>
-            {value}
-          </p>
+          <h3 className="text-xs font-medium text-muted-foreground truncate">{title}</h3>
+          <p className="money-display-sm mt-1 truncate">{value}</p>
           {delta && (
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-2 text-xs font-medium">
-              {deltaType === "positive" && <ArrowUp className="w-3 h-3 text-emerald-600 shrink-0" />}
-              {deltaType === "negative" && <ArrowDown className="w-3 h-3 text-rose-600 shrink-0" />}
-              {deltaType === "neutral" && <span className="text-gray-400 shrink-0">-</span>}
-              <span
-                className={`shrink-0 font-semibold ${
-                  deltaType === "positive"
-                    ? "text-emerald-600"
-                    : deltaType === "negative"
-                    ? "text-rose-600"
-                    : "text-gray-500"
-                }`}
-              >
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-1.5 text-xs font-medium">
+              {deltaType === "positive" && <ArrowUp className="h-3 w-3 text-emerald-600 shrink-0" />}
+              {deltaType === "negative" && <ArrowDown className="h-3 w-3 text-rose-600 shrink-0" />}
+              <span className={cn(
+                "shrink-0",
+                deltaType === "positive" ? "text-emerald-600" : deltaType === "negative" ? "text-rose-600" : "text-muted-foreground"
+              )}>
                 {delta}
               </span>
-              <span className="text-gray-400 shrink-0">vs jana</span>
             </div>
           )}
         </div>
@@ -98,105 +109,154 @@ function StatCard({
   );
 }
 
+function SectionCard({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <div className="page-section">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</h3>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ChartSkeleton() {
+  return (
+    <div className="page-section p-5">
+      <Skeleton className="h-4 w-48 mb-5" />
+      <Skeleton className="h-56 w-full rounded-lg" />
+    </div>
+  );
+}
+
+const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
+  today: { en: "Today", sw: "Leo" },
+  week: { en: "This week", sw: "Wiki hii" },
+  month: { en: "This month", sw: "Mwezi huu" },
+  year: { en: "This year", sw: "Mwaka huu" },
+};
+
+function getPeriodDates(period: Period): { start: string; end: string } {
+  const now = new Date();
+  const end = format(now, "yyyy-MM-dd");
+  switch (period) {
+    case "today": return { start: end, end };
+    case "week": return { start: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"), end };
+    case "month": return { start: format(startOfMonth(now), "yyyy-MM-dd"), end };
+    case "year": return { start: format(startOfYear(now), "yyyy-MM-dd"), end };
+  }
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const { formatMoney, formatNumber } = useShopFormatting();
+  const { formatMoney } = useShopFormatting();
+  const { profile } = useAuth();
+  const [period, setPeriod] = useState<Period>("week");
 
-  // Queries
-  const today = format(new Date(), "yyyy-MM-dd");
+  const shopName = profile?.shops?.name || "WiseCash";
+
+  // Date range
   const sevenDaysAgo = format(subDays(new Date(), 6), "yyyy-MM-dd");
+  const today = format(new Date(), "yyyy-MM-dd");
+  const { start: periodStart } = getPeriodDates(period);
 
+  // Queries — load independently for skeleton support
   const { data: rangeSales, isLoading: salesLoading } = useSalesSummaryByRange(sevenDaysAgo, today);
-  const { data: salesList } = useSalesByDateRange(sevenDaysAgo, today);
-  const { data: purchasesList } = usePurchases();
+  const { data: salesList, isLoading: salesListLoading } = useSalesByDateRange(sevenDaysAgo, today);
+  const { data: purchasesList, isLoading: purchasesLoading } = usePurchases();
   const { data: productionList } = useProductionBatches();
-  const { data: expensesList } = useExpenses();
+  const { data: expensesList, isLoading: expensesLoading } = useExpenses();
   const { data: otherIncomeList } = useOtherIncome();
-  const { data: allProducts, isLoading: productsLoading } = useProducts();
-  const { data: lowStockProducts } = useLowStockProducts();
+  const { data: allProducts } = useProducts();
+  const { data: lowStockProducts, isLoading: lowStockLoading } = useLowStockProducts();
   const { data: customersList } = useCustomers();
 
-  // Financial KPI calculations
-  const totalSalesVal = useMemo(() => {
-    return (salesList || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0);
-  }, [salesList]);
-
-  const totalPurchasesVal = useMemo(() => {
-    return (purchasesList || []).reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
-  }, [purchasesList]);
-
-  const totalProductionCostVal = useMemo(() => {
-    return (productionList || []).reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0);
-  }, [productionList]);
-
-  const stockValueVal = useMemo(() => {
-    return (allProducts || []).reduce(
-      (sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0),
-      0,
-    );
-  }, [allProducts]);
-
-  const customersOweVal = useMemo(() => {
-    return (customersList || []).reduce((sum, c) => sum + (Number(c.credit_balance) || 0), 0);
-  }, [customersList]);
-
-  const totalExpensesVal = useMemo(() => {
-    return (expensesList || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  }, [expensesList]);
-
-  const otherIncomeVal = useMemo(() => {
-    return (otherIncomeList || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  }, [otherIncomeList]);
-
+  // KPI calculations
+  const totalSalesVal = useMemo(
+    () => (salesList || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0),
+    [salesList]
+  );
+  const totalPurchasesVal = useMemo(
+    () => (purchasesList || []).reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0),
+    [purchasesList]
+  );
+  const stockValueVal = useMemo(
+    () => (allProducts || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0), 0),
+    [allProducts]
+  );
+  const customersOweVal = useMemo(
+    () => (customersList || []).reduce((sum, c) => sum + (Number(c.credit_balance) || 0), 0),
+    [customersList]
+  );
+  const totalExpensesVal = useMemo(
+    () => (expensesList || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+    [expensesList]
+  );
+  const otherIncomeVal = useMemo(
+    () => (otherIncomeList || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0),
+    [otherIncomeList]
+  );
   const totalRevenueVal = totalSalesVal + otherIncomeVal;
+  const grossProfitVal = Math.max(0, totalSalesVal - totalPurchasesVal);
   const netProfitVal = Math.max(0, totalRevenueVal - totalExpensesVal);
 
-  // Group last 7 days chart data
+  // Chart data — last 7 days
   const chartData = useMemo(() => {
     const days = [6, 5, 4, 3, 2, 1, 0].map((d) => format(subDays(new Date(), d), "yyyy-MM-dd"));
     return days.map((dayStr) => {
       const daySales = (salesList || [])
         .filter((s) => (s.created_at || "").startsWith(dayStr))
         .reduce((sum, s) => sum + (Number(s.total) || 0), 0);
-
       const dayExpenses = (expensesList || [])
         .filter((e) => (e.date || e.created_at || "").startsWith(dayStr))
         .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-
       const profit = Math.max(0, daySales - dayExpenses);
-
       return {
-        name: format(new Date(dayStr), "dd MMM"),
-        sales: daySales,
-        expenses: dayExpenses,
-        profit,
+        name: format(new Date(dayStr + "T00:00:00"), "dd MMM"),
+        [language === "sw" ? "Mauzo" : "Sales"]: daySales,
+        [language === "sw" ? "Matumizi" : "Expenses"]: dayExpenses,
+        [language === "sw" ? "Faida" : "Profit"]: profit,
       };
     });
-  }, [salesList, expensesList]);
+  }, [salesList, expensesList, language]);
 
-  // Combined recent activities stream
+  // Recent activities
   const recentActivities = useMemo(() => {
     const acts = [
       ...(salesList || []).map((s) => ({
         type: "sale",
-        title: `Mauzo #${s.id.slice(0, 6).toUpperCase()}`,
+        title: `Sale #${s.id.slice(0, 6).toUpperCase()}`,
         subtitle: s.payment_method || "Cash",
         date: s.created_at,
         amount: `+${formatMoney(s.total)}`,
-        color: "text-blue-600",
-        bg: "bg-blue-50",
+        isPositive: true,
         icon: ShoppingBag,
+        color: "text-blue-600",
+        bg: "bg-blue-50 dark:bg-blue-950/40",
+      })),
+      ...(expensesList || []).map((e) => ({
+        type: "expense",
+        title: e.title || (language === "sw" ? "Gharama" : "Expense"),
+        subtitle: e.category || "General",
+        date: e.date || e.created_at,
+        amount: `-${formatMoney(e.amount)}`,
+        isPositive: false,
+        icon: Receipt,
+        color: "text-rose-600",
+        bg: "bg-rose-50 dark:bg-rose-950/40",
       })),
       ...(purchasesList || []).map((p) => ({
         type: "purchase",
-        title: `Ununuzi: ${p.supplier_name || "Supplier"}`,
-        subtitle: `${p.items_count || 1} bidhaa`,
+        title: `${language === "sw" ? "Ununuzi" : "Purchase"}: ${p.supplier_name || "Supplier"}`,
+        subtitle: `${p.items_count || 1} ${language === "sw" ? "bidhaa" : "items"}`,
         date: p.created_at,
         amount: `-${formatMoney(p.total_amount)}`,
-        color: "text-purple-600",
-        bg: "bg-purple-50",
+        isPositive: false,
         icon: ShoppingCart,
+        color: "text-violet-600",
+        bg: "bg-violet-50 dark:bg-violet-950/40",
       })),
       ...(otherIncomeList || []).map((income) => ({
         type: "income",
@@ -204,268 +264,311 @@ export default function Dashboard() {
         subtitle: income.category,
         date: income.date,
         amount: `+${formatMoney(income.amount)}`,
-        color: "text-emerald-600",
-        bg: "bg-emerald-50",
+        isPositive: true,
         icon: Banknote,
-      })),
-      ...(expensesList || []).map((e) => ({
-        type: "expense",
-        title: e.title || "Gharama",
-        subtitle: e.category || "General",
-        date: e.date || e.created_at,
-        amount: `-${formatMoney(e.amount)}`,
-        color: "text-cyan-600",
-        bg: "bg-cyan-50",
-        icon: Receipt,
+        color: "text-emerald-600",
+        bg: "bg-emerald-50 dark:bg-emerald-950/40",
       })),
     ];
+    return acts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
+  }, [salesList, purchasesList, expensesList, otherIncomeList, formatMoney, language]);
 
-    return acts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
-  }, [salesList, purchasesList, expensesList, otherIncomeList, formatMoney]);
-
-  // Top products
-  const topProducts = useMemo(() => {
-    return (allProducts || []).slice(0, 3).map((p, idx) => ({
-      name: p.name,
-      qtySold: 45 - idx * 12,
-      revenue: (45 - idx * 12) * (Number(p.selling_price) || 15000),
-    }));
-  }, [allProducts]);
-
-  if (salesLoading || productsLoading) {
-    return <PageLoader message="Loading dashboard..." messageSw="Inapakia muhtasari..." language={language} />;
-  }
+  const kpiLoading = salesLoading || salesListLoading;
+  const salesLabelKey = language === "sw" ? "Mauzo" : "Sales";
+  const expensesLabelKey = language === "sw" ? "Matumizi" : "Expenses";
+  const profitLabelKey = language === "sw" ? "Faida" : "Profit";
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* 8 Olly StatCards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title={language === "sw" ? "Jumla ya Mauzo" : "Total Sales"}
-          value={formatMoney(totalSalesVal)}
-          icon={ShoppingBag}
-          colorClass="text-blue-600"
-          bgColorClass="bg-blue-50"
-        />
-        <StatCard
-          title={language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}
-          value={formatMoney(totalPurchasesVal)}
-          icon={ShoppingCart}
-          colorClass="text-purple-600"
-          bgColorClass="bg-purple-50"
-        />
-        <StatCard
-          title={language === "sw" ? "Gharama ya Uzalishaji" : "Total Production Cost"}
-          value={formatMoney(totalProductionCostVal)}
-          icon={Factory}
-          colorClass="text-amber-600"
-          bgColorClass="bg-amber-50"
-        />
-        <StatCard
-          title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
-          value={formatMoney(totalSalesVal)}
-          icon={Banknote}
-          colorClass="text-emerald-600"
-          bgColorClass="bg-emerald-50"
-        />
-        <StatCard
-          title={language === "sw" ? "Thamani ya Stoki" : "Stock Value"}
-          value={formatMoney(stockValueVal)}
-          icon={Package}
-          colorClass="text-cyan-600"
-          bgColorClass="bg-cyan-50"
-        />
-        <StatCard
-          title={language === "sw" ? "Madeni ya Wateja" : "Customers Owe"}
-          value={formatMoney(customersOweVal)}
-          icon={Users}
-          colorClass="text-rose-600"
-          bgColorClass="bg-rose-50"
-        />
-        <StatCard
-          title={language === "sw" ? "Jumla ya Matumizi" : "Total Expenses"}
-          value={formatMoney(totalExpensesVal)}
-          icon={Receipt}
-          colorClass="text-orange-600"
-          bgColorClass="bg-orange-50"
-        />
-        <StatCard
-          title={language === "sw" ? "Faida Halisi" : "Net Profit"}
-          value={formatMoney(netProfitVal)}
-          icon={TrendingUp}
-          colorClass="text-emerald-600"
-          bgColorClass="bg-emerald-50"
-        />
+    <div className="space-y-5 pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {language === "sw" ? `Habari, ${shopName}` : `Overview — ${shopName}`}
+          </h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {format(new Date(), language === "sw" ? "EEEE, dd MMMM yyyy" : "EEEE, MMMM dd yyyy")}
+          </p>
+        </div>
+
+        {/* Period selector */}
+        <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1 shadow-xs self-start sm:self-auto">
+          {(["today", "week", "month", "year"] as Period[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                period === p
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {PERIOD_LABELS[p][language]}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Dual Charts Row */}
+      {/* Primary KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        {kpiLoading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title={language === "sw" ? "Jumla ya Mauzo" : "Total Sales"}
+              value={formatMoney(totalSalesVal)}
+              icon={ShoppingBag}
+              colorClass="text-blue-600"
+              bgColorClass="bg-blue-50 dark:bg-blue-950/40"
+              onClick={() => navigate("/sales")}
+            />
+            <StatCard
+              title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
+              value={formatMoney(totalSalesVal)}
+              icon={Wallet}
+              colorClass="text-emerald-600"
+              bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
+            />
+            <StatCard
+              title={language === "sw" ? "Madeni ya Wateja" : "Outstanding"}
+              value={formatMoney(customersOweVal)}
+              icon={Users}
+              colorClass="text-amber-600"
+              bgColorClass="bg-amber-50 dark:bg-amber-950/40"
+              onClick={() => navigate("/customers")}
+            />
+            <StatCard
+              title={language === "sw" ? "Faida Halisi" : "Net Profit"}
+              value={formatMoney(netProfitVal)}
+              icon={TrendingUp}
+              colorClass="text-emerald-600"
+              bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
+              onClick={() => navigate("/expenses")}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Secondary KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {kpiLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+        ) : (
+          <>
+            <StatCard
+              title={language === "sw" ? "Jumla ya Manunuzi" : "Purchases"}
+              value={formatMoney(totalPurchasesVal)}
+              icon={ShoppingCart}
+              colorClass="text-violet-600"
+              bgColorClass="bg-violet-50 dark:bg-violet-950/40"
+              onClick={() => navigate("/purchases")}
+            />
+            <StatCard
+              title={language === "sw" ? "Jumla ya Matumizi" : "Expenses"}
+              value={formatMoney(totalExpensesVal)}
+              icon={Receipt}
+              colorClass="text-rose-600"
+              bgColorClass="bg-rose-50 dark:bg-rose-950/40"
+              onClick={() => navigate("/expenses")}
+            />
+            <StatCard
+              title={language === "sw" ? "Thamani ya Stoki" : "Stock Value"}
+              value={formatMoney(stockValueVal)}
+              icon={Package}
+              colorClass="text-cyan-600"
+              bgColorClass="bg-cyan-50 dark:bg-cyan-950/40"
+              onClick={() => navigate("/inventory")}
+            />
+            <StatCard
+              title={language === "sw" ? "Faida ya Jumla" : "Gross Profit"}
+              value={formatMoney(grossProfitVal)}
+              icon={Banknote}
+              colorClass="text-teal-600"
+              bgColorClass="bg-teal-50 dark:bg-teal-950/40"
+            />
+          </>
+        )}
+      </div>
+
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Chart 1: Sales vs Expenses vs Profit */}
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-5 shadow-xs">
-          <h3 className="text-xs font-bold text-[#1a1d29] mb-4 uppercase tracking-wider">
-            {language === "sw" ? "Mauzo vs Matumizi vs Faida (TSH)" : "Sales vs Expenses vs Profit (TSh)"}
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef0f3" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#6b7280" }} dy={10} />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fill: "#6b7280" }}
-                  tickFormatter={(val) => `${(val / 1000000).toFixed(1)}M`}
-                />
-                <Tooltip formatter={(val: any) => formatMoney(Number(val) || 0)} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11, top: -18 }} />
-                <Line type="monotone" dataKey="sales" name={language === "sw" ? "Mauzo" : "Sales"} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="expenses" name={language === "sw" ? "Matumizi" : "Expenses"} stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="profit" name={language === "sw" ? "Faida" : "Profit"} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        {salesListLoading || expensesLoading ? (
+          <>
+            <ChartSkeleton />
+            <ChartSkeleton />
+          </>
+        ) : (
+          <>
+            {/* Chart 1: Sales vs Expenses vs Profit */}
+            <div className="page-section p-5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-5">
+                {language === "sw" ? "Mauzo vs Matumizi vs Faida" : "Sales vs Expenses vs Profit"}
+              </h3>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} dy={8} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} width={40} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 10, border: "1px solid hsl(var(--border))", fontSize: 11 }}
+                      formatter={(val: unknown) => formatMoney(Number(val) || 0)}
+                    />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                    <Line type="monotone" dataKey={salesLabelKey} stroke="#3b82f6" strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey={expensesLabelKey} stroke="#f43f5e" strokeWidth={2} dot={{ r: 2.5 }} />
+                    <Line type="monotone" dataKey={profitLabelKey} stroke="#10b981" strokeWidth={2} dot={{ r: 2.5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-        {/* Chart 2: Net Profit Trend Area */}
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-5 shadow-xs">
-          <h3 className="text-xs font-bold text-[#1a1d29] mb-4 uppercase tracking-wider">
-            {language === "sw" ? "Mwelekeo wa Faida Halisi (TSH)" : "Net Profit Trend (TSh)"}
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <defs>
-                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef0f3" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#6b7280" }} dy={10} />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fill: "#6b7280" }}
-                  tickFormatter={(val) => `${(val / 1000000).toFixed(1)}M`}
-                />
-                <Tooltip formatter={(val: any) => formatMoney(Number(val) || 0)} />
-                <Area type="monotone" dataKey="profit" name={language === "sw" ? "Faida Halisi" : "Net Profit"} stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorProfit)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            {/* Chart 2: Net Profit Trend */}
+            <div className="page-section p-5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-5">
+                {language === "sw" ? "Mwelekeo wa Faida Halisi" : "Net Profit Trend"}
+              </h3>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                    <defs>
+                      <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} dy={8} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} width={40} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 10, border: "1px solid hsl(var(--border))", fontSize: 11 }}
+                      formatter={(val: unknown) => formatMoney(Number(val) || 0)}
+                    />
+                    <Area type="monotone" dataKey={profitLabelKey} stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#gradProfit)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Bottom 3 Cards Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* 1: Top Selling Products */}
-        <div className="bg-white rounded-xl border border-[#eef0f3] shadow-xs flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-[#eef0f3]">
-            <h3 className="text-xs font-bold text-[#1a1d29] uppercase tracking-wider">
-              {language === "sw" ? "Bidhaa Zinazoongoza" : "Top Selling Products"}
-            </h3>
-          </div>
-          <div className="overflow-x-auto min-w-0">
-            <table className="w-full text-xs whitespace-nowrap">
-              <thead className="bg-[#f9fafb] text-gray-500 text-[11px] uppercase text-left">
+      {/* Bottom Row: Low Stock + Recent Activities */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Low Stock Alerts */}
+        <SectionCard
+          title={language === "sw" ? "Tahadhari za Stoki Ndogo" : "Low Stock Alerts"}
+          action={
+            <Button variant="ghost" size="sm" onClick={() => navigate("/inventory")} className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground">
+              {language === "sw" ? "Tazama Stoki" : "View All"}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          }
+        >
+          {lowStockLoading ? (
+            <div className="p-4 space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
+          ) : lowStockProducts && lowStockProducts.length > 0 ? (
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-2.5 font-medium">{language === "sw" ? "Bidhaa" : "Product"}</th>
-                  <th className="px-4 py-2.5 font-medium text-right">{language === "sw" ? "Mauzo" : "Sold"}</th>
-                  <th className="px-4 py-2.5 font-medium text-right">{language === "sw" ? "Mapato" : "Revenue"}</th>
+                  <th>{language === "sw" ? "Bidhaa" : "Product"}</th>
+                  <th className="text-right">{language === "sw" ? "Iliyobaki" : "Stock"}</th>
+                  <th className="text-right">{language === "sw" ? "Kiwango" : "Limit"}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#eef0f3]">
-                {topProducts.map((p, i) => (
-                  <tr key={i} className="hover:bg-gray-50/50">
-                    <td className="px-4 py-3 text-[#1a1d29] font-medium">{p.name}</td>
-                    <td className="px-4 py-3 text-right text-gray-600">{p.qtySold} pcs</td>
-                    <td className="px-4 py-3 text-right font-bold text-[#1a1d29]">{formatMoney(p.revenue)}</td>
+              <tbody>
+                {lowStockProducts.slice(0, 5).map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        <span className="font-medium truncate max-w-[180px]">{item.name}</span>
+                      </div>
+                    </td>
+                    <td className="text-right">
+                      <span className="badge-warning">{item.stock}</span>
+                    </td>
+                    <td className="text-right text-muted-foreground text-xs">{item.low_stock_alert ?? 5}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
+          ) : (
+            <div className="empty-state py-10">
+              <div className="empty-state-icon">
+                <Package className="h-7 w-7" />
+              </div>
+              <p className="text-sm font-medium text-foreground">{language === "sw" ? "Stoki Iko Sawa" : "Stock levels healthy"}</p>
+              <p className="text-xs text-muted-foreground">{language === "sw" ? "Hakuna bidhaa zenye stoki ndogo." : "No items are running low."}</p>
+            </div>
+          )}
+        </SectionCard>
 
-        {/* 2: Low Stock Alerts */}
-        <div className="bg-white rounded-xl border border-[#eef0f3] shadow-xs flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-[#eef0f3]">
-            <h3 className="text-xs font-bold text-[#1a1d29] uppercase tracking-wider">
-              {language === "sw" ? "Tahadhari za Stoki Ndogo" : "Low Stock Alerts"}
-            </h3>
-          </div>
-          <div className="overflow-x-auto min-w-0 flex-1">
-            <table className="w-full text-xs whitespace-nowrap">
-              <thead className="bg-[#f9fafb] text-gray-500 text-[11px] uppercase text-left sticky top-0">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">{language === "sw" ? "Bidhaa" : "Product"}</th>
-                  <th className="px-4 py-2.5 font-medium text-right">{language === "sw" ? "Iliyobaki" : "Current"}</th>
-                  <th className="px-4 py-2.5 font-medium text-right">{language === "sw" ? "Kiwango" : "Limit"}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eef0f3]">
-                {lowStockProducts && lowStockProducts.length > 0 ? (
-                  lowStockProducts.slice(0, 4).map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50/50">
-                      <td className="px-4 py-3 text-[#1a1d29] font-medium">{item.name}</td>
-                      <td className="px-4 py-3 text-right text-rose-600 font-bold">{item.stock} pcs</td>
-                      <td className="px-4 py-3 text-right text-gray-600">{item.low_stock_alert ?? 5}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-gray-400">
-                      {language === "sw" ? "Hakuna bidhaa zenye stoki ndogo." : "All stock levels are healthy."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* 3: Recent Activities Feed */}
-        <div className="bg-white rounded-xl border border-[#eef0f3] shadow-xs flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-[#eef0f3]">
-            <h3 className="text-xs font-bold text-[#1a1d29] uppercase tracking-wider">
-              {language === "sw" ? "Miamala ya Hivi Karibuni" : "Recent Activities"}
-            </h3>
-          </div>
-          <div className="overflow-x-auto min-w-0">
-            <table className="w-full text-xs whitespace-nowrap">
-              <tbody className="divide-y divide-[#eef0f3]">
-                {recentActivities.length > 0 ? (
-                  recentActivities.map((act, index) => (
-                    <tr key={index} className="hover:bg-gray-50/50">
-                      <td className="px-4 py-2.5 w-10">
-                        <div className={`w-7 h-7 rounded-lg ${act.bg} flex items-center justify-center`}>
-                          <act.icon className={`w-3.5 h-3.5 ${act.color}`} />
-                        </div>
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <p className="text-[#1a1d29] font-semibold truncate max-w-[140px]">{act.title}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{act.subtitle}</p>
-                      </td>
-                      <td
-                        className={`px-4 py-2.5 text-right font-bold ${
-                          act.amount.startsWith("+") ? "text-emerald-600" : "text-gray-900"
-                        }`}
-                      >
-                        {act.amount}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-gray-400">
-                      {language === "sw" ? "Hakuna miamala bado." : "No recent activity."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Recent Activity */}
+        <SectionCard
+          title={language === "sw" ? "Miamala ya Hivi Karibuni" : "Recent Activity"}
+          action={
+            <Button variant="ghost" size="sm" onClick={() => navigate("/sales")} className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground">
+              {language === "sw" ? "Tazama Zaidi" : "View All"}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          }
+        >
+          {kpiLoading || expensesLoading || purchasesLoading ? (
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3 w-36" />
+                    <Skeleton className="h-2.5 w-20" />
+                  </div>
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : recentActivities.length > 0 ? (
+            <div className="divide-y divide-border">
+              {recentActivities.map((act, index) => (
+                <div key={index} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${act.bg}`}>
+                    <act.icon className={`h-3.5 w-3.5 ${act.color}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-foreground max-w-[200px]">{act.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{act.subtitle}</p>
+                  </div>
+                  <span className={cn(
+                    "text-xs font-bold shrink-0",
+                    act.isPositive ? "text-emerald-600" : "text-foreground"
+                  )}>
+                    {act.amount}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state py-10">
+              <div className="empty-state-icon">
+                <ShoppingBag className="h-7 w-7" />
+              </div>
+              <p className="text-sm font-medium text-foreground">{language === "sw" ? "Hakuna Miamala" : "No recent activity"}</p>
+              <Button size="sm" onClick={() => navigate("/sales")} className="mt-1 h-8 text-xs rounded-xl">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                {language === "sw" ? "Anza Mauzo" : "Start a Sale"}
+              </Button>
+            </div>
+          )}
+        </SectionCard>
       </div>
     </div>
   );

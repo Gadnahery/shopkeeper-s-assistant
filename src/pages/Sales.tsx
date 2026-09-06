@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts } from "@/hooks/useProducts";
+import { useCategories } from "@/hooks/useCategories";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useCreateSale, useDeleteDraftSale, useDraftSales, useSaveDraftSale } from "@/hooks/useSales";
 import { useOrders } from "@/hooks/useOrders";
@@ -80,6 +81,7 @@ export default function Sales() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showReceipt, setShowReceipt] = useState(false);
   const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
@@ -98,6 +100,7 @@ export default function Sales() {
   };
 
   const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: categories } = useCategories();
   const { data: customers } = useCustomers();
   const { data: shopSettings } = useShopSettings();
   const { profile } = useAuth();
@@ -114,11 +117,13 @@ export default function Sales() {
 
   const filteredProducts = (products || []).filter((p) => {
     const q = searchTerm.toLowerCase();
-    return (
+    const matchesSearch =
       p.name.toLowerCase().includes(q) ||
       (p.barcode && p.barcode.toLowerCase().includes(q)) ||
-      (p.sku && p.sku.toLowerCase().includes(q))
-    );
+      (p.sku && p.sku.toLowerCase().includes(q));
+    const matchesCategory =
+      selectedCategory === "all" || p.category_id === selectedCategory || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
   const addToCart = (product: any) => {
@@ -395,52 +400,74 @@ export default function Sales() {
             </div>
           </Card>
 
+          {/* Category Chip Scroller */}
+          {categories && categories.length > 0 && (
+            <div className="category-chips">
+              <button
+                className={selectedCategory === "all" ? "category-chip-active" : "category-chip"}
+                onClick={() => setSelectedCategory("all")}
+              >
+                {language === "sw" ? "Zote" : "All"}
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  className={selectedCategory === cat.id || selectedCategory === cat.name ? "category-chip-active" : "category-chip"}
+                  onClick={() => setSelectedCategory(cat.id)}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Product Grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="product-grid">
             {filteredProducts.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center p-12 text-center">
-                <Package className="h-8 w-8 text-muted-foreground" />
-                <p className="mt-2 text-xs text-muted-foreground">{language === "sw" ? "Hakuna bidhaa iliyopatikana" : "No matching products found"}</p>
+              <div className="col-span-full empty-state py-10">
+                <div className="empty-state-icon">
+                  <Package className="h-7 w-7" />
+                </div>
+                <p className="text-sm font-medium text-foreground">{language === "sw" ? "Hakuna bidhaa" : "No products found"}</p>
+                <p className="text-xs text-muted-foreground">{language === "sw" ? "Jaribu kutafuta tena au badilisha aina." : "Try a different search or category."}</p>
               </div>
             ) : (
               filteredProducts.slice(0, 30).map((product) => {
                 const trackInventory = product.track_inventory !== false;
                 const isOut = trackInventory && product.stock <= 0;
+                const isLow = trackInventory && product.stock > 0 && product.stock <= (product.low_stock_alert ?? 5);
+                const isService = !trackInventory;
                 return (
                   <button
                     key={product.id}
                     disabled={isOut}
                     onClick={() => addToCart(product)}
                     className={cn(
-                      "flex flex-col justify-between rounded-xl border border-border bg-card p-3.5 text-left transition-all hover:border-primary/30 hover:shadow-xs",
-                      isOut ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-98",
+                      "product-card text-left",
+                      isOut ? "opacity-50 cursor-not-allowed" : "",
                     )}
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{product.barcode || product.sku || "PROD"}</span>
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-[10px] font-bold",
-                            isOut
-                              ? "bg-[var(--danger-bg)] text-[var(--danger-text)]"
-                              : trackInventory && product.stock <= (product.low_stock_alert ?? 5)
-                              ? "bg-[var(--warning-bg)] text-[var(--warning-text)]"
-                              : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {trackInventory ? `${product.stock} left` : language === "sw" ? "Huduma" : "Service"}
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-xs font-bold text-foreground line-clamp-2">
-                        {product.name}
-                      </p>
+                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase truncate">
+                        {isService ? (language === "sw" ? "Huduma" : "Service") : (product.barcode || product.sku || "PROD")}
+                      </span>
+                      {isOut ? (
+                        <span className="badge-danger shrink-0">{language === "sw" ? "Imeisha" : "Out"}</span>
+                      ) : isLow ? (
+                        <span className="badge-warning shrink-0">{product.stock}</span>
+                      ) : isService ? (
+                        <span className="badge-neutral shrink-0">∞</span>
+                      ) : (
+                        <span className="badge-neutral shrink-0">{product.stock}</span>
+                      )}
                     </div>
-
-                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-border/50">
+                    <p className="text-xs font-bold text-foreground line-clamp-2 flex-1">
+                      {product.name}
+                    </p>
+                    <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-border/50">
                       <span className="text-xs font-bold text-foreground">{formatMoney(product.selling_price)}</span>
                       <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <Plus className="h-3.5 w-3.5 text-accent" />
+                        <Plus className="h-3.5 w-3.5" />
                       </div>
                     </div>
                   </button>

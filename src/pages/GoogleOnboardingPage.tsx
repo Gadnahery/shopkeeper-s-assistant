@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Loader2, Store } from "lucide-react";
+import { ArrowRight, Loader2, Store, ShoppingBag, Scissors, Layers, Boxes, Factory, Pill } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { type BusinessType, getCapabilitiesForBusinessType } from "@/lib/businessCapabilities";
 
 function needsShopSetup(fullName: string | null | undefined, shopName: string | null | undefined) {
   const normalizedFullName = (fullName || "").trim().toLowerCase();
@@ -24,12 +25,71 @@ function needsShopSetup(fullName: string | null | undefined, shopName: string | 
   );
 }
 
+const BUSINESS_TYPE_OPTIONS: Array<{
+  id: BusinessType;
+  icon: typeof ShoppingBag;
+  titleEn: string;
+  titleSw: string;
+  descEn: string;
+  descSw: string;
+}> = [
+  {
+    id: "retail",
+    icon: ShoppingBag,
+    titleEn: "Retail & Physical Goods",
+    titleSw: "Duka la Rejareja / Bidhaa",
+    descEn: "POS, barcodes, stock inventory",
+    descSw: "POS, barcode, usimamizi wa stoki",
+  },
+  {
+    id: "service",
+    icon: Scissors,
+    titleEn: "Services & Appointments",
+    titleSw: "Huduma na Miadi",
+    descEn: "Salon, clinic, repairs, bookings",
+    descSw: "Saluni, kliniki, ukarabati, miadi",
+  },
+  {
+    id: "hybrid",
+    icon: Layers,
+    titleEn: "Hybrid (Both)",
+    titleSw: "Mchanganyiko (Bidhaa & Huduma)",
+    descEn: "Sell goods and book services together",
+    descSw: "Uza bidhaa na toa huduma kwa pamoja",
+  },
+  {
+    id: "wholesale",
+    icon: Boxes,
+    titleEn: "Wholesale & Distribution",
+    titleSw: "Biashara ya Jumla",
+    descEn: "Bulk orders, customer credit accounts",
+    descSw: "Mauzo ya jumla, akaunti za mikopo",
+  },
+  {
+    id: "manufacturing",
+    icon: Factory,
+    titleEn: "Production & Workshop",
+    titleSw: "Uzalishaji & Karakana",
+    descEn: "Raw materials, batches, finished goods",
+    descSw: "Malighafi, batches, bidhaa zilizokamilika",
+  },
+  {
+    id: "pharmacy",
+    icon: Pill,
+    titleEn: "Pharmacy & Health",
+    titleSw: "Duka la Dawa / Famasi",
+    descEn: "Batch numbers and expiry date alerts",
+    descSw: "Namba za batch na tahadhari za tarehe ya mwisho",
+  },
+];
+
 export default function GoogleOnboardingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { language } = useLanguage();
   const { user, profile, loading, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [businessType, setBusinessType] = useState<BusinessType>("retail");
   const [form, setForm] = useState({ fullName: "", shopName: "" });
 
   const intent = searchParams.get("intent");
@@ -84,6 +144,8 @@ export default function GoogleOnboardingPage() {
 
     setSaving(true);
     try {
+      const capabilities = getCapabilitiesForBusinessType(businessType);
+
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -98,6 +160,8 @@ export default function GoogleOnboardingPage() {
         .update({
           name: form.shopName.trim(),
           email: user.email ?? null,
+          business_type: businessType,
+          capabilities,
         })
         .eq("id", profile.shop_id);
       if (shopError) throw shopError;
@@ -130,75 +194,119 @@ export default function GoogleOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.14),transparent_32%)]">
-      <div className="flex min-h-screen items-center justify-center px-4 py-10 md:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-lg"
-        >
-          <Card className="rounded-[2rem] border border-border/60 bg-card/92 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.55)] backdrop-blur-xl">
-            <CardHeader className="space-y-4">
-              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Store className="h-6 w-6" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">
-                  {language === "sw" ? "Kamilisha maelezo ya duka lako" : "Complete your shop details"}
-                </CardTitle>
-                <CardDescription className="mt-2 text-sm">
-                  {language === "sw"
-                    ? "Umeingia kwa Google. Kabla ya kuendelea, weka jina lako na jina la duka kama unavyotaka yaonekane kwenye WiseCash."
-                    : "You signed in with Google. Before continuing, add your name and your shop name the way you want them to appear in WiseCash."}
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <Label>{language === "sw" ? "Jina Kamili" : "Full Name"}</Label>
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-xl"
+      >
+        <Card className="rounded-2xl border border-border bg-card shadow-sm">
+          <CardHeader className="space-y-3 pb-4">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+              <Store className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold tracking-tight">
+                {language === "sw" ? "Kamilisha maelezo ya biashara yako" : "Set up your business"}
+              </CardTitle>
+              <CardDescription className="mt-1 text-xs text-muted-foreground">
+                {language === "sw"
+                  ? "Chagua aina ya biashara na maelezo ya duka lako ili kuanza kutumia WiseCash."
+                  : "Choose your business type and name to customize your WiseCash workspace."}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina Kamili" : "Full Name"}</Label>
                   <Input
                     value={form.fullName}
                     onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
-                    className="h-12 rounded-2xl"
+                    className="h-10 rounded-xl border-border bg-background text-xs"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>{language === "sw" ? "Jina la Duka" : "Shop Name"}</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina la Duka / Biashara" : "Business Name"}</Label>
                   <Input
                     value={form.shopName}
                     onChange={(event) => setForm((current) => ({ ...current, shopName: event.target.value }))}
-                    className="h-12 rounded-2xl"
+                    className="h-10 rounded-xl border-border bg-background text-xs"
                     required
                   />
                 </div>
-                <Button
-                  type="submit"
-                  className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 text-base font-semibold"
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      {language === "sw" ? "Endelea kwenye dashibodi" : "Continue to dashboard"}
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
+              </div>
 
-              <p className="mt-5 text-center text-sm text-muted-foreground">
-                <Link to="/login" className="font-medium text-primary hover:underline">
-                  {language === "sw" ? "Rudi kwenye kuingia" : "Back to login"}
-                </Link>
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+              {/* Business Type Selector */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">
+                  {language === "sw" ? "Aina ya Biashara Yako" : "What kind of business do you run?"}
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {BUSINESS_TYPE_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    const isSelected = businessType === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setBusinessType(opt.id)}
+                        className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
+                            : "border-border bg-background hover:bg-muted/40"
+                        }`}
+                      >
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground">
+                            {language === "sw" ? opt.titleSw : opt.titleEn}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground leading-snug truncate">
+                            {language === "sw" ? opt.descSw : opt.descEn}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="h-11 w-full gap-2 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
+                disabled={saving}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    {language === "sw" ? "Kamilisha na Uingie Kwenye Dashibodi" : "Launch My Workspace"}
+                    <ArrowRight className="h-4 w-4 text-accent" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              <Link to="/login" className="font-medium text-primary hover:underline">
+                {language === "sw" ? "Rudi kwenye kuingia" : "Back to login"}
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

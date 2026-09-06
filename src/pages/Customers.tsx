@@ -309,13 +309,13 @@ export default function Customers() {
                           </TableCell>
                           <TableCell className="text-xs text-foreground">{c.phone || "-"}</TableCell>
                           <TableCell>
-                            <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground">
+                            <span className="badge-neutral">
                               {c.customer_type || "Retail"}
                             </span>
                           </TableCell>
                           <TableCell>
                             {hasDebt ? (
-                              <span className="inline-flex rounded-full bg-[var(--danger-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--danger-text)]">
+                              <span className="badge-danger font-bold">
                                 {formatMoney(c.credit_balance)}
                               </span>
                             ) : (

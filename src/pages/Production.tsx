@@ -317,46 +317,46 @@ export default function Production() {
     <div className="space-y-6 pb-12">
       {/* 4 KPI Top Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-50">
-            <Boxes className="w-5 h-5 text-blue-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-600">
+            <Boxes className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Jumla Iliyozalishwa" : "Total Produced Units"}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatNumber(totalProducedUnits)} pcs</p>
-            <p className="text-[11px] text-gray-400 mt-1">{completedBatchesCount} {language === "sw" ? "awamu zilizokamilika" : "completed runs"}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Jumla Iliyozalishwa" : "Total Produced Units"}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatNumber(totalProducedUnits)} pcs</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{completedBatchesCount} {language === "sw" ? "awamu zilizokamilika" : "completed runs"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-50">
-            <Play className="w-5 h-5 text-amber-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600">
+            <Play className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Awamu Zinazoendelea" : "Active Batches"}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{activeBatchesCount}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Awamu Zinazoendelea" : "Active Batches"}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{activeBatchesCount}</p>
             <p className="text-[11px] text-amber-600 font-medium mt-1">{language === "sw" ? "Kwenye uzalishaji" : "In production line"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-50">
-            <DollarSign className="w-5 h-5 text-purple-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-500/10 text-purple-600">
+            <DollarSign className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{t("production.materialCost")}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{formatMoney(totalProductionCost)}</p>
-            <p className="text-[11px] text-gray-400 mt-1">{language === "sw" ? "Gharama ya malighafi zote" : "Total materials cost"}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{t("production.materialCost")}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalProductionCost)}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{language === "sw" ? "Gharama ya malighafi zote" : "Total materials cost"}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#eef0f3] p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-50">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-gray-500 truncate">{language === "sw" ? "Awamu Zilizokamilika" : "Completed Batches"}</h3>
-            <p className="text-lg font-bold text-[#1a1d29] mt-0.5 truncate">{completedBatchesCount}</p>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Awamu Zilizokamilika" : "Completed Batches"}</h3>
+            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{completedBatchesCount}</p>
             <p className="text-[11px] text-emerald-600 font-medium mt-1">{batches?.length || 0} {language === "sw" ? "awamu zote" : "total runs"}</p>
           </div>
         </div>

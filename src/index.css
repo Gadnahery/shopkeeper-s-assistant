@@ -158,10 +158,6 @@
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
-    background-image:
-      radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.08), transparent 42%),
-      radial-gradient(circle at 100% 0%, hsl(var(--accent-foreground) / 0.05), transparent 34%),
-      radial-gradient(circle at 100% 100%, hsl(var(--accent-foreground) / 0.08), transparent 38%);
   }
 
   input:-webkit-autofill,
@@ -332,3 +328,85 @@
 .space-grid-4 { gap: 32px; }
 .space-grid-5 { gap: 40px; }
 .space-grid-6 { gap: 48px; }
+
+/* ============================================================
+   WISECASH UNIVERSAL DESIGN SYSTEM — Component Utilities
+   ============================================================ */
+
+/* Stat card */
+.stat-card {
+  background: hsl(var(--card));
+  border-radius: var(--radius-lg);
+  border: 1px solid hsl(var(--border));
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  transition: box-shadow .15s;
+  min-width: 0;
+}
+.stat-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+
+/* Status badges */
+.badge-success { display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:var(--success-bg);color:var(--success-text); }
+.badge-warning { display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:var(--warning-bg);color:var(--warning-text); }
+.badge-danger { display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:var(--danger-bg);color:var(--danger-text); }
+.badge-neutral { display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:hsl(var(--muted));color:hsl(var(--muted-foreground)); }
+
+/* Data table */
+.data-table { width:100%;font-size:.875rem; }
+.data-table thead tr { border-bottom:1px solid hsl(var(--border));background:hsl(var(--muted)/.4); }
+.data-table thead th { padding:.625rem 1rem;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground)); }
+.data-table tbody tr { border-bottom:1px solid hsl(var(--border)/.6);transition:background .1s; }
+.data-table tbody tr:hover { background:hsl(var(--muted)/.3); }
+.data-table tbody tr:last-child { border-bottom:0; }
+.data-table tbody td { padding:.75rem 1rem;font-size:.875rem;color:hsl(var(--foreground)); }
+
+/* Money display */
+.money-display { font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums;color:hsl(var(--foreground)); }
+.money-display-lg { font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;color:hsl(var(--foreground)); }
+.money-display-sm { font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums;color:hsl(var(--foreground)); }
+
+/* Category chip scroller */
+.category-chips { display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;scrollbar-width:none;-ms-overflow-style:none; }
+.category-chips::-webkit-scrollbar { display:none; }
+.category-chip { flex:none;border-radius:9999px;border:1px solid hsl(var(--border));background:hsl(var(--card));padding:.375rem .875rem;font-size:.75rem;font-weight:500;color:hsl(var(--muted-foreground));cursor:pointer;white-space:nowrap;transition:background .12s,color .12s; }
+.category-chip:hover { background:hsl(var(--muted));color:hsl(var(--foreground)); }
+.category-chip-active { flex:none;border-radius:9999px;border:1px solid hsl(var(--primary));background:hsl(var(--primary));padding:.375rem .875rem;font-size:.75rem;font-weight:600;color:hsl(var(--primary-foreground));cursor:pointer;white-space:nowrap; }
+
+/* Product grid */
+.product-grid { display:grid;gap:.75rem;grid-template-columns:repeat(auto-fill,minmax(min(100%, 152px),1fr)); }
+.product-card { display:flex;flex-direction:column;border-radius:var(--radius-lg);border:1px solid hsl(var(--border));background:hsl(var(--card));padding:.75rem;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s; }
+.product-card:hover { border-color:hsl(var(--primary)/.3);box-shadow:0 2px 8px rgba(0,0,0,.07); }
+.product-card:active { transform:scale(.98); }
+.product-card-selected { border:2px solid hsl(var(--primary)) !important;box-shadow:0 2px 8px rgba(0,0,0,.08); }
+
+/* FAB */
+.fab { position:fixed;z-index:30;display:flex;align-items:center;justify-content:center;height:3.25rem;width:3.25rem;border-radius:9999px;background:hsl(var(--primary));color:hsl(var(--primary-foreground));box-shadow:0 4px 16px rgba(0,0,0,.18);transition:transform .15s,box-shadow .15s;bottom:calc(env(safe-area-inset-bottom,0px) + 76px);right:1rem; }
+.fab:hover { transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,.22); }
+.fab:active { transform:scale(.96); }
+
+/* Mobile list row */
+.mobile-list-row { display:flex;align-items:center;gap:.75rem;border-radius:var(--radius-lg);border:1px solid hsl(var(--border));background:hsl(var(--card));padding:.875rem;transition:background .12s,transform .1s; }
+.mobile-list-row:hover { background:hsl(var(--muted)/.4); }
+.mobile-list-row:active { transform:scale(.99); }
+
+/* KPI bar */
+.kpi-bar { display:grid;gap:.75rem;margin-bottom:1.25rem;grid-template-columns:repeat(auto-fit,minmax(min(100%, 176px),1fr)); }
+
+/* Nav group label */
+.nav-group-label { padding:1.25rem .75rem .25rem .75rem;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:hsl(var(--muted-foreground)/.55);user-select:none; }
+
+/* Empty state */
+.empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:4rem 1.5rem;text-align:center; }
+.empty-state-icon { display:flex;height:4rem;width:4rem;align-items:center;justify-content:center;border-radius:var(--radius-xl);background:hsl(var(--muted));color:hsl(var(--muted-foreground)); }
+
+/* Profit breakdown */
+.profit-row { display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid hsl(var(--border)/.6); }
+.profit-row:last-child { border-bottom:0; }
+
+/* Timeline appointment */
+.appointment-row { display:flex;gap:.75rem;border-radius:var(--radius-lg);border:1px solid hsl(var(--border));background:hsl(var(--card));padding:.875rem;transition:background .12s; }
+.appointment-row:hover { background:hsl(var(--muted)/.3); }
+.appointment-time { display:flex;width:3.25rem;flex-shrink:0;flex-direction:column;align-items:center;justify-content:center;border-radius:var(--radius-md);background:hsl(var(--muted)/.6);padding:.5rem;text-align:center; }
+
+/* Page section card */
+.page-section { background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:var(--radius-xl);overflow:hidden; }

@@ -2,11 +2,9 @@ import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
-  ChevronRight,
   LogOut,
   Moon,
   Plus,
-  Store,
   Sun,
   X,
   Languages,
@@ -15,6 +13,7 @@ import {
   DollarSign,
   ShoppingCart,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -47,7 +46,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   OLLY_NAVIGATION_ITEMS,
+  NAV_GROUP_LABELS,
+  PRIMARY_GROUPS,
+  groupNavItems,
   type AppNavItem,
+  type NavGroup,
   filterItemsByAccess,
   isRouteActive,
 } from "./app-navigation";
@@ -63,6 +66,7 @@ export function Sidebar() {
   const { isMobile, isTablet, isDesktop } = useAdaptiveLayout();
   const { theme, toggleTheme } = useTheme();
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
+  const [showSecondary, setShowSecondary] = useState(false);
 
   const shopName = profile?.shops?.name || "WiseCash";
   const userName = profile?.full_name || "Admin";
@@ -78,6 +82,76 @@ export function Sidebar() {
   const sidebarWidth = collapsedView ? 72 : 230;
 
   const navItems = filterItemsByAccess(OLLY_NAVIGATION_ITEMS, allowedPages, profile?.shops?.capabilities);
+  const groupedItems = groupNavItems(navItems);
+
+  const renderNavItem = (item: AppNavItem, collapsed: boolean) => {
+    const active = isRouteActive(location.pathname, item);
+    const Icon = item.icon;
+    const label = t(item.labelKey);
+
+    if (collapsed) {
+      return (
+        <Tooltip key={item.to} delayDuration={0}>
+          <TooltipTrigger asChild>
+            <NavLink
+              to={item.to}
+              onMouseEnter={() => preloadRoute(item.to)}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl mx-auto text-sm transition-all duration-150",
+                active
+                  ? "bg-muted text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+            </NavLink>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-medium text-xs">
+            {label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        onMouseEnter={() => preloadRoute(item.to)}
+        className={cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150",
+          active
+            ? "bg-muted font-semibold text-foreground"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        )}
+      >
+        <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-muted-foreground")} strokeWidth={active ? 2.25 : 1.75} />
+        <span className="truncate">{label}</span>
+      </NavLink>
+    );
+  };
+
+  const renderGroups = (groups: NavGroup[], collapsed: boolean) => {
+    return groups.map((group) => {
+      const items = groupedItems.get(group);
+      if (!items || items.length === 0) return null;
+      return (
+        <div key={group}>
+          {!collapsed && (
+            <p className="nav-group-label">{NAV_GROUP_LABELS[group][language]}</p>
+          )}
+          <div className={cn("space-y-0.5", collapsed ? "px-1" : "px-1")}>
+            {items.map((item) => renderNavItem(item, collapsed))}
+          </div>
+        </div>
+      );
+    });
+  };
+
+  // Secondary groups
+  const secondaryGroups = (Object.keys(NAV_GROUP_LABELS) as NavGroup[]).filter(
+    (g) => !PRIMARY_GROUPS.includes(g),
+  );
 
   // Mobile Drawer
   if (isMobile) {
@@ -102,6 +176,7 @@ export function Sidebar() {
             >
               {/* Drawer Top */}
               <div className="flex h-16 items-center justify-between border-b border-border px-4">
+                <BrandLogo size="md" />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -113,31 +188,37 @@ export function Sidebar() {
               </div>
 
               {/* Nav List */}
-              <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-                {navItems.map((item) => {
-                  const active = isRouteActive(location.pathname, item);
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setCollapsed(true)}
-                      className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                        active
-                          ? "bg-muted font-semibold text-foreground"
-                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                      )}
-                    >
-                      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-muted-foreground")} />
-                      <span className="truncate">{t(item.labelKey)}</span>
-                    </NavLink>
-                  );
-                })}
+              <nav className="flex-1 space-y-1 overflow-y-auto py-2">
+                {/* Primary groups */}
+                {renderGroups(PRIMARY_GROUPS, false)}
 
-                {/* Quick Actions (Mobile) */}
-                <div className="pt-4 mt-4 border-t border-border">
-                  <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {/* More toggle */}
+                <button
+                  onClick={() => setShowSecondary(!showSecondary)}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showSecondary ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  <span>{language === "sw" ? "Zaidi" : "More"}</span>
+                </button>
+
+                {/* Secondary groups */}
+                <AnimatePresence initial={false}>
+                  {showSecondary && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      {renderGroups(secondaryGroups, false)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Quick Actions */}
+                <div className="pt-4 mt-4 border-t border-border px-3">
+                  <p className="pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     {language === "sw" ? "Vitendo vya Haraka" : "Quick Actions"}
                   </p>
                   <div className="space-y-1">
@@ -166,30 +247,29 @@ export function Sidebar() {
                 </div>
               </nav>
 
-              {/* Bottom Profile / Quick Toggle */}
+              {/* Bottom Profile */}
               <div className="border-t border-border p-3">
-                <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/60 p-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Avatar className="h-8 w-8">
+                <div className="rounded-xl bg-muted/60 p-2">
+                  <div className="flex items-center gap-2 min-w-0 mb-1.5">
+                    <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={avatarUrl || undefined} />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
+                      <p className="truncate text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{shopName}</p>
                       <p className="truncate text-xs font-semibold text-foreground">{userName}</p>
                       <p className="truncate text-[10px] text-muted-foreground capitalize">{role || "Admin"}</p>
                     </div>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <button
                     onClick={() => setSignOutConfirmOpen(true)}
-                    className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
                   >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>{language === "sw" ? "Toka" : "Sign Out"}</span>
+                  </button>
                 </div>
               </div>
             </motion.aside>
@@ -227,7 +307,7 @@ export function Sidebar() {
       style={{ width: sidebarWidth }}
     >
       {/* Top Header / Brand */}
-      <div className={cn("flex h-[72px] items-center border-b border-border", collapsedView ? "justify-center px-2" : "justify-between px-4")}>
+      <div className={cn("flex h-[72px] items-center border-b border-border shrink-0", collapsedView ? "justify-center px-2" : "justify-between px-4")}>
         <div
           onClick={isDesktop ? toggleSidebar : undefined}
           className="flex min-w-0 cursor-pointer items-center gap-2.5"
@@ -238,7 +318,12 @@ export function Sidebar() {
               <BrandGlyph className="h-4 w-4" />
             </div>
           ) : (
-            <BrandLogo size="md" />
+            <div className="min-w-0">
+              <BrandLogo size="md" />
+              {!collapsedView && (
+                <p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">{shopName}</p>
+              )}
+            </div>
           )}
         </div>
 
@@ -247,93 +332,90 @@ export function Sidebar() {
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="h-7 w-7 shrink-0 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
         )}
       </div>
 
-      {/* 10 Primary Nav Items */}
-      <nav className={cn("flex-1 space-y-1 overflow-y-auto p-2.5", collapsedView && "px-2")}>
-        {navItems.map((item) => {
-          const active = isRouteActive(location.pathname, item);
-          const Icon = item.icon;
-          const label = t(item.labelKey);
+      {/* Scrollable Nav */}
+      <nav className="flex-1 overflow-y-auto py-2 space-y-1" style={{ scrollbarWidth: "none" }}>
+        {/* Primary groups */}
+        {renderGroups(PRIMARY_GROUPS, collapsedView)}
 
-          if (collapsedView) {
-            return (
-              <Tooltip key={item.to} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <NavLink
-                    to={item.to}
-                    onMouseEnter={() => preloadRoute(item.to)}
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-xl mx-auto text-sm transition-all duration-150",
-                      active
-                        ? "bg-muted text-foreground font-semibold shadow-xs"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
-                  </NavLink>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium text-xs">
-                  {label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onMouseEnter={() => preloadRoute(item.to)}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150",
-                active
-                  ? "bg-muted font-semibold text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-              )}
-            >
-              <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-muted-foreground")} strokeWidth={active ? 2.25 : 1.75} />
-              <span className="truncate">{label}</span>
-            </NavLink>
-          );
-        })}
-
-        {/* Quick Actions (Expanded Desktop) */}
+        {/* More toggle — desktop expanded only */}
         {!collapsedView && (
-          <div className="pt-4 mt-4 border-t border-border">
-            <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {language === "sw" ? "Vitendo vya Haraka" : "Quick Actions"}
-            </p>
-            <div className="space-y-1">
+          <>
+            <button
+              onClick={() => setShowSecondary(!showSecondary)}
+              className="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showSecondary ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              <span>{language === "sw" ? "Zaidi" : "More"}</span>
+            </button>
+            <AnimatePresence initial={false}>
+              {showSecondary && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  {renderGroups(secondaryGroups, false)}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+
+        {/* Collapsed — show dots for secondary */}
+        {collapsedView && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setShowSecondary(!showSecondary)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl mx-auto text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all"
+              >
+                <span className="text-xs font-bold">•••</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs font-medium">
+              {language === "sw" ? "Zaidi" : "More"}
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Secondary groups — collapsed mode popup */}
+        {collapsedView && showSecondary && (
+          <div className="space-y-0.5">
+            {renderGroups(secondaryGroups, collapsedView)}
+          </div>
+        )}
+
+        {/* Quick Actions — expanded only */}
+        {!collapsedView && (
+          <div className="pt-2 mt-2 border-t border-border px-1">
+            <p className="nav-group-label">{language === "sw" ? "Vitendo vya Haraka" : "Quick Actions"}</p>
+            <div className="space-y-0.5 px-1">
               <button
                 onClick={() => navigate("/purchases?new=true")}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <Plus className="h-3.5 w-3.5 text-accent" />
                 <span>{t("quick.newPurchase")}</span>
               </button>
               <button
                 onClick={() => navigate("/sales")}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <Plus className="h-3.5 w-3.5 text-accent" />
                 <span>{t("quick.newSale")}</span>
               </button>
               <button
-                onClick={() => navigate("/orders")}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5 text-accent" />
-                <span>{language === "sw" ? "Maagizo ya Wateja (Orders)" : "Customer Orders"}</span>
-              </button>
-              <button
                 onClick={() => navigate("/expenses?new=true")}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <Plus className="h-3.5 w-3.5 text-accent" />
                 <span>{t("quick.newExpense")}</span>
@@ -344,7 +426,7 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom Profile Block */}
-      <div className={cn("border-t border-border p-2.5", collapsedView ? "flex justify-center" : "")}>
+      <div className={cn("border-t border-border p-2.5 shrink-0", collapsedView ? "flex justify-center" : "")}>
         {collapsedView ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -373,6 +455,7 @@ export function Sidebar() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
+                    <p className="truncate text-[10px] font-bold text-muted-foreground uppercase tracking-wide leading-none mb-0.5">{shopName}</p>
                     <p className="truncate text-xs font-semibold text-foreground leading-tight">{userName}</p>
                     <p className="truncate text-[10px] text-muted-foreground capitalize">{role || "Admin"}</p>
                   </div>

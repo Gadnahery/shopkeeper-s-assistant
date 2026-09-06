@@ -144,12 +144,34 @@ export default function Settings() {
           receipt_footer: receiptForm.receipt_footer || null,
           logo_url: receiptForm.logo_url || null,
           tax_rate: parseFloat(receiptForm.tax_rate) || 0,
+          auto_print_receipt: autoPrintReceipt,
         })
         .eq("id", shopId);
 
       toast.success(language === "sw" ? "Mipangilio ya risiti imehifadhiwa" : "Receipt template saved");
     } catch (e: any) {
       toast.error(e?.message || "Failed to save receipt settings");
+    }
+  };
+
+  const handleToggleAutoPrint = async (checked: boolean) => {
+    setAutoPrintReceipt(checked);
+    if (!shopId) return;
+    try {
+      await supabase.from("shops").update({ auto_print_receipt: checked }).eq("id", shopId);
+    } catch {
+      // silently handle, save button can also persist
+    }
+  };
+
+  const handleToggleLowStockAlerts = async (checked: boolean) => {
+    setEnableLowStockAlerts(checked);
+    if (!shopId) return;
+    try {
+      await supabase.from("shops").update({ enable_low_stock_alerts: checked }).eq("id", shopId);
+      toast.success(language === "sw" ? "Mipangilio ya tahadhari imesasishwa" : "Stock alert setting updated");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update alert setting");
     }
   };
 
@@ -424,7 +446,7 @@ export default function Settings() {
                   <p className="text-xs font-semibold text-foreground">{language === "sw" ? "Chapisha risiti otomatiki" : "Auto-print receipt"}</p>
                   <p className="text-[11px] text-muted-foreground">{language === "sw" ? "Baada ya kukamilisha mauzo" : "Immediately on checkout"}</p>
                 </div>
-                <Switch checked={autoPrintReceipt} onCheckedChange={setAutoPrintReceipt} />
+                <Switch checked={autoPrintReceipt} onCheckedChange={handleToggleAutoPrint} />
               </div>
             </div>
 
@@ -488,7 +510,7 @@ export default function Settings() {
                 <p className="text-xs font-semibold text-foreground">{language === "sw" ? "Tahadhari za Stoki Ndogo" : "Low Stock Notifications"}</p>
                 <p className="text-[11px] text-muted-foreground">{language === "sw" ? "Pokea taarifa bidhaa zikikaribia kuisha" : "Alert when items reach threshold"}</p>
               </div>
-              <Switch checked={enableLowStockAlerts} onCheckedChange={setEnableLowStockAlerts} />
+              <Switch checked={enableLowStockAlerts} onCheckedChange={handleToggleLowStockAlerts} />
             </div>
 
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-4">

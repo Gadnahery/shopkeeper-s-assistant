@@ -10,6 +10,8 @@ import {
   ShieldCheck,
   Tag,
   Boxes,
+  Scissors,
+  Layers,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +23,20 @@ const erpModules = [
     titleSw: "Manunuzi na Mapokezi ya Stoki",
     descEn: "Record purchase orders from suppliers, update inventory quantities, and manage pending supplier payments automatically.",
     descSw: "Rekodi maagizo ya manunuzi kutoka kwa wasambazaji, ongeza idadi ya stoki, na fuatilia madeni ya wasambazaji kiotomatiki.",
+  },
+  {
+    icon: Scissors,
+    titleEn: "Services & Appointments",
+    titleSw: "Huduma na Miadi",
+    descEn: "Schedule client appointments, assign service staff, and bill time-based or fixed-price services without inventory friction.",
+    descSw: "Panga miadi ya wateja, gawa majukumu kwa wahudumu, na toa risiti za huduma kwa urahisi bila usumbufu wa kuhesabu stoki.",
+  },
+  {
+    icon: Layers,
+    titleEn: "Universal Catalog (Hybrid)",
+    titleSw: "Katalogi ya Pamoja (Hybrid)",
+    descEn: "Sell physical inventory items alongside professional services in a single unified POS basket.",
+    descSw: "Uza bidhaa zenye stoki sambamba na huduma za kitaalamu kwenye kikapu kimoja cha mauzo.",
   },
   {
     icon: Factory,

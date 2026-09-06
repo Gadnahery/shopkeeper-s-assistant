@@ -197,7 +197,7 @@ export default function Suppliers() {
                   <TableRow key={supplier.id}>
                     <TableCell><div><p className="font-medium">{supplier.name}</p>{supplier.contact_person && <p className="text-sm text-muted-foreground">{supplier.contact_person}</p>}</div></TableCell>
                     <TableCell><div><p>{supplier.phone || "-"}</p>{supplier.email && <p className="text-sm text-muted-foreground">{supplier.email}</p>}</div></TableCell>
-                    <TableCell>{Number((supplier as any).pending_payment || 0) > 0 ? <span className="font-medium text-destructive">{formatNumber(Number((supplier as any).pending_payment || 0))}</span> : <span className="text-success font-medium">{t("suppliers.paid")}</span>}</TableCell>
+                    <TableCell>{Number((supplier as any).pending_payment || 0) > 0 ? <span className="badge-danger">Tsh {formatNumber(Number((supplier as any).pending_payment || 0))}</span> : <span className="badge-success">{t("suppliers.paid")}</span>}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         {Number((supplier as any).pending_payment || 0) > 0 && (

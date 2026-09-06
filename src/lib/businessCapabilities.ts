@@ -69,3 +69,49 @@ export function resolveCapabilities(value: unknown): Record<CapabilityKey, boole
 export function hasCapability(value: unknown, capability: CapabilityKey) {
   return resolveCapabilities(value)[capability];
 }
+
+export function getCapabilitiesForBusinessType(type: BusinessType): Record<CapabilityKey, boolean> {
+  const base = { ...DEFAULT_CAPABILITIES };
+  switch (type) {
+    case "service":
+      return {
+        ...base,
+        products: false,
+        services: true,
+        inventory: false,
+        purchases: false,
+        appointments: true,
+      };
+    case "hybrid":
+      return {
+        ...base,
+        products: true,
+        services: true,
+        inventory: true,
+        appointments: true,
+      };
+    case "manufacturing":
+      return {
+        ...base,
+        manufacturing: true,
+        batches: true,
+        inventory: true,
+        purchases: true,
+      };
+    case "pharmacy":
+      return {
+        ...base,
+        expiry_tracking: true,
+        batches: true,
+        inventory: true,
+      };
+    case "wholesale":
+      return {
+        ...base,
+        credit: true,
+        orders: true,
+      };
+    default:
+      return base;
+  }
+}

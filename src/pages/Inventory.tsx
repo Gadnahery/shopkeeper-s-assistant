@@ -447,18 +447,17 @@ export default function Inventory() {
                           </TableCell>
                           <TableCell className="text-xs font-bold text-foreground">{formatMoney(p.selling_price)}</TableCell>
                           <TableCell>
-                            <span
-                              className={cn(
-                                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
-                                isOut
-                                  ? "bg-[var(--danger-bg)] text-[var(--danger-text)]"
-                                  : isLow
-                                  ? "bg-[var(--warning-bg)] text-[var(--warning-text)]"
-                                  : "bg-[var(--success-bg)] text-[var(--success-text)]",
-                              )}
-                            >
-                              {tracksInventory ? `${p.stock} pcs` : language === "sw" ? "Huduma" : "Service"}
-                            </span>
+                            {tracksInventory ? (
+                              isOut ? (
+                                <span className="badge-danger">{language === "sw" ? "Imeisha" : "Out"}</span>
+                              ) : isLow ? (
+                                <span className="badge-warning">{p.stock} pcs</span>
+                              ) : (
+                                <span className="badge-success">{p.stock} pcs</span>
+                              )
+                            ) : (
+                              <span className="badge-neutral">{language === "sw" ? "Huduma" : "Service"}</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <ChevronRight className={cn("h-4 w-4 transition-transform", isSelected ? "text-accent translate-x-1" : "text-muted-foreground")} />
