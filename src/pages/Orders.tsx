@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   Search,
   Plus,
@@ -24,6 +25,7 @@ import {
   Package,
   Layers,
   Edit2,
+  ChevronRight,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -82,6 +84,9 @@ export default function Orders() {
   const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mobileOrderPage, setMobileOrderPage] = useState(1);
+  const MOBILE_ORDER_PAGE_SIZE = 4;
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
@@ -150,6 +155,18 @@ export default function Orders() {
     if (priorityFilter !== "all") list = list.filter((o) => ((o as any).priority ?? "medium") === priorityFilter);
     return list;
   }, [orders, search, statusFilter, dateRangeFilter, priorityFilter]);
+
+  const totalMobileOrderPages = Math.max(1, Math.ceil(filteredOrders.length / MOBILE_ORDER_PAGE_SIZE));
+  const currentMobileOrders = useMemo(() => {
+    const start = (mobileOrderPage - 1) * MOBILE_ORDER_PAGE_SIZE;
+    return filteredOrders.slice(start, start + MOBILE_ORDER_PAGE_SIZE);
+  }, [filteredOrders, mobileOrderPage]);
+
+  useEffect(() => {
+    setMobileOrderPage(1);
+  }, [search, statusFilter, priorityFilter, dateRange]);
+
+
 
   const stats = useMemo(() => {
     const list = filteredOrders;
@@ -260,256 +277,9 @@ export default function Orders() {
 
   const isPanelOpen = isCreatingOrder || !!selectedOrder;
 
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6 pb-12">
-      {/* 4 Olly Top KPI Metric Cards with Pastel Icons */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="flex items-center gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-          <div className="rounded-2xl bg-purple-50 p-3.5 text-purple-600 dark:bg-purple-950/40 dark:text-purple-300">
-            <ClipboardList className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">
-              {language === "sw" ? "Jumla ya Maagizo" : "Total Orders"}
-            </p>
-            <p className="text-2xl font-bold tracking-tight text-foreground">{stats.total}</p>
-            <p className="text-[11px] text-muted-foreground">{language === "sw" ? "Maagizo yote" : "Registered orders"}</p>
-          </div>
-        </div>
+  const renderOrderPanel = () => (
+    <>
 
-        <div className="flex items-center gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-          <div className="rounded-2xl bg-amber-50 p-3.5 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
-            <Clock className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">
-              {language === "sw" ? "Inasubiri" : "Pending Orders"}
-            </p>
-            <p className="text-2xl font-bold tracking-tight text-[#9a3412]">{stats.pending}</p>
-            <p className="text-[11px] text-muted-foreground">{language === "sw" ? "Kazi inayongoja" : "Awaiting action"}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-          <div className="rounded-2xl bg-blue-50 p-3.5 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
-            <Layers className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">
-              {language === "sw" ? "Inachakatwa" : "In Progress"}
-            </p>
-            <p className="text-2xl font-bold tracking-tight text-blue-700 dark:text-blue-400">{stats.processing}</p>
-            <p className="text-[11px] text-muted-foreground">{language === "sw" ? "Inatayarishwa" : "Being prepared"}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-          <div className="rounded-2xl bg-emerald-50 p-3.5 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
-            <DollarSign className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">
-              {language === "sw" ? "Thamani ya Maagizo" : "Orders Value"}
-            </p>
-            <p className="text-xl font-bold tracking-tight text-foreground">{formatMoney(stats.totalValue)}</p>
-            <p className="text-[11px] text-muted-foreground">{stats.completed} {language === "sw" ? "imekamilika" : "completed"}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main 2-Column Master-Detail Layout (NO POPUPS) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column (Master Orders Table) */}
-        <div className={cn("space-y-4 transition-all duration-200", isPanelOpen ? "lg:col-span-7" : "lg:col-span-12")}>
-          <div className="rounded-2xl border border-border/80 bg-card shadow-xs overflow-hidden">
-            {/* Header / Toolbar */}
-            <div className="p-5 border-b border-border space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-foreground">
-                    {language === "sw" ? "Orodha ya Maagizo" : "Orders Directory"}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    {language === "sw" ? "Usimamizi wa maagizo yote ya wateja" : "Manage and fulfill customer orders"}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => {
-                    setIsCreatingOrder(true);
-                    setSelectedOrder(null);
-                    setIsConfirmingDelete(false);
-                  }}
-                  className="h-10 gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4 text-accent" />
-                  <span>{language === "sw" ? "+ Ongeza Agizo" : "+ Add Order"}</span>
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2.5">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder={language === "sw" ? "Tafuta kwa nambari, mteja, au simu..." : "Search by name, role or ID..."}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="h-10 rounded-xl border-border bg-background pl-9 text-xs"
-                  />
-                </div>
-
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-10 w-36 rounded-xl border-border bg-background text-xs">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
-                    <SelectItem value="all">{language === "sw" ? "Hali Zote" : "All Statuses"}</SelectItem>
-                    {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {language === "sw" ? v.labelSw : v.labelEn}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
-                  <SelectTrigger className="h-10 w-32 rounded-xl border-border bg-background text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
-                    <SelectItem value="all">{language === "sw" ? "Muda Wote" : "All Time"}</SelectItem>
-                    <SelectItem value="today">{language === "sw" ? "Leo" : "Today"}</SelectItem>
-                    <SelectItem value="week">{language === "sw" ? "Wiki Hii" : "This Week"}</SelectItem>
-                    <SelectItem value="month">{language === "sw" ? "Mwezi Huu" : "This Month"}</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={exportCsv}
-                  disabled={filteredOrders.length === 0}
-                  className="h-10 rounded-xl border-border text-xs gap-1"
-                >
-                  <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>CSV</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Orders Table */}
-            <div className="internal-table-scroll w-full">
-              <Table className="min-w-[650px] w-full">
-                <TableHeader>
-                  <TableRow className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <TableHead className="font-semibold">{language === "sw" ? "AGIZO" : "ORDER ID"}</TableHead>
-                    <TableHead className="font-semibold">{language === "sw" ? "MTEJA" : "CUSTOMER"}</TableHead>
-                    <TableHead className="text-right font-semibold">{language === "sw" ? "JUMLA" : "TOTAL"}</TableHead>
-                    <TableHead className="text-center font-semibold">{language === "sw" ? "HALI" : "STATUS"}</TableHead>
-                    <TableHead className="text-center font-semibold">{language === "sw" ? "KIPAUMBELE" : "PRIORITY"}</TableHead>
-                    <TableHead className="text-center font-semibold">{language === "sw" ? "VITENDO" : "ACTIONS"}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.length > 0 ? (
-                    filteredOrders.map((order) => {
-                      const isSelected = selectedOrder?.id === order.id && !isCreatingOrder;
-                      const statusConf = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
-                      const priorityConf = PRIORITY_CONFIG[(order as any).priority] || PRIORITY_CONFIG.medium;
-
-                      return (
-                        <TableRow
-                          key={order.id}
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setIsCreatingOrder(false);
-                            setIsConfirmingDelete(false);
-                          }}
-                          className={cn(
-                            "cursor-pointer transition-colors text-xs border-b border-border/60",
-                            isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
-                          )}
-                        >
-                          <TableCell className="font-bold text-foreground">
-                            <div>{order.order_number}</div>
-                            <div className="text-[10px] font-normal text-muted-foreground">
-                              {format(new Date(order.created_at), "dd MMM yyyy")}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-bold text-foreground">
-                              {(order as any).customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}
-                            </div>
-                            {(order as any).customer_phone && (
-                              <div className="text-[10px] text-muted-foreground">{(order as any).customer_phone}</div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-foreground">
-                            {formatMoney(order.total || 0)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-md px-2.5 py-1 text-[10px] uppercase",
-                                statusConf.badgeClass,
-                              )}
-                            >
-                              {language === "sw" ? statusConf.labelSw : statusConf.labelEn}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-md px-2.5 py-0.5 text-[10px] font-semibold",
-                                priorityConf.badgeClass,
-                              )}
-                            >
-                              {language === "sw" ? priorityConf.labelSw : priorityConf.labelEn}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedOrder(order);
-                                  setIsCreatingOrder(false);
-                                }}
-                                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedOrder(order);
-                                  setIsConfirmingDelete(true);
-                                }}
-                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="py-12 text-center text-xs text-muted-foreground">
-                        {language === "sw" ? "Hakuna maagizo yaliyopatikana." : "No customer orders found."}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column (Inline Detail / Create Panel - Exactly like Olly HR Panel) */}
-        <div className="space-y-4 lg:col-span-5">
           {/* Case 1: Inline "Add Employee / New Order" Form */}
           {isCreatingOrder && (
             <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs space-y-4">
@@ -520,7 +290,7 @@ export default function Orders() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsCreatingOrder(false)}
+                  onClick={() => { setIsCreatingOrder(false); setMobileDrawerOpen(false); }}
                   className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
@@ -872,8 +642,351 @@ export default function Orders() {
               </div>
             </div>
           )}
+    </>
+  );
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6 pb-12">
+      {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Jumla ya Maagizo" : "Total Orders"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-300 flex-shrink-0">
+              <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{stats.total}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Maagizo yote" : "Registered orders"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Inasubiri" : "Pending Orders"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300 flex-shrink-0">
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-[#9a3412] truncate">{stats.pending}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Kazi inayongoja" : "Awaiting action"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Inachakatwa" : "In Progress"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 flex-shrink-0">
+              <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-blue-700 dark:text-blue-400 truncate">{stats.processing}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Inatayarishwa" : "Being prepared"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Thamani ya Maagizo" : "Orders Value"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 flex-shrink-0">
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(stats.totalValue)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{stats.completed} {language === "sw" ? "imekamilika" : "completed"}</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main 2-Column Master-Detail Layout (NO POPUPS) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left Column (Master Orders Table) */}
+        <div className={cn("space-y-4 transition-all duration-200", isPanelOpen ? "lg:col-span-7" : "lg:col-span-12")}>
+          <div className="rounded-2xl border border-border/80 bg-card shadow-xs overflow-hidden">
+            {/* Header / Toolbar */}
+            <div className="p-5 border-b border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-foreground">
+                    {language === "sw" ? "Orodha ya Maagizo" : "Orders Directory"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {language === "sw" ? "Usimamizi wa maagizo yote ya wateja" : "Manage and fulfill customer orders"}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setIsCreatingOrder(true);
+                    setSelectedOrder(null);
+                    setIsConfirmingDelete(false);
+                    setMobileDrawerOpen(true);
+                  }}
+                  className="h-10 gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4 text-accent" />
+                  <span>{language === "sw" ? "+ Ongeza Agizo" : "+ Add Order"}</span>
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={language === "sw" ? "Tafuta kwa nambari, mteja, au simu..." : "Search by name, role or ID..."}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="h-10 rounded-xl border-border bg-background pl-9 text-xs"
+                  />
+                </div>
+
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-10 w-36 rounded-xl border-border bg-background text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                    <SelectItem value="all">{language === "sw" ? "Hali Zote" : "All Statuses"}</SelectItem>
+                    {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>
+                        {language === "sw" ? v.labelSw : v.labelEn}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
+                  <SelectTrigger className="h-10 w-32 rounded-xl border-border bg-background text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                    <SelectItem value="all">{language === "sw" ? "Muda Wote" : "All Time"}</SelectItem>
+                    <SelectItem value="today">{language === "sw" ? "Leo" : "Today"}</SelectItem>
+                    <SelectItem value="week">{language === "sw" ? "Wiki Hii" : "This Week"}</SelectItem>
+                    <SelectItem value="month">{language === "sw" ? "Mwezi Huu" : "This Month"}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportCsv}
+                  disabled={filteredOrders.length === 0}
+                  className="h-10 rounded-xl border-border text-xs gap-1"
+                >
+                  <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>CSV</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Orders Table */}
+            {/* Mobile View: 4 Compact Cards with Prev/Next Pagination */}
+            <div className="md:hidden">
+              <div className="divide-y divide-border/60">
+                {currentMobileOrders.length > 0 ? (
+                  currentMobileOrders.map((order) => {
+                    const isSelected = selectedOrder?.id === order.id && !isCreatingOrder;
+                    const statusConf = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+                    const priorityConf = PRIORITY_CONFIG[(order as any).priority] || PRIORITY_CONFIG.medium;
+                    return (
+                      <div
+                        key={order.id}
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setIsCreatingOrder(false);
+                          setIsConfirmingDelete(false);
+                          setMobileDrawerOpen(true);
+                        }}
+                        className={cn(
+                          "p-3.5 flex items-center justify-between cursor-pointer active:bg-muted/60 transition-colors",
+                          isSelected ? "bg-accent/10" : ""
+                        )}
+                      >
+                        <div className="min-w-0 flex-1 pr-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-foreground">{order.order_number}</span>
+                            <span className={cn("inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold", statusConf.badgeClass)}>
+                              {language === "sw" ? statusConf.labelSw : statusConf.labelEn}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-medium text-foreground/90 mt-0.5 truncate">
+                            {(order as any).customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in Customer")}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {format(new Date(order.created_at), "dd MMM yyyy")}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0 flex items-center gap-2">
+                          <span className="font-bold text-xs text-foreground">{formatMoney(order.total || 0)}</span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-12 text-center text-xs text-muted-foreground">
+                    {language === "sw" ? "Hakuna maagizo yaliyopatikana." : "No customer orders found."}
+                  </div>
+                )}
+              </div>
+
+              {totalMobileOrderPages > 1 && (
+                <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-border/60 bg-muted/20 text-xs">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={mobileOrderPage <= 1}
+                    onClick={() => setMobileOrderPage((p) => Math.max(1, p - 1))}
+                    className="h-7 px-2.5 text-[11px]"
+                  >
+                    {language === "sw" ? "Iliyopita" : "Previous"}
+                  </Button>
+                  <span className="text-[11px] text-muted-foreground font-semibold">
+                    {mobileOrderPage} / {totalMobileOrderPages}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={mobileOrderPage >= totalMobileOrderPages}
+                    onClick={() => setMobileOrderPage((p) => Math.min(totalMobileOrderPages, p + 1))}
+                    className="h-7 px-2.5 text-[11px]"
+                  >
+                    {language === "sw" ? "Inayofuata" : "Next"}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Orders Table */}
+            <div className="hidden md:block internal-table-scroll w-full">
+              <Table className="min-w-[650px] w-full">
+                <TableHeader>
+                  <TableRow className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="font-semibold">{language === "sw" ? "AGIZO" : "ORDER ID"}</TableHead>
+                    <TableHead className="font-semibold">{language === "sw" ? "MTEJA" : "CUSTOMER"}</TableHead>
+                    <TableHead className="text-right font-semibold">{language === "sw" ? "JUMLA" : "TOTAL"}</TableHead>
+                    <TableHead className="text-center font-semibold">{language === "sw" ? "HALI" : "STATUS"}</TableHead>
+                    <TableHead className="text-center font-semibold">{language === "sw" ? "KIPAUMBELE" : "PRIORITY"}</TableHead>
+                    <TableHead className="text-center font-semibold">{language === "sw" ? "VITENDO" : "ACTIONS"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.length > 0 ? (
+                    filteredOrders.map((order) => {
+                      const isSelected = selectedOrder?.id === order.id && !isCreatingOrder;
+                      const statusConf = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+                      const priorityConf = PRIORITY_CONFIG[(order as any).priority] || PRIORITY_CONFIG.medium;
+
+                      return (
+                        <TableRow
+                          key={order.id}
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsCreatingOrder(false);
+                            setIsConfirmingDelete(false);
+                            setMobileDrawerOpen(true);
+                          }}
+                          className={cn(
+                            "cursor-pointer transition-colors text-xs border-b border-border/60",
+                            isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
+                          )}
+                        >
+                          <TableCell className="font-bold text-foreground">
+                            <div>{order.order_number}</div>
+                            <div className="text-[10px] font-normal text-muted-foreground">
+                              {format(new Date(order.created_at), "dd MMM yyyy")}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-bold text-foreground">
+                              {(order as any).customer_name || (language === "sw" ? "Mteja wa Kawaida" : "Walk-in")}
+                            </div>
+                            {(order as any).customer_phone && (
+                              <div className="text-[10px] text-muted-foreground">{(order as any).customer_phone}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-foreground">
+                            {formatMoney(order.total || 0)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-md px-2.5 py-1 text-[10px] uppercase",
+                                statusConf.badgeClass,
+                              )}
+                            >
+                              {language === "sw" ? statusConf.labelSw : statusConf.labelEn}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-md px-2.5 py-0.5 text-[10px] font-semibold",
+                                priorityConf.badgeClass,
+                              )}
+                            >
+                              {language === "sw" ? priorityConf.labelSw : priorityConf.labelEn}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedOrder(order);
+                                  setIsCreatingOrder(false);
+                                }}
+                                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedOrder(order);
+                                  setIsConfirmingDelete(true);
+                                }}
+                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-12 text-center text-xs text-muted-foreground">
+                        {language === "sw" ? "Hakuna maagizo yaliyopatikana." : "No customer orders found."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (Inline Detail / Create Panel - Exactly like Olly HR Panel) */}
+        <div className="hidden lg:block lg:col-span-5 space-y-4">
+          {renderOrderPanel()}
         </div>
       </div>
+
+      {/* Mobile Bottom Sheet for Adding / Viewing Orders (lg:hidden) */}
+      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
+          <div className="p-1 space-y-4">
+            {renderOrderPanel()}
+          </div>
+        </SheetContent>
+      </Sheet>
     </motion.div>
   );
 }

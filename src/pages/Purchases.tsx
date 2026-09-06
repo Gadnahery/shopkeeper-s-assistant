@@ -27,6 +27,7 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,7 @@ export default function Purchases() {
   const [supplierSearch, setSupplierSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [mobileOrderPage, setMobileOrderPage] = useState(1);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Inline Master-Detail Panel State (NO POPUPS)
   const [isCreatingPurchase, setIsCreatingPurchase] = useState(searchParams.get("new") === "true");
@@ -389,318 +391,9 @@ export default function Purchases() {
     }
   };
 
-  return (
-    <div className="space-y-6 pb-12">
-      {/* 4 KPI Top Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-600">
-            <ShoppingCart className="w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}</h3>
-            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalPurchasesAmount)}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{purchases?.length || 0} {language === "sw" ? "maagizo yote" : "total orders"}</p>
-          </div>
-        </div>
+  const renderRightPanel = () => (
+    <>
 
-        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600">
-            <DollarSign className="w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zilizolipwa" : "Total Paid"}</h3>
-            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalPaidAmount)}</p>
-            <p className="text-[11px] text-emerald-600 font-medium mt-1">{language === "sw" ? "Malipo yaliyokamilika" : "Settled payments"}</p>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Madeni ya Wasambazaji" : "Outstanding / Due"}</h3>
-            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalOutstanding)}</p>
-            <p className="text-[11px] text-amber-600 font-medium mt-1">{language === "sw" ? "Inayosubiri kulipwa" : "Pending balance"}</p>
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-purple-500/10 text-purple-600">
-            <Package className="w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Bidhaa Zilizopokelewa" : "Total Items Received"}</h3>
-            <p className="text-lg font-bold text-foreground mt-0.5 truncate">{totalReceivedItems}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{suppliers?.length || 0} {language === "sw" ? "wasambazaji hai" : "active suppliers"}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main 2-Column Master-Detail Layout */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column (Master List - expands to 12 cols when unselected) */}
-        <div className={cn("space-y-4 transition-all duration-200", (isCreatingPurchase || isEditingPurchase || selectedOrder || isAddingSupplier || selectedSupplier) ? "lg:col-span-7" : "lg:col-span-12")}>
-          <Card className="border border-border bg-card shadow-xs">
-            <Tabs value={activeTab} onValueChange={(val) => {
-              setActiveTab(val);
-              setIsCreatingPurchase(false);
-              setIsEditingPurchase(false);
-              setIsConfirmingDelete(false);
-            }}>
-              <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
-                <TabsList className="h-9 rounded-xl bg-muted/60 p-1">
-                  <TabsTrigger value="orders" className="rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground">
-                    <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
-                    <span>{language === "sw" ? "Maagizo ya Manunuzi" : "Purchase Orders"}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="suppliers" className="rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground">
-                    <Truck className="h-3.5 w-3.5 mr-1.5" />
-                    <span>{language === "sw" ? "Wasambazaji" : "Suppliers"}</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                {activeTab === "orders" && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative w-48">
-                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={language === "sw" ? "Tafuta ununuzi..." : "Search purchases..."}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-8 pl-8 text-xs rounded-xl border-border bg-background"
-                      />
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setIsCreatingPurchase(true);
-                        setIsEditingPurchase(false);
-                        setIsConfirmingDelete(false);
-                        setSelectedOrder(null);
-                        resetPurchaseForm();
-                      }}
-                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
-                    >
-                      <Plus className="h-3.5 w-3.5 text-accent" />
-                      <span>{t("purchases.newPurchase")}</span>
-                    </Button>
-                  </div>
-                )}
-
-                {activeTab === "suppliers" && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative w-48">
-                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={language === "sw" ? "Tafuta msambazaji..." : "Search suppliers..."}
-                        value={supplierSearch}
-                        onChange={(e) => setSupplierSearch(e.target.value)}
-                        className="h-8 pl-8 text-xs rounded-xl border-border bg-background"
-                      />
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setIsAddingSupplier(true);
-                        setSelectedSupplier(null);
-                      }}
-                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
-                    >
-                      <Plus className="h-3.5 w-3.5 text-accent" />
-                      <span>{language === "sw" ? "Msambazaji Mpya" : "New Supplier"}</span>
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* TAB 1: PURCHASE ORDERS */}
-              <TabsContent value="orders" className="m-0 p-0">
-                {/* Mobile View: 4 Compact Cards with Prev/Next Pagination */}
-                <div className="md:hidden">
-                  <div className="divide-y divide-border/60">
-                    {currentMobileOrders.length > 0 ? (
-                      currentMobileOrders.map((order) => {
-                        const isSelected = selectedOrder?.id === order.id && !isCreatingPurchase && !isEditingPurchase;
-                        return (
-                          <div
-                            key={order.id}
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setIsCreatingPurchase(false);
-                              setIsEditingPurchase(false);
-                              setIsConfirmingDelete(false);
-                            }}
-                            className={cn(
-                              "p-3.5 flex items-center justify-between cursor-pointer active:bg-muted/60 transition-colors",
-                              isSelected ? "bg-accent/10" : ""
-                            )}
-                          >
-                            <div className="min-w-0 flex-1 pr-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-xs text-foreground">PO-{order.id.slice(0, 6).toUpperCase()}</span>
-                                {getStatusBadge(order.status)}
-                              </div>
-                              <p className="text-[11px] font-medium text-foreground/90 mt-0.5 truncate">
-                                {order.supplier_name || <span className="text-muted-foreground italic">Direct / Walk-in</span>}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">
-                                {format(new Date(order.created_at), "dd MMM yyyy")} • {order.items_count} {language === "sw" ? "bidhaa" : "items"}
-                              </p>
-                            </div>
-                            <div className="text-right shrink-0 flex items-center gap-2">
-                              <span className="font-bold text-xs text-foreground">{formatMoney(order.total_amount)}</span>
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="py-12 text-center text-xs text-muted-foreground">
-                        {language === "sw" ? "Hakuna manunuzi yaliyopatikana." : "No purchase orders found."}
-                      </div>
-                    )}
-                  </div>
-
-                  {totalMobileOrderPages > 1 && (
-                    <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-border/60 bg-muted/20 text-xs">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={mobileOrderPage <= 1}
-                        onClick={() => setMobileOrderPage((p) => Math.max(1, p - 1))}
-                        className="h-7 px-2.5 text-[11px]"
-                      >
-                        {language === "sw" ? "Iliyopita" : "Previous"}
-                      </Button>
-                      <span className="text-[11px] text-muted-foreground font-semibold">
-                        {mobileOrderPage} / {totalMobileOrderPages}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={mobileOrderPage >= totalMobileOrderPages}
-                        onClick={() => setMobileOrderPage((p) => Math.min(totalMobileOrderPages, p + 1))}
-                        className="h-7 px-2.5 text-[11px]"
-                      >
-                        {language === "sw" ? "Inayofuata" : "Next"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Desktop View: Full Master Table */}
-                <div className="hidden md:block internal-table-scroll w-full">
-                  <Table className="min-w-[650px] w-full">
-                    <TableHeader>
-                      <TableRow className="bg-muted/40 text-[11px] uppercase">
-                        <TableHead className="font-semibold">{language === "sw" ? "Namba / Tarehe" : "PO / Date"}</TableHead>
-                        <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
-                        <TableHead className="text-center font-semibold">{t("purchases.items")}</TableHead>
-                        <TableHead className="text-right font-semibold">{t("purchases.totalCost")}</TableHead>
-                        <TableHead className="text-center font-semibold">{language === "sw" ? "Hali" : "Status"}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredOrders.length > 0 ? (
-                        filteredOrders.map((order) => {
-                          const isSelected = selectedOrder?.id === order.id && !isCreatingPurchase && !isEditingPurchase;
-                          return (
-                            <TableRow
-                              key={order.id}
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setIsCreatingPurchase(false);
-                                setIsEditingPurchase(false);
-                                setIsConfirmingDelete(false);
-                              }}
-                              className={cn(
-                                "cursor-pointer transition-colors text-xs",
-                                isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
-                              )}
-                            >
-                              <TableCell>
-                                <p className="font-bold text-foreground">PO-{order.id.slice(0, 6).toUpperCase()}</p>
-                                <p className="text-[10px] text-muted-foreground">{format(new Date(order.created_at), "dd MMM yyyy")}</p>
-                              </TableCell>
-                              <TableCell className="font-semibold text-foreground">
-                                {order.supplier_name || <span className="text-muted-foreground italic">Direct / Walk-in</span>}
-                              </TableCell>
-                              <TableCell className="text-center font-semibold">{order.items_count}</TableCell>
-                              <TableCell className="text-right font-bold text-foreground">
-                                {formatMoney(order.total_amount)}
-                              </TableCell>
-                              <TableCell className="text-center">{getStatusBadge(order.status)}</TableCell>
-                            </TableRow>
-                          );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="py-12 text-center text-xs text-muted-foreground">
-                            {language === "sw" ? "Hakuna manunuzi yaliyopatikana." : "No purchase orders found."}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-
-              {/* TAB 2: SUPPLIERS */}
-              <TabsContent value="suppliers" className="m-0 p-0">
-                <div className="internal-table-scroll w-full">
-                  <Table className="min-w-[650px] w-full">
-                    <TableHeader>
-                      <TableRow className="bg-muted/40 text-[11px] uppercase">
-                        <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
-                        <TableHead className="font-semibold">{language === "sw" ? "Mawasiliano" : "Contact"}</TableHead>
-                        <TableHead className="font-semibold">{language === "sw" ? "Simu" : "Phone"}</TableHead>
-                        <TableHead className="text-right font-semibold">{language === "sw" ? "Deni" : "Pending Balance"}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredSuppliers.length > 0 ? (
-                        filteredSuppliers.map((sup) => {
-                          const isSelected = selectedSupplier?.id === sup.id && !isAddingSupplier;
-                          return (
-                            <TableRow
-                              key={sup.id}
-                              onClick={() => {
-                                setSelectedSupplier(sup);
-                                setIsAddingSupplier(false);
-                              }}
-                              className={cn(
-                                "cursor-pointer transition-colors text-xs",
-                                isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
-                              )}
-                            >
-                              <TableCell className="font-bold text-foreground">{sup.name}</TableCell>
-                              <TableCell className="text-muted-foreground">{sup.contact_person || "-"}</TableCell>
-                              <TableCell className="text-muted-foreground">{sup.phone || "-"}</TableCell>
-                              <TableCell className="text-right font-bold text-foreground">
-                                {formatMoney((sup as any).pending_payment || 0)}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="py-12 text-center text-xs text-muted-foreground">
-                            {language === "sw" ? "Hakuna wasambazaji waliopatikana." : "No suppliers found."}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
-
-        {/* Right Column (Inline Detail / Create Panel - 5 Cols, NO POPUPS) */}
-        <div className="space-y-4 lg:col-span-5">
           {/* Case 1: Inline "New Purchase" or "Edit Purchase" Form */}
           {(isCreatingPurchase || isEditingPurchase) && (
             <Card className="border border-border bg-card shadow-xs">
@@ -1186,8 +879,344 @@ export default function Purchases() {
               </CardContent>
             </Card>
           )}
+    </>
+  );
+
+  return (
+    <div className="space-y-6 pb-12">
+      {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 flex-shrink-0">
+              <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalPurchasesAmount)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{purchases?.length || 0} {language === "sw" ? "maagizo yote" : "total orders"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zilizolipwa" : "Total Paid"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 flex-shrink-0">
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalPaidAmount)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-emerald-600 font-medium truncate">{language === "sw" ? "Zilizokamilika" : "Settled"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Madeni ya Wasambazaji" : "Outstanding / Due"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 flex-shrink-0">
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalOutstanding)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-amber-600 font-medium truncate">{language === "sw" ? "Inayosubiri kulipwa" : "Pending balance"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Bidhaa Zilizopokelewa" : "Total Received"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 flex-shrink-0">
+              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{totalReceivedItems}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{suppliers?.length || 0} {language === "sw" ? "wasambazaji hai" : "active suppliers"}</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main 2-Column Master-Detail Layout */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left Column (Master List - expands to 12 cols when unselected) */}
+        <div className={cn("space-y-4 transition-all duration-200", (isCreatingPurchase || isEditingPurchase || selectedOrder || isAddingSupplier || selectedSupplier) ? "lg:col-span-7" : "lg:col-span-12")}>
+          <Card className="border border-border bg-card shadow-xs">
+            <Tabs value={activeTab} onValueChange={(val) => {
+              setActiveTab(val);
+              setIsCreatingPurchase(false);
+              setIsEditingPurchase(false);
+              setIsConfirmingDelete(false);
+            }}>
+              <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
+                <TabsList className="h-9 rounded-xl bg-muted/60 p-1">
+                  <TabsTrigger value="orders" className="rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground">
+                    <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                    <span>{language === "sw" ? "Maagizo ya Manunuzi" : "Purchase Orders"}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="suppliers" className="rounded-lg text-xs font-bold data-[state=active]:bg-background data-[state=active]:text-foreground">
+                    <Truck className="h-3.5 w-3.5 mr-1.5" />
+                    <span>{language === "sw" ? "Wasambazaji" : "Suppliers"}</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                {activeTab === "orders" && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative w-48">
+                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder={language === "sw" ? "Tafuta ununuzi..." : "Search purchases..."}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 pl-8 text-xs rounded-xl border-border bg-background"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setIsCreatingPurchase(true);
+                        setIsEditingPurchase(false);
+                        setIsConfirmingDelete(false);
+                        setSelectedOrder(null);
+                        resetPurchaseForm();
+                        setMobileDrawerOpen(true);
+                      }}
+                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-accent" />
+                      <span>{t("purchases.newPurchase")}</span>
+                    </Button>
+                  </div>
+                )}
+
+                {activeTab === "suppliers" && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative w-48">
+                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder={language === "sw" ? "Tafuta msambazaji..." : "Search suppliers..."}
+                        value={supplierSearch}
+                        onChange={(e) => setSupplierSearch(e.target.value)}
+                        className="h-8 pl-8 text-xs rounded-xl border-border bg-background"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingSupplier(true);
+                        setSelectedSupplier(null);
+                        setMobileDrawerOpen(true);
+                      }}
+                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-accent" />
+                      <span>{language === "sw" ? "Msambazaji Mpya" : "New Supplier"}</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* TAB 1: PURCHASE ORDERS */}
+              <TabsContent value="orders" className="m-0 p-0">
+                {/* Mobile View: 4 Compact Cards with Prev/Next Pagination */}
+                <div className="md:hidden">
+                  <div className="divide-y divide-border/60">
+                    {currentMobileOrders.length > 0 ? (
+                      currentMobileOrders.map((order) => {
+                        const isSelected = selectedOrder?.id === order.id && !isCreatingPurchase && !isEditingPurchase;
+                        return (
+                          <div
+                            key={order.id}
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setIsCreatingPurchase(false);
+                              setIsEditingPurchase(false);
+                              setIsConfirmingDelete(false);
+                              setMobileDrawerOpen(true);
+                            }}
+                            className={cn(
+                              "p-3.5 flex items-center justify-between cursor-pointer active:bg-muted/60 transition-colors",
+                              isSelected ? "bg-accent/10" : ""
+                            )}
+                          >
+                            <div className="min-w-0 flex-1 pr-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-xs text-foreground">PO-{order.id.slice(0, 6).toUpperCase()}</span>
+                                {getStatusBadge(order.status)}
+                              </div>
+                              <p className="text-[11px] font-medium text-foreground/90 mt-0.5 truncate">
+                                {order.supplier_name || <span className="text-muted-foreground italic">Direct / Walk-in</span>}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                {format(new Date(order.created_at), "dd MMM yyyy")} • {order.items_count} {language === "sw" ? "bidhaa" : "items"}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0 flex items-center gap-2">
+                              <span className="font-bold text-xs text-foreground">{formatMoney(order.total_amount)}</span>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="py-12 text-center text-xs text-muted-foreground">
+                        {language === "sw" ? "Hakuna manunuzi yaliyopatikana." : "No purchase orders found."}
+                      </div>
+                    )}
+                  </div>
+
+                  {totalMobileOrderPages > 1 && (
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-border/60 bg-muted/20 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileOrderPage <= 1}
+                        onClick={() => setMobileOrderPage((p) => Math.max(1, p - 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Iliyopita" : "Previous"}
+                      </Button>
+                      <span className="text-[11px] text-muted-foreground font-semibold">
+                        {mobileOrderPage} / {totalMobileOrderPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileOrderPage >= totalMobileOrderPages}
+                        onClick={() => setMobileOrderPage((p) => Math.min(totalMobileOrderPages, p + 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Inayofuata" : "Next"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop View: Full Master Table */}
+                <div className="hidden md:block internal-table-scroll w-full">
+                  <Table className="min-w-[650px] w-full">
+                    <TableHeader>
+                      <TableRow className="bg-muted/40 text-[11px] uppercase">
+                        <TableHead className="font-semibold">{language === "sw" ? "Namba / Tarehe" : "PO / Date"}</TableHead>
+                        <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
+                        <TableHead className="text-center font-semibold">{t("purchases.items")}</TableHead>
+                        <TableHead className="text-right font-semibold">{t("purchases.totalCost")}</TableHead>
+                        <TableHead className="text-center font-semibold">{language === "sw" ? "Hali" : "Status"}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrders.length > 0 ? (
+                        filteredOrders.map((order) => {
+                          const isSelected = selectedOrder?.id === order.id && !isCreatingPurchase && !isEditingPurchase;
+                          return (
+                            <TableRow
+                              key={order.id}
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setIsCreatingPurchase(false);
+                                setIsEditingPurchase(false);
+                                setIsConfirmingDelete(false);
+                              }}
+                              className={cn(
+                                "cursor-pointer transition-colors text-xs",
+                                isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
+                              )}
+                            >
+                              <TableCell>
+                                <p className="font-bold text-foreground">PO-{order.id.slice(0, 6).toUpperCase()}</p>
+                                <p className="text-[10px] text-muted-foreground">{format(new Date(order.created_at), "dd MMM yyyy")}</p>
+                              </TableCell>
+                              <TableCell className="font-semibold text-foreground">
+                                {order.supplier_name || <span className="text-muted-foreground italic">Direct / Walk-in</span>}
+                              </TableCell>
+                              <TableCell className="text-center font-semibold">{order.items_count}</TableCell>
+                              <TableCell className="text-right font-bold text-foreground">
+                                {formatMoney(order.total_amount)}
+                              </TableCell>
+                              <TableCell className="text-center">{getStatusBadge(order.status)}</TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="py-12 text-center text-xs text-muted-foreground">
+                            {language === "sw" ? "Hakuna manunuzi yaliyopatikana." : "No purchase orders found."}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+
+              {/* TAB 2: SUPPLIERS */}
+              <TabsContent value="suppliers" className="m-0 p-0">
+                <div className="internal-table-scroll w-full">
+                  <Table className="min-w-[650px] w-full">
+                    <TableHeader>
+                      <TableRow className="bg-muted/40 text-[11px] uppercase">
+                        <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
+                        <TableHead className="font-semibold">{language === "sw" ? "Mawasiliano" : "Contact"}</TableHead>
+                        <TableHead className="font-semibold">{language === "sw" ? "Simu" : "Phone"}</TableHead>
+                        <TableHead className="text-right font-semibold">{language === "sw" ? "Deni" : "Pending Balance"}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSuppliers.length > 0 ? (
+                        filteredSuppliers.map((sup) => {
+                          const isSelected = selectedSupplier?.id === sup.id && !isAddingSupplier;
+                          return (
+                            <TableRow
+                              key={sup.id}
+                              onClick={() => {
+                                setSelectedSupplier(sup);
+                                setIsAddingSupplier(false);
+                              }}
+                              className={cn(
+                                "cursor-pointer transition-colors text-xs",
+                                isSelected ? "bg-muted/80 font-medium" : "hover:bg-muted/40",
+                              )}
+                            >
+                              <TableCell className="font-bold text-foreground">{sup.name}</TableCell>
+                              <TableCell className="text-muted-foreground">{sup.contact_person || "-"}</TableCell>
+                              <TableCell className="text-muted-foreground">{sup.phone || "-"}</TableCell>
+                              <TableCell className="text-right font-bold text-foreground">
+                                {formatMoney((sup as any).pending_payment || 0)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="py-12 text-center text-xs text-muted-foreground">
+                            {language === "sw" ? "Hakuna wasambazaji waliopatikana." : "No suppliers found."}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+
+        {/* Right Column (Inline Detail / Create Panel - 5 Cols, NO POPUPS) */}
+        <div className="hidden lg:block lg:col-span-5 space-y-4">
+          {renderRightPanel()}
         </div>
       </div>
+
+      {/* Mobile Bottom Sheet for Purchases & Suppliers */}
+      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
+          <div className="p-1 space-y-4">
+            {renderRightPanel()}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

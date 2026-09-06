@@ -175,7 +175,8 @@ export default function Dashboard() {
   const isDateInPeriod = (dateStr?: string | null) => {
     if (!dateStr) return false;
     if (period === "all") return true;
-    const d = dateStr.slice(0, 10);
+    const str = typeof dateStr === "string" ? dateStr : String(dateStr);
+    const d = str.slice(0, 10);
     return d >= periodStart && d <= periodEnd;
   };
 
@@ -254,9 +255,10 @@ export default function Dashboard() {
   // Period Cost of Goods Sold (COGS)
   const periodCogsVal = useMemo(() => {
     return periodSales.reduce((sum, s) => {
-      const items = (s.sale_items as any[]) || [];
-      const saleCost = items.reduce((itemSum, item) => {
-        const unitCost = productCostMap.get(item.product_id) ?? (Number(item.unit_price) * 0.75);
+      const items = Array.isArray(s.sale_items) ? s.sale_items : [];
+      const saleCost = items.reduce((itemSum, item: any) => {
+        if (!item) return itemSum;
+        const unitCost = productCostMap.get(item.product_id) ?? (Number(item.unit_price || 0) * 0.75);
         return itemSum + (Number(item.quantity) || 1) * unitCost;
       }, 0);
       return sum + saleCost;
@@ -270,24 +272,29 @@ export default function Dashboard() {
   // If negative, represents true Net Loss (never clamped to 0)
   const netProfitVal = grossProfitVal + totalOtherIncomeVal - totalExpensesVal;
 
-  // Chart data — last 7 days
+  // Chart data — last 7 days safe calculation
   const chartData = useMemo(() => {
-    const days = [6, 5, 4, 3, 2, 1, 0].map((d) => format(subDays(new Date(), d), "yyyy-MM-dd"));
-    return days.map((dayStr) => {
+    const dayDates = [6, 5, 4, 3, 2, 1, 0].map((d) => subDays(new Date(), d));
+    return dayDates.map((dateObj) => {
+      const dayStr = format(dateObj, "yyyy-MM-dd");
       const daySalesList = (allSales || []).filter(
-        (s) => s.status === "completed" && (s.created_at || "").startsWith(dayStr)
+        (s) => s.status === "completed" && String(s.created_at || "").startsWith(dayStr)
       );
       const daySales = daySalesList.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
       const dayExpenses = (expensesList || [])
-        .filter((e) => (e.date || e.created_at || "").startsWith(dayStr))
+        .filter((e) => String(e.date || e.created_at || "").startsWith(dayStr))
         .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
       const dayCogs = daySalesList.reduce((sum, s) => {
-        const items = (s.sale_items as any[]) || [];
-        return sum + items.reduce((iSum, item) => iSum + (Number(item.quantity) || 1) * (productCostMap.get(item.product_id) ?? (Number(item.unit_price) * 0.75)), 0);
+        const items = Array.isArray(s.sale_items) ? s.sale_items : [];
+        return sum + items.reduce((iSum, item: any) => {
+          if (!item) return iSum;
+          const cost = productCostMap.get(item?.product_id) ?? (Number(item?.unit_price || 0) * 0.75);
+          return iSum + (Number(item?.quantity) || 1) * cost;
+        }, 0);
       }, 0);
       const dayProfit = daySales - dayCogs - dayExpenses;
       return {
-        name: format(new Date(dayStr + "T00:00:00"), "dd MMM"),
+        name: format(dateObj, "dd MMM"),
         date: dayStr,
         [language === "sw" ? "Mauzo" : "Sales"]: daySales,
         [language === "sw" ? "Matumizi" : "Expenses"]: dayExpenses,
@@ -296,12 +303,18 @@ export default function Dashboard() {
     });
   }, [allSales, expensesList, productCostMap, language]);
 
-  // Recent activities
+  // Recent activities safe mapping and sorting
   const recentActivities = useMemo(() => {
+    const getTime = (d?: string | null) => {
+      if (!d) return 0;
+      const t = new Date(d).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+
     const acts = [
       ...(allSales || []).slice(0, 10).map((s) => ({
         type: "sale",
-        title: `Sale #${s.id.slice(0, 6).toUpperCase()}`,
+        title: `Sale #${String(s.id || "").slice(0, 6).toUpperCase()}`,
         subtitle: s.payment_method || "Cash",
         date: s.created_at,
         amount: `+${formatMoney(s.total)}`,
@@ -312,7 +325,7 @@ export default function Dashboard() {
       })),
       ...(expensesList || []).slice(0, 10).map((e) => ({
         type: "expense",
-        title: e.title || (language === "sw" ? "Gharama" : "Expense"),
+        title: (e as any).title || e.description || (language === "sw" ? "Gharama" : "Expense"),
         subtitle: e.category || "General",
         date: e.date || e.created_at,
         amount: `-${formatMoney(e.amount)}`,
@@ -334,8 +347,8 @@ export default function Dashboard() {
       })),
       ...(otherIncomeList || []).slice(0, 5).map((income) => ({
         type: "income",
-        title: income.title,
-        subtitle: income.category,
+        title: income.title || (language === "sw" ? "Mapato Mengine" : "Other Income"),
+        subtitle: income.category || "General",
         date: income.date,
         amount: `+${formatMoney(income.amount)}`,
         isPositive: true,
@@ -344,7 +357,7 @@ export default function Dashboard() {
         bg: "bg-emerald-50 dark:bg-emerald-950/40",
       })),
     ];
-    return acts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
+    return acts.sort((a, b) => getTime(b.date) - getTime(a.date)).slice(0, 8);
   }, [allSales, purchasesList, expensesList, otherIncomeList, formatMoney, language]);
 
   const kpiLoading = salesLoading || purchasesLoading || expensesLoading || productsLoading;
@@ -409,7 +422,7 @@ export default function Dashboard() {
             <Button
               size="sm"
               onClick={() => navigate("/sales")}
-              className="h-8 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+              className="h-8 rounded-xl bg-neutral-950 px-3 text-xs font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950"
             >
               <Plus className="h-3.5 w-3.5 mr-1 text-accent" />
               <span>{language === "sw" ? "Uza" : "Sell"}</span>

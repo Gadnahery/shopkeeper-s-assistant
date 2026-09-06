@@ -235,11 +235,10 @@ export function Header() {
         {pageInfo.action && (
           <Button
             onClick={pageInfo.action.onClick}
-            className="h-9 gap-1.5 rounded-xl bg-primary px-3 sm:px-4 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-all active:scale-[0.98]"
+            className="h-9 gap-1.5 rounded-xl bg-neutral-950 px-3 sm:px-4 text-xs font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 transition-all active:scale-[0.98]"
           >
             <Plus className="h-3.5 w-3.5 text-accent" />
-            <span className="hidden sm:inline">{pageInfo.action.label.replace(/^\+\s*/, "")}</span>
-            <span className="sm:hidden">{t("quick.newSale").replace(/^\+\s*/, "")}</span>
+            <span className="truncate max-w-[120px] sm:max-w-none">{pageInfo.action.label.replace(/^\+\s*/, "")}</span>
           </Button>
         )}
 
