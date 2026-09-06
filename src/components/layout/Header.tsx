@@ -80,6 +80,20 @@ export function Header() {
         action: null,
       };
     }
+    if (path.startsWith("/orders")) {
+      return {
+        title: language === "sw" ? "Maagizo" : "Orders",
+        breadcrumb: language === "sw" ? "Maagizo" : "Orders",
+        showPeriod: true,
+        action: {
+          label: language === "sw" ? "+ Ongeza Agizo" : "+ Add Order",
+          onClick: () => {
+            window.dispatchEvent(new CustomEvent("open-new-order"));
+            if (location.pathname !== "/orders") navigate("/orders?new=true");
+          },
+        },
+      };
+    }
     if (path.startsWith("/inventory")) {
       return {
         title: t("nav.inventory"),

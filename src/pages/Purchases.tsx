@@ -47,6 +47,7 @@ import {
   type PurchaseItem,
 } from "@/hooks/usePurchases";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,7 @@ interface FormItem {
 export default function Purchases() {
   const { t, language } = useLanguage();
   const { formatMoney, formatNumber } = useShopFormatting();
+  const { isMobile } = useAdaptiveLayout();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<string>("orders");
@@ -104,10 +106,11 @@ export default function Purchases() {
       setIsConfirmingDelete(false);
       setSelectedOrder(null);
       resetPurchaseForm();
+      if (isMobile) setMobileDrawerOpen(true);
     };
     window.addEventListener("open-new-purchase", handleOpen);
     return () => window.removeEventListener("open-new-purchase", handleOpen);
-  }, []);
+  }, [isMobile]);
 
   // Sync URL query
   useEffect(() => {
@@ -117,8 +120,9 @@ export default function Purchases() {
       setIsConfirmingDelete(false);
       setSelectedOrder(null);
       resetPurchaseForm();
+      if (isMobile) setMobileDrawerOpen(true);
     }
-  }, [searchParams]);
+  }, [searchParams, isMobile]);
 
   // Auto-select first order if none selected and not creating
   useEffect(() => {
@@ -981,11 +985,11 @@ export default function Purchases() {
                         setIsConfirmingDelete(false);
                         setSelectedOrder(null);
                         resetPurchaseForm();
-                        setMobileDrawerOpen(true);
+                        if (isMobile) setMobileDrawerOpen(true);
                       }}
-                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                      className="h-8 gap-1 rounded-xl bg-neutral-950 text-xs font-bold text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200"
                     >
-                      <Plus className="h-3.5 w-3.5 text-accent" />
+                      <Plus className="h-3.5 w-3.5 text-white dark:text-neutral-950" />
                       <span>{t("purchases.newPurchase")}</span>
                     </Button>
                   </div>
@@ -1007,11 +1011,11 @@ export default function Purchases() {
                       onClick={() => {
                         setIsAddingSupplier(true);
                         setSelectedSupplier(null);
-                        setMobileDrawerOpen(true);
+                        if (isMobile) setMobileDrawerOpen(true);
                       }}
-                      className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                      className="h-8 gap-1 rounded-xl bg-neutral-950 text-xs font-bold text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200"
                     >
-                      <Plus className="h-3.5 w-3.5 text-accent" />
+                      <Plus className="h-3.5 w-3.5 text-white dark:text-neutral-950" />
                       <span>{language === "sw" ? "Msambazaji Mpya" : "New Supplier"}</span>
                     </Button>
                   </div>
@@ -1034,7 +1038,7 @@ export default function Purchases() {
                               setIsCreatingPurchase(false);
                               setIsEditingPurchase(false);
                               setIsConfirmingDelete(false);
-                              setMobileDrawerOpen(true);
+                              if (isMobile) setMobileDrawerOpen(true);
                             }}
                             className={cn(
                               "p-3.5 flex items-center justify-between cursor-pointer active:bg-muted/60 transition-colors",
@@ -1210,7 +1214,7 @@ export default function Purchases() {
       </div>
 
       {/* Mobile Bottom Sheet for Purchases & Suppliers */}
-      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+      <Sheet open={Boolean(isMobile && mobileDrawerOpen)} onOpenChange={setMobileDrawerOpen}>
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
           <div className="p-1 space-y-4">
             {renderRightPanel()}

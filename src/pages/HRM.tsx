@@ -49,6 +49,7 @@ import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
 interface StaffMember {
   id: string;
@@ -65,6 +66,7 @@ export default function HRM() {
   const { t, language } = useLanguage();
   const { formatMoney, formatNumber } = useShopFormatting();
   const { shopId, profile } = useAuth();
+  const { isMobile } = useAdaptiveLayout();
   const [searchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<string>("staff");
@@ -161,13 +163,13 @@ export default function HRM() {
     setSelectedStaff(s);
     setEditStaff({ ...s });
     setIsAddingStaff(false);
-    setMobileDrawerOpen(true);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleStartAddStaff = () => {
     setIsAddingStaff(true);
     setSelectedStaff(null);
-    setMobileDrawerOpen(true);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleSaveNewStaff = () => {
@@ -674,7 +676,7 @@ export default function HRM() {
           </div>
 
           {/* Mobile Bottom Sheet for Adding / Editing Staff (NO SCROLLING DOWN) */}
-          <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+          <Sheet open={Boolean(isMobile && mobileDrawerOpen)} onOpenChange={setMobileDrawerOpen}>
             <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
               <div className="p-1">
                 {isAddingStaff && renderAddStaffForm()}

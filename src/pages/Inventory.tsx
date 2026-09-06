@@ -48,10 +48,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { playSound } from "@/lib/sounds";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
 export default function Inventory() {
   const { t, language } = useLanguage();
   const { formatMoney, formatNumber } = useShopFormatting();
+  const { isMobile } = useAdaptiveLayout();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") ?? "");
@@ -186,14 +188,14 @@ export default function Inventory() {
     setEditForm({ ...p, category_id: p.category_id || "none" });
     setIsAddingProduct(false);
     setShowBarcodePreview(false);
-    setMobileDrawerOpen(true);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleStartAddProduct = () => {
     setIsAddingProduct(true);
     setSelectedProduct(null);
     setEditForm(null);
-    setMobileDrawerOpen(true);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleCreateProduct = async () => {
@@ -873,7 +875,7 @@ export default function Inventory() {
       </div>
 
       {/* Mobile Bottom Sheet for Adding / Editing Product */}
-      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+      <Sheet open={Boolean(isMobile && mobileDrawerOpen)} onOpenChange={setMobileDrawerOpen}>
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
           <div className="p-1">
             {isAddingProduct && renderAddProductForm()}

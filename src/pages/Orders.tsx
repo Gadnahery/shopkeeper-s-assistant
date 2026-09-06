@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ import {
 import { useProducts } from "@/hooks/useProducts";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { format, startOfDay, endOfDay, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -77,6 +79,8 @@ const PRIORITY_CONFIG: Record<string, { labelEn: string; labelSw: string; badgeC
 export default function Orders() {
   const { t, language } = useLanguage();
   const { formatMoney } = useShopFormatting();
+  const { isMobile } = useAdaptiveLayout();
+  const [searchParams] = useSearchParams();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -87,8 +91,30 @@ export default function Orders() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileOrderPage, setMobileOrderPage] = useState(1);
   const MOBILE_ORDER_PAGE_SIZE = 4;
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(searchParams.get("new") === "true");
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  // Listen to header action
+  useEffect(() => {
+    const handleOpen = () => {
+      setIsCreatingOrder(true);
+      setSelectedOrder(null);
+      setIsConfirmingDelete(false);
+      if (isMobile) setMobileDrawerOpen(true);
+    };
+    window.addEventListener("open-new-order", handleOpen);
+    return () => window.removeEventListener("open-new-order", handleOpen);
+  }, [isMobile]);
+
+  // Sync URL query
+  useEffect(() => {
+    if (searchParams.get("new") === "true") {
+      setIsCreatingOrder(true);
+      setSelectedOrder(null);
+      setIsConfirmingDelete(false);
+      if (isMobile) setMobileDrawerOpen(true);
+    }
+  }, [searchParams, isMobile]);
 
   const [selectedProductId, setSelectedProductId] = useState("");
   const [addQuantity, setAddQuantity] = useState("1");
@@ -203,6 +229,7 @@ export default function Orders() {
       });
       clearOrderDraft();
       setIsCreatingOrder(false);
+      setMobileDrawerOpen(false);
       toast.success(language === "sw" ? "Agizo limetengenezwa kwa mafanikio" : "Order created successfully");
     } catch (e: any) {
       toast.error(e?.message || "Failed to create order");
@@ -450,7 +477,10 @@ export default function Orders() {
                 <div className="flex gap-2 pt-2">
                   <Button
                     variant="outline"
-                    onClick={() => setIsCreatingOrder(false)}
+                    onClick={() => {
+                      setIsCreatingOrder(false);
+                      setMobileDrawerOpen(false);
+                    }}
                     className="h-11 rounded-xl flex-1 text-xs"
                   >
                     {t("common.cancel")}
@@ -458,9 +488,9 @@ export default function Orders() {
                   <Button
                     onClick={handleCreateOrder}
                     disabled={createOrder.isPending || addItems.length === 0}
-                    className="h-11 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 flex-[2]"
+                    className="h-11 rounded-xl bg-neutral-950 text-xs font-bold text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200 flex-[2]"
                   >
-                    {createOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <CheckCircle2 className="h-4 w-4 mr-1.5 text-accent" />}
+                    {createOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <CheckCircle2 className="h-4 w-4 mr-1.5 text-white dark:text-neutral-950" />}
                     <span>{language === "sw" ? "Hifadhi Agizo" : "Save Order"}</span>
                   </Button>
                 </div>
@@ -481,6 +511,7 @@ export default function Orders() {
                   onClick={() => {
                     setSelectedOrder(null);
                     setIsConfirmingDelete(false);
+                    setMobileDrawerOpen(false);
                   }}
                   className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
                 >
@@ -723,11 +754,11 @@ export default function Orders() {
                     setIsCreatingOrder(true);
                     setSelectedOrder(null);
                     setIsConfirmingDelete(false);
-                    setMobileDrawerOpen(true);
+                    if (isMobile) setMobileDrawerOpen(true);
                   }}
-                  className="h-10 gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                  className="h-10 gap-2 rounded-xl bg-neutral-950 px-4 text-xs font-bold text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200"
                 >
-                  <Plus className="h-4 w-4 text-accent" />
+                  <Plus className="h-4 w-4 text-white dark:text-neutral-950" />
                   <span>{language === "sw" ? "+ Ongeza Agizo" : "+ Add Order"}</span>
                 </Button>
               </div>
@@ -798,7 +829,7 @@ export default function Orders() {
                           setSelectedOrder(order);
                           setIsCreatingOrder(false);
                           setIsConfirmingDelete(false);
-                          setMobileDrawerOpen(true);
+                          if (isMobile) setMobileDrawerOpen(true);
                         }}
                         className={cn(
                           "p-3.5 flex items-center justify-between cursor-pointer active:bg-muted/60 transition-colors",
@@ -980,7 +1011,7 @@ export default function Orders() {
       </div>
 
       {/* Mobile Bottom Sheet for Adding / Viewing Orders (lg:hidden) */}
-      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+      <Sheet open={Boolean(isMobile && mobileDrawerOpen)} onOpenChange={setMobileDrawerOpen}>
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
           <div className="p-1 space-y-4">
             {renderOrderPanel()}

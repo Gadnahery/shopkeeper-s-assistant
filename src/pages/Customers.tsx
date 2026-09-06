@@ -48,10 +48,12 @@ import { useSalesByCustomer } from "@/hooks/useSales";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
 export default function Customers() {
   const { t, language } = useLanguage();
   const { formatMoney, formatNumber } = useShopFormatting();
+  const { isMobile } = useAdaptiveLayout();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -127,17 +129,17 @@ export default function Customers() {
 
   const handleSelectCustomer = (c: any) => {
     setSelectedCustomer(c);
-    setEditForm({ ...c });
     setIsAddingCustomer(false);
     setIsEditing(false);
-    setPayAmount("");
-    setMobileDrawerOpen(true);
+    setEditForm(c);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleStartAddCustomer = () => {
     setIsAddingCustomer(true);
     setSelectedCustomer(null);
-    setMobileDrawerOpen(true);
+    setIsEditing(false);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleAddCustomer = async () => {
@@ -692,7 +694,7 @@ export default function Customers() {
       </div>
 
       {/* Mobile Bottom Sheet for Adding / Viewing / Paying Customer */}
-      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+      <Sheet open={Boolean(isMobile && mobileDrawerOpen)} onOpenChange={setMobileDrawerOpen}>
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
           <div className="p-1">
             {isAddingCustomer && renderAddCustomerForm()}

@@ -22,6 +22,7 @@ import {
   PieChart as PieChartIcon,
   Tag,
   BarChart3,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,11 +49,23 @@ import { useExpenses, useCreateExpense, useUpdateExpense, useDeleteExpense, type
 import { useSalesByDateRange } from "@/hooks/useSales";
 import { usePurchases } from "@/hooks/usePurchases";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import Billing from "@/pages/Billing";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 import { useOtherIncome } from "@/hooks/useOtherIncome";
 import { OtherIncomePanel } from "@/components/finance/OtherIncomePanel";
+
+function safeFormatDate(value: any, pattern: string, fallback = "—"): string {
+  if (!value) return fallback;
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return fallback;
+    return format(d, pattern);
+  } catch {
+    return fallback;
+  }
+}
 
 const EXPENSE_CATEGORIES = [
   { value: "rent", labelEn: "Rent / Premises", labelSw: "Kodi ya Pango" },
@@ -69,6 +82,7 @@ export default function Expenses() {
   const { t, language } = useLanguage();
   const { formatMoney, formatNumber } = useShopFormatting();
   const { shopId } = useAuth();
+  const { isMobile } = useAdaptiveLayout();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<string>("expenses");
@@ -121,12 +135,12 @@ export default function Expenses() {
       title: target.title || "",
       category: target.category || "rent",
       amount: String(target.amount || ""),
-      date: target.date || format(new Date(), "yyyy-MM-dd"),
+      date: target.date ? target.date.slice(0, 10) : format(new Date(), "yyyy-MM-dd"),
       notes: target.notes || "",
     });
     setIsEditingExpense(true);
     setIsAddingExpense(false);
-    setMobileDrawerOpen(true);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleUpdateExpense = async () => {
@@ -236,13 +250,15 @@ export default function Expenses() {
   const handleSelectExpense = (e: Expense) => {
     setSelectedExpense(e);
     setIsAddingExpense(false);
-    setMobileDrawerOpen(true);
+    setIsEditingExpense(false);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleStartAddExpense = () => {
     setIsAddingExpense(true);
+    setIsEditingExpense(false);
     setSelectedExpense(null);
-    setMobileDrawerOpen(true);
+    if (isMobile) setMobileDrawerOpen(true);
   };
 
   const handleCreateExpense = async () => {
@@ -548,7 +564,7 @@ export default function Expenses() {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t("expenses.date")}:</span>
               <span className="font-semibold text-foreground">
-                {format(new Date(selectedExpense.date || selectedExpense.created_at || new Date()), "PPP")}
+                {safeFormatDate(selectedExpense.date || selectedExpense.created_at, "PPP")}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -820,7 +836,7 @@ export default function Expenses() {
                                   {exp.title || (language === "sw" ? "Gharama" : "Expense")}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                                  <span>{format(new Date(exp.date || exp.created_at || new Date()), "MMM d")}</span>
+                                  <span>{safeFormatDate(exp.date || exp.created_at, "MMM d")}</span>
                                   <span>•</span>
                                   <span className="badge-neutral text-[10px] px-1.5 py-0">{getCategoryLabel(exp.category || "other")}</span>
                                 </div>
@@ -878,7 +894,7 @@ export default function Expenses() {
                         </TableHeader>
                         <TableBody>
                           {filteredExpenses.map((exp) => {
-                            const isSelected = selectedExpense?.id === exp.id && !isAddingExpense;
+                            const isSelected = selectedExpense?.id === exp.id && !isAddingExpense && !isEditingExpense;
 
                             return (
                               <TableRow
@@ -890,7 +906,7 @@ export default function Expenses() {
                                 )}
                               >
                                 <TableCell className="text-xs font-medium text-foreground">
-                                  {format(new Date(exp.date || exp.created_at || new Date()), "MMM d, yyyy")}
+                                  {safeFormatDate(exp.date || exp.created_at, "MMM d, yyyy")}
                                 </TableCell>
                                 <TableCell className="text-xs font-semibold text-foreground">
                                   {exp.title || (language === "sw" ? "Gharama" : "Expense")}
@@ -918,7 +934,8 @@ export default function Expenses() {
             {/* Desktop Right Column: Inline Detail / Add Panel */}
             <div className="hidden lg:block lg:col-span-5 space-y-4">
               {isAddingExpense && renderAddExpenseForm()}
-              {!isAddingExpense && selectedExpense && renderExpenseDetail()}
+              {isEditingExpense && renderEditExpenseForm()}
+              {!isAddingExpense && !isEditingExpense && selectedExpense && renderExpenseDetail()}
             </div>
           </div>
         </TabsContent>
@@ -934,11 +951,12 @@ export default function Expenses() {
       </Tabs>
 
       {/* Mobile Bottom Sheet for Adding / Viewing Expense */}
-      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+      <Sheet open={Boolean(isMobile && mobileDrawerOpen)} onOpenChange={setMobileDrawerOpen}>
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
           <div className="p-1">
             {isAddingExpense && renderAddExpenseForm()}
-            {!isAddingExpense && selectedExpense && renderExpenseDetail()}
+            {isEditingExpense && renderEditExpenseForm()}
+            {!isAddingExpense && !isEditingExpense && selectedExpense && renderExpenseDetail()}
           </div>
         </SheetContent>
       </Sheet>

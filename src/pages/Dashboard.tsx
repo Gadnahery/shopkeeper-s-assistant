@@ -751,7 +751,7 @@ export default function Dashboard() {
 
       {/* Charts Row (Desktop) */}
       <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {salesListLoading || expensesLoading ? (
+        {salesLoading || expensesLoading ? (
           <>
             <ChartSkeleton />
             <ChartSkeleton />
