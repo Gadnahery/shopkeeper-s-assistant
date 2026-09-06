@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Camera, Loader2, ScanLine, XCircle } from "lucide-react";
+import { Camera, Loader2, ScanLine, Upload, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,33 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
   const [status, setStatus] = useState<"idle" | "starting" | "ready" | "unsupported" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [cameraPermissionState, setCameraPermissionState] = useState<CameraPermissionState>("unknown");
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsProcessingFile(true);
+    setErrorMessage("");
+    try {
+      const { Html5Qrcode } = (await import("html5-qrcode")) as unknown as Html5QrcodeModule;
+      const scanner = new Html5Qrcode(scannerRegionId);
+      const decoded = await scanner.scanFile(file, false);
+      if (decoded) {
+        onDetected(decoded);
+        onOpenChange(false);
+      }
+    } catch {
+      setErrorMessage(
+        language === "sw"
+          ? "Barcode haikutambuliwa kwenye picha hii. Jaribu picha ya karibu zaidi yenye mwanga mzuri."
+          : "No barcode detected in this image. Please take a closer photo with good lighting."
+      );
+    } finally {
+      setIsProcessingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const copy = useMemo(
     () => ({
@@ -88,6 +115,8 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
       hint: language === "sw" ? "Lenga barcode au QR code ndani ya fremu." : "Keep the barcode or QR code inside the frame.",
       allow: language === "sw" ? "Ruhusu kamera" : "Allow camera",
       retry: language === "sw" ? "Jaribu tena" : "Try again",
+      snapPhoto: language === "sw" ? "Piga picha ya barcode" : "Upload / Snap photo",
+      processingPhoto: language === "sw" ? "Inasoma picha..." : "Scanning photo...",
       settingsHelp:
         language === "sw"
           ? "Ikiwa imekataliwa tayari, fungua settings za simu > app/browser > Permissions > Camera, halafu weka Allow."
@@ -391,16 +420,50 @@ export function MobileCameraScanner({ open, onOpenChange, onDetected }: MobileCa
             </div>
           ) : null}
 
-          <div className="mt-4 flex gap-2">
-            <Button variant="outline" className="h-11 flex-1" onClick={() => onOpenChange(false)}>
-              {copy.close}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+
+          <div className="mt-4 flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              disabled={isProcessingFile}
+              className="h-11 flex-1 gap-2 rounded-xl border-border bg-card text-xs font-semibold text-foreground shadow-xs hover:bg-muted"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isProcessingFile ? (
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              <span>{isProcessingFile ? copy.processingPhoto : copy.snapPhoto}</span>
             </Button>
+
             {status !== "ready" && status !== "starting" ? (
-              <Button className="h-11 flex-1 gap-2" onClick={() => void startScanner()}>
+              <Button
+                type="button"
+                className="h-11 flex-1 gap-2 rounded-xl bg-neutral-950 text-xs font-semibold text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950"
+                onClick={() => void startScanner()}
+              >
                 <ScanLine className="h-4 w-4" />
                 {cameraPermissionState === "denied" || cameraPermissionState === "prompt" || cameraPermissionState === "unknown" ? copy.allow : copy.retry}
               </Button>
-            ) : null}
+            ) : (
+              <Button
+                variant="outline"
+                type="button"
+                className="h-11 flex-1 rounded-xl border-border text-xs"
+                onClick={() => onOpenChange(false)}
+              >
+                {copy.close}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

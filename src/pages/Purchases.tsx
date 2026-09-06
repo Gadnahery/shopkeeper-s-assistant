@@ -64,6 +64,7 @@ export default function Purchases() {
   const [searchTerm, setSearchTerm] = useState("");
   const [supplierSearch, setSupplierSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [mobileOrderPage, setMobileOrderPage] = useState(1);
 
   // Inline Master-Detail Panel State (NO POPUPS)
   const [isCreatingPurchase, setIsCreatingPurchase] = useState(searchParams.get("new") === "true");
@@ -179,6 +180,17 @@ export default function Purchases() {
       return matchSearch && matchStatus;
     });
   }, [purchases, searchTerm, statusFilter]);
+
+  const MOBILE_PURCHASE_PAGE_SIZE = 4;
+  const totalMobileOrderPages = Math.ceil(filteredOrders.length / MOBILE_PURCHASE_PAGE_SIZE) || 1;
+  const currentMobileOrders = useMemo(() => {
+    const start = (mobileOrderPage - 1) * MOBILE_PURCHASE_PAGE_SIZE;
+    return filteredOrders.slice(start, start + MOBILE_PURCHASE_PAGE_SIZE);
+  }, [filteredOrders, mobileOrderPage]);
+
+  useEffect(() => {
+    setMobileOrderPage(1);
+  }, [searchTerm, statusFilter]);
 
   // Filtered Suppliers
   const filteredSuppliers = useMemo(() => {
@@ -505,10 +517,84 @@ export default function Purchases() {
 
               {/* TAB 1: PURCHASE ORDERS */}
               <TabsContent value="orders" className="m-0 p-0">
-                <div className="internal-table-scroll w-full">
+                {/* Mobile View: 4 Compact Cards with Prev/Next Pagination */}
+                <div className="md:hidden">
+                  <div className="divide-y divide-border/60">
+                    {currentMobileOrders.length > 0 ? (
+                      currentMobileOrders.map((order) => {
+                        const isSelected = selectedOrder?.id === order.id && !isCreatingPurchase && !isEditingPurchase;
+                        return (
+                          <div
+                            key={order.id}
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setIsCreatingPurchase(false);
+                              setIsEditingPurchase(false);
+                              setIsConfirmingDelete(false);
+                            }}
+                            className={cn(
+                              "p-3.5 flex items-center justify-between cursor-pointer active:bg-muted/60 transition-colors",
+                              isSelected ? "bg-accent/10" : ""
+                            )}
+                          >
+                            <div className="min-w-0 flex-1 pr-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-xs text-foreground">PO-{order.id.slice(0, 6).toUpperCase()}</span>
+                                {getStatusBadge(order.status)}
+                              </div>
+                              <p className="text-[11px] font-medium text-foreground/90 mt-0.5 truncate">
+                                {order.supplier_name || <span className="text-muted-foreground italic">Direct / Walk-in</span>}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                {format(new Date(order.created_at), "dd MMM yyyy")} • {order.items_count} {language === "sw" ? "bidhaa" : "items"}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0 flex items-center gap-2">
+                              <span className="font-bold text-xs text-foreground">{formatMoney(order.total_amount)}</span>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="py-12 text-center text-xs text-muted-foreground">
+                        {language === "sw" ? "Hakuna manunuzi yaliyopatikana." : "No purchase orders found."}
+                      </div>
+                    )}
+                  </div>
+
+                  {totalMobileOrderPages > 1 && (
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-border/60 bg-muted/20 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileOrderPage <= 1}
+                        onClick={() => setMobileOrderPage((p) => Math.max(1, p - 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Iliyopita" : "Previous"}
+                      </Button>
+                      <span className="text-[11px] text-muted-foreground font-semibold">
+                        {mobileOrderPage} / {totalMobileOrderPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileOrderPage >= totalMobileOrderPages}
+                        onClick={() => setMobileOrderPage((p) => Math.min(totalMobileOrderPages, p + 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Inayofuata" : "Next"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop View: Full Master Table */}
+                <div className="hidden md:block internal-table-scroll w-full">
                   <Table className="min-w-[650px] w-full">
                     <TableHeader>
-                      <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
+                      <TableRow className="bg-muted/40 text-[11px] uppercase">
                         <TableHead className="font-semibold">{language === "sw" ? "Namba / Tarehe" : "PO / Date"}</TableHead>
                         <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
                         <TableHead className="text-center font-semibold">{t("purchases.items")}</TableHead>
@@ -566,7 +652,7 @@ export default function Purchases() {
                 <div className="internal-table-scroll w-full">
                   <Table className="min-w-[650px] w-full">
                     <TableHeader>
-                      <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
+                      <TableRow className="bg-muted/40 text-[11px] uppercase">
                         <TableHead className="font-semibold">{t("purchases.supplier")}</TableHead>
                         <TableHead className="font-semibold">{language === "sw" ? "Mawasiliano" : "Contact"}</TableHead>
                         <TableHead className="font-semibold">{language === "sw" ? "Simu" : "Phone"}</TableHead>

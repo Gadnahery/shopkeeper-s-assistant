@@ -22,6 +22,7 @@ export default function Appointments() {
   const { language } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(todayKey());
+  const [mobilePage, setMobilePage] = useState(1);
   const [form, setForm] = useState({
     customerId: "walk-in",
     customerName: "",
@@ -91,31 +92,99 @@ export default function Appointments() {
                   <p className="mt-1 text-xs text-muted-foreground">{language === "sw" ? "Ongeza miadi ya kwanza kwa siku hii." : "Book the first appointment for this day."}</p>
                   <Button variant="outline" onClick={openForm} className="mt-4 rounded-xl">{language === "sw" ? "Ongeza miadi" : "Add appointment"}</Button>
                 </div>
-              ) : appointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
-                  <div className="w-14 shrink-0 text-center text-xs font-semibold text-muted-foreground">
-                    {new Date(appointment.appointment_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              ) : (
+                <>
+                  {/* Mobile 4-Item List */}
+                  <div className="space-y-3 md:hidden">
+                    {appointments.slice((mobilePage - 1) * 4, mobilePage * 4).map((appointment) => (
+                      <div key={appointment.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3.5 shadow-xs">
+                        <div className="w-12 shrink-0 text-center text-xs font-bold text-foreground">
+                          {new Date(appointment.appointment_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                        <div className="min-w-0 flex-1 border-l border-border pl-3">
+                          <div className="flex flex-wrap items-center justify-between gap-1.5">
+                            <p className="font-semibold text-xs text-foreground truncate">{appointment.customer_name}</p>
+                            <span className={appointment.status === "completed" ? "badge-success text-[10px]" : "badge-warning text-[10px]"}>
+                              {appointment.status}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-xs text-muted-foreground truncate">{appointment.service_name}</p>
+                          <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                            <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{appointment.duration_minutes}m</span>
+                            {appointment.staff_name && <span className="inline-flex items-center gap-1"><UserRound className="h-3 w-3" />{appointment.staff_name}</span>}
+                          </div>
+                        </div>
+                        {appointment.status !== "completed" && appointment.status !== "cancelled" && (
+                          <Button size="icon" variant="outline" aria-label="Mark appointment completed" onClick={() => updateAppointment.mutate({ id: appointment.id, status: "completed" })} className="h-8 w-8 rounded-xl shrink-0">
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Mobile Pagination Footer */}
+                    {appointments.length > 4 && (
+                      <div className="flex items-center justify-between pt-2 border-t border-border/70 text-xs">
+                        <span className="text-muted-foreground">
+                          {Math.min((mobilePage - 1) * 4 + 1, appointments.length)}–{Math.min(mobilePage * 4, appointments.length)} / {appointments.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={mobilePage === 1}
+                            onClick={() => setMobilePage((p) => Math.max(1, p - 1))}
+                            className="h-7 px-2 text-xs rounded-lg"
+                          >
+                            Prev
+                          </Button>
+                          <span className="px-1.5 font-medium text-foreground">
+                            {mobilePage} / {Math.ceil(appointments.length / 4)}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={mobilePage >= Math.ceil(appointments.length / 4)}
+                            onClick={() => setMobilePage((p) => Math.min(Math.ceil(appointments.length / 4), p + 1))}
+                            className="h-7 px-2 text-xs rounded-lg"
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="min-w-0 flex-1 border-l border-border pl-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-foreground">{appointment.customer_name}</p>
-                      <span className={appointment.status === "completed" ? "badge-success" : "badge-warning"}>
-                        {appointment.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{appointment.service_name}</p>
-                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{appointment.duration_minutes} min</span>
-                      {appointment.staff_name && <span className="inline-flex items-center gap-1"><UserRound className="h-3.5 w-3.5" />{appointment.staff_name}</span>}
-                    </div>
+
+                  {/* Desktop Full List */}
+                  <div className="hidden md:block space-y-3">
+                    {appointments.map((appointment) => (
+                      <div key={appointment.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+                        <div className="w-14 shrink-0 text-center text-xs font-semibold text-muted-foreground">
+                          {new Date(appointment.appointment_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                        <div className="min-w-0 flex-1 border-l border-border pl-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-foreground">{appointment.customer_name}</p>
+                            <span className={appointment.status === "completed" ? "badge-success" : "badge-warning"}>
+                              {appointment.status}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">{appointment.service_name}</p>
+                          <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{appointment.duration_minutes} min</span>
+                            {appointment.staff_name && <span className="inline-flex items-center gap-1"><UserRound className="h-3.5 w-3.5" />{appointment.staff_name}</span>}
+                          </div>
+                        </div>
+                        {appointment.status !== "completed" && appointment.status !== "cancelled" && (
+                          <Button size="icon" variant="outline" aria-label="Mark appointment completed" onClick={() => updateAppointment.mutate({ id: appointment.id, status: "completed" })} className="h-9 w-9 rounded-xl">
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  {appointment.status !== "completed" && appointment.status !== "cancelled" && (
-                    <Button size="icon" variant="outline" aria-label="Mark appointment completed" onClick={() => updateAppointment.mutate({ id: appointment.id, status: "completed" })} className="h-9 w-9 rounded-xl">
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                </>
+              )}
             </CardContent>
           </Card>
         </section>

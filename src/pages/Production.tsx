@@ -424,7 +424,7 @@ export default function Production() {
             <div className="internal-table-scroll w-full">
               <Table className="min-w-[650px] w-full">
                 <TableHeader>
-                  <TableRow className="bg-[#f9fafb] text-[11px] uppercase">
+                  <TableRow className="bg-muted/40 text-[11px] uppercase">
                     <TableHead className="font-semibold">{t("production.batchNumber")}</TableHead>
                     <TableHead className="font-semibold">{t("production.outputProduct")}</TableHead>
                     <TableHead className="text-center font-semibold">{language === "sw" ? "Lengo / Matokeo" : "Target / Yield"}</TableHead>

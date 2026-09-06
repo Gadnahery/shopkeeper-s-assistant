@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useLowStockProducts } from "@/hooks/useProducts";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import {
@@ -28,6 +29,8 @@ export function Header() {
   const { t, language } = useLanguage();
   const { isMobile } = useAdaptiveLayout();
   const { unreadCount } = useNotifications();
+  const { data: lowStock } = useLowStockProducts();
+  const hasAlerts = (unreadCount > 0) || ((lowStock?.length ?? 0) > 0);
   const { formatDate } = useShopFormatting();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("today");
 
@@ -249,7 +252,7 @@ export function Header() {
           title={t("nav.notifications")}
         >
           <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
+          {hasAlerts && (
             <span className="absolute right-1.5 top-1.5 flex h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
           )}
         </Button>

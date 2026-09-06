@@ -58,6 +58,7 @@ export default function Inventory() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [stockFilter, setStockFilter] = useState<"all" | "in-stock" | "low" | "out">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mobileProductPage, setMobileProductPage] = useState(1);
 
   // Inline Master-Detail Panel State (NO POPUPS)
   const [isAddingProduct, setIsAddingProduct] = useState(searchParams.get("new") === "true");
@@ -135,6 +136,17 @@ export default function Inventory() {
       return matchesSearch && matchesCategory && matchesStock;
     });
   }, [products, searchTerm, categoryFilter, stockFilter]);
+
+  const MOBILE_PRODUCT_PAGE_SIZE = 4;
+  const totalMobileProductPages = Math.ceil(filteredProducts.length / MOBILE_PRODUCT_PAGE_SIZE) || 1;
+  const currentMobileProducts = useMemo(() => {
+    const start = (mobileProductPage - 1) * MOBILE_PRODUCT_PAGE_SIZE;
+    return filteredProducts.slice(start, start + MOBILE_PRODUCT_PAGE_SIZE);
+  }, [filteredProducts, mobileProductPage]);
+
+  useEffect(() => {
+    setMobileProductPage(1);
+  }, [searchTerm, categoryFilter, stockFilter]);
 
   const totalStockValue = useMemo(() => {
     return (products || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0), 0);
@@ -706,50 +718,78 @@ export default function Inventory() {
               </div>
             ) : (
               <>
-                {/* Mobile View: Touch-Friendly Compact List */}
-                <div className="divide-y divide-border/60 md:hidden">
-                  {filteredProducts.map((p) => {
-                    const isSelected = selectedProduct?.id === p.id && !isAddingProduct;
-                    const alertLimit = p.low_stock_alert ?? 5;
-                    const tracksInventory = p.track_inventory !== false;
-                    const isLow = tracksInventory && p.stock > 0 && p.stock <= alertLimit;
-                    const isOut = tracksInventory && p.stock <= 0;
+                {/* Mobile View: 4 Compact Cards per page */}
+                <div className="md:hidden">
+                  <div className="divide-y divide-border/60">
+                    {currentMobileProducts.map((p) => {
+                      const isSelected = selectedProduct?.id === p.id && !isAddingProduct;
+                      const alertLimit = p.low_stock_alert ?? 5;
+                      const tracksInventory = p.track_inventory !== false;
+                      const isLow = tracksInventory && p.stock > 0 && p.stock <= alertLimit;
+                      const isOut = tracksInventory && p.stock <= 0;
 
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => handleSelectProduct(p)}
-                        className={cn(
-                          "flex items-center justify-between p-3.5 transition-colors active:bg-muted/60 cursor-pointer",
-                          isSelected ? "bg-accent/10" : ""
-                        )}
-                      >
-                        <div className="min-w-0 flex-1 pr-3">
-                          <p className="font-semibold text-xs text-foreground truncate">{p.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                            <span>{p.barcode || p.sku || "PROD"}</span>
-                            <span>•</span>
-                            <span className="font-bold text-foreground">{formatMoney(p.selling_price)}</span>
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => handleSelectProduct(p)}
+                          className={cn(
+                            "flex items-center justify-between p-3.5 transition-colors active:bg-muted/60 cursor-pointer",
+                            isSelected ? "bg-accent/10" : ""
+                          )}
+                        >
+                          <div className="min-w-0 flex-1 pr-3">
+                            <p className="font-semibold text-xs text-foreground truncate">{p.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                              <span>{p.barcode || p.sku || "PROD"}</span>
+                              <span>•</span>
+                              <span className="font-bold text-foreground">{formatMoney(p.selling_price)}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {tracksInventory ? (
+                              isOut ? (
+                                <span className="badge-danger text-[10px] px-2 py-0.5">{language === "sw" ? "Imeisha" : "Out"}</span>
+                              ) : isLow ? (
+                                <span className="badge-warning text-[10px] px-2 py-0.5">{p.stock} pcs</span>
+                              ) : (
+                                <span className="badge-success text-[10px] px-2 py-0.5">{p.stock} pcs</span>
+                              )
+                            ) : (
+                              <span className="badge-neutral text-[10px] px-2 py-0.5">{language === "sw" ? "Huduma" : "Service"}</span>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {tracksInventory ? (
-                            isOut ? (
-                              <span className="badge-danger text-[10px] px-2 py-0.5">{language === "sw" ? "Imeisha" : "Out"}</span>
-                            ) : isLow ? (
-                              <span className="badge-warning text-[10px] px-2 py-0.5">{p.stock} pcs</span>
-                            ) : (
-                              <span className="badge-success text-[10px] px-2 py-0.5">{p.stock} pcs</span>
-                            )
-                          ) : (
-                            <span className="badge-neutral text-[10px] px-2 py-0.5">{language === "sw" ? "Huduma" : "Service"}</span>
-                          )}
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {totalMobileProductPages > 1 && (
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-border/60 bg-muted/20 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileProductPage <= 1}
+                        onClick={() => setMobileProductPage((p) => Math.max(1, p - 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Iliyopita" : "Previous"}
+                      </Button>
+                      <span className="text-[11px] text-muted-foreground font-semibold">
+                        {mobileProductPage} / {totalMobileProductPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileProductPage >= totalMobileProductPages}
+                        onClick={() => setMobileProductPage((p) => Math.min(totalMobileProductPages, p + 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Inayofuata" : "Next"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Desktop View: Full Table */}

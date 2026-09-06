@@ -400,7 +400,7 @@ export default function Orders() {
             <div className="internal-table-scroll w-full">
               <Table className="min-w-[650px] w-full">
                 <TableHeader>
-                  <TableRow className="bg-[#f9fafb] text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <TableRow className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
                     <TableHead className="font-semibold">{language === "sw" ? "AGIZO" : "ORDER ID"}</TableHead>
                     <TableHead className="font-semibold">{language === "sw" ? "MTEJA" : "CUSTOMER"}</TableHead>
                     <TableHead className="text-right font-semibold">{language === "sw" ? "JUMLA" : "TOTAL"}</TableHead>

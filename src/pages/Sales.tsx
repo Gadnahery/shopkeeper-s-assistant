@@ -130,7 +130,8 @@ export default function Sales() {
   });
 
   const addToCart = (product: any) => {
-    const trackInventory = product.track_inventory !== false;
+    const isService = product.item_type === "service" || product.track_inventory === false;
+    const trackInventory = !isService;
     if (trackInventory && product.stock <= 0) {
       toast.error(language === "sw" ? "Bidhaa hii haina stoki" : "This product is out of stock");
       return;
@@ -332,7 +333,7 @@ export default function Sales() {
         price: Number(it.unit_price || 0),
         quantity: Number(it.quantity || 1),
         maxStock: prod?.stock || 999,
-        trackInventory: prod?.track_inventory !== false,
+        trackInventory: prod?.item_type !== "service" && prod?.track_inventory !== false,
       };
     });
     setCartItems(items);
@@ -655,10 +656,10 @@ export default function Sales() {
               </div>
             ) : (
               filteredProducts.slice(0, 30).map((product) => {
-                const trackInventory = product.track_inventory !== false;
+                const isService = product.item_type === "service" || product.track_inventory === false;
+                const trackInventory = !isService;
                 const isOut = trackInventory && product.stock <= 0;
                 const isLow = trackInventory && product.stock > 0 && product.stock <= (product.low_stock_alert ?? 5);
-                const isService = !trackInventory;
                 return (
                   <button
                     key={product.id}

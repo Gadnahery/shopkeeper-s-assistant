@@ -12,6 +12,7 @@ import { Loader2, WifiOff } from "lucide-react";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { getShellMeta } from "./app-navigation";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,7 +82,9 @@ function LayoutContent() {
             transition={{ duration: 0.15 }}
             className="mx-auto min-h-[200px] w-full min-w-0 max-w-[1480px] overflow-x-clip"
           >
-            <Outlet />
+            <ErrorBoundary variant="contained" resetKey={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
           </motion.div>
         </main>
       </div>

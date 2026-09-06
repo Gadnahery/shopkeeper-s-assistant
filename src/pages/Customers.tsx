@@ -55,6 +55,7 @@ export default function Customers() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [mobileCustomerPage, setMobileCustomerPage] = useState(1);
 
   // Inline Master-Detail Panel State (NO POPUPS)
   const [isAddingCustomer, setIsAddingCustomer] = useState(searchParams.get("new") === "true");
@@ -107,6 +108,17 @@ export default function Customers() {
         (c.phone && c.phone.includes(searchTerm)) ||
         ((c as any).email && (c as any).email.toLowerCase().includes(searchTerm.toLowerCase())),
     ) ?? [];
+
+  const MOBILE_CUSTOMER_PAGE_SIZE = 4;
+  const totalMobileCustomerPages = Math.ceil(filteredCustomers.length / MOBILE_CUSTOMER_PAGE_SIZE) || 1;
+  const currentMobileCustomers = useMemo(() => {
+    const start = (mobileCustomerPage - 1) * MOBILE_CUSTOMER_PAGE_SIZE;
+    return filteredCustomers.slice(start, start + MOBILE_CUSTOMER_PAGE_SIZE);
+  }, [filteredCustomers, mobileCustomerPage]);
+
+  useEffect(() => {
+    setMobileCustomerPage(1);
+  }, [searchTerm]);
 
   const totalCredit = filteredCustomers.reduce((sum, c) => sum + Number(c.credit_balance || 0), 0);
   const creditCount = filteredCustomers.filter((c) => Number(c.credit_balance) > 0).length;
@@ -545,43 +557,71 @@ export default function Customers() {
               </div>
             ) : (
               <>
-                {/* Mobile View: Clean Touch Rows */}
-                <div className="divide-y divide-border/60 md:hidden">
-                  {filteredCustomers.map((c) => {
-                    const isSelected = selectedCustomer?.id === c.id && !isAddingCustomer;
-                    const hasDebt = Number(c.credit_balance) > 0;
+                {/* Mobile View: 4 Compact Cards per page */}
+                <div className="md:hidden">
+                  <div className="divide-y divide-border/60">
+                    {currentMobileCustomers.map((c) => {
+                      const isSelected = selectedCustomer?.id === c.id && !isAddingCustomer;
+                      const hasDebt = Number(c.credit_balance) > 0;
 
-                    return (
-                      <div
-                        key={c.id}
-                        onClick={() => handleSelectCustomer(c)}
-                        className={cn(
-                          "flex items-center justify-between p-3.5 transition-colors active:bg-muted/60 cursor-pointer",
-                          isSelected ? "bg-accent/10" : ""
-                        )}
-                      >
-                        <div className="min-w-0 flex-1 pr-3">
-                          <p className="font-semibold text-xs text-foreground truncate">{c.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                            <span>{c.phone || (language === "sw" ? "Bila simu" : "No phone")}</span>
-                            <span>•</span>
-                            <span className="badge-neutral text-[10px] px-1.5 py-0">{c.customer_type || "Retail"}</span>
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => handleSelectCustomer(c)}
+                          className={cn(
+                            "flex items-center justify-between p-3.5 transition-colors active:bg-muted/60 cursor-pointer",
+                            isSelected ? "bg-accent/10" : ""
+                          )}
+                        >
+                          <div className="min-w-0 flex-1 pr-3">
+                            <p className="font-semibold text-xs text-foreground truncate">{c.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                              <span>{c.phone || (language === "sw" ? "Bila simu" : "No phone")}</span>
+                              <span>•</span>
+                              <span className="badge-neutral text-[10px] px-1.5 py-0">{c.customer_type || "Retail"}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {hasDebt ? (
+                              <span className="badge-danger font-bold text-[11px] px-2 py-0.5">
+                                {formatMoney(c.credit_balance)}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground">{formatMoney(0)}</span>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {hasDebt ? (
-                            <span className="badge-danger font-bold text-[11px] px-2 py-0.5">
-                              {formatMoney(c.credit_balance)}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-muted-foreground">{formatMoney(0)}</span>
-                          )}
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {totalMobileCustomerPages > 1 && (
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-border/60 bg-muted/20 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileCustomerPage <= 1}
+                        onClick={() => setMobileCustomerPage((p) => Math.max(1, p - 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Iliyopita" : "Previous"}
+                      </Button>
+                      <span className="text-[11px] text-muted-foreground font-semibold">
+                        {mobileCustomerPage} / {totalMobileCustomerPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={mobileCustomerPage >= totalMobileCustomerPages}
+                        onClick={() => setMobileCustomerPage((p) => Math.min(totalMobileCustomerPages, p + 1))}
+                        className="h-7 px-2.5 text-[11px]"
+                      >
+                        {language === "sw" ? "Inayofuata" : "Next"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Desktop View: Full Master Table */}
