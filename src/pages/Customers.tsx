@@ -97,17 +97,15 @@ export default function Customers() {
     }
   }, [customers]);
 
-  if (customers === undefined || isLoading) {
-    return <PageLoader message="Loading customers..." messageSw="Inapakia wateja..." language={language} />;
-  }
-
-  const filteredCustomers =
-    customers?.filter(
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return [];
+    return customers.filter(
       (c) =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.phone && c.phone.includes(searchTerm)) ||
         ((c as any).email && (c as any).email.toLowerCase().includes(searchTerm.toLowerCase())),
-    ) ?? [];
+    );
+  }, [customers, searchTerm]);
 
   const MOBILE_CUSTOMER_PAGE_SIZE = 4;
   const totalMobileCustomerPages = Math.ceil(filteredCustomers.length / MOBILE_CUSTOMER_PAGE_SIZE) || 1;
@@ -122,6 +120,10 @@ export default function Customers() {
 
   const totalCredit = filteredCustomers.reduce((sum, c) => sum + Number(c.credit_balance || 0), 0);
   const creditCount = filteredCustomers.filter((c) => Number(c.credit_balance) > 0).length;
+
+  if (customers === undefined || isLoading) {
+    return <PageLoader message="Loading customers..." messageSw="Inapakia wateja..." language={language} />;
+  }
 
   const handleSelectCustomer = (c: any) => {
     setSelectedCustomer(c);
