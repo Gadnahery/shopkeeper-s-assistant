@@ -55,6 +55,8 @@ export default function AddProduct() {
     selling_price: "",
     stock: "",
     low_stock_alert: "5",
+    item_type: "product",
+    duration_minutes: "",
   };
   const [formData, setFormData, clearProductDraft] = useDraftForm("add-product", initialProductForm);
 
@@ -72,6 +74,8 @@ export default function AddProduct() {
     e.preventDefault();
     await createProduct.mutateAsync({
       name: formData.name,
+      item_type: formData.item_type,
+      description: null,
       category_id: formData.category_id || null,
       barcode: formData.barcode || generateCode(),
       image_url: formData.image_url || null,
@@ -80,6 +84,10 @@ export default function AddProduct() {
       selling_price: parseFloat(formData.selling_price) || 0,
       stock: parseInt(formData.stock) || 0,
       low_stock_alert: parseInt(formData.low_stock_alert) || 5,
+      track_inventory: formData.item_type === "product",
+      duration_minutes: formData.item_type === "service" && formData.duration_minutes
+        ? parseInt(formData.duration_minutes)
+        : null,
       shop_id: shopId!,
     });
     clearProductDraft();
@@ -210,6 +218,20 @@ export default function AddProduct() {
               </div>
 
               <div>
+                <Label>{language === "sw" ? "Aina ya bidhaa" : "Catalog item type"}</Label>
+                <Select
+                  value={formData.item_type}
+                  onValueChange={(value) => setFormData({ ...formData, item_type: value, stock: value === "service" ? "0" : formData.stock })}
+                >
+                  <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="product">{language === "sw" ? "Bidhaa" : "Product"}</SelectItem>
+                    <SelectItem value="service">{language === "sw" ? "Huduma" : "Service"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label>{t("addProduct.category")}</Label>
                 <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                   <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
@@ -244,13 +266,13 @@ export default function AddProduct() {
                 </div>
 
                 <div>
-                  <Label>{t("addProduct.initialStock")}</Label>
+                  <Label>{formData.item_type === "service" ? (language === "sw" ? "Muda (dakika)" : "Duration (minutes)") : t("addProduct.initialStock")}</Label>
                   <Input
                     type="number"
-                    placeholder="0"
+                    placeholder={formData.item_type === "service" ? "30" : "0"}
                     className="mt-2"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    value={formData.item_type === "service" ? formData.duration_minutes : formData.stock}
+                    onChange={(e) => setFormData({ ...formData, [formData.item_type === "service" ? "duration_minutes" : "stock"]: e.target.value })}
                   />
                 </div>
               </div>

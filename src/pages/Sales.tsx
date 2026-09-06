@@ -62,6 +62,7 @@ interface CartItem {
   price: number;
   quantity: number;
   maxStock: number;
+  trackInventory: boolean;
 }
 
 export default function Sales() {
@@ -121,7 +122,8 @@ export default function Sales() {
   });
 
   const addToCart = (product: any) => {
-    if (product.stock <= 0) {
+    const trackInventory = product.track_inventory !== false;
+    if (trackInventory && product.stock <= 0) {
       toast.error(language === "sw" ? "Bidhaa hii haina stoki" : "This product is out of stock");
       return;
     }
@@ -129,7 +131,7 @@ export default function Sales() {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product_id === product.id);
       if (existing) {
-        if (existing.quantity >= product.stock) {
+        if (trackInventory && existing.quantity >= product.stock) {
           toast.warning(language === "sw" ? "Ukomo wa stoki umefikiwa" : "Stock limit reached");
           return prev;
         }
@@ -145,7 +147,8 @@ export default function Sales() {
           name: language === "sw" && product.name_sw ? product.name_sw : product.name,
           price: Number(product.selling_price) || 0,
           quantity: 1,
-          maxStock: product.stock,
+          maxStock: trackInventory ? product.stock : Number.POSITIVE_INFINITY,
+          trackInventory,
         },
       ];
     });
@@ -160,7 +163,7 @@ export default function Sales() {
     setCartItems((prev) =>
       prev.map((item) => {
         if (item.product_id === productId) {
-          if (qty > item.maxStock) {
+          if (item.trackInventory && qty > item.maxStock) {
             toast.warning(language === "sw" ? "Ukomo wa stoki umefikiwa" : "Stock limit reached");
             return { ...item, quantity: item.maxStock };
           }
@@ -319,6 +322,7 @@ export default function Sales() {
         price: Number(it.unit_price || 0),
         quantity: Number(it.quantity || 1),
         maxStock: prod?.stock || 999,
+        trackInventory: prod?.track_inventory !== false,
       };
     });
     setCartItems(items);
@@ -400,7 +404,8 @@ export default function Sales() {
               </div>
             ) : (
               filteredProducts.slice(0, 30).map((product) => {
-                const isOut = product.stock <= 0;
+                const trackInventory = product.track_inventory !== false;
+                const isOut = trackInventory && product.stock <= 0;
                 return (
                   <button
                     key={product.id}
@@ -419,12 +424,12 @@ export default function Sales() {
                             "rounded-full px-2 py-0.5 text-[10px] font-bold",
                             isOut
                               ? "bg-[var(--danger-bg)] text-[var(--danger-text)]"
-                              : product.stock <= (product.low_stock_alert ?? 5)
+                              : trackInventory && product.stock <= (product.low_stock_alert ?? 5)
                               ? "bg-[var(--warning-bg)] text-[var(--warning-text)]"
                               : "bg-muted text-muted-foreground",
                           )}
                         >
-                          {product.stock} left
+                          {trackInventory ? `${product.stock} left` : language === "sw" ? "Huduma" : "Service"}
                         </span>
                       </div>
                       <p className="mt-1.5 text-xs font-bold text-foreground line-clamp-2">

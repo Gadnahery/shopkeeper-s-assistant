@@ -126,9 +126,9 @@ export default function Inventory() {
       const alertLimit = p.low_stock_alert ?? 5;
       const matchesStock =
         stockFilter === "all" ||
-        (stockFilter === "in-stock" && p.stock > alertLimit) ||
-        (stockFilter === "low" && p.stock > 0 && p.stock <= alertLimit) ||
-        (stockFilter === "out" && p.stock <= 0);
+        (stockFilter === "in-stock" && (p.track_inventory === false || p.stock > alertLimit)) ||
+        (stockFilter === "low" && p.track_inventory !== false && p.stock > 0 && p.stock <= alertLimit) ||
+        (stockFilter === "out" && p.track_inventory !== false && p.stock <= 0);
 
       return matchesSearch && matchesCategory && matchesStock;
     });
@@ -139,11 +139,11 @@ export default function Inventory() {
   }, [products]);
 
   const lowStockCount = useMemo(() => {
-    return (products || []).filter((p) => p.stock > 0 && p.stock <= (p.low_stock_alert ?? 5)).length;
+    return (products || []).filter((p) => p.track_inventory !== false && p.stock > 0 && p.stock <= (p.low_stock_alert ?? 5)).length;
   }, [products]);
 
   const outOfStockCount = useMemo(() => {
-    return (products || []).filter((p) => p.stock <= 0).length;
+    return (products || []).filter((p) => p.track_inventory !== false && p.stock <= 0).length;
   }, [products]);
 
   if (products === undefined || isLoading) {
@@ -422,8 +422,9 @@ export default function Inventory() {
                     {filteredProducts.map((p) => {
                       const isSelected = selectedProduct?.id === p.id && !isAddingProduct;
                       const alertLimit = p.low_stock_alert ?? 5;
-                      const isLow = p.stock > 0 && p.stock <= alertLimit;
-                      const isOut = p.stock <= 0;
+                      const tracksInventory = p.track_inventory !== false;
+                      const isLow = tracksInventory && p.stock > 0 && p.stock <= alertLimit;
+                      const isOut = tracksInventory && p.stock <= 0;
 
                       return (
                         <TableRow
@@ -456,7 +457,7 @@ export default function Inventory() {
                                   : "bg-[var(--success-bg)] text-[var(--success-text)]",
                               )}
                             >
-                              {p.stock} pcs
+                              {tracksInventory ? `${p.stock} pcs` : language === "sw" ? "Huduma" : "Service"}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">

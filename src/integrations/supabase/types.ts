@@ -947,50 +947,68 @@ export type Database = {
       }
       products: {
         Row: {
+          allow_discount: boolean
           barcode: string | null
           buying_price: number | null
           category_id: string | null
           created_at: string | null
+          description: string | null
+          duration_minutes: number | null
           id: string
           image_url: string | null
+          item_type: string
           low_stock_alert: number | null
           name: string
           selling_price: number
           shop_id: string
           sku: string | null
           stock: number
+          tax_profile: string | null
+          track_inventory: boolean
           unit: string | null
           updated_at: string | null
         }
         Insert: {
+          allow_discount?: boolean
           barcode?: string | null
           buying_price?: number | null
           category_id?: string | null
           created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
           id?: string
           image_url?: string | null
+          item_type?: string
           low_stock_alert?: number | null
           name: string
           selling_price: number
           shop_id: string
           sku?: string | null
           stock?: number
+          tax_profile?: string | null
+          track_inventory?: boolean
           unit?: string | null
           updated_at?: string | null
         }
         Update: {
+          allow_discount?: boolean
           barcode?: string | null
           buying_price?: number | null
           category_id?: string | null
           created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
           id?: string
           image_url?: string | null
+          item_type?: string
           low_stock_alert?: number | null
           name?: string
           selling_price?: number
           shop_id?: string
           sku?: string | null
           stock?: number
+          tax_profile?: string | null
+          track_inventory?: boolean
           unit?: string | null
           updated_at?: string | null
         }
