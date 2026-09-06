@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ArrowLeft,
@@ -391,41 +391,45 @@ export default function AddProduct() {
         </Card>
       </form>
 
-      <Dialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
-        <DialogContent className="rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>{language === "sw" ? "Ongeza Kategoria Mpya" : "Add New Category"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>{language === "sw" ? "Jina" : "Name"}</Label>
+      {/* Inventory-style Bottom Sheet for Adding Category */}
+      <Sheet open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-4 border-t border-border bg-card">
+          <SheetHeader className="pb-3 border-b border-border">
+            <SheetTitle className="text-sm font-bold">{language === "sw" ? "Ongeza Kategoria Mpya" : "Add New Category"}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pt-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">{language === "sw" ? "Jina" : "Name"} *</Label>
               <Input
                 value={categoryForm.name}
                 onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value, name_sw: e.target.value })}
                 placeholder={language === "sw" ? "Jina la kategoria" : "Category name"}
-                className="rounded-xl"
+                className="h-9 rounded-xl border-border text-xs"
               />
             </div>
-            <div className="space-y-2">
-              <Label>{language === "sw" ? "Maelezo" : "Description"}</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">{language === "sw" ? "Maelezo" : "Description"}</Label>
               <Input
                 value={categoryForm.description}
                 onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                 placeholder={language === "sw" ? "Si lazima" : "Optional"}
-                className="rounded-xl"
+                className="h-9 rounded-xl border-border text-xs"
               />
             </div>
-            <Button
-              type="button"
-              className="w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all"
-              onClick={handleAddCategory}
-              disabled={!categoryForm.name.trim() || createCategory.isPending}
-            >
-              {createCategory.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.save")}
-            </Button>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button type="button" variant="outline" onClick={() => setAddCategoryOpen(false)} className="h-9 rounded-xl text-xs">{t("common.cancel")}</Button>
+              <Button
+                type="button"
+                className="h-9 gap-1.5 rounded-xl bg-neutral-950 font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 text-xs px-4 transition-all"
+                onClick={handleAddCategory}
+                disabled={!categoryForm.name.trim() || createCategory.isPending}
+              >
+                {createCategory.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t("common.save")}
+              </Button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </motion.div>
   );
 }
