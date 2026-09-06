@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSalesSummaryByRange, useSalesByDateRange } from "@/hooks/useSales";
+import { useSales } from "@/hooks/useSales";
 import { usePurchases } from "@/hooks/usePurchases";
 import { useProductionBatches } from "@/hooks/useProduction";
 import { useExpenses } from "@/hooks/useExpenses";
@@ -43,7 +43,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { cn } from "@/lib/utils";
 
-type Period = "today" | "week" | "month" | "year";
+type Period = "today" | "week" | "month" | "year" | "all";
 
 function StatCardSkeleton() {
   return (
@@ -135,6 +135,7 @@ const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
   week: { en: "This week", sw: "Wiki hii" },
   month: { en: "This month", sw: "Mwezi huu" },
   year: { en: "This year", sw: "Mwaka huu" },
+  all: { en: "All time", sw: "Muda wote" },
 };
 
 function getPeriodDates(period: Period): { start: string; end: string } {
@@ -145,6 +146,7 @@ function getPeriodDates(period: Period): { start: string; end: string } {
     case "week": return { start: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"), end };
     case "month": return { start: format(startOfMonth(now), "yyyy-MM-dd"), end };
     case "year": return { start: format(startOfYear(now), "yyyy-MM-dd"), end };
+    case "all": return { start: "1970-01-01", end };
   }
 }
 
@@ -153,79 +155,151 @@ export default function Dashboard() {
   const { t, language } = useLanguage();
   const { formatMoney } = useShopFormatting();
   const { profile } = useAuth();
-  const [period, setPeriod] = useState<Period>("week");
+  const [period, setPeriod] = useState<Period>("today");
 
   const shopName = profile?.shops?.name || "WiseCash";
 
-  // Date range
-  const sevenDaysAgo = format(subDays(new Date(), 6), "yyyy-MM-dd");
-  const today = format(new Date(), "yyyy-MM-dd");
-  const { start: periodStart } = getPeriodDates(period);
-
-  // Queries — load independently for skeleton support
-  const { data: rangeSales, isLoading: salesLoading } = useSalesSummaryByRange(sevenDaysAgo, today);
-  const { data: salesList, isLoading: salesListLoading } = useSalesByDateRange(sevenDaysAgo, today);
+  // Queries
+  const { data: allSales, isLoading: salesLoading } = useSales();
   const { data: purchasesList, isLoading: purchasesLoading } = usePurchases();
   const { data: productionList } = useProductionBatches();
   const { data: expensesList, isLoading: expensesLoading } = useExpenses();
   const { data: otherIncomeList } = useOtherIncome();
-  const { data: allProducts } = useProducts();
+  const { data: allProducts, isLoading: productsLoading } = useProducts();
   const { data: lowStockProducts, isLoading: lowStockLoading } = useLowStockProducts();
   const { data: customersList } = useCustomers();
 
-  // KPI calculations
+  // Active period date boundaries
+  const { start: periodStart, end: periodEnd } = useMemo(() => getPeriodDates(period), [period]);
+
+  const isDateInPeriod = (dateStr?: string | null) => {
+    if (!dateStr) return false;
+    if (period === "all") return true;
+    const d = dateStr.slice(0, 10);
+    return d >= periodStart && d <= periodEnd;
+  };
+
+  // Synchronize all period-sensitive business streams
+  const periodSales = useMemo(() => {
+    return (allSales || []).filter((s) => s.status === "completed" && isDateInPeriod(s.created_at));
+  }, [allSales, periodStart, periodEnd, period]);
+
+  const periodPurchases = useMemo(() => {
+    return (purchasesList || []).filter((p) => isDateInPeriod(p.created_at));
+  }, [purchasesList, periodStart, periodEnd, period]);
+
+  const periodProduction = useMemo(() => {
+    return (productionList || []).filter((b) => isDateInPeriod(b.created_at));
+  }, [productionList, periodStart, periodEnd, period]);
+
+  const periodExpenses = useMemo(() => {
+    return (expensesList || []).filter((e) => isDateInPeriod(e.date || e.created_at));
+  }, [expensesList, periodStart, periodEnd, period]);
+
+  const periodOtherIncome = useMemo(() => {
+    return (otherIncomeList || []).filter((i) => isDateInPeriod(i.date || i.created_at));
+  }, [otherIncomeList, periodStart, periodEnd, period]);
+
+  // Product cost mapping for accurate Cost of Goods Sold (COGS)
+  const productCostMap = useMemo(() => {
+    const map = new Map<string, number>();
+    (allProducts || []).forEach((p) => {
+      map.set(p.id, Number(p.buying_price) || 0);
+    });
+    return map;
+  }, [allProducts]);
+
+  // Financial KPI calculations
   const totalSalesVal = useMemo(
-    () => (salesList || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0),
-    [salesList]
+    () => periodSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0),
+    [periodSales]
   );
+
   const totalPurchasesVal = useMemo(
-    () => (purchasesList || []).reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0),
-    [purchasesList]
+    () => periodPurchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0),
+    [periodPurchases]
   );
+
+  const totalProductionCostVal = useMemo(
+    () => periodProduction.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
+    [periodProduction]
+  );
+
+  const cashReceivedVal = useMemo(() => {
+    return periodSales
+      .filter((s) => s.payment_method === "Cash" || s.payment_method === "M-Pesa")
+      .reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+  }, [periodSales]);
+
   const stockValueVal = useMemo(
     () => (allProducts || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0), 0),
     [allProducts]
   );
+
   const customersOweVal = useMemo(
     () => (customersList || []).reduce((sum, c) => sum + (Number(c.credit_balance) || 0), 0),
     [customersList]
   );
+
   const totalExpensesVal = useMemo(
-    () => (expensesList || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
-    [expensesList]
+    () => periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+    [periodExpenses]
   );
-  const otherIncomeVal = useMemo(
-    () => (otherIncomeList || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0),
-    [otherIncomeList]
+
+  const totalOtherIncomeVal = useMemo(
+    () => periodOtherIncome.reduce((sum, item) => sum + (Number(item.amount) || 0), 0),
+    [periodOtherIncome]
   );
-  const totalRevenueVal = totalSalesVal + otherIncomeVal;
-  const grossProfitVal = Math.max(0, totalSalesVal - totalPurchasesVal);
-  const netProfitVal = Math.max(0, totalRevenueVal - totalExpensesVal);
+
+  // Period Cost of Goods Sold (COGS)
+  const periodCogsVal = useMemo(() => {
+    return periodSales.reduce((sum, s) => {
+      const items = (s.sale_items as any[]) || [];
+      const saleCost = items.reduce((itemSum, item) => {
+        const unitCost = productCostMap.get(item.product_id) ?? (Number(item.unit_price) * 0.75);
+        return itemSum + (Number(item.quantity) || 1) * unitCost;
+      }, 0);
+      return sum + saleCost;
+    }, 0);
+  }, [periodSales, productCostMap]);
+
+  // ERP Accounting: Gross Profit = Sales - COGS
+  const grossProfitVal = totalSalesVal - periodCogsVal;
+
+  // Net Profit = Gross Profit + Other Income - Operating Expenses
+  // If negative, represents true Net Loss (never clamped to 0)
+  const netProfitVal = grossProfitVal + totalOtherIncomeVal - totalExpensesVal;
 
   // Chart data — last 7 days
   const chartData = useMemo(() => {
     const days = [6, 5, 4, 3, 2, 1, 0].map((d) => format(subDays(new Date(), d), "yyyy-MM-dd"));
     return days.map((dayStr) => {
-      const daySales = (salesList || [])
-        .filter((s) => (s.created_at || "").startsWith(dayStr))
-        .reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+      const daySalesList = (allSales || []).filter(
+        (s) => s.status === "completed" && (s.created_at || "").startsWith(dayStr)
+      );
+      const daySales = daySalesList.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
       const dayExpenses = (expensesList || [])
         .filter((e) => (e.date || e.created_at || "").startsWith(dayStr))
         .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-      const profit = Math.max(0, daySales - dayExpenses);
+      const dayCogs = daySalesList.reduce((sum, s) => {
+        const items = (s.sale_items as any[]) || [];
+        return sum + items.reduce((iSum, item) => iSum + (Number(item.quantity) || 1) * (productCostMap.get(item.product_id) ?? (Number(item.unit_price) * 0.75)), 0);
+      }, 0);
+      const dayProfit = daySales - dayCogs - dayExpenses;
       return {
         name: format(new Date(dayStr + "T00:00:00"), "dd MMM"),
+        date: dayStr,
         [language === "sw" ? "Mauzo" : "Sales"]: daySales,
         [language === "sw" ? "Matumizi" : "Expenses"]: dayExpenses,
-        [language === "sw" ? "Faida" : "Profit"]: profit,
+        [language === "sw" ? "Faida" : "Profit"]: dayProfit,
       };
     });
-  }, [salesList, expensesList, language]);
+  }, [allSales, expensesList, productCostMap, language]);
 
   // Recent activities
   const recentActivities = useMemo(() => {
     const acts = [
-      ...(salesList || []).map((s) => ({
+      ...(allSales || []).slice(0, 10).map((s) => ({
         type: "sale",
         title: `Sale #${s.id.slice(0, 6).toUpperCase()}`,
         subtitle: s.payment_method || "Cash",
@@ -236,7 +310,7 @@ export default function Dashboard() {
         color: "text-blue-600",
         bg: "bg-blue-50 dark:bg-blue-950/40",
       })),
-      ...(expensesList || []).map((e) => ({
+      ...(expensesList || []).slice(0, 10).map((e) => ({
         type: "expense",
         title: e.title || (language === "sw" ? "Gharama" : "Expense"),
         subtitle: e.category || "General",
@@ -247,7 +321,7 @@ export default function Dashboard() {
         color: "text-rose-600",
         bg: "bg-rose-50 dark:bg-rose-950/40",
       })),
-      ...(purchasesList || []).map((p) => ({
+      ...(purchasesList || []).slice(0, 10).map((p) => ({
         type: "purchase",
         title: `${language === "sw" ? "Ununuzi" : "Purchase"}: ${p.supplier_name || "Supplier"}`,
         subtitle: `${p.items_count || 1} ${language === "sw" ? "bidhaa" : "items"}`,
@@ -258,7 +332,7 @@ export default function Dashboard() {
         color: "text-violet-600",
         bg: "bg-violet-50 dark:bg-violet-950/40",
       })),
-      ...(otherIncomeList || []).map((income) => ({
+      ...(otherIncomeList || []).slice(0, 5).map((income) => ({
         type: "income",
         title: income.title,
         subtitle: income.category,
@@ -271,9 +345,9 @@ export default function Dashboard() {
       })),
     ];
     return acts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
-  }, [salesList, purchasesList, expensesList, otherIncomeList, formatMoney, language]);
+  }, [allSales, purchasesList, expensesList, otherIncomeList, formatMoney, language]);
 
-  const kpiLoading = salesLoading || salesListLoading;
+  const kpiLoading = salesLoading || purchasesLoading || expensesLoading || productsLoading;
   const salesLabelKey = language === "sw" ? "Mauzo" : "Sales";
   const expensesLabelKey = language === "sw" ? "Matumizi" : "Expenses";
   const profitLabelKey = language === "sw" ? "Faida" : "Profit";
@@ -295,7 +369,7 @@ export default function Dashboard() {
 
         {/* Period selector */}
         <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-xs self-start sm:self-auto">
-          {(["today", "week", "month", "year"] as Period[]).map((p) => (
+          {(["today", "week", "month", "year", "all"] as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
@@ -329,7 +403,7 @@ export default function Dashboard() {
             <div>
               <p className="text-2xl font-black tracking-tight text-foreground">{formatMoney(totalSalesVal)}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {salesList?.length || 0} {language === "sw" ? "miamala ya mauzo" : "sales completed"}
+                {periodSales.length} {language === "sw" ? "miamala ya mauzo" : "sales completed"}
               </p>
             </div>
             <Button
@@ -346,15 +420,17 @@ export default function Dashboard() {
           <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-border/60 pt-3">
             <div className="rounded-xl bg-muted/40 p-2 text-center">
               <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Iliyolipwa" : "Cash In"}</p>
-              <p className="text-xs font-bold text-emerald-600 truncate mt-0.5">{formatMoney(totalSalesVal)}</p>
+              <p className="text-xs font-bold text-emerald-600 truncate mt-0.5">{formatMoney(cashReceivedVal)}</p>
             </div>
             <div className="rounded-xl bg-muted/40 p-2 text-center cursor-pointer" onClick={() => navigate("/customers")}>
               <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Madeni" : "Due"}</p>
               <p className="text-xs font-bold text-amber-600 truncate mt-0.5">{formatMoney(customersOweVal)}</p>
             </div>
             <div className="rounded-xl bg-muted/40 p-2 text-center cursor-pointer" onClick={() => navigate("/expenses")}>
-              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Faida" : "Net Profit"}</p>
-              <p className="text-xs font-bold text-foreground truncate mt-0.5">{formatMoney(netProfitVal)}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Faida Halisi" : "Net Profit"}</p>
+              <p className={cn("text-xs font-bold truncate mt-0.5", netProfitVal >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                {netProfitVal < 0 ? `-${formatMoney(Math.abs(netProfitVal))}` : formatMoney(netProfitVal)}
+              </p>
             </div>
           </div>
         </div>
@@ -542,10 +618,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* DESKTOP EXPANDED VIEW (hidden md:block) */}
-      <div className="hidden md:block space-y-5">
-        {/* Primary KPIs */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+      {/* DESKTOP EXPANDED VIEW (hidden md:block) — 8 Full ERP StatCards */}
+      <div className="hidden md:block space-y-4">
+        {/* Row 1: Sales, Purchases, Production, Cash Received */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3.5">
           {kpiLoading ? (
             <>
               <StatCardSkeleton />
@@ -558,74 +634,102 @@ export default function Dashboard() {
               <StatCard
                 title={language === "sw" ? "Jumla ya Mauzo" : "Total Sales"}
                 value={formatMoney(totalSalesVal)}
+                delta={periodSales.length > 0 ? `${periodSales.length} ${language === "sw" ? "miamala" : "orders"}` : undefined}
+                deltaType="neutral"
                 icon={ShoppingBag}
                 colorClass="text-blue-600"
                 bgColorClass="bg-blue-50 dark:bg-blue-950/40"
                 onClick={() => navigate("/sales")}
               />
               <StatCard
-                title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
-                value={formatMoney(totalSalesVal)}
-                icon={Wallet}
-                colorClass="text-emerald-600"
-                bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
+                title={language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}
+                value={formatMoney(totalPurchasesVal)}
+                delta={periodPurchases.length > 0 ? `${periodPurchases.length} ${language === "sw" ? "shehena" : "purchases"}` : undefined}
+                deltaType="neutral"
+                icon={ShoppingCart}
+                colorClass="text-purple-600"
+                bgColorClass="bg-purple-50 dark:bg-purple-950/40"
+                onClick={() => navigate("/purchases")}
               />
               <StatCard
-                title={language === "sw" ? "Madeni ya Wateja" : "Outstanding"}
-                value={formatMoney(customersOweVal)}
-                icon={Users}
+                title={language === "sw" ? "Gharama ya Uzalishaji" : "Total Production Cost"}
+                value={formatMoney(totalProductionCostVal)}
+                delta={periodProduction.length > 0 ? `${periodProduction.length} ${language === "sw" ? "awamu" : "batches"}` : undefined}
+                deltaType="neutral"
+                icon={Factory}
                 colorClass="text-amber-600"
                 bgColorClass="bg-amber-50 dark:bg-amber-950/40"
-                onClick={() => navigate("/customers")}
+                onClick={() => navigate("/production")}
               />
               <StatCard
-                title={language === "sw" ? "Faida Halisi" : "Net Profit"}
-                value={formatMoney(netProfitVal)}
-                icon={TrendingUp}
+                title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
+                value={formatMoney(cashReceivedVal)}
+                delta={totalSalesVal > 0 ? `${Math.round((cashReceivedVal / totalSalesVal) * 100)}% collected` : undefined}
+                deltaType="positive"
+                icon={Banknote}
                 colorClass="text-emerald-600"
                 bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
-                onClick={() => navigate("/expenses")}
               />
             </>
           )}
         </div>
 
-        {/* Secondary KPIs */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* Row 2: Stock Value, Customers Owe, Expenses, Net Profit */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3.5">
           {kpiLoading ? (
-            Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
           ) : (
             <>
               <StatCard
-                title={language === "sw" ? "Jumla ya Manunuzi" : "Purchases"}
-                value={formatMoney(totalPurchasesVal)}
-                icon={ShoppingCart}
-                colorClass="text-violet-600"
-                bgColorClass="bg-violet-50 dark:bg-violet-950/40"
-                onClick={() => navigate("/purchases")}
-              />
-              <StatCard
-                title={language === "sw" ? "Jumla ya Matumizi" : "Expenses"}
-                value={formatMoney(totalExpensesVal)}
-                icon={Receipt}
-                colorClass="text-rose-600"
-                bgColorClass="bg-rose-50 dark:bg-rose-950/40"
-                onClick={() => navigate("/expenses")}
-              />
-              <StatCard
                 title={language === "sw" ? "Thamani ya Stoki" : "Stock Value"}
                 value={formatMoney(stockValueVal)}
+                delta={`${(allProducts || []).length} ${language === "sw" ? "bidhaa" : "items"}`}
+                deltaType="neutral"
                 icon={Package}
                 colorClass="text-cyan-600"
                 bgColorClass="bg-cyan-50 dark:bg-cyan-950/40"
                 onClick={() => navigate("/inventory")}
               />
               <StatCard
-                title={language === "sw" ? "Faida ya Jumla" : "Gross Profit"}
-                value={formatMoney(grossProfitVal)}
-                icon={Banknote}
-                colorClass="text-teal-600"
-                bgColorClass="bg-teal-50 dark:bg-teal-950/40"
+                title={language === "sw" ? "Madeni ya Wateja" : "Customers Owe"}
+                value={formatMoney(customersOweVal)}
+                delta={customersOweVal > 0 ? `${language === "sw" ? "Inasubiri" : "Outstanding"}` : `${language === "sw" ? "Hakuna madeni" : "Settled"}`}
+                deltaType={customersOweVal > 0 ? "negative" : "positive"}
+                icon={Users}
+                colorClass="text-rose-600"
+                bgColorClass="bg-rose-50 dark:bg-rose-950/40"
+                onClick={() => navigate("/customers")}
+              />
+              <StatCard
+                title={language === "sw" ? "Jumla ya Matumizi" : "Total Expenses"}
+                value={formatMoney(totalExpensesVal)}
+                delta={periodExpenses.length > 0 ? `${periodExpenses.length} ${language === "sw" ? "rekodi" : "entries"}` : undefined}
+                deltaType="neutral"
+                icon={Receipt}
+                colorClass="text-orange-600"
+                bgColorClass="bg-orange-50 dark:bg-orange-950/40"
+                onClick={() => navigate("/expenses")}
+              />
+              <StatCard
+                title={language === "sw" ? "Faida Halisi" : "Net Profit"}
+                value={netProfitVal < 0 ? `-${formatMoney(Math.abs(netProfitVal))}` : formatMoney(netProfitVal)}
+                delta={
+                  totalSalesVal > 0
+                    ? `${((netProfitVal / totalSalesVal) * 100).toFixed(1)}% margin`
+                    : netProfitVal < 0
+                    ? "Net Loss"
+                    : "Balanced"
+                }
+                deltaType={netProfitVal > 0 ? "positive" : netProfitVal < 0 ? "negative" : "neutral"}
+                icon={TrendingUp}
+                colorClass={netProfitVal >= 0 ? "text-emerald-600" : "text-rose-600"}
+                bgColorClass={netProfitVal >= 0 ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-rose-50 dark:bg-rose-950/40"}
+                onClick={() => navigate("/reports")}
               />
             </>
           )}

@@ -52,13 +52,13 @@ export type AppNavItem = {
 
 export const NAV_GROUP_LABELS: Record<NavGroup, Record<LanguageCode, string>> = {
   overview: { en: "Overview", sw: "Muhtasari" },
-  operations: { en: "Operations", sw: "Shughuli" },
-  relationships: { en: "Relationships", sw: "Mahusiano" },
-  money: { en: "Money", sw: "Fedha" },
-  people: { en: "People", sw: "Watu" },
-  insights: { en: "Insights", sw: "Ufahamu" },
-  management: { en: "Management", sw: "Usimamizi" },
-  administration: { en: "Administration", sw: "Utawala" },
+  operations: { en: "Operations", sw: "Shughuli za Biashara" },
+  relationships: { en: "Relationships", sw: "Mahusiano (CRM & SRM)" },
+  money: { en: "Finance & Accounting", sw: "Fedha na Hesabu" },
+  people: { en: "Human Resources", sw: "Rasilimali Watu (HRM)" },
+  insights: { en: "Reports & Analytics", sw: "Ripoti na Takwimu" },
+  management: { en: "Enterprise Assets", sw: "Mali na Usimamizi" },
+  administration: { en: "Administration", sw: "Utawala wa Mfumo" },
 };
 
 export const OLLY_NAVIGATION_ITEMS: AppNavItem[] = [
@@ -98,8 +98,17 @@ export const OLLY_NAVIGATION_ITEMS: AppNavItem[] = [
   { to: "/settings", group: "administration", labelKey: "nav.settings", icon: Settings, mobileLabel: { en: "Settings", sw: "Mipangilio" } },
 ];
 
-/** Primary groups shown in condensed sidebar — secondary groups collapsed under "More" */
-export const PRIMARY_GROUPS: NavGroup[] = ["overview", "operations", "relationships", "money"];
+/** All active ERP groups shown directly in navigation */
+export const PRIMARY_GROUPS: NavGroup[] = [
+  "overview",
+  "operations",
+  "relationships",
+  "money",
+  "people",
+  "insights",
+  "management",
+  "administration",
+];
 
 /** Mobile bottom nav — 4 primary destinations + Menu */
 export const MOBILE_PRIMARY_NAV: AppNavItem[] = [
@@ -116,8 +125,19 @@ const MOBILE_FOCUS_ROUTES = [
   { pattern: "/suppliers/:id", backTo: "/purchases" },
 ];
 
-export function filterItemsByAccess(items: AppNavItem[], allowedPages?: string[], capabilities?: unknown) {
+export function filterItemsByAccess(
+  items: AppNavItem[],
+  allowedPages?: string[],
+  capabilities?: unknown,
+  role?: string | null,
+) {
   const capabilityFiltered = items.filter((item) => !item.capability || hasCapability(capabilities, item.capability));
+  
+  // Owners and admins always have full access to all ERP modules
+  if (!role || role === "owner" || role === "admin") {
+    return capabilityFiltered;
+  }
+
   if (!allowedPages || allowedPages.length === 0) return capabilityFiltered;
   return capabilityFiltered.filter((item) => {
     return (
