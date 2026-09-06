@@ -294,7 +294,7 @@ export default function Customers() {
           <Button
             onClick={handleAddCustomer}
             disabled={createCustomer.isPending || !newCustomer.name.trim()}
-            className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
+            className="h-9 rounded-xl bg-neutral-950 text-xs font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 flex-[2] shadow-xs"
           >
             {createCustomer.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
             <span>{t("common.save")}</span>
@@ -379,7 +379,7 @@ export default function Customers() {
                   />
                 </div>
               </div>
-              <Button onClick={handleUpdateCustomer} className="h-8 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+              <Button onClick={handleUpdateCustomer} className="h-8 w-full rounded-xl bg-neutral-950 text-xs font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 shadow-xs">
                 {t("common.save")}
               </Button>
             </div>
@@ -408,7 +408,7 @@ export default function Customers() {
                   <Button
                     onClick={handlePayDebt}
                     disabled={updateCustomer.isPending || !Number(payAmount)}
-                    className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                    className="h-9 rounded-xl bg-neutral-950 text-xs font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 shadow-xs"
                   >
                     {updateCustomer.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DollarSign className="h-3.5 w-3.5 text-accent mr-1" />}
                     <span>{t("customers.payDebt")}</span>
@@ -536,7 +536,7 @@ export default function Customers() {
 
               <Button
                 onClick={handleStartAddCustomer}
-                className="h-9 gap-1.5 rounded-xl bg-primary text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
+                className="h-9 gap-1.5 rounded-xl bg-neutral-950 text-xs font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950"
               >
                 <Plus className="h-3.5 w-3.5 text-accent" />
                 <span>{t("customers.addCustomer")}</span>

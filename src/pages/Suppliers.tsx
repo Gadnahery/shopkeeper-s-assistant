@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   AlertDialog,
@@ -17,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Truck, Clock, Calendar, CreditCard, Pencil, Trash2, Loader2, Eye, ChevronRight } from "lucide-react";
+import { Search, Plus, Truck, Clock, Calendar, CreditCard, Pencil, Trash2, Loader2, Eye, ChevronRight, UserCheck } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from "@/hooks/useSuppliers";
 import { useDraftForm } from "@/hooks/useDraftForm";
@@ -59,6 +58,8 @@ export default function Suppliers() {
 
   const formatNumber = (num: number) => num.toLocaleString("en-US");
   const totalPending = suppliers?.reduce((sum, s) => sum + Number((s as any).pending_payment || 0), 0) || 0;
+  const suppliersWithBalance = suppliers?.filter(s => Number((s as any).pending_payment || 0) > 0).length || 0;
+  const suppliersWithContacts = suppliers?.filter(s => s.phone || s.email).length || 0;
 
   const handleAddSupplier = async () => {
     await createSupplier.mutateAsync({ name: newSupplier.name, phone: newSupplier.phone || null, email: newSupplier.email || null, contact_person: newSupplier.contact_person || null, address: newSupplier.address || null });
@@ -83,9 +84,32 @@ export default function Suppliers() {
   };
 
   const stats = [
-    { label: t("suppliers.totalSuppliers"), value: suppliers?.length.toString() || "0", icon: Truck, iconBg: "bg-primary/10", iconColor: "text-primary" },
-    { label: t("suppliers.pendingPayments"), value: `Tsh ${formatNumber(totalPending)}`, icon: Clock, iconBg: "bg-secondary/10", iconColor: "text-secondary", valueColor: totalPending > 0 ? "text-destructive" : "" },
-    { label: t("suppliers.lastPurchase"), value: `--`, icon: Calendar, iconBg: "bg-muted", iconColor: "text-muted-foreground" },
+    { 
+      label: t("suppliers.totalSuppliers"), 
+      value: suppliers?.length.toString() || "0", 
+      icon: Truck, 
+      sub: language === "sw" ? "Wasambazaji wote" : "Registered partners" 
+    },
+    { 
+      label: t("suppliers.pendingPayments"), 
+      value: `Tsh ${formatNumber(totalPending)}`, 
+      icon: Clock, 
+      sub: `${suppliersWithBalance} ${language === "sw" ? "wanaodai malipo" : "with balance"}`,
+      valueColor: totalPending > 0 ? "text-destructive" : "" 
+    },
+    { 
+      label: language === "sw" ? "Wanaodai Malipo" : "Awaiting Payment", 
+      value: suppliersWithBalance.toString(), 
+      icon: CreditCard, 
+      sub: suppliersWithBalance > 0 ? (language === "sw" ? "Inahitaji ukaguzi" : "Action required") : (language === "sw" ? "Hakuna deni" : "All cleared"),
+      valueColor: suppliersWithBalance > 0 ? "text-amber-600 dark:text-amber-400" : "" 
+    },
+    { 
+      label: language === "sw" ? "Mawasiliano Tayari" : "Contact Ready", 
+      value: `${suppliersWithContacts}/${suppliers?.length || 0}`, 
+      icon: UserCheck, 
+      sub: language === "sw" ? "Simu au barua pepe" : "Phone or email saved" 
+    },
   ];
 
   return (
@@ -107,17 +131,18 @@ export default function Suppliers() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         {stats.map((stat) => (
           <Card key={stat.label} className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{stat.label}</span>
-              <div className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg ${stat.iconBg} ${stat.iconColor} flex-shrink-0`}>
-                <stat.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+                <stat.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
               </div>
             </div>
             <div className="mt-2 sm:mt-3">
               <p className={`text-base sm:text-2xl font-bold tracking-tight text-foreground truncate ${stat.valueColor || ""}`}>{stat.value}</p>
+              <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{stat.sub}</p>
             </div>
           </Card>
         ))}

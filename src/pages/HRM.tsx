@@ -475,44 +475,44 @@ export default function HRM() {
           </div>
         </Card>
 
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Jumla ya Mishahara" : "Total Monthly Payroll"}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <DollarSign className="h-4 w-4 text-accent" />
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Jumla ya Mishahara" : "Total Monthly Payroll"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalPayroll)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Kwa mwezi mmoja" : "Per calendar month"}</p>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalPayroll)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Kwa mwezi mmoja" : "Per calendar month"}</p>
           </div>
         </Card>
 
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Akaunti za Mfumo" : "User Logins"}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <KeyRound className="h-4 w-4 text-accent" />
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Akaunti za Mfumo" : "User Logins"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <KeyRound className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{users?.length || 1}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Wenye ruhusa za kuingia" : "Authenticated accounts"}</p>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{users?.length || 1}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Wenye ruhusa" : "Authorized logins"}</p>
           </div>
         </Card>
 
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Idara" : "Departments"}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <Building className="h-4 w-4 text-accent" />
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Idara" : "Departments"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
               {new Set(staffList.map((s) => s.department)).size}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{language === "sw" ? "Idara za biashara" : "Active divisions"}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Vitengo vya kazi" : "Active divisions"}</p>
           </div>
         </Card>
       </div>

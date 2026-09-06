@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { CalendarPlus, Check, Clock3, UserRound, X } from "lucide-react";
+import { CalendarPlus, Check, Clock3, UserRound, X, CheckCircle2, Scissors, CalendarCheck } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -62,18 +63,134 @@ export default function Appointments() {
     closeForm();
   };
 
+  const completedCount = appointments.filter((a) => a.status === "completed").length;
+  const pendingCount = appointments.filter((a) => a.status !== "completed" && a.status !== "cancelled").length;
+
+  const renderFormFields = () => (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">{language === "sw" ? "Mteja" : "Customer"}</Label>
+        <Select value={form.customerId} onValueChange={(value) => setForm({ ...form, customerId: value })}>
+          <SelectTrigger className="h-9 rounded-xl text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent className="rounded-xl text-xs">
+            <SelectItem value="walk-in">{language === "sw" ? "Mteja wa kutembea" : "Walk-in customer"}</SelectItem>
+            {customers.map((customer) => (
+              <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">{language === "sw" ? "Huduma" : "Service"}</Label>
+        <Select
+          value={form.serviceId}
+          onValueChange={(value) => setForm({ ...form, serviceId: value, serviceName: services.find((service) => service.id === value)?.name || "" })}
+        >
+          <SelectTrigger className="h-9 rounded-xl text-xs">
+            <SelectValue placeholder={language === "sw" ? "Chagua huduma" : "Select service"} />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl text-xs">
+            {services.map((service) => (
+              <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">{language === "sw" ? "Muda" : "Time"}</Label>
+          <Input type="time" value={form.time} onChange={(event) => setForm({ ...form, time: event.target.value })} className="h-9 rounded-xl text-xs" required />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">{language === "sw" ? "Dakika" : "Minutes"}</Label>
+          <Input type="number" min="1" value={form.duration} onChange={(event) => setForm({ ...form, duration: event.target.value })} className="h-9 rounded-xl text-xs" required />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">{language === "sw" ? "Mhudumu" : "Staff member"}</Label>
+        <Input value={form.staffName} onChange={(event) => setForm({ ...form, staffName: event.target.value })} placeholder={language === "sw" ? "Jina la mhudumu" : "Staff name"} className="h-9 rounded-xl text-xs" />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">{language === "sw" ? "Maelezo" : "Notes"}</Label>
+        <Textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} rows={3} className="rounded-xl text-xs" />
+      </div>
+      <Button
+        type="submit"
+        disabled={createAppointment.isPending || !form.serviceName}
+        className="w-full h-10 rounded-xl bg-neutral-950 font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 text-xs shadow-xs"
+      >
+        {createAppointment.isPending ? (language === "sw" ? "Inahifadhi..." : "Saving...") : (language === "sw" ? "Thibitisha miadi" : "Confirm appointment")}
+      </Button>
+    </form>
+  );
+
   return (
     <div className="space-y-6 pb-12">
       <PageHeader
         title={language === "sw" ? "Miadi" : "Appointments"}
         subtitle={language === "sw" ? "Panga huduma za leo na ratiba ya timu." : "Plan service visits and keep the team on schedule."}
         actions={
-          <Button onClick={openForm} className="gap-2 rounded-xl">
-            <CalendarPlus className="h-4 w-4" />
+          <Button onClick={openForm} className="gap-2 rounded-xl bg-neutral-950 font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 text-xs shadow-xs">
+            <CalendarPlus className="h-4 w-4 text-accent" />
             {language === "sw" ? "Miadi mpya" : "Book appointment"}
           </Button>
         }
       />
+
+      {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Miadi ya Leo" : "Today's Schedule"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <CalendarPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{appointments.length}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Wateja waliopangwa" : "Total booked"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zilizokamilika" : "Completed"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{completedCount}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Huduma zimetoa" : "Done today"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zinazosubiri" : "Upcoming"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <Clock3 className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", pendingCount > 0 ? "text-amber-500" : "text-muted-foreground")} />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{pendingCount}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Bado kuhudumiwa" : "Waiting for service"}</p>
+          </div>
+        </Card>
+
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Aina za Huduma" : "Services"}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <Scissors className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{services.length}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Huduma zilizosajiliwa" : "Service catalog"}</p>
+          </div>
+        </Card>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="space-y-4">
@@ -189,25 +306,34 @@ export default function Appointments() {
           </Card>
         </section>
 
+        {/* Desktop Side Form */}
         {showForm && (
-          <Card className="h-fit border-border shadow-xs">
-            <CardHeader className="flex-row items-start justify-between space-y-0">
-              <div><CardTitle className="text-base">{language === "sw" ? "Miadi mpya" : "New appointment"}</CardTitle><p className="mt-1 text-xs text-muted-foreground">{language === "sw" ? "Jaza taarifa muhimu tu." : "Capture the essentials first."}</p></div>
-              <Button size="icon" variant="ghost" onClick={closeForm} aria-label="Close" className="h-8 w-8 rounded-lg"><X className="h-4 w-4" /></Button>
+          <Card className="h-fit border-border shadow-xs hidden lg:block">
+            <CardHeader className="flex-row items-start justify-between space-y-0 pb-3 border-b border-border">
+              <div>
+                <CardTitle className="text-sm font-semibold">{language === "sw" ? "Miadi mpya" : "New appointment"}</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">{language === "sw" ? "Jaza taarifa muhimu tu." : "Capture the essentials first."}</p>
+              </div>
+              <Button size="icon" variant="ghost" onClick={closeForm} aria-label="Close" className="h-7 w-7 rounded-lg"><X className="h-4 w-4" /></Button>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={submit} className="space-y-4">
-                <div className="space-y-1.5"><Label>{language === "sw" ? "Mteja" : "Customer"}</Label><Select value={form.customerId} onValueChange={(value) => setForm({ ...form, customerId: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="walk-in">{language === "sw" ? "Mteja wa kutembea" : "Walk-in customer"}</SelectItem>{customers.map((customer) => <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>)}</SelectContent></Select></div>
-                <div className="space-y-1.5"><Label>{language === "sw" ? "Huduma" : "Service"}</Label><Select value={form.serviceId} onValueChange={(value) => setForm({ ...form, serviceId: value, serviceName: services.find((service) => service.id === value)?.name || "" })}><SelectTrigger><SelectValue placeholder={language === "sw" ? "Chagua huduma" : "Select service"} /></SelectTrigger><SelectContent>{services.map((service) => <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>)}</SelectContent></Select></div>
-                <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label>{language === "sw" ? "Muda" : "Time"}</Label><Input type="time" value={form.time} onChange={(event) => setForm({ ...form, time: event.target.value })} required /></div><div className="space-y-1.5"><Label>{language === "sw" ? "Dakika" : "Minutes"}</Label><Input type="number" min="1" value={form.duration} onChange={(event) => setForm({ ...form, duration: event.target.value })} required /></div></div>
-                <div className="space-y-1.5"><Label>{language === "sw" ? "Mhudumu" : "Staff member"}</Label><Input value={form.staffName} onChange={(event) => setForm({ ...form, staffName: event.target.value })} placeholder={language === "sw" ? "Jina la mhudumu" : "Staff name"} /></div>
-                <div className="space-y-1.5"><Label>{language === "sw" ? "Maelezo" : "Notes"}</Label><Textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} rows={3} /></div>
-                <Button type="submit" disabled={createAppointment.isPending || !form.serviceName} className="w-full rounded-xl">{createAppointment.isPending ? (language === "sw" ? "Inahifadhi..." : "Saving...") : (language === "sw" ? "Thibitisha miadi" : "Confirm appointment")}</Button>
-              </form>
+            <CardContent className="pt-4">
+              {renderFormFields()}
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* Mobile Inventory-style Bottom Sheet for New Appointment */}
+      <Sheet open={showForm} onOpenChange={(o) => !o && closeForm}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-4 border-t border-border bg-card lg:hidden">
+          <SheetHeader className="pb-3 border-b border-border">
+            <SheetTitle className="text-sm font-bold">{language === "sw" ? "Miadi mpya" : "New appointment"}</SheetTitle>
+          </SheetHeader>
+          <div className="pt-3">
+            {renderFormFields()}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

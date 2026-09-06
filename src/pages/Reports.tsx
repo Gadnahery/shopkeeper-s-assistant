@@ -168,65 +168,65 @@ export default function Reports() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 4 Olly KPI Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 4 Olly KPI Stat Cards (2x2 on Mobile, 4 cols on Desktop) */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         {/* KPI 1: Revenue */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("reports.totalSales")}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <DollarSign className="h-4 w-4 text-accent" />
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{t("reports.totalSales")}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalRevenue)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{sales?.length || 0} sales + {otherIncome?.length || 0} other income</p>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalRevenue)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{sales?.length || 0} sales + {otherIncome?.length || 0} other</p>
           </div>
         </Card>
 
         {/* KPI 2: Expenses */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("reports.totalExpenses")}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <TrendingDown className="h-4 w-4 text-destructive" />
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{t("reports.totalExpenses")}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(totalExpenses)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{expenses?.length || 0} {language === "sw" ? "vipengele vya matumizi" : "expense line items"}</p>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalExpenses)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{expenses?.length || 0} {language === "sw" ? "vipengele" : "line items"}</p>
           </div>
         </Card>
 
         {/* KPI 3: Net Profit */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("reports.netProfit")}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <TrendingUp className="h-4 w-4 text-[var(--success-text)]" />
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{t("reports.netProfit")}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[var(--success-text)]" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className={cn("text-2xl font-bold tracking-tight", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
+          <div className="mt-2 sm:mt-3">
+            <p className={cn("text-base sm:text-2xl font-bold tracking-tight truncate", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
               {formatMoney(netProfit)}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">
               {totalSales > 0 ? `${Math.round((netProfit / totalSales) * 100)}% margin` : "0% margin"}
             </p>
           </div>
         </Card>
 
         {/* KPI 4: Stock Valuation */}
-        <Card className="border border-border bg-card p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("reports.inventoryValue")}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground">
-              <Package className="h-4 w-4 text-accent" />
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{t("reports.inventoryValue")}</span>
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
+              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold tracking-tight text-foreground">{formatMoney(stockValuation)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{products?.length || 0} {language === "sw" ? "bidhaa zilizopo" : "products in stock"}</p>
+          <div className="mt-2 sm:mt-3">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(stockValuation)}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{products?.length || 0} {language === "sw" ? "bidhaa zilizopo" : "in stock"}</p>
           </div>
         </Card>
       </div>
