@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.customer_payments (
 
 ALTER TABLE public.customer_payments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view customer payments in their shop" ON public.customer_payments;
 CREATE POLICY "Users can view customer payments in their shop"
 ON public.customer_payments FOR SELECT
 TO authenticated
@@ -27,6 +28,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Users can insert customer payments in their shop" ON public.customer_payments;
 CREATE POLICY "Users can insert customer payments in their shop"
 ON public.customer_payments FOR INSERT
 TO authenticated
@@ -139,6 +141,9 @@ $$;
 GRANT EXECUTE ON FUNCTION public.record_customer_payment(uuid, numeric, text, text, text) TO authenticated;
 
 -- 4. Update complete_sale_transaction to handle Credit and Split accurately
+DROP FUNCTION IF EXISTS public.complete_sale_transaction(uuid, text, text, text, numeric, numeric, numeric, jsonb);
+DROP FUNCTION IF EXISTS public.complete_sale_transaction(uuid, text, text, text, numeric, numeric, numeric, jsonb, numeric, numeric);
+
 CREATE OR REPLACE FUNCTION public.complete_sale_transaction(
   p_customer_id uuid DEFAULT NULL,
   p_customer_name text DEFAULT NULL,
@@ -180,6 +185,11 @@ BEGIN
   v_shop_id := public.get_user_shop_id(v_cashier_id);
   IF v_shop_id IS NULL THEN
     RAISE EXCEPTION 'No shop found for current user';
+  END IF;
+
+  -- Subscription write guard
+  IF NOT public.has_active_subscription(v_shop_id) THEN
+    RAISE EXCEPTION 'Your subscription has expired or is inactive. Please subscribe or renew to record sales.';
   END IF;
 
   IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' OR jsonb_array_length(p_items) = 0 THEN
@@ -387,38 +397,6 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.complete_sale_transaction(uuid, text, text, text, numeric, numeric, numeric, jsonb, numeric, numeric) TO authenticated;
 
--- Also maintain backward compatibility for 8-arg signature
-CREATE OR REPLACE FUNCTION public.complete_sale_transaction(
-  p_customer_id uuid,
-  p_customer_name text,
-  p_payment_method text,
-  p_mpesa_code text,
-  p_discount_amount numeric,
-  p_discount_percent numeric,
-  p_tax_amount numeric,
-  p_items jsonb
-)
-RETURNS public.sales
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT public.complete_sale_transaction(
-    p_customer_id,
-    p_customer_name,
-    p_payment_method,
-    p_mpesa_code,
-    p_discount_amount,
-    p_discount_percent,
-    p_tax_amount,
-    p_items,
-    NULL,
-    NULL
-  );
-$$;
-
-GRANT EXECUTE ON FUNCTION public.complete_sale_transaction(uuid, text, text, text, numeric, numeric, numeric, jsonb) TO authenticated;
-
 -- 5. Weighted-Average Costing (WAC) on Purchase Receiving
 -- Updates create_purchase_order_transaction and update_purchase_status_and_stock
 CREATE OR REPLACE FUNCTION public.create_purchase_order_transaction(
@@ -457,6 +435,11 @@ BEGIN
   v_shop_id := public.get_user_shop_id(v_user_id);
   IF v_shop_id IS NULL THEN
     RAISE EXCEPTION 'No shop found for user';
+  END IF;
+
+  -- Subscription write guard
+  IF NOT public.has_active_subscription(v_shop_id) THEN
+    RAISE EXCEPTION 'Your subscription has expired or is inactive. Please subscribe or renew to record purchases.';
   END IF;
 
   v_status := LOWER(COALESCE(NULLIF(BTRIM(p_status), ''), 'received'));
@@ -617,6 +600,11 @@ BEGIN
     RAISE EXCEPTION 'No shop found for user';
   END IF;
 
+  -- Subscription write guard
+  IF NOT public.has_active_subscription(v_shop_id) THEN
+    RAISE EXCEPTION 'Your subscription has expired or is inactive. Please subscribe or renew to update purchases.';
+  END IF;
+
   SELECT * INTO v_purchase
   FROM public.stock_received
   WHERE id = p_purchase_id AND shop_id = v_shop_id
@@ -758,3 +746,57 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.update_purchase_status_and_stock(uuid, text, numeric, text, jsonb) TO authenticated;
+
+-- Compatibility wrappers for frontend hooks calling create_purchase_transaction / update_purchase_transaction
+CREATE OR REPLACE FUNCTION public.create_purchase_transaction(
+  p_supplier_id uuid DEFAULT NULL,
+  p_items jsonb DEFAULT '[]'::jsonb,
+  p_status text DEFAULT 'received',
+  p_notes text DEFAULT NULL,
+  p_received_date date DEFAULT CURRENT_DATE,
+  p_paid_amount numeric DEFAULT NULL
+)
+RETURNS public.stock_received
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN public.create_purchase_order_transaction(
+    p_supplier_id,
+    p_received_date,
+    p_notes,
+    p_items,
+    p_status,
+    p_paid_amount
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.create_purchase_transaction(uuid, jsonb, text, text, date, numeric) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.update_purchase_transaction(
+  p_purchase_id uuid,
+  p_supplier_id uuid DEFAULT NULL,
+  p_items jsonb DEFAULT NULL,
+  p_status text DEFAULT NULL,
+  p_notes text DEFAULT NULL,
+  p_paid_amount numeric DEFAULT NULL
+)
+RETURNS public.stock_received
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN public.update_purchase_status_and_stock(
+    p_purchase_id,
+    p_status,
+    p_paid_amount,
+    p_notes,
+    p_items
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.update_purchase_transaction(uuid, uuid, jsonb, text, text, numeric) TO authenticated;

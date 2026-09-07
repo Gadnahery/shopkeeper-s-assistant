@@ -5,9 +5,31 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase
 import { logAudit } from "@/lib/audit";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type Expense = Tables<"expenses">;
-export type ExpenseInsert = TablesInsert<"expenses">;
-export type ExpenseUpdate = TablesUpdate<"expenses">;
+export interface Expense extends Omit<Tables<"expenses">, "title"> {
+  title?: string;
+  description: string;
+}
+
+export type ExpenseInsert = Partial<TablesInsert<"expenses">> & {
+  amount: number;
+  category: string;
+  description?: string;
+  title?: string;
+  shop_id?: string;
+  date?: string | null;
+  notes?: string | null;
+  payment_method?: string | null;
+};
+
+export type ExpenseUpdate = Partial<TablesUpdate<"expenses">> & {
+  amount?: number;
+  category?: string;
+  description?: string;
+  title?: string;
+  date?: string | null;
+  notes?: string | null;
+  payment_method?: string | null;
+};
 
 export function useExpenses() {
   const { shopId } = useAuth();
@@ -21,7 +43,11 @@ export function useExpenses() {
       }
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return (data || []).map((e: any) => ({
+        ...e,
+        title: e.description || e.title || "",
+        description: e.description || e.title || "",
+      })) as Expense[];
     },
     enabled: !!shopId,
   });
@@ -44,24 +70,34 @@ export function useCreateExpense() {
 
   return useMutation({
     mutationFn: async (expense: ExpenseInsert) => {
-      const final = { ...expense };
+      const final: any = { ...expense };
       if (!final.shop_id) {
         final.shop_id = shopId;
       }
+      const desc = (final.description || final.title || "").trim() || "Expense";
+      final.description = desc;
+      // Remove 'title' so PostgREST doesn't reject if the column isn't in PostgreSQL schema
+      delete final.title;
+
       const { data, error } = await supabase.from("expenses").insert(final).select().single();
       if (error) throw error;
+      const formatted: Expense = {
+        ...(data as any),
+        title: (data as any).description || (data as any).title || desc,
+        description: (data as any).description || (data as any).title || desc,
+      };
       await logAudit({
         action: "expense_created",
         entityType: "expenses",
-        entityId: data.id,
+        entityId: formatted.id,
         metadata: {
-          category: data.category,
-          amount: Number(data.amount || 0),
-          title: data.title,
-          notes: data.notes,
+          category: formatted.category,
+          amount: Number(formatted.amount || 0),
+          title: formatted.title,
+          notes: formatted.notes,
         },
       });
-      return data;
+      return formatted;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
@@ -75,20 +111,31 @@ export function useUpdateExpense() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: ExpenseUpdate & { id: string }) => {
-      const { data, error } = await supabase.from("expenses").update(updates).eq("id", id).select().single();
+      const finalUpdates: any = { ...updates };
+      if (finalUpdates.title || finalUpdates.description) {
+        finalUpdates.description = (finalUpdates.description || finalUpdates.title || "").trim();
+      }
+      delete finalUpdates.title;
+
+      const { data, error } = await supabase.from("expenses").update(finalUpdates).eq("id", id).select().single();
       if (error) throw error;
+      const formatted: Expense = {
+        ...(data as any),
+        title: (data as any).description || (data as any).title || "",
+        description: (data as any).description || (data as any).title || "",
+      };
       await logAudit({
         action: "expense_updated",
         entityType: "expenses",
-        entityId: data.id,
+        entityId: formatted.id,
         metadata: {
-          category: data.category,
-          amount: Number(data.amount || 0),
-          title: data.title,
-          notes: data.notes,
+          category: formatted.category,
+          amount: Number(formatted.amount || 0),
+          title: formatted.title,
+          notes: formatted.notes,
         },
       });
-      return data;
+      return formatted;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
@@ -138,7 +185,11 @@ export function useExpensesByDateRange(startDate: string | null, endDate: string
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data || []).map((e: any) => ({
+        ...e,
+        title: e.description || e.title || "",
+        description: e.description || e.title || "",
+      })) as Expense[];
     },
     enabled: !!startDate && !!endDate && !!shopId,
   });

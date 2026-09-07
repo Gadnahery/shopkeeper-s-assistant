@@ -508,7 +508,7 @@ export default function Reports() {
                   </TableRow>
                   {(expenses || []).map((e) => (
                     <TableRow key={e.id} className="text-xs">
-                      <TableCell className="text-muted-foreground pl-6">{e.title || e.category} ({e.category})</TableCell>
+                      <TableCell className="text-muted-foreground pl-6">{e.title || (e as any).description || e.category} ({e.category})</TableCell>
                       <TableCell className="text-right font-medium text-destructive">-{formatMoney(e.amount)}</TableCell>
                     </TableRow>
                   ))}

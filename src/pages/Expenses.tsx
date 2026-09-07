@@ -132,7 +132,7 @@ export default function Expenses() {
     if (!target) return;
     setEditForm({
       id: target.id,
-      title: target.title || "",
+      title: target.title || (target as any).description || "",
       category: target.category || "rent",
       amount: String(target.amount || ""),
       date: target.date ? target.date.slice(0, 10) : format(new Date(), "yyyy-MM-dd"),
@@ -152,11 +152,12 @@ export default function Expenses() {
       const updated = await updateExpense.mutateAsync({
         id: editForm.id,
         title: editForm.title.trim(),
+        description: editForm.title.trim(),
         category: editForm.category,
         amount: Number(editForm.amount),
         date: editForm.date,
         notes: editForm.notes.trim() || undefined,
-      } as any);
+      });
       toast.success(language === "sw" ? "Gharama imesasishwa" : "Expense updated successfully");
       setIsEditingExpense(false);
       setMobileDrawerOpen(false);
@@ -187,8 +188,9 @@ export default function Expenses() {
   const filteredExpenses = useMemo(() => {
     return (expenses || []).filter((e) => {
       const q = searchTerm.toLowerCase();
+      const expTitle = e.title || (e as any).description || "";
       const matchesSearch =
-        (e.title && e.title.toLowerCase().includes(q)) ||
+        (expTitle && expTitle.toLowerCase().includes(q)) ||
         (e.notes && e.notes.toLowerCase().includes(q)) ||
         (e.category && e.category.toLowerCase().includes(q));
 
@@ -270,12 +272,13 @@ export default function Expenses() {
     try {
       const created = await createExpense.mutateAsync({
         title: newForm.title.trim(),
+        description: newForm.title.trim(),
         category: newForm.category,
         amount: Number(newForm.amount),
         date: newForm.date,
         notes: newForm.notes.trim() || undefined,
         shop_id: shopId || undefined,
-      } as any);
+      });
 
       toast.success(language === "sw" ? "Gharama imerekodiwa" : "Expense recorded successfully");
       setIsAddingExpense(false);
@@ -519,7 +522,7 @@ export default function Expenses() {
         <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
           <div>
             <CardTitle className="text-sm font-bold text-foreground">
-              {selectedExpense.title || "Expense Details"}
+              {selectedExpense.title || (selectedExpense as any).description || "Expense Details"}
             </CardTitle>
             <p className="text-[11px] text-muted-foreground">{getCategoryLabel(selectedExpense.category || "other")}</p>
           </div>
@@ -835,7 +838,7 @@ export default function Expenses() {
                             >
                               <div className="min-w-0 flex-1 pr-3">
                                 <p className="font-semibold text-xs text-foreground truncate">
-                                  {exp.title || (language === "sw" ? "Gharama" : "Expense")}
+                                  {exp.title || (exp as any).description || (language === "sw" ? "Gharama" : "Expense")}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
                                   <span>{safeFormatDate(exp.date || exp.created_at, "MMM d")}</span>
@@ -911,7 +914,7 @@ export default function Expenses() {
                                   {safeFormatDate(exp.date || exp.created_at, "MMM d, yyyy")}
                                 </TableCell>
                                 <TableCell className="text-xs font-semibold text-foreground">
-                                  {exp.title || (language === "sw" ? "Gharama" : "Expense")}
+                                  {exp.title || (exp as any).description || (language === "sw" ? "Gharama" : "Expense")}
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
                                   {getCategoryLabel(exp.category || "other")}

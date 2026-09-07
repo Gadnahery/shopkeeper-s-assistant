@@ -746,6 +746,7 @@ export type Database = {
           category_id: string | null
           created_at: string | null
           date: string | null
+          description: string
           id: string
           is_recurring: boolean | null
           notes: string | null
@@ -753,7 +754,7 @@ export type Database = {
           receipt_url: string | null
           recurring_frequency: string | null
           shop_id: string
-          title: string
+          title: string | null
         }
         Insert: {
           amount: number
@@ -761,6 +762,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           date?: string | null
+          description?: string
           id?: string
           is_recurring?: boolean | null
           notes?: string | null
@@ -768,7 +770,7 @@ export type Database = {
           receipt_url?: string | null
           recurring_frequency?: string | null
           shop_id: string
-          title: string
+          title?: string | null
         }
         Update: {
           amount?: number
@@ -776,6 +778,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           date?: string | null
+          description?: string
           id?: string
           is_recurring?: boolean | null
           notes?: string | null
@@ -783,7 +786,7 @@ export type Database = {
           receipt_url?: string | null
           recurring_frequency?: string | null
           shop_id?: string
-          title?: string
+          title?: string | null
         }
         Relationships: [
           {
