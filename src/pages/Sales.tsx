@@ -247,16 +247,13 @@ export default function Sales() {
         : customerMode === "existing"
         ? customers?.find((c) => c.id === selectedCustomer)?.name || null
         : customerName.trim() || null;
-    const custId = customerMode === "existing" && selectedCustomer !== "walk-in" ? selectedCustomer : null;
-
     if (paymentType === "Credit") {
-      if (!custId) {
+      if (!custId && !custName) {
         toast.error(
           language === "sw"
-            ? "Mauzo ya mkopo yanahitaji kumchagua mteja aliyepo"
-            : "Credit sales require selecting an existing customer"
+            ? "Mauzo ya mkopo yanahitaji kumchagua mteja au kuandika jina la mteja"
+            : "Credit sales require selecting a customer or entering a customer name"
         );
-        setCustomerMode("existing");
         return;
       }
     } else {
@@ -488,6 +485,12 @@ export default function Sales() {
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="h-9 rounded-xl border-border bg-background text-xs font-semibold"
               />
+              <Input
+                placeholder={language === "sw" ? "Namba ya Simu (si lazima)..." : "Phone Number (optional)..."}
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="h-8 rounded-xl border-border bg-background text-xs"
+              />
             </div>
           )}
         </div>
@@ -637,9 +640,19 @@ export default function Sales() {
                   ? `Kiasi cha ${formatMoney(total)} kitaongezwa kwenye akaunti ya mteja. Malipo hayahitajiki papo hapo.`
                   : `Amount of ${formatMoney(total)} will be assigned to customer receivable balance. No immediate cash collected.`}
               </p>
-              {customerMode !== "existing" || selectedCustomer === "walk-in" ? (
+              {customerMode === "walk-in" ? (
                 <p className="text-[11px] font-bold text-rose-600 pt-0.5">
-                  {language === "sw" ? "⚠️ Tafadhali chagua mteja aliyepo hapo juu." : "⚠️ Please select a customer above."}
+                  {language === "sw" ? "⚠️ Tafadhali chagua mteja au andika jina la mteja hapo juu." : "⚠️ Please select a customer or type a customer name above."}
+                </p>
+              ) : customerMode === "custom" && !customerName.trim() ? (
+                <p className="text-[11px] font-bold text-rose-600 pt-0.5">
+                  {language === "sw" ? "⚠️ Tafadhali andika jina la mteja hapo juu." : "⚠️ Please type a customer name above."}
+                </p>
+              ) : customerMode === "custom" ? (
+                <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300 pt-0.5">
+                  {language === "sw"
+                    ? `Mteja "${customerName.trim()}" ataongezwa kwenye orodha ya wateja na deni lake kutunzwa.`
+                    : `Customer "${customerName.trim()}" will be saved with this credit debt balance.`}
                 </p>
               ) : null}
             </div>

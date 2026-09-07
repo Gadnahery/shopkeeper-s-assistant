@@ -75,9 +75,34 @@ async function updateOrderLegacy(id: string, updates: { status?: string; priorit
   if (updates.notes !== undefined) payload.notes = updates.notes ?? null;
   if (Object.keys(payload).length === 0) return null;
 
-  const { data, error } = await supabase.from("orders").update(payload).eq("id", id).select().single();
+  const { data: order, error } = await supabase.from("orders").update(payload).eq("id", id).select("*, order_items(*)").single();
   if (error) throw error;
-  return data;
+
+  // If order is completed and no sale is linked yet, record sale
+  if (updates.status === "completed" && !(order as any).sale_id && (order as any).order_items?.length) {
+    try {
+      const items = (order as any).order_items.map((it: any) => ({
+        product_id: it.product_id,
+        product_name: it.product_name,
+        unit_price: Number(it.unit_price) || 0,
+        quantity: Number(it.quantity) || 1,
+      }));
+
+      const { data: sale } = await (supabase as any).rpc("complete_sale_transaction", {
+        p_customer_name: order.customer_name ?? null,
+        p_payment_method: "Cash",
+        p_items: items,
+      });
+
+      if (sale?.id) {
+        await supabase.from("orders").update({ sale_id: sale.id }).eq("id", id);
+      }
+    } catch (e) {
+      console.warn("Could not auto-record sale for completed order:", e);
+    }
+  }
+
+  return order;
 }
 
 async function deleteOrderLegacy(id: string) {
@@ -205,9 +230,19 @@ export function useUpdateOrderStatus() {
       }
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      toast.success("Order updated");
+      if (variables.status === "completed") {
+        queryClient.invalidateQueries({ queryKey: ["sales"] });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        queryClient.invalidateQueries({ queryKey: ["sales", "today"] });
+        queryClient.invalidateQueries({ queryKey: ["sales", "summary"] });
+        queryClient.invalidateQueries({ queryKey: ["sales", "range"] });
+        toast.success("Order completed & recorded into Sales & ERP!");
+      } else {
+        toast.success("Order updated");
+      }
     },
     onError: (e) => toast.error("Failed: " + (e as Error).message),
   });
@@ -242,9 +277,19 @@ export function useUpdateOrder() {
         return updateOrderLegacy(id, updates);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      toast.success("Order updated");
+      if (variables.status === "completed") {
+        queryClient.invalidateQueries({ queryKey: ["sales"] });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        queryClient.invalidateQueries({ queryKey: ["sales", "today"] });
+        queryClient.invalidateQueries({ queryKey: ["sales", "summary"] });
+        queryClient.invalidateQueries({ queryKey: ["sales", "range"] });
+        toast.success("Order completed & recorded into Sales & ERP!");
+      } else {
+        toast.success("Order updated");
+      }
     },
     onError: (e) => toast.error("Failed: " + (e as Error).message),
   });

@@ -167,7 +167,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return data;
     },
     enabled: Boolean(shopId),
-    refetchInterval: 60_000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const latestPaymentQuery = useQuery({
@@ -186,7 +186,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return data;
     },
     enabled: Boolean(shopId),
-    refetchInterval: 60_000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const pendingPaymentQuery = useQuery({
@@ -206,7 +206,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return data as SubscriptionPayment | null;
     },
     enabled: Boolean(shopId),
-    refetchInterval: 15_000,
+    // Only poll if there is an active pending payment awaiting confirmation
+    refetchInterval: (query) => (query.state.data ? 30_000 : false),
   });
 
   const paymentOptionsQuery = useQuery({
