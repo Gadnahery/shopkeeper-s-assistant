@@ -96,13 +96,13 @@ export default function Reports() {
   const { data: otherIncome, isLoading: otherIncomeLoading } = useOtherIncomeByDateRange(start, end);
   const { data: products, isLoading: productsLoading } = useProducts();
 
-  if (sales === undefined || salesLoading || expensesLoading || otherIncomeLoading || productsLoading) {
-    return <PageLoader message="Loading reports..." messageSw="Inapakia ripoti..." language={language} />;
-  }
-
   const pnl = useMemo(() => {
     return calculatePnL(sales || [], expenses || [], otherIncome || []);
   }, [sales, expenses, otherIncome]);
+
+  if (sales === undefined || salesLoading || expensesLoading || otherIncomeLoading || productsLoading) {
+    return <PageLoader message="Loading reports..." messageSw="Inapakia ripoti..." language={language} />;
+  }
 
   const totalSales = pnl.grossSales;
   const netRevenue = pnl.revenue;
