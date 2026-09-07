@@ -74,12 +74,12 @@ export default function AddProduct() {
     e.preventDefault();
     const codeVal = formData.barcode || generateCode();
     await createProduct.mutateAsync({
-      code: codeVal,
       name: formData.name,
       item_type: formData.item_type,
       description: null,
       category_id: formData.category_id || null,
       barcode: codeVal,
+      sku: codeVal,
       image_url: formData.image_url || null,
       unit: formData.unit_type || "pcs",
       buying_price: parseFloat(formData.buying_price) || 0,

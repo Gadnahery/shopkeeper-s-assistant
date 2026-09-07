@@ -86,6 +86,9 @@ export default function Settings() {
     setCapabilities(resolveCapabilities(shopSettings.capabilities));
 
     const settings = shopSettings as any;
+    const caps = (shopSettings?.capabilities && typeof shopSettings.capabilities === "object")
+      ? (shopSettings.capabilities as Record<string, any>)
+      : {};
     setReceiptForm({
       receipt_header: settings.receipt_header || "",
       receipt_footer: settings.receipt_footer || "",
@@ -93,8 +96,8 @@ export default function Settings() {
       tax_rate: String(settings.tax_rate || 0),
     });
 
-    setEnableLowStockAlerts(settings.enable_low_stock_alerts ?? true);
-    setAutoPrintReceipt(settings.auto_print_receipt ?? false);
+    setEnableLowStockAlerts(settings.enable_low_stock_alerts ?? caps.enable_low_stock_alerts ?? true);
+    setAutoPrintReceipt(settings.auto_print_receipt ?? caps.auto_print_receipt ?? false);
   }, [shopSettings]);
 
   useEffect(() => {
@@ -137,6 +140,11 @@ export default function Settings() {
   const handleSaveReceipt = async () => {
     if (!shopId) return;
     try {
+      const currentCaps = (shopSettings?.capabilities && typeof shopSettings.capabilities === "object")
+        ? (shopSettings.capabilities as Record<string, any>)
+        : {};
+      const updatedCaps = { ...currentCaps, auto_print_receipt: autoPrintReceipt };
+
       await supabase
         .from("shops")
         .update({
@@ -144,6 +152,7 @@ export default function Settings() {
           receipt_footer: receiptForm.receipt_footer || null,
           logo_url: receiptForm.logo_url || null,
           tax_rate: parseFloat(receiptForm.tax_rate) || 0,
+          capabilities: updatedCaps as any,
           auto_print_receipt: autoPrintReceipt,
         })
         .eq("id", shopId);
@@ -158,7 +167,18 @@ export default function Settings() {
     setAutoPrintReceipt(checked);
     if (!shopId) return;
     try {
-      await supabase.from("shops").update({ auto_print_receipt: checked }).eq("id", shopId);
+      const currentCaps = (shopSettings?.capabilities && typeof shopSettings.capabilities === "object")
+        ? (shopSettings.capabilities as Record<string, any>)
+        : {};
+      const updatedCaps = { ...currentCaps, auto_print_receipt: checked };
+
+      await supabase
+        .from("shops")
+        .update({
+          capabilities: updatedCaps as any,
+          auto_print_receipt: checked,
+        })
+        .eq("id", shopId);
     } catch {
       // silently handle, save button can also persist
     }
@@ -168,7 +188,18 @@ export default function Settings() {
     setEnableLowStockAlerts(checked);
     if (!shopId) return;
     try {
-      await supabase.from("shops").update({ enable_low_stock_alerts: checked }).eq("id", shopId);
+      const currentCaps = (shopSettings?.capabilities && typeof shopSettings.capabilities === "object")
+        ? (shopSettings.capabilities as Record<string, any>)
+        : {};
+      const updatedCaps = { ...currentCaps, enable_low_stock_alerts: checked };
+
+      await supabase
+        .from("shops")
+        .update({
+          capabilities: updatedCaps as any,
+          enable_low_stock_alerts: checked,
+        })
+        .eq("id", shopId);
       toast.success(language === "sw" ? "Mipangilio ya tahadhari imesasishwa" : "Stock alert setting updated");
     } catch (e: any) {
       toast.error(e?.message || "Failed to update alert setting");

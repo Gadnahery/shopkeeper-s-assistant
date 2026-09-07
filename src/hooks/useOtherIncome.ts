@@ -57,11 +57,12 @@ export function useCreateOtherIncome() {
   const { shopId } = useAuth();
 
   return useMutation({
-    mutationFn: async (income: OtherIncomeInsert) => {
-      if (!shopId) throw new Error("No business found");
+    mutationFn: async (income: Omit<OtherIncomeInsert, "shop_id"> & { shop_id?: string }) => {
+      const targetShopId = income.shop_id || shopId;
+      if (!targetShopId) throw new Error("No business found");
       const { data, error } = await supabase
         .from("other_income")
-        .insert({ ...income, shop_id: shopId })
+        .insert({ ...income, shop_id: targetShopId })
         .select()
         .single();
       if (error) throw error;

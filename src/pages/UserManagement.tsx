@@ -30,6 +30,8 @@ import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
 import { requestPasswordReset } from "@/lib/passwordRecovery";
 
+type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
+
 type ShopUser = {
   id: string;
   user_id: string;
@@ -68,8 +70,8 @@ export default function UserManagement() {
   const [mobilePage, setMobilePage] = useState(1);
   const MOBILE_PAGE_SIZE = 4;
 
-  const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "staff" });
-  const [editForm, setEditForm] = useState({ full_name: "", email: "", phone: "", role: "staff" });
+  const [form, setForm] = useState<{ email: string; password: string; full_name: string; role: AppRole }>({ email: "", password: "", full_name: "", role: "staff" });
+  const [editForm, setEditForm] = useState<{ full_name: string; email: string; phone: string; role: AppRole }>({ full_name: "", email: "", phone: "", role: "staff" });
 
   const { data: users, isLoading } = useShopUsers(shopId);
 
@@ -146,7 +148,7 @@ export default function UserManagement() {
   };
 
   const openDetails = (u: ShopUser) => { setDetailsUser(u); setDetailsOpen(true); };
-  const openEdit = (u: ShopUser) => { setEditUser(u); setEditForm({ full_name: u.full_name, email: u.email ?? "", phone: u.phone ?? "", role: u.role ?? "staff" }); setEditOpen(true); };
+  const openEdit = (u: ShopUser) => { setEditUser(u); setEditForm({ full_name: u.full_name, email: u.email ?? "", phone: u.phone ?? "", role: (u.role as AppRole) || "staff" }); setEditOpen(true); };
 
   const handleUpdateUser = async () => {
     if (!editUser || !shopId) return;
@@ -250,7 +252,7 @@ export default function UserManagement() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">{language === "sw" ? "Jukumu" : "Role"}</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as AppRole })}>
                 <SelectTrigger className="h-9 rounded-xl border-border text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent className="rounded-xl">
                   {ROLES.map((r) => (
@@ -332,7 +334,7 @@ export default function UserManagement() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">{language === "sw" ? "Jukumu" : "Role"}</Label>
-              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as AppRole })}>
                 <SelectTrigger className="h-9 rounded-xl border-border text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent className="rounded-xl">
                   {ROLES.map((r) => (

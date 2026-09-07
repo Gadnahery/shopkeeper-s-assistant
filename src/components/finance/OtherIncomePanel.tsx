@@ -10,12 +10,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useCreateOtherIncome, useUpdateOtherIncome, useDeleteOtherIncome } from "@/hooks/useOtherIncome";
 import type { OtherIncome } from "@/hooks/useOtherIncome";
+import { useAuth } from "@/contexts/AuthContext";
 
 const categories = ["Consulting", "Rent", "Grant", "Interest", "Other"];
 
 export function OtherIncomePanel({ income }: { income: OtherIncome[] }) {
   const { language } = useLanguage();
   const { formatMoney } = useShopFormatting();
+  const { shopId } = useAuth();
   const createIncome = useCreateOtherIncome();
   const updateIncome = useUpdateOtherIncome();
   const deleteIncome = useDeleteOtherIncome();
@@ -82,6 +84,7 @@ export function OtherIncomePanel({ income }: { income: OtherIncome[] }) {
     } else {
       await createIncome.mutateAsync({
         ...form,
+        shop_id: shopId || "",
         title: form.title.trim(),
         amount: Number(form.amount),
         notes: form.notes.trim() || null,

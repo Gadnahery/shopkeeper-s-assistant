@@ -108,7 +108,10 @@ export function useAllSubscriptions() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as SubscriptionWithShop[];
+      return (data ?? []).map((row: any) => ({
+        ...row,
+        id: row.id || row.shop_id,
+      })) as SubscriptionWithShop[];
     },
     refetchInterval: 30_000,
   });

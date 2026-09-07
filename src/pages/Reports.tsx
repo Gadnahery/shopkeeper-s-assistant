@@ -181,7 +181,7 @@ export default function Reports() {
       title: `${language === "sw" ? "Ripoti ya Biashara" : "Business Performance Report"} (${rangeType.toUpperCase()})`,
       period: `${start} to ${end}`,
       stats: [
-        { label: language === "sw" ? "Jumla ya Mapato" : "Total Revenue", value: formatMoney(totalRevenue) },
+        { label: language === "sw" ? "Jumla ya Mapato" : "Total Revenue", value: formatMoney(netRevenue) },
         { label: language === "sw" ? "Jumla ya Matumizi" : "Total Expenses", value: formatMoney(totalExpenses) },
         { label: language === "sw" ? "Faida Halisi" : "Net Profit", value: formatMoney(netProfit) },
       ],
@@ -207,7 +207,7 @@ export default function Reports() {
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
-            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalRevenue)}</p>
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(netRevenue)}</p>
             <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{sales?.length || 0} sales + {otherIncome?.length || 0} other</p>
           </div>
         </Card>

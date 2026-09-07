@@ -39,13 +39,13 @@ export default function Notifications() {
       title: language === "sw" ? `Bidhaa Imepungua: ${prod.name}` : `Low Stock: ${prod.name}`,
       message:
         language === "sw"
-          ? `Zimebaki ${prod.current_stock ?? 0} pekee (Kiwango cha chini: ${prod.min_stock_alert ?? 5}). Ongeza oda mpya.`
-          : `Only ${prod.current_stock ?? 0} left in stock (Min reorder point: ${prod.min_stock_alert ?? 5}). Reorder now.`,
+          ? `Zimebaki ${prod.stock ?? 0} pekee (Kiwango cha chini: ${prod.low_stock_alert ?? 5}). Ongeza oda mpya.`
+          : `Only ${prod.stock ?? 0} left in stock (Min reorder point: ${prod.low_stock_alert ?? 5}). Reorder now.`,
       link: "/purchases?new=true",
       linkText: language === "sw" ? "Agiza Upya" : "Reorder Stock",
       created_at: prod.updated_at || new Date().toISOString(),
       is_unread: true,
-      severity: (prod.current_stock ?? 0) <= 0 ? "critical" : "warning",
+      severity: (prod.stock ?? 0) <= 0 ? "critical" : "warning",
     }));
   }, [lowStockProducts, language]);
 
@@ -71,14 +71,24 @@ export default function Notifications() {
 
   // Combined system feed
   const combinedAlerts = useMemo(() => {
+    const deriveLink = (type: string | null) => {
+      if (!type) return null;
+      if (type.includes("stock")) return "/purchases?new=true";
+      if (type.includes("order")) return "/orders";
+      if (type.includes("sale")) return "/sales";
+      if (type.includes("customer") || type.includes("debt")) return "/customers";
+      if (type.includes("payment") || type.includes("subscription")) return "/platform-admin";
+      return null;
+    };
+
     const rawDb = (dbNotifications || []).map((n) => ({
       id: String(n.id),
       type: "system",
       title: n.title,
       message: n.message,
-      link: n.link || null,
+      link: n.link || deriveLink(n.type),
       linkText: language === "sw" ? "Tazama" : "View",
-      created_at: n.created_at,
+      created_at: n.created_at || new Date().toISOString(),
       is_unread: !n.read_at,
       severity: "info",
     }));

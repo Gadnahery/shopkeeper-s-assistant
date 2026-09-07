@@ -24,6 +24,7 @@ import {
   LayoutGrid,
   LayoutList,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,12 +130,10 @@ export default function Sales() {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
       p.name.toLowerCase().includes(q) ||
-      (p.name_sw && p.name_sw.toLowerCase().includes(q)) ||
       (p.barcode && p.barcode.toLowerCase().includes(q)) ||
-      (p.sku && p.sku.toLowerCase().includes(q)) ||
-      (p.code && p.code.toLowerCase().includes(q));
+      (p.sku && p.sku.toLowerCase().includes(q));
     const matchesCategory =
-      selectedCategory === "all" || p.category_id === selectedCategory || p.category === selectedCategory;
+      selectedCategory === "all" || p.category_id === selectedCategory;
     const isService = p.item_type === "service" || p.track_inventory === false;
     const matchesType =
       itemTypeFilter === "all"
@@ -169,7 +168,7 @@ export default function Sales() {
         {
           id: crypto.randomUUID(),
           product_id: product.id,
-          name: language === "sw" && product.name_sw ? product.name_sw : product.name,
+          name: product.name,
           price: Number(product.selling_price) || 0,
           quantity: 1,
           maxStock: trackInventory ? product.stock : Number.POSITIVE_INFINITY,
@@ -905,14 +904,11 @@ export default function Sales() {
                           )}
                         >
                           <TableCell className="py-2 font-mono text-[11px] text-muted-foreground">
-                            {product.code || product.barcode || product.sku || "PRD"}
+                            {product.barcode || product.sku || "PRD"}
                           </TableCell>
                           <TableCell className="py-2">
                             <div className="min-w-0">
                               <p className="font-semibold text-xs text-foreground truncate">{product.name}</p>
-                              {product.name_sw && product.name_sw !== product.name && (
-                                <p className="text-[10px] text-muted-foreground truncate">{product.name_sw}</p>
-                              )}
                             </div>
                           </TableCell>
                           <TableCell className="py-2 text-center">
@@ -972,7 +968,7 @@ export default function Sales() {
                   >
                     <div className="flex items-center justify-between gap-1 mb-1.5">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase truncate">
-                        {isService ? (language === "sw" ? "Huduma" : "Service") : (product.code || product.barcode || product.sku || "PRD")}
+                        {isService ? (language === "sw" ? "Huduma" : "Service") : (product.barcode || product.sku || "PRD")}
                       </span>
                       {isService ? (
                         <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 shrink-0">

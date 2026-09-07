@@ -33,138 +33,6 @@ export type Database = {
         }
         Relationships: []
       }
-      shop_subscriptions: {
-        Row: {
-          id: string
-          shop_id: string
-          status: string
-          trial_started_at: string | null
-          trial_ends_at: string | null
-          current_period_started_at: string | null
-          current_period_ends_at: string | null
-          grace_ends_at: string | null
-          monthly_price: number
-          provider: string
-          last_payment_at: string | null
-          metadata: Json
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          shop_id: string
-          status?: string
-          trial_started_at?: string | null
-          trial_ends_at?: string | null
-          current_period_started_at?: string | null
-          current_period_ends_at?: string | null
-          grace_ends_at?: string | null
-          monthly_price?: number
-          provider?: string
-          last_payment_at?: string | null
-          metadata?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          shop_id?: string
-          status?: string
-          trial_started_at?: string | null
-          trial_ends_at?: string | null
-          current_period_started_at?: string | null
-          current_period_ends_at?: string | null
-          grace_ends_at?: string | null
-          monthly_price?: number
-          provider?: string
-          last_payment_at?: string | null
-          metadata?: Json
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      subscription_payments: {
-        Row: {
-          id: string
-          shop_id: string
-          initiated_by: string | null
-          external_id: string
-          provider: string
-          payment_channel: string
-          phone_number: string
-          amount: number
-          currency: string
-          billing_period_months: number | null
-          status: string
-          provider_reference: string | null
-          utility_reference: string | null
-          transaction_reference: string | null
-          message: string | null
-          callback_payload: Json
-          paid_for_period_start: string | null
-          paid_for_period_end: string | null
-          completed_at: string | null
-          proof_url: string | null
-          verified_by: string | null
-          verified_at: string | null
-          rejection_reason: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          shop_id: string
-          initiated_by?: string | null
-          external_id: string
-          provider?: string
-          payment_channel: string
-          phone_number: string
-          amount: number
-          currency?: string
-          billing_period_months?: number | null
-          status?: string
-          provider_reference?: string | null
-          utility_reference?: string | null
-          transaction_reference?: string | null
-          message?: string | null
-          callback_payload?: Json
-          paid_for_period_start?: string | null
-          paid_for_period_end?: string | null
-          completed_at?: string | null
-          proof_url?: string | null
-          verified_by?: string | null
-          verified_at?: string | null
-          rejection_reason?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          shop_id?: string
-          initiated_by?: string | null
-          external_id?: string
-          provider?: string
-          payment_channel?: string
-          phone_number?: string
-          amount?: number
-          currency?: string
-          billing_period_months?: number | null
-          status?: string
-          provider_reference?: string | null
-          utility_reference?: string | null
-          transaction_reference?: string | null
-          message?: string | null
-          callback_payload?: Json
-          paid_for_period_start?: string | null
-          paid_for_period_end?: string | null
-          completed_at?: string | null
-          proof_url?: string | null
-          verified_by?: string | null
-          verified_at?: string | null
-          rejection_reason?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
       other_income: {
         Row: {
           amount: number
@@ -862,6 +730,7 @@ export type Database = {
           shop_id: string
           title: string
           type: string | null
+                  link: string | null
         }
         Insert: {
           created_at?: string | null
@@ -871,6 +740,7 @@ export type Database = {
           shop_id: string
           title: string
           type?: string | null
+                  link?: string | null
         }
         Update: {
           created_at?: string | null
@@ -880,6 +750,7 @@ export type Database = {
           shop_id?: string
           title?: string
           type?: string | null
+                  link?: string | null
         }
         Relationships: [
           {
@@ -1649,7 +1520,7 @@ export type Database = {
           trial_ends_at: string
           trial_started_at: string
           updated_at: string
-        }
+                }
         Insert: {
           created_at?: string
           currency?: string
@@ -1665,7 +1536,7 @@ export type Database = {
           trial_ends_at?: string
           trial_started_at?: string
           updated_at?: string
-        }
+                }
         Update: {
           created_at?: string
           currency?: string
@@ -1681,7 +1552,7 @@ export type Database = {
           trial_ends_at?: string
           trial_started_at?: string
           updated_at?: string
-        }
+                }
         Relationships: [
           {
             foreignKeyName: "shop_subscriptions_shop_id_fkey"
@@ -1742,6 +1613,8 @@ export type Database = {
           receipt_header: string | null
           tax_rate: number | null
           updated_at: string | null
+                  auto_print_receipt: boolean | null
+          enable_low_stock_alerts: boolean | null
         }
         Insert: {
           address?: string | null
@@ -1760,6 +1633,8 @@ export type Database = {
           receipt_header?: string | null
           tax_rate?: number | null
           updated_at?: string | null
+                  auto_print_receipt?: boolean | null
+          enable_low_stock_alerts?: boolean | null
         }
         Update: {
           address?: string | null
@@ -1778,6 +1653,8 @@ export type Database = {
           receipt_header?: string | null
           tax_rate?: number | null
           updated_at?: string | null
+                  auto_print_receipt?: boolean | null
+          enable_low_stock_alerts?: boolean | null
         }
         Relationships: []
       }
@@ -1981,7 +1858,7 @@ export type Database = {
       subscription_payments: {
         Row: {
           amount: number
-          billing_period_months: number
+          billing_period_months: number | null
           callback_payload: Json
           completed_at: string | null
           created_at: string
@@ -2004,10 +1881,14 @@ export type Database = {
           transaction_reference: string | null
           updated_at: string
           utility_reference: string | null
+                  proof_url: string | null
+          rejection_reason: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           amount: number
-          billing_period_months?: number
+          billing_period_months?: number | null
           callback_payload?: Json
           completed_at?: string | null
           created_at?: string
@@ -2030,10 +1911,14 @@ export type Database = {
           transaction_reference?: string | null
           updated_at?: string
           utility_reference?: string | null
+                  proof_url?: string | null
+          rejection_reason?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           amount?: number
-          billing_period_months?: number
+          billing_period_months?: number | null
           callback_payload?: Json
           completed_at?: string | null
           created_at?: string
@@ -2056,6 +1941,10 @@ export type Database = {
           transaction_reference?: string | null
           updated_at?: string
           utility_reference?: string | null
+                  proof_url?: string | null
+          rejection_reason?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
