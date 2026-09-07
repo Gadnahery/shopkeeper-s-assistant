@@ -116,15 +116,95 @@ export function useAllSubscriptions() {
 
 export function useApprovePayment() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
-      const { data, error } = await supabase.functions.invoke("approve-subscription-payment", {
-        body: { payment_id: paymentId },
-      });
+      // 1. Try edge function first
+      try {
+        const { data, error } = await supabase.functions.invoke("approve-subscription-payment", {
+          body: { payment_id: paymentId },
+        });
 
-      if (error) throw new Error(error.message || "Failed to approve payment");
-      return data;
+        if (!error && data?.ok) return data;
+
+        const msg = error?.message || "";
+        if (msg && !msg.toLowerCase().includes("edge function") && !msg.toLowerCase().includes("failed to send a request") && !msg.toLowerCase().includes("failed to fetch")) {
+          throw error;
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg && !msg.toLowerCase().includes("edge function") && !msg.toLowerCase().includes("failed to send a request") && !msg.toLowerCase().includes("failed to fetch")) {
+          throw err;
+        }
+      }
+
+      // 2. Direct fallback using platform admin permissions
+      const { data: payment, error: fetchErr } = await supabase
+        .from("subscription_payments")
+        .select("*")
+        .eq("id", paymentId)
+        .single();
+
+      if (fetchErr || !payment) throw new Error("Payment record not found");
+
+      const now = new Date();
+      const { data: sub } = await supabase
+        .from("shop_subscriptions")
+        .select("current_period_ends_at")
+        .eq("shop_id", payment.shop_id)
+        .maybeSingle();
+
+      const currentEnds = sub?.current_period_ends_at ? new Date(sub.current_period_ends_at) : null;
+      const baseDate = currentEnds && currentEnds > now ? currentEnds : now;
+      const periodStart = new Date(baseDate);
+      const periodEnd = new Date(baseDate);
+      periodEnd.setMonth(periodEnd.getMonth() + (payment.billing_period_months || 1));
+
+      // Update payment to success
+      const { error: paymentUpdateErr } = await supabase
+        .from("subscription_payments")
+        .update({
+          status: "success",
+          verified_by: user?.id ?? null,
+          verified_at: now.toISOString(),
+          completed_at: now.toISOString(),
+          paid_for_period_start: periodStart.toISOString(),
+          paid_for_period_end: periodEnd.toISOString(),
+        })
+        .eq("id", paymentId);
+
+      if (paymentUpdateErr) throw paymentUpdateErr;
+
+      // Update subscription to active
+      const { error: subUpdateErr } = await supabase
+        .from("shop_subscriptions")
+        .update({
+          status: "active",
+          current_period_started_at: periodStart.toISOString(),
+          current_period_ends_at: periodEnd.toISOString(),
+          grace_ends_at: null,
+          last_payment_at: now.toISOString(),
+          monthly_price: Number(payment.amount) || 25000,
+          provider: "manual",
+        })
+        .eq("shop_id", payment.shop_id);
+
+      if (subUpdateErr) throw subUpdateErr;
+
+      // Add in-app notification for shop
+      try {
+        await supabase.from("notifications").insert({
+          shop_id: payment.shop_id,
+          title: "Malipo Yamekubaliwa ✅",
+          message: `Malipo yako ya TZS ${Number(payment.amount).toLocaleString()} yamekubaliwa. WiseCash Pro imeamilishwa kwa mwezi mmoja.`,
+          type: "payment_approved",
+        });
+      } catch {
+        // Notification is best-effort
+      }
+
+      return { ok: true, message: "Payment approved and subscription activated" };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-admin-pending-payments"] });
@@ -136,15 +216,64 @@ export function useApprovePayment() {
 
 export function useRejectPayment() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ paymentId, reason }: { paymentId: string; reason: string }) => {
-      const { data, error } = await supabase.functions.invoke("reject-subscription-payment", {
-        body: { payment_id: paymentId, reason },
-      });
+      // 1. Try edge function first
+      try {
+        const { data, error } = await supabase.functions.invoke("reject-subscription-payment", {
+          body: { payment_id: paymentId, reason },
+        });
 
-      if (error) throw new Error(error.message || "Failed to reject payment");
-      return data;
+        if (!error && data?.ok) return data;
+
+        const msg = error?.message || "";
+        if (msg && !msg.toLowerCase().includes("edge function") && !msg.toLowerCase().includes("failed to send a request") && !msg.toLowerCase().includes("failed to fetch")) {
+          throw error;
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg && !msg.toLowerCase().includes("edge function") && !msg.toLowerCase().includes("failed to send a request") && !msg.toLowerCase().includes("failed to fetch")) {
+          throw err;
+        }
+      }
+
+      // 2. Direct fallback using platform admin permissions
+      const { data: payment } = await supabase
+        .from("subscription_payments")
+        .select("shop_id, amount")
+        .eq("id", paymentId)
+        .single();
+
+      const { error: rejectErr } = await supabase
+        .from("subscription_payments")
+        .update({
+          status: "rejected",
+          rejection_reason: reason,
+          verified_by: user?.id ?? null,
+          verified_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          message: `Rejected: ${reason}`,
+        })
+        .eq("id", paymentId);
+
+      if (rejectErr) throw rejectErr;
+
+      if (payment) {
+        try {
+          await supabase.from("notifications").insert({
+            shop_id: payment.shop_id,
+            title: "Malipo Yamekataliwa ❌",
+            message: `Malipo yako ya TZS ${Number(payment.amount).toLocaleString()} yamekataliwa. Sababu: ${reason}. Tuma tena ukithibitisha maelezo sahihi.`,
+            type: "payment_rejected",
+          });
+        } catch {
+          // Notification is best-effort
+        }
+      }
+
+      return { ok: true, message: "Payment rejected" };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-admin-pending-payments"] });

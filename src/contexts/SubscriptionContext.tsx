@@ -273,15 +273,97 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const submitManualPaymentMutation = useMutation({
     mutationFn: async (input: SubmitManualPaymentInput) => {
-      const { data, error, response } = await invokeBillingFunction<{ ok: boolean; payment_id: string }>(
-        "submit-manual-payment",
-        { body: input }
-      );
+      if (!shopId) throw new Error("No shop found for this account");
 
-      if (error) {
-        throw new Error(await getFunctionErrorMessage(error, "Failed to submit payment", response));
+      // 1. Try invoking the Edge Function first
+      let edgeFunctionSucceeded = false;
+      try {
+        const { data, error, response } = await invokeBillingFunction<{ ok: boolean; payment_id: string }>(
+          "submit-manual-payment",
+          { body: input }
+        );
+
+        if (!error && data?.ok) {
+          edgeFunctionSucceeded = true;
+          return data as { ok: boolean; payment_id: string };
+        }
+
+        const errorMsg = await getFunctionErrorMessage(error, "", response);
+        // If it's a specific validation error from the function (not a deployment/network issue), rethrow it
+        if (
+          errorMsg &&
+          !errorMsg.toLowerCase().includes("edge function") &&
+          !errorMsg.toLowerCase().includes("failed to send a request") &&
+          !errorMsg.toLowerCase().includes("failed to fetch")
+        ) {
+          throw new Error(errorMsg);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (
+          message &&
+          !message.toLowerCase().includes("edge function") &&
+          !message.toLowerCase().includes("failed to send a request") &&
+          !message.toLowerCase().includes("failed to fetch")
+        ) {
+          throw err;
+        }
       }
-      return data as { ok: boolean; payment_id: string };
+
+      // 2. Direct database fallback if edge function is not deployed to Supabase
+      if (!edgeFunctionSucceeded) {
+        const { data: existingPending } = await supabase
+          .from("subscription_payments")
+          .select("id, status")
+          .eq("shop_id", shopId)
+          .eq("status", "pending")
+          .maybeSingle();
+
+        if (existingPending) {
+          throw new Error("Una muamala unaosubiri kuhakikiwa tayari. Tafadhali subiri uthibitishwe.");
+        }
+
+        const externalId = `manual_${crypto.randomUUID()}`;
+        const { data: payment, error: insertError } = await supabase
+          .from("subscription_payments")
+          .insert({
+            shop_id: shopId,
+            initiated_by: user?.id ?? null,
+            provider: "manual",
+            payment_channel: input.payment_channel,
+            phone_number: input.phone_number,
+            amount: input.amount,
+            currency: "TZS",
+            billing_period_months: input.billing_period_months ?? 1,
+            status: "pending",
+            external_id: externalId,
+            transaction_reference: input.transaction_reference,
+            proof_url: input.proof_url || null,
+            message: `Manual payment submitted via ${input.payment_channel}. Reference: ${input.transaction_reference}`,
+            paid_for_period_start: input.payment_date || new Date().toISOString().slice(0, 10),
+          })
+          .select()
+          .single();
+
+        if (insertError || !payment) {
+          throw new Error(insertError?.message || "Failed to record payment");
+        }
+
+        try {
+          await supabase.from("notifications").insert({
+            shop_id: shopId,
+            title: "Malipo Yamewasilishwa",
+            message: `Taarifa za malipo ya TZS ${Number(input.amount).toLocaleString()} (${input.payment_channel}) zimewasilishwa na zinahakikiwa.`,
+            type: "payment_submitted",
+          });
+        } catch {
+          // Notification is best-effort
+        }
+
+        return { ok: true, payment_id: payment.id };
+      }
+
+      throw new Error("Failed to submit payment");
     },
     onSuccess: async () => {
       await Promise.all([
