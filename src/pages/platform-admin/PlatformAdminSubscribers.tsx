@@ -60,7 +60,7 @@ export default function PlatformAdminSubscribers() {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       const shopName = sub.shops?.name?.toLowerCase() ?? "";
-      const phone = sub.shops?.contact_phone?.toLowerCase() ?? "";
+      const phone = sub.shops?.phone?.toLowerCase() ?? "";
       return shopName.includes(q) || phone.includes(q);
     });
   }, [subscriptions, filter, searchQuery]);
@@ -159,9 +159,9 @@ export default function PlatformAdminSubscribers() {
                         <td className="py-3.5 px-4 font-semibold text-foreground">
                           <div>
                             <span>{sub.shops?.name ?? "Shop"}</span>
-                            {sub.shops?.contact_phone && (
+                            {sub.shops?.phone && (
                               <span className="block text-[11px] text-muted-foreground font-mono font-normal mt-0.5">
-                                {sub.shops.contact_phone}
+                                {sub.shops.phone}
                               </span>
                             )}
                           </div>

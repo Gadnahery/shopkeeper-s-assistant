@@ -20,7 +20,7 @@ export type PendingPaymentWithShop = {
   message: string | null;
   shops?: {
     name: string;
-    contact_phone?: string | null;
+    phone?: string | null;
   } | null;
 };
 
@@ -36,7 +36,7 @@ export type SubscriptionWithShop = {
   created_at: string;
   shops?: {
     name: string;
-    contact_phone?: string | null;
+    phone?: string | null;
   } | null;
 };
 
@@ -70,7 +70,7 @@ export function usePendingPayments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_payments")
-        .select("*, shops(name, contact_phone)")
+        .select("*, shops(name, phone)")
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
@@ -87,7 +87,7 @@ export function useAllPayments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscription_payments")
-        .select("*, shops(name, contact_phone)")
+        .select("*, shops(name, phone)")
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -104,7 +104,7 @@ export function useAllSubscriptions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shop_subscriptions")
-        .select("*, shops(name, contact_phone)")
+        .select("*, shops(name, phone)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;

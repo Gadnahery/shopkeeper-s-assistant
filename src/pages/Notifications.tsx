@@ -24,7 +24,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 export default function Notifications() {
   const { language } = useLanguage();
   const navigate = useNavigate();
-  const { formatCurrency } = useShopFormatting();
+  const { formatMoney } = useShopFormatting();
   const { data: dbNotifications, isLoading: notifsLoading, markAsRead, markAllRead, unreadCount } = useNotifications();
   const { data: lowStockProducts, isLoading: stockLoading } = useLowStockProducts();
   const { data: customers } = useCustomers();
@@ -39,13 +39,13 @@ export default function Notifications() {
       title: language === "sw" ? `Bidhaa Imepungua: ${prod.name}` : `Low Stock: ${prod.name}`,
       message:
         language === "sw"
-          ? `Zimebaki ${prod.current_stock} pekee (Kiwango cha chini: ${prod.min_stock_alert ?? 5}). Ongeza oda mpya.`
-          : `Only ${prod.current_stock} left in stock (Min reorder point: ${prod.min_stock_alert ?? 5}). Reorder now.`,
+          ? `Zimebaki ${prod.current_stock ?? 0} pekee (Kiwango cha chini: ${prod.min_stock_alert ?? 5}). Ongeza oda mpya.`
+          : `Only ${prod.current_stock ?? 0} left in stock (Min reorder point: ${prod.min_stock_alert ?? 5}). Reorder now.`,
       link: "/purchases?new=true",
       linkText: language === "sw" ? "Agiza Upya" : "Reorder Stock",
       created_at: prod.updated_at || new Date().toISOString(),
       is_unread: true,
-      severity: prod.current_stock <= 0 ? "critical" : "warning",
+      severity: (prod.current_stock ?? 0) <= 0 ? "critical" : "warning",
     }));
   }, [lowStockProducts, language]);
 
@@ -59,15 +59,15 @@ export default function Notifications() {
         title: language === "sw" ? `Deni la Mteja: ${c.name}` : `Outstanding Debt: ${c.name}`,
         message:
           language === "sw"
-            ? `Ana deni la ${formatCurrency(Number(c.credit_balance))}. Mawasiliano: ${c.phone || "Hakuna simu"}`
-            : `Has an outstanding balance of ${formatCurrency(Number(c.credit_balance))}. Phone: ${c.phone || "N/A"}`,
+            ? `Ana deni la ${formatMoney(Number(c.credit_balance))}. Mawasiliano: ${c.phone || "Hakuna simu"}`
+            : `Has an outstanding balance of ${formatMoney(Number(c.credit_balance))}. Phone: ${c.phone || "N/A"}`,
         link: `/customers/${c.id}`,
         linkText: language === "sw" ? "Tazama Mteja" : "View Customer",
         created_at: c.updated_at || new Date().toISOString(),
         is_unread: true,
         severity: "warning",
       }));
-  }, [customers, formatCurrency, language]);
+  }, [customers, formatMoney, language]);
 
   // Combined system feed
   const combinedAlerts = useMemo(() => {
