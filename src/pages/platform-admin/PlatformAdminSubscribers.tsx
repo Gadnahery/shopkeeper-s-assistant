@@ -28,10 +28,7 @@ function formatCurrency(amount: number) {
 }
 
 function getDaysRemaining(subscription: SubscriptionWithShop) {
-  const targetDate =
-    subscription.status === "trialing"
-      ? subscription.trial_ends_at
-      : subscription.current_period_ends_at;
+  const targetDate = subscription.current_period_ends_at || subscription.trial_ends_at;
 
   if (!targetDate) return null;
   const diff = new Date(targetDate).getTime() - Date.now();
@@ -40,20 +37,20 @@ function getDaysRemaining(subscription: SubscriptionWithShop) {
 
 export default function PlatformAdminSubscribers() {
   const { data: subscriptions = [], isLoading, refetch, isRefetching } = useAllSubscriptions();
-  const [filter, setFilter] = useState<"all" | "active" | "trialing" | "expiring" | "expired">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "pending" | "expiring" | "expired">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredSubscriptions = useMemo(() => {
     return subscriptions.filter((sub) => {
       const days = getDaysRemaining(sub);
       const isExpiring =
-        (sub.status === "active" || sub.status === "trialing") &&
+        sub.status === "active" &&
         days !== null &&
         days >= 0 &&
         days <= 7;
 
       if (filter === "active" && sub.status !== "active") return false;
-      if (filter === "trialing" && sub.status !== "trialing") return false;
+      if (filter === "pending" && sub.status !== "pending") return false;
       if (filter === "expired" && sub.status !== "expired") return false;
       if (filter === "expiring" && !isExpiring) return false;
 
@@ -73,7 +70,7 @@ export default function PlatformAdminSubscribers() {
             Shop Subscribers & Status
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Monitor billing status, trial periods, and access expiry across all registered shops.
+            Monitor billing status, pending activations, and access expiry across all registered shops.
           </p>
         </div>
         <Button
@@ -91,7 +88,7 @@ export default function PlatformAdminSubscribers() {
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border/80 w-full sm:w-auto overflow-x-auto">
-          {(["all", "active", "trialing", "expiring", "expired"] as const).map((status) => (
+          {(["all", "active", "pending", "expiring", "expired"] as const).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -102,57 +99,64 @@ export default function PlatformAdminSubscribers() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {status === "expiring" ? "Expiring ≤7d" : status}
+              {status === "expiring" ? "Expiring ≤7d" : status === "pending" ? "Pending Activation" : status}
             </button>
           ))}
         </div>
 
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search shop name or phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by shop name or phone..."
             className="pl-9 h-9 text-xs"
           />
         </div>
       </div>
 
       {/* Subscribers Table Card */}
-      <Card className="border border-border/80 bg-card shadow-xs">
+      <Card className="border border-border bg-card shadow-xs overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              All Shops ({filteredSubscriptions.length})
+            </span>
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Showing registered shops with their current subscription status and end date.
+          </CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex min-h-[300px] items-center justify-center">
+            <div className="flex h-48 items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : filteredSubscriptions.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <Users className="mx-auto h-8 w-8 opacity-40 mb-2" />
-              <p className="font-semibold text-foreground text-sm">No shops found</p>
-              <p className="text-xs mt-1">No shop subscriptions match your selected filter.</p>
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              No subscribers found matching filter criteria.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
-                  <tr>
-                    <th className="py-3 px-4">Shop Name</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Days Left</th>
-                    <th className="py-3 px-4">Period End / Expiry</th>
-                    <th className="py-3 px-4">Plan Price</th>
-                    <th className="py-3 px-4">Provider</th>
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground">
+                    <th className="py-3 px-4 font-semibold">Shop Name & Contact</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold">Days Remaining</th>
+                    <th className="py-3 px-4 font-semibold">Expiry Date</th>
+                    <th className="py-3 px-4 font-semibold">Price/Month</th>
+                    <th className="py-3 px-4 font-semibold">Provider</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {filteredSubscriptions.map((sub) => {
                     const days = getDaysRemaining(sub);
                     const isActive = sub.status === "active";
-                    const isTrial = sub.status === "trialing";
+                    const isPending = sub.status === "pending";
                     const isExp = sub.status === "expired";
-                    const expiryDate = isTrial
-                      ? sub.trial_ends_at
-                      : sub.current_period_ends_at;
+                    const expiryDate = sub.current_period_ends_at;
 
                     return (
                       <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
@@ -169,14 +173,14 @@ export default function PlatformAdminSubscribers() {
 
                         <td className="py-3.5 px-4">
                           <Badge
-                            variant={isActive ? "default" : isTrial ? "outline" : "destructive"}
+                            variant={isActive ? "default" : isPending ? "outline" : "destructive"}
                             className={cn(
                               "text-[10px] font-bold uppercase",
                               isActive && "bg-emerald-600 text-white",
-                              isTrial && "border-blue-500 text-blue-600 dark:text-blue-400"
+                              isPending && "border-amber-500 text-amber-600 dark:text-amber-400"
                             )}
                           >
-                            {isTrial ? "Trial" : sub.status}
+                            {isPending ? "Pending" : sub.status}
                           </Badge>
                         </td>
 

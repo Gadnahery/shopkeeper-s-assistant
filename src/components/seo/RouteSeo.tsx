@@ -121,7 +121,7 @@ function buildHomeJsonLd() {
             acceptedAnswer: {
               "@type": "Answer",
               text:
-                "WiseCash is currently open for use while worldwide billing is being prepared. Official global pricing will be announced later.",
+                "WiseCash costs TZS 25,000 per month with all features included, payable directly via mobile money (M-Pesa, Airtel Money, Tigo Pesa, or HaloPesa) with no card required.",
             },
           },
         ],
@@ -137,7 +137,7 @@ function getSeoConfig(pathname: string): SeoConfig {
     "/": {
       title: "WiseCash | POS, Inventory, Sales and Retail Management",
       description:
-        "WiseCash helps shops and growing businesses worldwide manage POS, inventory, sales, reports, staff, and daily operations in one modern web app.",
+        "WiseCash helps shops and growing businesses manage POS, inventory, sales, reports, staff, and daily operations in one modern web app.",
       robots: INDEXABLE_ROBOTS,
       canonicalPath: "/",
       ogType: "website",
@@ -152,9 +152,9 @@ function getSeoConfig(pathname: string): SeoConfig {
       ogType: "website",
     },
     "/pricing": {
-      title: "WiseCash Pricing | Global Launch Access",
+      title: "WiseCash Pricing | TZS 25,000/Month All-Inclusive",
       description:
-        "Start using WiseCash now while global billing is being prepared. Official worldwide pricing and payment options will be announced later.",
+        "WiseCash costs TZS 25,000 per month with all features included. Pay easily with mobile money (M-Pesa, Halotel, Airtel Money, Tigo Pesa) — no card needed.",
       robots: INDEXABLE_ROBOTS,
       canonicalPath: "/pricing",
       ogType: "website",
@@ -168,7 +168,7 @@ function getSeoConfig(pathname: string): SeoConfig {
       ogType: "website",
     },
     "/contact": {
-      title: "Contact WiseCash | Start a Trial or Get Setup Help",
+      title: "Contact WiseCash | Get Started or Request Setup Help",
       description:
         "Talk to WiseCash about onboarding, team training, and getting your shop set up with modern POS, stock, and reporting tools.",
       robots: INDEXABLE_ROBOTS,

@@ -33,14 +33,14 @@ export default function PlatformAdminOverview() {
   const { data: allPayments = [], isLoading: loadingPayments } = useAllPayments();
 
   const activeSubscribers = subscriptions.filter((s) => s.status === "active").length;
-  const trialingSubscribers = subscriptions.filter((s) => s.status === "trialing").length;
+  const pendingSubscribers = subscriptions.filter((s) => s.status === "pending").length;
   const expiredSubscribers = subscriptions.filter((s) => s.status === "expired").length;
 
   // Calculate expiring soon (within 7 days)
   const now = new Date().getTime();
   const expiringSoonCount = subscriptions.filter((s) => {
-    if (s.status !== "active" && s.status !== "trialing") return false;
-    const expiry = s.status === "trialing" ? s.trial_ends_at : s.current_period_ends_at;
+    if (s.status !== "active") return false;
+    const expiry = s.current_period_ends_at;
     if (!expiry) return false;
     const diffDays = Math.ceil((new Date(expiry).getTime() - now) / (1000 * 60 * 60 * 24));
     return diffDays >= 0 && diffDays <= 7;
@@ -107,7 +107,7 @@ export default function PlatformAdminOverview() {
               {activeSubscribers}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              +{trialingSubscribers} in free trial
+              +{pendingSubscribers} pending activation
             </p>
           </div>
         </Card>

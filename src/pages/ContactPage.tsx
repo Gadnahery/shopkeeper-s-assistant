@@ -9,13 +9,13 @@ import { APP_CONTACT, CONTACT_LINKS } from "@/lib/contact";
 
 const onboardingCards = [
   {
-    key: "trial",
-    titleEn: "Start your free trial",
-    titleSw: "Anza majaribio yako ya bure",
+    key: "get-started",
+    titleEn: "Get started with WiseCash",
+    titleSw: "Anza kutumia WiseCash",
     bodyEn:
-      "Create an account, explore the full system, and train your team before going live with your shop workflow.",
+      "Create your account, activate with mobile money (TZS 25,000/mo), and get your shop running today.",
     bodySw:
-      "Fungua akaunti, tumia mfumo mzima, na fundisha timu yako kabla ya kuanza kutumia mfumo kwenye kazi za duka.",
+      "Fungua akaunti, amilisha kwa mitandao ya simu (TZS 25,000/mwezi), na uanze kuendesha duka lako leo.",
     ctaEn: "Create account",
     ctaSw: "Fungua akaunti",
     href: "/signup",

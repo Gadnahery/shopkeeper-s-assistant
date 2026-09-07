@@ -649,6 +649,7 @@ export default function Sales() {
                   <Label className="text-[11px] font-semibold text-foreground">Cash (TSH)</Label>
                   <Input
                     type="number"
+                    inputMode="numeric"
                     value={cashAmount}
                     onChange={(e) => { setCashOverridden(true); setCashAmount(e.target.value); }}
                     onFocus={(e) => { if (e.target.value === "0") { setCashAmount(""); } }}
@@ -663,6 +664,7 @@ export default function Sales() {
                   <Label className="text-[11px] font-semibold text-foreground">M-Pesa / Mobile (TSH)</Label>
                   <Input
                     type="number"
+                    inputMode="numeric"
                     value={mpesaAmount}
                     onChange={(e) => setMpesaAmount(e.target.value)}
                     onFocus={(e) => { if (e.target.value === "0") setMpesaAmount(""); }}

@@ -503,6 +503,7 @@ export default function Purchases() {
                             <div className="flex items-center gap-1.5 flex-1">
                               <Input
                                 type="number"
+                                inputMode="numeric"
                                 min="1"
                                 placeholder="Qty"
                                 value={item.quantity}
@@ -511,6 +512,7 @@ export default function Purchases() {
                               />
                               <Input
                                 type="number"
+                                inputMode="numeric"
                                 placeholder="Price"
                                 value={item.buyingPrice}
                                 onChange={(e) => handlePriceChange(index, e.target.value)}

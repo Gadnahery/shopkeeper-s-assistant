@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Menu,
   Plus,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -14,6 +15,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useLowStockProducts } from "@/hooks/useProducts";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
+import { useIsPlatformAdmin } from "@/hooks/usePlatformAdmin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +32,7 @@ export function Header() {
   const { isMobile } = useAdaptiveLayout();
   const { unreadCount } = useNotifications();
   const { data: lowStock } = useLowStockProducts();
+  const { data: isPlatformAdmin } = useIsPlatformAdmin();
   const hasAlerts = (unreadCount > 0) || ((lowStock?.length ?? 0) > 0);
   const { formatDate } = useShopFormatting();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("today");
@@ -253,6 +256,22 @@ export function Header() {
           >
             <Plus className="h-3.5 w-3.5 text-accent" />
             <span className="truncate max-w-[120px] sm:max-w-none">{pageInfo.action.label.replace(/^\+\s*/, "")}</span>
+          </Button>
+        )}
+
+        {/* Platform Admin Button (Visible only to platform admins) */}
+        {isPlatformAdmin && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate("/platform-admin")}
+            className={cn(
+              "h-9 w-9 rounded-xl border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary shadow-xs transition-colors",
+              location.pathname.startsWith("/platform-admin") && "bg-primary text-primary-foreground border-primary"
+            )}
+            title="Platform Admin"
+          >
+            <ShieldCheck className="h-4 w-4" />
           </Button>
         )}
 

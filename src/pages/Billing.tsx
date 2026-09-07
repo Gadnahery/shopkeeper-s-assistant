@@ -160,10 +160,10 @@ export default function Billing() {
   }
 
   const isPending = Boolean(pendingPayment);
-  const isTrial = subscription?.status === "trialing";
   const isActive = subscription?.status === "active";
-  const isExpired = subscription?.status === "expired" || (!isActive && !isTrial);
-  const isExpiringSoon = (isActive || isTrial) && daysRemaining !== null && daysRemaining <= 5;
+  const isPendingActivation = subscription?.status === "pending";
+  const isExpired = subscription?.status === "expired" || (!isActive && !isPendingActivation);
+  const isExpiringSoon = isActive && daysRemaining !== null && daysRemaining <= 5;
 
   const currentChannelInfo = MANUAL_PAYMENT_CHANNELS.find((c) => c.value === selectedChannel);
 
@@ -197,10 +197,10 @@ export default function Billing() {
                 <BadgeCheck className="h-3.5 w-3.5" />
                 {language === "sw" ? "Mpango Hai" : "Active Plan"}
               </Badge>
-            ) : isTrial ? (
-              <Badge variant="outline" className="border-blue-500 text-blue-600 dark:text-blue-400 gap-1.5 py-1 px-3">
+            ) : isPendingActivation ? (
+              <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 gap-1.5 py-1 px-3">
                 <Clock3 className="h-3.5 w-3.5" />
-                {language === "sw" ? "Kipindi cha Jaribio" : "Trial Period"}
+                {language === "sw" ? "Inasubiri Malipo" : "Pending Activation"}
               </Badge>
             ) : (
               <Badge variant="destructive" className="gap-1.5 py-1 px-3">
@@ -229,8 +229,8 @@ export default function Billing() {
                 ? language === "sw" ? "Inahakikiwa" : "In Review"
                 : isActive
                 ? language === "sw" ? "WiseCash Pro Hai" : "WiseCash Pro Active"
-                : isTrial
-                ? language === "sw" ? "Jaribio Bure" : "Free Trial"
+                : isPendingActivation
+                ? language === "sw" ? "Inasubiri Malipo" : "Pending Activation"
                 : language === "sw" ? "Usajili Umekwisha" : "Expired"}
             </p>
             <p className="mt-0.5 text-[10px] sm:text-xs text-muted-foreground truncate">
@@ -553,6 +553,7 @@ export default function Billing() {
                     </Label>
                     <Input
                       type="text"
+                      inputMode="tel"
                       value={senderPhone}
                       onChange={(e) => setSenderPhone(e.target.value)}
                       placeholder="07XXXXXXXX au 2557XXXXXXXX"
@@ -569,6 +570,7 @@ export default function Billing() {
                       </Label>
                       <Input
                         type="number"
+                        inputMode="numeric"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         min={MANUAL_MONTHLY_PRICE_TZS}

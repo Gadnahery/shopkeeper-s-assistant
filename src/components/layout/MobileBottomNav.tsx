@@ -1,9 +1,10 @@
-import { Menu } from "lucide-react";
+import { Menu, ShieldCheck } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useMyPageAccess } from "@/hooks/useUserPageAccess";
+import { useIsPlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { MOBILE_PRIMARY_NAV, filterItemsByAccess, isRouteActive } from "./app-navigation";
 import { cn } from "@/lib/utils";
 import { QuickActionSheet } from "./QuickActionSheet";
@@ -13,10 +14,11 @@ export function MobileBottomNav() {
   const { language, t } = useLanguage();
   const { setCollapsed, isCollapsed } = useSidebar();
   const { data: allowedPages } = useMyPageAccess();
+  const { data: isPlatformAdmin } = useIsPlatformAdmin();
 
   const { profile } = useAuth();
   const items = filterItemsByAccess(MOBILE_PRIMARY_NAV, allowedPages, profile?.shops?.capabilities);
-  const totalColumns = items.length + 1;
+  const totalColumns = items.length + 1 + (isPlatformAdmin ? 1 : 0);
 
   return (
     <>
@@ -45,6 +47,21 @@ export function MobileBottomNav() {
             </NavLink>
           );
           })}
+
+          {isPlatformAdmin && (
+            <NavLink
+              to="/platform-admin"
+              className={cn(
+                "flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors",
+                location.pathname.startsWith("/platform-admin")
+                  ? "bg-primary/15 font-semibold text-primary"
+                  : "text-primary hover:bg-primary/10",
+              )}
+            >
+              <ShieldCheck className="h-[18px] w-[18px]" strokeWidth={location.pathname.startsWith("/platform-admin") ? 2 : 1.75} />
+              <span className="truncate">Admin</span>
+            </NavLink>
+          )}
 
           <button
           type="button"

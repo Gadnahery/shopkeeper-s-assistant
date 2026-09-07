@@ -1506,6 +1506,7 @@ export type Database = {
       }
       shop_subscriptions: {
         Row: {
+          id?: string
           created_at: string
           currency: string
           current_period_ends_at: string | null
@@ -1517,11 +1518,12 @@ export type Database = {
           provider: string
           shop_id: string
           status: string
-          trial_ends_at: string
-          trial_started_at: string
+          trial_ends_at: string | null
+          trial_started_at: string | null
           updated_at: string
-                }
+        }
         Insert: {
+          id?: string
           created_at?: string
           currency?: string
           current_period_ends_at?: string | null
@@ -1533,11 +1535,12 @@ export type Database = {
           provider?: string
           shop_id: string
           status?: string
-          trial_ends_at?: string
-          trial_started_at?: string
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
-                }
+        }
         Update: {
+          id?: string
           created_at?: string
           currency?: string
           current_period_ends_at?: string | null
@@ -1549,10 +1552,10 @@ export type Database = {
           provider?: string
           shop_id?: string
           status?: string
-          trial_ends_at?: string
-          trial_started_at?: string
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
-                }
+        }
         Relationships: [
           {
             foreignKeyName: "shop_subscriptions_shop_id_fkey"

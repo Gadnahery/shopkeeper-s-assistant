@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,7 @@ import {
   type ProductionMaterial,
 } from "@/hooks/useProduction";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
+import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 
@@ -54,10 +56,12 @@ interface MaterialFormRow {
 export default function Production() {
   const { t, language } = useLanguage();
   const { formatMoney, formatNumber } = useShopFormatting();
+  const { isMobile } = useAdaptiveLayout();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Inline Master-Detail State (NO POPUPS)
   const [isCreatingRun, setIsCreatingRun] = useState(searchParams.get("new") === "true");
@@ -91,6 +95,7 @@ export default function Production() {
       setIsCompleting(false);
       setIsConfirmingDelete(false);
       setIsConfirmingComplete(false);
+      setMobileDrawerOpen(true);
     };
     window.addEventListener("open-new-production", handleOpen);
     return () => window.removeEventListener("open-new-production", handleOpen);
@@ -104,15 +109,16 @@ export default function Production() {
       setIsCompleting(false);
       setIsConfirmingDelete(false);
       setIsConfirmingComplete(false);
+      setMobileDrawerOpen(true);
     }
   }, [searchParams]);
 
-  // Auto-select first batch if none selected and not creating
+  // Auto-select first batch if none selected and not creating (Desktop only)
   useEffect(() => {
-    if (!selectedBatch && batches && batches.length > 0 && !isCreatingRun) {
+    if (!isMobile && !selectedBatch && batches && batches.length > 0 && !isCreatingRun) {
       setSelectedBatch(batches[0]);
     }
-  }, [batches, selectedBatch, isCreatingRun]);
+  }, [batches, selectedBatch, isCreatingRun, isMobile]);
 
   // KPI Calculations
   const totalProducedUnits = useMemo(() => {
@@ -313,6 +319,413 @@ export default function Production() {
     }
   };
 
+  const renderRightPanel = () => (
+    <>
+      {/* Case 1: Inline "New Production Run" Panel */}
+      {isCreatingRun && (
+        <Card className="border border-border bg-card shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Factory className="h-4 w-4 text-accent" />
+              <span>{t("production.newRun")}</span>
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setIsCreatingRun(false);
+                setMobileDrawerOpen(false);
+              }}
+              className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+
+          <CardContent className="p-4 space-y-4">
+            {/* Output Product Selection */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">{t("production.outputProduct")} *</Label>
+              <Select value={selectedOutputProductId} onValueChange={setSelectedOutputProductId}>
+                <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
+                  <SelectValue placeholder={language === "sw" ? "Chagua bidhaa ya mwisho..." : "Select finished product..."} />
+                </SelectTrigger>
+                <SelectContent className="max-h-56 rounded-xl border-border bg-popover text-xs">
+                  {(products || []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} — Stk: {p.stock}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">{t("production.quantityToProduce")} *</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                value={targetBatchQty}
+                onChange={(e) => setTargetBatchQty(e.target.value)}
+                className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+              />
+            </div>
+
+            {/* Materials list */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground">{t("production.rawMaterials")}</Label>
+                <span className="text-[10px] text-muted-foreground">{language === "sw" ? "Zitakatwa stoo ukikamilisha" : "Deducted on completion"}</span>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {materialRows.map((row, index) => {
+                  const prod = products?.find((p) => p.id === row.productId);
+                  const qty = Number(row.quantity) || 0;
+                  const unitCost = Number(prod?.buying_price || 0);
+                  const lineCost = qty * unitCost;
+
+                  return (
+                    <div key={index} className="rounded-xl border border-border bg-muted/20 p-2.5 space-y-1.5">
+                      <Select
+                        value={row.productId}
+                        onValueChange={(val) => handleMaterialProductChange(index, val)}
+                      >
+                        <SelectTrigger className="h-8 rounded-lg border-border bg-background text-xs">
+                          <SelectValue placeholder={language === "sw" ? "Chagua malighafi..." : "Select material..."} />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-52 rounded-xl border-border bg-popover text-xs">
+                          {(products || []).map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name} (Stk: {p.stock})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Label className="text-[10px] text-muted-foreground">Qty:</Label>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            min="1"
+                            value={row.quantity}
+                            onChange={(e) => handleMaterialQtyChange(index, e.target.value)}
+                            className="h-7 w-16 rounded-lg border-border bg-background text-xs text-center font-semibold"
+                          />
+                        </div>
+
+                        <span className="text-xs font-bold text-foreground min-w-[60px] text-right">
+                          {formatMoney(lineCost)}
+                        </span>
+
+                        {materialRows.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeMaterialRow(index)}
+                            className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addMaterialRow}
+                className="h-8 w-full gap-1 rounded-xl border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-muted"
+              >
+                <Plus className="h-3.5 w-3.5 text-accent" />
+                <span>{language === "sw" ? "+ Ongeza Malighafi" : "+ Add Material"}</span>
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-muted/50 p-2.5 text-xs">
+              <span className="font-semibold text-foreground">{t("production.materialCost")}</span>
+              <span className="font-bold text-foreground">{formatMoney(totalEstimatedCost)}</span>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCreatingRun(false);
+                  setMobileDrawerOpen(false);
+                }}
+                className="h-9 rounded-xl text-xs flex-1"
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={async () => {
+                  await handleCreateRun();
+                  setMobileDrawerOpen(false);
+                }}
+                disabled={createBatch.isPending || !selectedOutputProductId}
+                className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2] shadow-xs hover:bg-primary/90"
+              >
+                {createBatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 text-accent mr-1" />}
+                <span>{language === "sw" ? "Panga Awamu" : "Plan Run"}</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Case 2: Inline Selected Batch Details or Complete Run Form */}
+      {!isCreatingRun && selectedBatch && (
+        <Card className="border border-border bg-card shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
+            <div>
+              <CardTitle className="text-sm font-bold text-foreground">
+                {selectedBatch.batch_number}
+              </CardTitle>
+              <p className="text-[11px] text-muted-foreground">{selectedBatch.output_product_name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {getStatusBadge(selectedBatch.status)}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setSelectedBatch(null);
+                  setIsConfirmingDelete(false);
+                  setIsCompleting(false);
+                  setIsConfirmingComplete(false);
+                  setMobileDrawerOpen(false);
+                }}
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                title={language === "sw" ? "Funga jopo" : "Close panel"}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-4 space-y-4">
+            {/* Inline Delete Confirmation Banner */}
+            {isConfirmingDelete ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 space-y-2.5">
+                <div className="flex items-center gap-2 text-destructive font-bold text-xs">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>{language === "sw" ? "Thibitisha kufuta awamu hii?" : "Confirm deleting this batch?"}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {language === "sw"
+                    ? "Awamu hii ya uzalishaji itaondolewa. Hatua hii haiwezi kubadilishwa."
+                    : "This production batch will be removed from your records."}
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsConfirmingDelete(false)}
+                    className="h-8 rounded-xl text-xs flex-1"
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      await handleDeleteRun();
+                      setMobileDrawerOpen(false);
+                    }}
+                    disabled={deleteBatch.isPending}
+                    className="h-8 rounded-xl bg-destructive text-xs font-bold text-destructive-foreground hover:bg-destructive/90 flex-1"
+                  >
+                    {deleteBatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                    <span>{language === "sw" ? "Futa Kabisa" : "Confirm Delete"}</span>
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Mode A: Complete Run Form inside panel with 2-Step Confirmation */}
+            {isCompleting ? (
+              <div className="space-y-3 rounded-xl bg-muted/30 p-3.5 border border-border">
+                <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-accent" />
+                  <span>{t("production.completeRun")}</span>
+                </h4>
+
+                {!isConfirmingComplete ? (
+                  <>
+                    <p className="text-[11px] text-muted-foreground">
+                      {language === "sw"
+                        ? "Weka idadi halisi iliyotengenezwa."
+                        : "Enter actual output units produced."}
+                    </p>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold">{t("production.quantityProduced")} *</Label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        value={completedQtyInput}
+                        onChange={(e) => setCompletedQtyInput(e.target.value)}
+                        className="h-9 rounded-xl border-border bg-background text-sm font-bold text-center"
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" size="sm" onClick={() => setIsCompleting(false)} className="h-8 rounded-xl text-xs flex-1">
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (!Number(completedQtyInput) || Number(completedQtyInput) <= 0) {
+                            toast.error(language === "sw" ? "Weka idadi sahihi." : "Enter valid quantity.");
+                            return;
+                          }
+                          setIsConfirmingComplete(true);
+                        }}
+                        className="h-8 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
+                      >
+                        <span>{language === "sw" ? "Kamilisha Uzalishaji..." : "Complete Run..."}</span>
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  /* Inline Confirmation Step */
+                  <div className="space-y-2.5 pt-1">
+                    <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs text-amber-800 dark:text-amber-300">
+                      <p className="font-bold mb-1">
+                        {language === "sw" ? "Tahadhari ya Stoki:" : "Inventory Notice:"}
+                      </p>
+                      <p className="text-[11px] leading-relaxed">
+                        {language === "sw"
+                          ? `Kukamilisha kutaongeza bidhaa ${completedQtyInput} za '${selectedBatch.output_product_name}' na kukata malighafi ${selectedBatch.input_materials.length} moja kwa moja stoo.`
+                          : `Completing will add ${completedQtyInput} units of '${selectedBatch.output_product_name}' and automatically deduct ${selectedBatch.input_materials.length} raw materials.`}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsConfirmingComplete(false)}
+                        className="h-8 rounded-xl text-xs flex-1"
+                      >
+                        {language === "sw" ? "Rudi Nyuma" : "Back"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          await handleExecuteComplete();
+                          setMobileDrawerOpen(false);
+                        }}
+                        disabled={completeBatch.isPending}
+                        className="h-8 rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700 flex-[2]"
+                      >
+                        {completeBatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                        <span>{language === "sw" ? "Thibitisha & Sasisha Stoki" : "Confirm & Update Stock"}</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Batch Details Summary */}
+            <div className="grid grid-cols-2 gap-3 rounded-xl bg-muted/30 p-3 text-xs">
+              <div>
+                <span className="text-muted-foreground">{language === "sw" ? "Lengo / Uzalishaji" : "Target / Produced"}:</span>
+                <p className="font-bold text-foreground">
+                  {selectedBatch.status === "completed" ? `${selectedBatch.quantity_produced} pcs` : `${selectedBatch.quantity_to_produce} pcs`}
+                </p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">{t("production.materialCost")}:</span>
+                <p className="font-bold text-foreground">{formatMoney(selectedBatch.total_cost)}</p>
+              </div>
+              {selectedBatch.notes && (
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">{t("production.notes")}:</span>
+                  <p className="text-foreground">{selectedBatch.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Input Materials Table */}
+            <div className="space-y-1.5">
+              <span className="text-xs font-semibold text-foreground">{t("production.rawMaterials")}</span>
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 text-xs">
+                      <TableHead>{language === "sw" ? "Malighafi" : "Material"}</TableHead>
+                      <TableHead className="text-center">{t("purchases.quantity")}</TableHead>
+                      <TableHead className="text-right">{language === "sw" ? "Gharama" : "Cost"}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedBatch.input_materials.map((m, idx) => (
+                      <TableRow key={idx} className="text-xs">
+                        <TableCell className="font-medium text-foreground">{m.product_name}</TableCell>
+                        <TableCell className="text-center">{m.quantity}</TableCell>
+                        <TableCell className="text-right font-bold text-foreground">{formatMoney(m.total_cost)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* Actions Footer */}
+            {!isCompleting && !isConfirmingDelete && (
+              <div className="flex flex-col gap-2 border-t border-border pt-3">
+                {selectedBatch.status === "planned" && (
+                  <Button
+                    onClick={() => handleStartRun(selectedBatch.id)}
+                    className="h-9 w-full gap-1.5 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                  >
+                    <Play className="h-3.5 w-3.5 text-accent" />
+                    <span>{t("production.startRun")}</span>
+                  </Button>
+                )}
+
+                {selectedBatch.status === "in_progress" && (
+                  <Button
+                    onClick={() => {
+                      setIsCompleting(true);
+                      setIsConfirmingComplete(false);
+                      setCompletedQtyInput(String(selectedBatch.quantity_to_produce));
+                    }}
+                    className="h-9 w-full gap-1.5 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
+                  >
+                    <Check className="h-3.5 w-3.5 text-accent" />
+                    <span>{t("production.completeRun")}</span>
+                  </Button>
+                )}
+
+                {/* Delete action (allowed when not completed) */}
+                {selectedBatch.status !== "completed" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsConfirmingDelete(true)}
+                    className="h-8 gap-1 rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>{language === "sw" ? "Futa Awamu Hii" : "Delete Batch"}</span>
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </>
+  );
+
   return (
     <div className="space-y-6 pb-12">
       {/* 4 KPI Top Cards */}
@@ -344,9 +757,9 @@ export default function Production() {
             <DollarSign className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xs font-medium text-muted-foreground truncate">{t("production.materialCost")}</h3>
+            <h3 className="text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Gharama Zote za Malighafi" : "Total Material Cost"}</h3>
             <p className="text-lg font-bold text-foreground mt-0.5 truncate">{formatMoney(totalProductionCost)}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{language === "sw" ? "Gharama ya malighafi zote" : "Total materials cost"}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{language === "sw" ? "Awamu zilizokamilika" : "For completed runs"}</p>
           </div>
         </div>
 
@@ -412,6 +825,7 @@ export default function Production() {
                     setSelectedBatch(null);
                     setIsCompleting(false);
                     setIsConfirmingDelete(false);
+                    setMobileDrawerOpen(true);
                   }}
                   className="h-8 gap-1 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
                 >
@@ -445,6 +859,7 @@ export default function Production() {
                             setIsCompleting(false);
                             setIsConfirmingDelete(false);
                             setIsConfirmingComplete(false);
+                            setMobileDrawerOpen(true);
                           }}
                           className={cn(
                             "cursor-pointer transition-colors text-xs",
@@ -484,387 +899,19 @@ export default function Production() {
         </div>
 
         {/* Right Column (Inline Detail / Create Panel - 5 Cols, NO POPUPS) */}
-        <div className="space-y-4 lg:col-span-5">
-          {/* Case 1: Inline "New Production Run" Panel */}
-          {isCreatingRun && (
-            <Card className="border border-border bg-card shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
-                <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Factory className="h-4 w-4 text-accent" />
-                  <span>{t("production.newRun")}</span>
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsCreatingRun(false)}
-                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-
-              <CardContent className="p-4 space-y-4">
-                {/* Output Product Selection */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">{t("production.outputProduct")} *</Label>
-                  <Select value={selectedOutputProductId} onValueChange={setSelectedOutputProductId}>
-                    <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
-                      <SelectValue placeholder={language === "sw" ? "Chagua bidhaa ya mwisho..." : "Select finished product..."} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-56 rounded-xl border-border bg-popover text-xs">
-                      {(products || []).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} — Stk: {p.stock}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">{t("production.quantityToProduce")} *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={targetBatchQty}
-                    onChange={(e) => setTargetBatchQty(e.target.value)}
-                    className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
-                  />
-                </div>
-
-                {/* Materials list */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-foreground">{t("production.rawMaterials")}</Label>
-                    <span className="text-[10px] text-muted-foreground">{language === "sw" ? "Zitakatwa stoo ukikamilisha" : "Deducted on completion"}</span>
-                  </div>
-
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {materialRows.map((row, index) => {
-                      const prod = products?.find((p) => p.id === row.productId);
-                      const qty = Number(row.quantity) || 0;
-                      const unitCost = Number(prod?.buying_price || 0);
-                      const lineCost = qty * unitCost;
-
-                      return (
-                        <div key={index} className="rounded-xl border border-border bg-muted/20 p-2.5 space-y-1.5">
-                          <Select
-                            value={row.productId}
-                            onValueChange={(val) => handleMaterialProductChange(index, val)}
-                          >
-                            <SelectTrigger className="h-8 rounded-lg border-border bg-background text-xs">
-                              <SelectValue placeholder={language === "sw" ? "Chagua malighafi..." : "Select material..."} />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-52 rounded-xl border-border bg-popover text-xs">
-                              {(products || []).map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.name} — Stk: {p.stock} | {formatMoney(p.buying_price || 0)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          <div className="flex items-center justify-between gap-2">
-                            <Input
-                              type="number"
-                              min="0.1"
-                              step="any"
-                              placeholder="Qty"
-                              value={row.quantity}
-                              onChange={(e) => handleMaterialQtyChange(index, e.target.value)}
-                              className="h-8 w-20 rounded-lg border-border bg-background text-xs text-center font-semibold"
-                            />
-
-                            <span className="text-xs font-semibold text-foreground flex-1 text-right">
-                              {formatMoney(lineCost)}
-                            </span>
-
-                            {materialRows.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeMaterialRow(index)}
-                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addMaterialRow}
-                    className="h-8 w-full gap-1 rounded-xl border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-muted"
-                  >
-                    <Plus className="h-3.5 w-3.5 text-accent" />
-                    <span>{language === "sw" ? "+ Ongeza Malighafi" : "+ Add Material"}</span>
-                  </Button>
-                </div>
-
-                <div className="flex items-center justify-between rounded-xl bg-muted/50 p-2.5 text-xs">
-                  <span className="font-semibold text-foreground">{t("production.materialCost")}</span>
-                  <span className="font-bold text-foreground">{formatMoney(totalEstimatedCost)}</span>
-                </div>
-
-                <div className="flex gap-2 pt-1">
-                  <Button variant="outline" onClick={() => setIsCreatingRun(false)} className="h-9 rounded-xl text-xs flex-1">
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    onClick={handleCreateRun}
-                    disabled={createBatch.isPending || !selectedOutputProductId}
-                    className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2] shadow-xs hover:bg-primary/90"
-                  >
-                    {createBatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 text-accent mr-1" />}
-                    <span>{language === "sw" ? "Panga Awamu" : "Plan Run"}</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Case 2: Inline Selected Batch Details or Complete Run Form */}
-          {!isCreatingRun && selectedBatch && (
-            <Card className="border border-border bg-card shadow-xs">
-              <CardHeader className="flex flex-row items-center justify-between border-b border-border p-4">
-                <div>
-                  <CardTitle className="text-sm font-bold text-foreground">
-                    {selectedBatch.batch_number}
-                  </CardTitle>
-                  <p className="text-[11px] text-muted-foreground">{selectedBatch.output_product_name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(selectedBatch.status)}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setSelectedBatch(null);
-                      setIsConfirmingDelete(false);
-                      setIsCompleting(false);
-                      setIsConfirmingComplete(false);
-                    }}
-                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-                    title={language === "sw" ? "Funga jopo" : "Close panel"}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-
-              <CardContent className="p-4 space-y-4">
-                {/* Inline Delete Confirmation Banner */}
-                {isConfirmingDelete ? (
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 space-y-2.5">
-                    <div className="flex items-center gap-2 text-destructive font-bold text-xs">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span>{language === "sw" ? "Thibitisha kufuta awamu hii?" : "Confirm deleting this batch?"}</span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {language === "sw"
-                        ? "Awamu hii ya uzalishaji itaondolewa. Hatua hii haiwezi kubadilishwa."
-                        : "This production batch will be removed from your records."}
-                    </p>
-                    <div className="flex gap-2 pt-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setIsConfirmingDelete(false)}
-                        className="h-8 rounded-xl text-xs flex-1"
-                      >
-                        {t("common.cancel")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleDeleteRun}
-                        disabled={deleteBatch.isPending}
-                        className="h-8 rounded-xl bg-destructive text-xs font-bold text-destructive-foreground hover:bg-destructive/90 flex-1"
-                      >
-                        {deleteBatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-                        <span>{language === "sw" ? "Futa Kabisa" : "Confirm Delete"}</span>
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* Mode A: Complete Run Form inside panel with 2-Step Confirmation */}
-                {isCompleting ? (
-                  <div className="space-y-3 rounded-xl bg-muted/30 p-3.5 border border-border">
-                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <Check className="h-4 w-4 text-accent" />
-                      <span>{t("production.completeRun")}</span>
-                    </h4>
-
-                    {!isConfirmingComplete ? (
-                      <>
-                        <p className="text-[11px] text-muted-foreground">
-                          {language === "sw"
-                            ? "Weka idadi halisi iliyotengenezwa."
-                            : "Enter actual output units produced."}
-                        </p>
-                        <div className="space-y-1">
-                          <Label className="text-xs font-semibold">{t("production.quantityProduced")} *</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={completedQtyInput}
-                            onChange={(e) => setCompletedQtyInput(e.target.value)}
-                            className="h-9 rounded-xl border-border bg-background text-sm font-bold text-center"
-                          />
-                        </div>
-                        <div className="flex gap-2 pt-1">
-                          <Button variant="outline" size="sm" onClick={() => setIsCompleting(false)} className="h-8 rounded-xl text-xs flex-1">
-                            {t("common.cancel")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              if (!Number(completedQtyInput) || Number(completedQtyInput) <= 0) {
-                                toast.error(language === "sw" ? "Weka idadi sahihi." : "Enter valid quantity.");
-                                return;
-                              }
-                              setIsConfirmingComplete(true);
-                            }}
-                            className="h-8 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2]"
-                          >
-                            <span>{language === "sw" ? "Kamilisha Uzalishaji..." : "Complete Run..."}</span>
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      /* Inline Confirmation Step */
-                      <div className="space-y-2.5 pt-1">
-                        <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs text-amber-800 dark:text-amber-300">
-                          <p className="font-bold mb-1">
-                            {language === "sw" ? "Tahadhari ya Stoki:" : "Inventory Notice:"}
-                          </p>
-                          <p className="text-[11px] leading-relaxed">
-                            {language === "sw"
-                              ? `Kukamilisha kutaongeza bidhaa ${completedQtyInput} za '${selectedBatch.output_product_name}' na kukata malighafi ${selectedBatch.input_materials.length} moja kwa moja stoo.`
-                              : `Completing will add ${completedQtyInput} units of '${selectedBatch.output_product_name}' and automatically deduct ${selectedBatch.input_materials.length} raw materials.`}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsConfirmingComplete(false)}
-                            className="h-8 rounded-xl text-xs flex-1"
-                          >
-                            {language === "sw" ? "Rudi Nyuma" : "Back"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={handleExecuteComplete}
-                            disabled={completeBatch.isPending}
-                            className="h-8 rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700 flex-[2]"
-                          >
-                            {completeBatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-                            <span>{language === "sw" ? "Thibitisha & Sasisha Stoki" : "Confirm & Update Stock"}</span>
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-
-                {/* Batch Details Summary */}
-                <div className="grid grid-cols-2 gap-3 rounded-xl bg-muted/30 p-3 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">{language === "sw" ? "Lengo / Uzalishaji" : "Target / Produced"}:</span>
-                    <p className="font-bold text-foreground">
-                      {selectedBatch.status === "completed" ? `${selectedBatch.quantity_produced} pcs` : `${selectedBatch.quantity_to_produce} pcs`}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t("production.materialCost")}:</span>
-                    <p className="font-bold text-foreground">{formatMoney(selectedBatch.total_cost)}</p>
-                  </div>
-                  {selectedBatch.notes && (
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground">{t("production.notes")}:</span>
-                      <p className="text-foreground">{selectedBatch.notes}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Input Materials Table */}
-                <div className="space-y-1.5">
-                  <span className="text-xs font-semibold text-foreground">{t("production.rawMaterials")}</span>
-                  <div className="max-h-48 overflow-y-auto rounded-xl border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/40 text-xs">
-                          <TableHead>{language === "sw" ? "Malighafi" : "Material"}</TableHead>
-                          <TableHead className="text-center">{t("purchases.quantity")}</TableHead>
-                          <TableHead className="text-right">{language === "sw" ? "Gharama" : "Cost"}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedBatch.input_materials.map((m, idx) => (
-                          <TableRow key={idx} className="text-xs">
-                            <TableCell className="font-medium text-foreground">{m.product_name}</TableCell>
-                            <TableCell className="text-center">{m.quantity}</TableCell>
-                            <TableCell className="text-right font-bold text-foreground">{formatMoney(m.total_cost)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                {/* Actions Footer */}
-                {!isCompleting && !isConfirmingDelete && (
-                  <div className="flex flex-col gap-2 border-t border-border pt-3">
-                    {selectedBatch.status === "planned" && (
-                      <Button
-                        onClick={() => handleStartRun(selectedBatch.id)}
-                        className="h-9 w-full gap-1.5 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
-                      >
-                        <Play className="h-3.5 w-3.5 text-accent" />
-                        <span>{t("production.startRun")}</span>
-                      </Button>
-                    )}
-
-                    {selectedBatch.status === "in_progress" && (
-                      <Button
-                        onClick={() => {
-                          setIsCompleting(true);
-                          setIsConfirmingComplete(false);
-                          setCompletedQtyInput(String(selectedBatch.quantity_to_produce));
-                        }}
-                        className="h-9 w-full gap-1.5 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
-                      >
-                        <Check className="h-3.5 w-3.5 text-accent" />
-                        <span>{t("production.completeRun")}</span>
-                      </Button>
-                    )}
-
-                    {/* Delete action (allowed when not completed) */}
-                    {selectedBatch.status !== "completed" && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsConfirmingDelete(true)}
-                        className="h-8 gap-1 rounded-xl text-xs text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        <span>{language === "sw" ? "Futa Awamu Hii" : "Delete Batch"}</span>
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+        <div className="hidden lg:block lg:col-span-5 space-y-4">
+          {renderRightPanel()}
         </div>
       </div>
+
+      {/* Mobile Bottom Sheet for Production Run Details & Planning */}
+      <Sheet open={Boolean(isMobile && mobileDrawerOpen)} onOpenChange={setMobileDrawerOpen}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-0 border-t border-border bg-card lg:hidden">
+          <div className="p-1 space-y-4">
+            {renderRightPanel()}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

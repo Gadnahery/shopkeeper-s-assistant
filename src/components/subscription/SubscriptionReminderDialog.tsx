@@ -21,9 +21,7 @@ export function SubscriptionReminderDialog() {
 
   const reminderTarget = useMemo(() => {
     if (!subscription) return null;
-    return subscription.status === "trialing"
-      ? subscription.trial_ends_at
-      : subscription.current_period_ends_at;
+    return subscription.current_period_ends_at;
   }, [subscription]);
 
   const reminderStage = useMemo(() => {
@@ -74,8 +72,8 @@ export function SubscriptionReminderDialog() {
 
   const description = isBillingLocked
     ? language === "sw"
-      ? "Lipa usajili wa mwezi ili kuendelea kutumia Smart Money."
-      : "Renew your monthly plan to continue using Smart Money."
+      ? "Lipa usajili wa mwezi (TZS 25,000) ili kuendelea kutumia WiseCash."
+      : "Renew your monthly plan (TZS 25,000) to continue using WiseCash."
     : daysRemaining === 1
       ? language === "sw"
         ? "Kesho ndiyo siku ya mwisho ya kipindi chako cha sasa."
@@ -97,8 +95,8 @@ export function SubscriptionReminderDialog() {
 
         <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 text-sm text-muted-foreground">
           {language === "sw"
-            ? "Malipo yakithibitishwa na AzamPay, ufikiaji wa duka lako utarejeshwa kiotomatiki."
-            : "As soon as AzamPay confirms the payment, your shop access will be restored automatically."}
+            ? "Malipo yakithibitishwa, ufikiaji wa duka lako utahuishwa kiotomatiki."
+            : "Once payment is verified, your shop access will be active immediately."}
         </div>
 
         <DialogFooter className="sm:justify-between">

@@ -13,6 +13,7 @@ import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { getShellMeta } from "./app-navigation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SubscriptionGraceBanner } from "@/components/subscription/SubscriptionGraceBanner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +69,7 @@ function LayoutContent() {
           width: sidebarOffset > 0 ? `calc(100% - ${sidebarOffset}px)` : "100%",
         }}
       >
+        <SubscriptionGraceBanner />
         <Header />
         <main
           className={cn(

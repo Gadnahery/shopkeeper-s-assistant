@@ -26,8 +26,8 @@ export function Footer() {
             </Link>
             <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
               {language === "sw"
-                ? "Mfumo kamili wa ERP na POS kwa biashara za rejareja, viwanda vidogo, na maduka yanayokua."
-                : "Complete ERP and POS platform designed for retail, light manufacturing, and growing businesses."}
+                ? "WiseCash ni mfumo wa kisasa wa ERP na POS uliotengenezwa mahsusi kuwawezesha wafanyabiashara wa Tanzania kufuatilia stoki, kudhibiti madeni, na kujua faida halisi ya biashara zao kila siku."
+                : "WiseCash is modern retail ERP and POS software purpose-built to empower Tanzanian businesses to manage inventory, eliminate credit leakages, and track true daily profits."}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2.5 md:justify-start pt-1">
               <a
