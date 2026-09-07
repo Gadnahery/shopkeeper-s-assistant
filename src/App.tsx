@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
@@ -64,18 +65,6 @@ const PlatformAdminPayments = lazy(() => import("./pages/platform-admin/Platform
 const PlatformAdminSubscribers = lazy(() => import("./pages/platform-admin/PlatformAdminSubscribers"));
 const PlatformAdminRevenue = lazy(() => import("./pages/platform-admin/PlatformAdminRevenue"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-    mutations: {
-      retry: 0,
-    },
-  },
-});
 
 function RouteFallback() {
   return (

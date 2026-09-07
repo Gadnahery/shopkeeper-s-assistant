@@ -43,7 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
+import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useRecordCustomerPayment, useCustomerPayments } from "@/hooks/useCustomers";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { PageLoader } from "@/components/PageLoader";
@@ -82,6 +82,8 @@ export default function Customers() {
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
+  const recordPayment = useRecordCustomerPayment();
+  const { data: customerPayments } = useCustomerPayments(selectedCustomer?.id ?? null);
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
@@ -188,12 +190,14 @@ export default function Customers() {
     const amount = parseFloat(payAmount) || 0;
     if (amount <= 0) return;
 
-    const newBalance = Math.max(0, Number(selectedCustomer.credit_balance) - amount);
-
     try {
-      await updateCustomer.mutateAsync({ id: selectedCustomer.id, credit_balance: newBalance });
+      const res = await recordPayment.mutateAsync({
+        customerId: selectedCustomer.id,
+        amount,
+        paymentMethod: "Cash",
+      });
       toast.success(language === "sw" ? "Malipo ya deni yamehifadhiwa" : "Debt payment recorded");
-      setSelectedCustomer({ ...selectedCustomer, credit_balance: newBalance });
+      setSelectedCustomer({ ...selectedCustomer, credit_balance: res.new_balance });
       setPayAmount("");
     } catch (err: any) {
       toast.error(err?.message || "Failed to record payment");
@@ -422,6 +426,37 @@ export default function Customers() {
               </div>
             )}
           </div>
+
+          {/* Payment History / Auditable Debt Settlements */}
+          {customerPayments && customerPayments.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span>{language === "sw" ? "Historia ya Malipo ya Deni" : "Debt Repayment History"} ({customerPayments.length})</span>
+              </span>
+
+              <div className="max-h-36 overflow-y-auto rounded-xl border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 text-xs">
+                      <TableHead>{language === "sw" ? "Tarehe" : "Date"}</TableHead>
+                      <TableHead>{language === "sw" ? "Njia" : "Method"}</TableHead>
+                      <TableHead className="text-right">{language === "sw" ? "Kiasi" : "Amount"}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {customerPayments.map((p) => (
+                      <TableRow key={p.id} className="text-xs">
+                        <TableCell className="font-medium text-foreground">{format(new Date(p.created_at), "MMM d, yyyy")}</TableCell>
+                        <TableCell className="text-muted-foreground">{p.payment_method}</TableCell>
+                        <TableCell className="text-right font-bold text-emerald-600">+{formatMoney(p.amount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
 
           {/* Purchase History */}
           <div className="space-y-2">

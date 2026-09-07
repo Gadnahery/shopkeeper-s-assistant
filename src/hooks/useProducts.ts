@@ -2,60 +2,68 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type Product = Tables<"products">;
 export type ProductInsert = TablesInsert<"products">;
 export type ProductUpdate = TablesUpdate<"products">;
 
-async function getUserShopId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase.from("profiles").select("shop_id").eq("user_id", user.id).maybeSingle();
-  return data?.shop_id || null;
-}
-
 export function useProducts() {
+  const { shopId } = useAuth();
+
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", shopId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
         .select("*, categories(name, name_sw)")
         .order("created_at", { ascending: false });
+
+      if (shopId) {
+        query = query.eq("shop_id", shopId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
+    enabled: !!shopId,
   });
 }
 
 export function useProduct(id: string) {
+  const { shopId } = useAuth();
+
   return useQuery({
-    queryKey: ["products", id],
+    queryKey: ["products", shopId, id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
         .select("*, categories(name, name_sw)")
-        .eq("id", id)
-        .single();
+        .eq("id", id);
+
+      if (shopId) {
+        query = query.eq("shop_id", shopId);
+      }
+
+      const { data, error } = await query.single();
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !!shopId,
   });
 }
 
 export function useCreateProduct() {
   const queryClient = useQueryClient();
+  const { shopId } = useAuth();
   
   return useMutation({
     mutationFn: async (product: ProductInsert) => {
-      // Ensure shop_id is set
       const finalProduct: any = { ...product };
-      if (!finalProduct.shop_id) {
-        const shopId = await getUserShopId();
-        if (shopId) finalProduct.shop_id = shopId;
+      if (!finalProduct.shop_id && shopId) {
+        finalProduct.shop_id = shopId;
       }
-      // Ensure code is always set to avoid not-null constraint errors
       if (!finalProduct.code) {
         finalProduct.code = finalProduct.barcode || `PRD-${Date.now().toString().slice(-6)}`;
       }
@@ -129,14 +137,19 @@ export function useDeleteProduct() {
 }
 
 export function useLowStockProducts() {
+  const { shopId } = useAuth();
+
   return useQuery({
-    queryKey: ["products", "low-stock"],
+    queryKey: ["products", "low-stock", shopId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*");
+      let query = supabase.from("products").select("*");
+      if (shopId) {
+        query = query.eq("shop_id", shopId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data?.filter(p => p.item_type !== "service" && p.track_inventory !== false && p.stock <= (p.low_stock_alert ?? 5)) || [];
     },
+    enabled: !!shopId,
   });
 }

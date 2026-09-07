@@ -38,6 +38,7 @@ import { useSalesByDateRange } from "@/hooks/useSales";
 import { useExpensesByDateRange } from "@/hooks/useExpenses";
 import { useOtherIncomeByDateRange } from "@/hooks/useOtherIncome";
 import { useProducts } from "@/hooks/useProducts";
+import { calculatePnL } from "@/lib/financials";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
 import { PageLoader } from "@/components/PageLoader";
@@ -99,21 +100,48 @@ export default function Reports() {
     return <PageLoader message="Loading reports..." messageSw="Inapakia ripoti..." language={language} />;
   }
 
-  const totalSales = (sales || []).reduce((sum, s) => sum + Number(s.total || 0), 0);
-  const totalOtherIncome = (otherIncome || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const totalRevenue = totalSales + totalOtherIncome;
-  const totalExpenses = (expenses || []).reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  const netProfit = totalRevenue - totalExpenses;
+  const pnl = useMemo(() => {
+    return calculatePnL(sales || [], expenses || [], otherIncome || []);
+  }, [sales, expenses, otherIncome]);
+
+  const totalSales = pnl.grossSales;
+  const netRevenue = pnl.revenue;
+  const cogs = pnl.cogs;
+  const grossProfit = pnl.grossProfit;
+  const totalExpenses = pnl.totalExpenses;
+  const totalOtherIncome = pnl.totalOtherIncome;
+  const netProfit = pnl.netProfit;
+  const taxCollected = pnl.taxCollected;
+  const netMargin = pnl.netMargin;
   const stockValuation = (products || []).reduce((sum, p) => sum + Number(p.buying_price || 0) * Number(p.stock || 0), 0);
 
-  // Payment Breakdown
-  const cashTotal = (sales || []).filter((s) => s.payment_method === "Cash").reduce((sum, s) => sum + Number(s.total || 0), 0);
-  const mpesaTotal = (sales || []).filter((s) => s.payment_method === "M-Pesa").reduce((sum, s) => sum + Number(s.total || 0), 0);
-  const otherPayTotal = totalRevenue - cashTotal - mpesaTotal;
+  // Payment Breakdown including Split and Credit
+  const cashTotal = (sales || []).reduce((sum, s) => {
+    const m = String(s.payment_method || "").toLowerCase();
+    if (m === "cash") return sum + Number(s.total || 0);
+    if (m === "split") return sum + Number(s.cash_amount || 0);
+    return sum;
+  }, 0);
+
+  const mpesaTotal = (sales || []).reduce((sum, s) => {
+    const m = String(s.payment_method || "").toLowerCase();
+    if (m === "m-pesa" || m === "mpesa") return sum + Number(s.total || 0);
+    if (m === "split") return sum + Number(s.mpesa_amount || 0);
+    return sum;
+  }, 0);
+
+  const creditTotal = (sales || []).reduce((sum, s) => {
+    const m = String(s.payment_method || "").toLowerCase();
+    if (m === "credit") return sum + Number(s.total || 0);
+    return sum;
+  }, 0);
+
+  const otherPayTotal = Math.max(0, totalSales - cashTotal - mpesaTotal - creditTotal);
 
   const paymentChartData = [
     { name: "Cash", value: cashTotal, color: "#1a1d29" },
     { name: "M-Pesa / Mobile", value: mpesaTotal, color: "#d99a4e" },
+    { name: language === "sw" ? "Mkopo" : "Credit", value: creditTotal, color: "#f59e0b" },
     { name: "Other", value: otherPayTotal > 0 ? otherPayTotal : 0, color: "#9ca3af" },
   ].filter((p) => p.value > 0);
 
@@ -428,20 +456,28 @@ export default function Reports() {
         {/* Tab 2: Profit & Loss */}
         {reportTab === "profit" && (
           <div className="p-5 space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-border bg-muted/20 p-4">
-                <span className="text-xs font-medium text-muted-foreground">{t("reports.grossSales")}</span>
-                <p className="mt-2 text-xl font-bold text-foreground">{formatMoney(totalRevenue)}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-border bg-muted/20 p-3.5">
+                <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Mauzo (Bila Kodi)" : "Net Revenue"}</span>
+                <p className="mt-1 text-lg sm:text-xl font-bold text-foreground">{formatMoney(netRevenue)}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Gross: {formatMoney(totalSales)}</p>
               </div>
-              <div className="rounded-xl border border-border bg-muted/20 p-4">
-                <span className="text-xs font-medium text-muted-foreground">{t("reports.operatingExpenses")}</span>
-                <p className="mt-2 text-xl font-bold text-destructive">-{formatMoney(totalExpenses)}</p>
+              <div className="rounded-xl border border-border bg-muted/20 p-3.5">
+                <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Gharama ya Mauzo (COGS)" : "Cost of Goods Sold"}</span>
+                <p className="mt-1 text-lg sm:text-xl font-bold text-amber-600">-{formatMoney(cogs)}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{language === "sw" ? "Gharama halisi ya mzigo" : "Historical item cost"}</p>
               </div>
-              <div className="rounded-xl border border-border bg-muted/20 p-4">
+              <div className="rounded-xl border border-border bg-muted/20 p-3.5">
+                <span className="text-xs font-medium text-muted-foreground">{language === "sw" ? "Faida Ghafi" : "Gross Profit"}</span>
+                <p className="mt-1 text-lg sm:text-xl font-bold text-blue-600">{formatMoney(grossProfit)}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{netRevenue > 0 ? `${((grossProfit / netRevenue) * 100).toFixed(1)}% margin` : "0%"}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-muted/20 p-3.5">
                 <span className="text-xs font-medium text-muted-foreground">{t("reports.netProfit")}</span>
-                <p className={cn("mt-2 text-xl font-bold", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
+                <p className={cn("mt-1 text-lg sm:text-xl font-bold", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
                   {formatMoney(netProfit)}
                 </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{netMargin.toFixed(1)}% net margin</p>
               </div>
             </div>
 
@@ -455,25 +491,43 @@ export default function Reports() {
                 </TableHeader>
                 <TableBody>
                   <TableRow className="text-xs">
-                    <TableCell className="font-semibold text-foreground">{language === "sw" ? "Mapato ya Mauzo" : "Sales Revenue"}</TableCell>
-                    <TableCell className="text-right font-bold text-[var(--success-text)]">+{formatMoney(totalSales)}</TableCell>
+                    <TableCell className="font-semibold text-foreground">{language === "sw" ? "Mapato Halisi ya Mauzo (Bila Kodi)" : "Net Sales Revenue (Excl. Tax)"}</TableCell>
+                    <TableCell className="text-right font-bold text-[var(--success-text)]">+{formatMoney(netRevenue)}</TableCell>
                   </TableRow>
                   <TableRow className="text-xs">
-                    <TableCell className="font-semibold text-foreground">{language === "sw" ? "Mapato Mengine" : "Other Income"}</TableCell>
+                    <TableCell className="text-muted-foreground pl-6">{language === "sw" ? "Chini: Gharama ya Bidhaa Zilizouzwa (COGS)" : "Less: Cost of Goods Sold (COGS)"}</TableCell>
+                    <TableCell className="text-right font-medium text-amber-600">-{formatMoney(cogs)}</TableCell>
+                  </TableRow>
+                  <TableRow className="bg-muted/20 text-xs font-semibold border-y border-border">
+                    <TableCell className="text-foreground">{language === "sw" ? "= Faida Ghafi (Gross Profit)" : "= Gross Profit"}</TableCell>
+                    <TableCell className="text-right font-bold text-blue-600">{formatMoney(grossProfit)}</TableCell>
+                  </TableRow>
+                  <TableRow className="text-xs">
+                    <TableCell className="font-semibold text-foreground">{language === "sw" ? "+ Mapato Mengine" : "+ Other Income"}</TableCell>
                     <TableCell className="text-right font-bold text-[var(--success-text)]">+{formatMoney(totalOtherIncome)}</TableCell>
                   </TableRow>
                   {(expenses || []).map((e) => (
                     <TableRow key={e.id} className="text-xs">
-                      <TableCell className="text-muted-foreground">{e.title || e.category} ({e.category})</TableCell>
+                      <TableCell className="text-muted-foreground pl-6">{e.title || e.category} ({e.category})</TableCell>
                       <TableCell className="text-right font-medium text-destructive">-{formatMoney(e.amount)}</TableCell>
                     </TableRow>
                   ))}
+                  <TableRow className="bg-muted/20 text-xs font-semibold border-y border-border">
+                    <TableCell className="text-foreground">{language === "sw" ? "- Jumla ya Gharama za Uendeshaji" : "- Total Operating Expenses"}</TableCell>
+                    <TableCell className="text-right font-bold text-destructive">-{formatMoney(totalExpenses)}</TableCell>
+                  </TableRow>
                   <TableRow className="border-t-2 border-border bg-muted/40 text-xs font-bold">
-                    <TableCell className="text-foreground">{language === "sw" ? "Faida Halisi ya Biashara" : "Net Business Profit"}</TableCell>
-                    <TableCell className={cn("text-right", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
+                    <TableCell className="text-foreground">{language === "sw" ? "Faida Halisi ya Biashara (Net Profit)" : "Net Business Profit"}</TableCell>
+                    <TableCell className={cn("text-right font-black text-sm", netProfit >= 0 ? "text-[var(--success-text)]" : "text-destructive")}>
                       {formatMoney(netProfit)}
                     </TableCell>
                   </TableRow>
+                  {taxCollected > 0 && (
+                    <TableRow className="text-xs text-muted-foreground bg-amber-50/50 dark:bg-amber-950/20">
+                      <TableCell className="italic">{language === "sw" ? "Kodi ya Mauzo Iliyokusanywa (Deni la Serikali / Haijahesabiwa kwenye Faida)" : "Tax Collected (Payable Liability / Excluded from Profit)"}</TableCell>
+                      <TableCell className="text-right font-semibold text-amber-700 dark:text-amber-400">{formatMoney(taxCollected)}</TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>

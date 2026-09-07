@@ -38,6 +38,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSales } from "@/hooks/useSales";
 import { usePurchases } from "@/hooks/usePurchases";
+import { calculatePnL, calculateCashReceived } from "@/lib/financials";
 import { useProductionBatches } from "@/hooks/useProduction";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useOtherIncome } from "@/hooks/useOtherIncome";
@@ -213,20 +214,19 @@ export default function Dashboard() {
     return (otherIncomeList || []).filter((i) => isDateInPeriod(i.date || i.created_at));
   }, [otherIncomeList, periodStart, periodEnd, period]);
 
-  // Product cost mapping for accurate Cost of Goods Sold (COGS)
-  const productCostMap = useMemo(() => {
-    const map = new Map<string, number>();
-    (allProducts || []).forEach((p) => {
-      map.set(p.id, Number(p.buying_price) || 0);
-    });
-    return map;
-  }, [allProducts]);
+  // Financial KPI calculations using single source of truth
+  const pnl = useMemo(() => {
+    return calculatePnL(periodSales, periodExpenses, periodOtherIncome);
+  }, [periodSales, periodExpenses, periodOtherIncome]);
 
-  // Financial KPI calculations
-  const totalSalesVal = useMemo(
-    () => periodSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0),
-    [periodSales]
-  );
+  const totalSalesVal = pnl.grossSales;
+  const revenueVal = pnl.revenue;
+  const periodCogsVal = pnl.cogs;
+  const grossProfitVal = pnl.grossProfit;
+  const totalExpensesVal = pnl.totalExpenses;
+  const totalOtherIncomeVal = pnl.totalOtherIncome;
+  const netProfitVal = pnl.netProfit;
+  const taxCollectedVal = pnl.taxCollected;
 
   const totalPurchasesVal = useMemo(
     () => periodPurchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0),
@@ -239,9 +239,7 @@ export default function Dashboard() {
   );
 
   const cashReceivedVal = useMemo(() => {
-    return periodSales
-      .filter((s) => s.payment_method === "Cash" || s.payment_method === "M-Pesa")
-      .reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+    return calculateCashReceived(periodSales);
   }, [periodSales]);
 
   const stockValueVal = useMemo(
@@ -254,37 +252,7 @@ export default function Dashboard() {
     [customersList]
   );
 
-  const totalExpensesVal = useMemo(
-    () => periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
-    [periodExpenses]
-  );
-
-  const totalOtherIncomeVal = useMemo(
-    () => periodOtherIncome.reduce((sum, item) => sum + (Number(item.amount) || 0), 0),
-    [periodOtherIncome]
-  );
-
-  // Period Cost of Goods Sold (COGS)
-  const periodCogsVal = useMemo(() => {
-    return periodSales.reduce((sum, s) => {
-      const items = Array.isArray(s.sale_items) ? s.sale_items : [];
-      const saleCost = items.reduce((itemSum, item: any) => {
-        if (!item) return itemSum;
-        const unitCost = productCostMap.get(item.product_id) ?? (Number(item.unit_price || 0) * 0.75);
-        return itemSum + (Number(item.quantity) || 1) * unitCost;
-      }, 0);
-      return sum + saleCost;
-    }, 0);
-  }, [periodSales, productCostMap]);
-
-  // ERP Accounting: Gross Profit = Sales - COGS
-  const grossProfitVal = totalSalesVal - periodCogsVal;
-
-  // Net Profit = Gross Profit + Other Income - Operating Expenses
-  // If negative, represents true Net Loss (never clamped to 0)
-  const netProfitVal = grossProfitVal + totalOtherIncomeVal - totalExpensesVal;
-
-  // Chart data — last 7 days safe calculation
+  // Chart data — last 7 days safe calculation using shared P&L
   const chartData = useMemo(() => {
     const dayDates = [6, 5, 4, 3, 2, 1, 0].map((d) => subDays(new Date(), d));
     return dayDates.map((dateObj) => {
@@ -292,30 +260,24 @@ export default function Dashboard() {
       const daySalesList = (allSales || []).filter(
         (s) => s.status === "completed" && String(s.created_at || "").startsWith(dayStr)
       );
-      const daySales = daySalesList.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
       const dayExpenses = (expensesList || [])
-        .filter((e) => String(e.date || e.created_at || "").startsWith(dayStr))
-        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-      const dayCogs = daySalesList.reduce((sum, s) => {
-        const items = Array.isArray(s.sale_items) ? s.sale_items : [];
-        return sum + items.reduce((iSum, item: any) => {
-          if (!item) return iSum;
-          const cost = productCostMap.get(item?.product_id) ?? (Number(item?.unit_price || 0) * 0.75);
-          return iSum + (Number(item?.quantity) || 1) * cost;
-        }, 0);
-      }, 0);
-      const dayProfit = daySales - dayCogs - dayExpenses;
+        .filter((e) => String(e.date || e.created_at || "").startsWith(dayStr));
+      const dayIncome = (otherIncomeList || [])
+        .filter((i) => String(i.date || i.created_at || "").startsWith(dayStr));
+
+      const dayPnl = calculatePnL(daySalesList, dayExpenses, dayIncome);
+
       return {
         name: format(dateObj, "dd MMM"),
         date: dayStr,
-        [language === "sw" ? "Mauzo" : "Sales"]: daySales,
-        [language === "sw" ? "Matumizi" : "Expenses"]: dayExpenses,
-        [language === "sw" ? "Faida" : "Profit"]: dayProfit,
+        [language === "sw" ? "Mauzo" : "Sales"]: dayPnl.grossSales,
+        [language === "sw" ? "Matumizi" : "Expenses"]: dayPnl.totalExpenses,
+        [language === "sw" ? "Faida" : "Profit"]: dayPnl.netProfit,
       };
     });
-  }, [allSales, expensesList, productCostMap, language]);
+  }, [allSales, expensesList, otherIncomeList, language]);
 
-  // Recent activities safe mapping and sorting
+  // Recent activities safe mapping and sorting with visible dates
   const recentActivities = useMemo(() => {
     const getTime = (d?: string | null) => {
       if (!d) return 0;
@@ -323,11 +285,16 @@ export default function Dashboard() {
       return Number.isNaN(t) ? 0 : t;
     };
 
+    const salesSource = (periodSales || []).length > 0 ? periodSales : (allSales || []);
+    const expensesSource = (periodExpenses || []).length > 0 ? periodExpenses : (expensesList || []);
+    const purchasesSource = (periodPurchases || []).length > 0 ? periodPurchases : (purchasesList || []);
+    const incomeSource = (periodOtherIncome || []).length > 0 ? periodOtherIncome : (otherIncomeList || []);
+
     const acts = [
-      ...(allSales || []).slice(0, 10).map((s) => ({
+      ...salesSource.slice(0, 10).map((s) => ({
         type: "sale",
         title: `Sale #${String(s.id || "").slice(0, 6).toUpperCase()}`,
-        subtitle: s.payment_method || "Cash",
+        subtitle: `${s.payment_method || "Cash"}${s.created_at ? ` · ${format(new Date(s.created_at), "dd MMM, HH:mm")}` : ""}`,
         date: s.created_at,
         amount: `+${formatMoney(s.total)}`,
         isPositive: true,
@@ -335,10 +302,10 @@ export default function Dashboard() {
         color: "text-blue-600",
         bg: "bg-blue-50 dark:bg-blue-950/40",
       })),
-      ...(expensesList || []).slice(0, 10).map((e) => ({
+      ...expensesSource.slice(0, 10).map((e) => ({
         type: "expense",
         title: (e as any).title || e.description || (language === "sw" ? "Gharama" : "Expense"),
-        subtitle: e.category || "General",
+        subtitle: `${e.category || "General"}${(e.date || e.created_at) ? ` · ${format(new Date(e.date || e.created_at), "dd MMM")}` : ""}`,
         date: e.date || e.created_at,
         amount: `-${formatMoney(e.amount)}`,
         isPositive: false,
@@ -346,10 +313,10 @@ export default function Dashboard() {
         color: "text-rose-600",
         bg: "bg-rose-50 dark:bg-rose-950/40",
       })),
-      ...(purchasesList || []).slice(0, 10).map((p) => ({
+      ...purchasesSource.slice(0, 10).map((p) => ({
         type: "purchase",
         title: `${language === "sw" ? "Ununuzi" : "Purchase"}: ${p.supplier_name || "Supplier"}`,
-        subtitle: `${p.items_count || 1} ${language === "sw" ? "bidhaa" : "items"}`,
+        subtitle: `${p.items_count || 1} ${language === "sw" ? "bidhaa" : "items"}${p.created_at ? ` · ${format(new Date(p.created_at), "dd MMM")}` : ""}`,
         date: p.created_at,
         amount: `-${formatMoney(p.total_amount)}`,
         isPositive: false,
@@ -357,10 +324,10 @@ export default function Dashboard() {
         color: "text-violet-600",
         bg: "bg-violet-50 dark:bg-violet-950/40",
       })),
-      ...(otherIncomeList || []).slice(0, 5).map((income) => ({
+      ...incomeSource.slice(0, 5).map((income) => ({
         type: "income",
         title: income.title || (language === "sw" ? "Mapato Mengine" : "Other Income"),
-        subtitle: income.category || "General",
+        subtitle: `${income.category || "General"}${income.date ? ` · ${format(new Date(income.date), "dd MMM")}` : ""}`,
         date: income.date,
         amount: `+${formatMoney(income.amount)}`,
         isPositive: true,
@@ -370,7 +337,7 @@ export default function Dashboard() {
       })),
     ];
     return acts.sort((a, b) => getTime(b.date) - getTime(a.date)).slice(0, 8);
-  }, [allSales, purchasesList, expensesList, otherIncomeList, formatMoney, language]);
+  }, [periodSales, allSales, periodExpenses, expensesList, periodPurchases, purchasesList, periodOtherIncome, otherIncomeList, formatMoney, language]);
 
   const kpiLoading = salesLoading || purchasesLoading || expensesLoading || productsLoading;
   const salesLabelKey = language === "sw" ? "Mauzo" : "Sales";
@@ -738,7 +705,7 @@ export default function Dashboard() {
                 onClick={() => navigate("/purchases")}
               />
               <StatCard
-                title={language === "sw" ? "Gharama ya Uzalishaji" : "Total Production Cost"}
+                title={language === "sw" ? "Thamani ya Uzalishaji (Stoki)" : "Value Added to Inventory"}
                 value={formatMoney(totalProductionCostVal)}
                 delta={periodProduction.length > 0 ? `${periodProduction.length} ${language === "sw" ? "awamu" : "batches"}` : undefined}
                 deltaType="neutral"

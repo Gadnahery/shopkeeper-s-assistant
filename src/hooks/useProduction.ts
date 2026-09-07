@@ -331,21 +331,33 @@ export function useCompleteProductionBatch() {
         }
       }
 
-      // 2. Add output product stock
+      // 2. Add output product stock and update buying_price using Weighted Average Costing (WAC)
       try {
         const { data: outProd } = await supabase
           .from("products")
-          .select("stock, name")
+          .select("stock, name, buying_price")
           .eq("id", batch.output_product_id)
           .single();
 
-        const currentOutStock = Number(outProd?.stock || 0);
+        const currentOutStock = Math.max(0, Number(outProd?.stock || 0));
+        const currentCost = Number(outProd?.buying_price || 0);
         const addedQty = Number(quantityProduced || batch.quantity_to_produce);
+        const batchTotalCost = Number(batch.total_cost || 0);
+        const batchUnitCost = addedQty > 0 ? (batchTotalCost / addedQty) : currentCost;
+
+        let newBlendedCost = batchUnitCost;
+        if (currentOutStock + addedQty > 0) {
+          newBlendedCost = ((currentOutStock * currentCost) + (addedQty * batchUnitCost)) / (currentOutStock + addedQty);
+        }
+
         const newOutStock = currentOutStock + addedQty;
 
         await supabase
           .from("products")
-          .update({ stock: newOutStock })
+          .update({
+            stock: newOutStock,
+            buying_price: Math.round(newBlendedCost * 100) / 100,
+          })
           .eq("id", batch.output_product_id);
 
         await supabase.from("stock_history").insert({
@@ -355,7 +367,7 @@ export function useCompleteProductionBatch() {
           previous_stock: currentOutStock,
           new_stock: newOutStock,
           change_type: "production_produced",
-          notes: `Produced in batch ${batch.batch_number}`,
+          notes: `Produced in batch ${batch.batch_number} (WAC blended unit cost: ${Math.round(newBlendedCost)})`,
         });
       } catch (e) {
         console.error("Error adding output product stock", e);

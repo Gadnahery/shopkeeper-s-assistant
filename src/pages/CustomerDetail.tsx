@@ -1,13 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CreditCard, Phone, Receipt, UserRound } from "lucide-react";
+import { ArrowLeft, CreditCard, Phone, Receipt, UserRound, CheckCircle2, DollarSign, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCustomers } from "@/hooks/useCustomers";
+import { Input } from "@/components/ui/input";
+import { useCustomers, useCustomerPayments, useRecordCustomerPayment } from "@/hooks/useCustomers";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -16,6 +19,10 @@ export default function CustomerDetail() {
   const { data: customers, isLoading } = useCustomers();
   const customer = useMemo(() => (customers || []).find((entry) => entry.id === id), [customers, id]);
   const { data: sales } = useSalesByCustomer(id || null);
+  const { data: payments = [] } = useCustomerPayments(id || null);
+  const recordPayment = useRecordCustomerPayment();
+
+  const [payAmount, setPayAmount] = useState("");
 
   if (customers === undefined || isLoading) {
     return <PageLoader message="Loading customer..." messageSw="Inapakia mteja..." language={language} />;
@@ -47,6 +54,22 @@ export default function CustomerDetail() {
   const totalSpent = customerSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const creditBalance = Number(customer.credit_balance || 0);
   const saleCount = customerSales.length;
+
+  const handlePayDebt = async () => {
+    const amount = parseFloat(payAmount) || 0;
+    if (amount <= 0) return;
+    try {
+      await recordPayment.mutateAsync({
+        customerId: customer.id,
+        amount,
+        paymentMethod: "Cash",
+      });
+      toast.success(language === "sw" ? "Malipo ya deni yamehifadhiwa" : "Debt payment recorded");
+      setPayAmount("");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to record payment");
+    }
+  };
 
   return (
     <div className="min-w-0 space-y-6">
@@ -95,45 +118,102 @@ export default function CustomerDetail() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{language === "sw" ? "Salio la mkopo" : "Credit balance"}</p>
-              <p className="text-2xl font-bold">{creditBalance.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-amber-600">{creditBalance.toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="section-shell">
-          <CardHeader>
-            <CardTitle>{language === "sw" ? "Taarifa za mteja" : "Customer information"}</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                {language === "sw" ? "Simu" : "Phone"}
+      {creditBalance > 0 && (
+        <Card className="section-shell border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
+          <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
+            <div>
+              <p className="font-bold text-sm text-amber-900 dark:text-amber-200">
+                {language === "sw" ? "Lipa Deni la Mteja" : "Record Debt Settlement"}
               </p>
-              <div className="mt-2 flex items-center gap-2 text-sm font-medium">
-                <Phone className="h-4 w-4 text-primary" />
-                <span>{customer.phone || (language === "sw" ? "Haijawekwa" : "Not provided")}</span>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                {language === "sw" ? `Salio linalodaiwa: TSH ${creditBalance.toLocaleString()}` : `Outstanding: TSH ${creditBalance.toLocaleString()}`}
+              </p>
             </div>
-            <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                {language === "sw" ? "Aina ya mteja" : "Customer type"}
-              </p>
-              <p className="mt-2 text-sm font-medium capitalize">{customer.customer_type || "retail"}</p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-background/70 p-4 sm:col-span-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                {language === "sw" ? "Muhtasari" : "Summary"}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {language === "sw"
-                  ? "Tumia ukurasa huu kufuatilia uaminifu wa mteja, kiwango cha mkopo, na historia yake ya manunuzi."
-                  : "Use this page to track customer value, credit exposure, and recent shopping activity."}
-              </p>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Input
+                type="number"
+                placeholder={String(creditBalance)}
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                className="h-9 w-36 rounded-xl border-border bg-background text-xs font-bold"
+              />
+              <Button
+                onClick={handlePayDebt}
+                disabled={recordPayment.isPending || !Number(payAmount)}
+                className="h-9 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs"
+              >
+                {recordPayment.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <DollarSign className="h-3.5 w-3.5 mr-1 text-accent" />}
+                <span>{language === "sw" ? "Rekodi Malipo" : "Pay Debt"}</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="space-y-6">
+          <Card className="section-shell">
+            <CardHeader>
+              <CardTitle>{language === "sw" ? "Taarifa za mteja" : "Customer information"}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  {language === "sw" ? "Simu" : "Phone"}
+                </p>
+                <div className="mt-2 flex items-center gap-2 text-sm font-medium">
+                  <Phone className="h-4 w-4 text-primary" />
+                  <span>{customer.phone || (language === "sw" ? "Haijawekwa" : "Not provided")}</span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  {language === "sw" ? "Aina ya mteja" : "Customer type"}
+                </p>
+                <p className="mt-2 text-sm font-medium capitalize">{customer.customer_type || "retail"}</p>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-background/70 p-4 sm:col-span-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  {language === "sw" ? "Muhtasari" : "Summary"}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {language === "sw"
+                    ? "Tumia ukurasa huu kufuatilia uaminifu wa mteja, kiwango cha mkopo, na historia yake ya manunuzi."
+                    : "Use this page to track customer value, credit exposure, and recent shopping activity."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment History Log */}
+          {payments.length > 0 && (
+            <Card className="section-shell">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span>{language === "sw" ? "Historia ya Malipo ya Madeni" : "Debt Payments Ledger"} ({payments.length})</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {payments.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between rounded-xl border border-border/70 bg-background/70 p-3 text-xs">
+                    <div>
+                      <p className="font-semibold">{format(new Date(p.created_at), "dd MMM yyyy, HH:mm")}</p>
+                      <p className="text-muted-foreground">{p.payment_method} {p.reference ? `· ${p.reference}` : ""}</p>
+                    </div>
+                    <p className="font-bold text-emerald-600 text-sm">+{Number(p.amount).toLocaleString()}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card className="section-shell">
           <CardHeader>
@@ -153,7 +233,7 @@ export default function CustomerDetail() {
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{sale.invoice_number}</p>
                     <p className="text-sm text-muted-foreground">
-                      {sale.created_at ? new Date(sale.created_at).toLocaleString() : language === "sw" ? "Tarehe haipo" : "No date"}
+                      {sale.created_at ? new Date(sale.created_at).toLocaleString() : language === "sw" ? "Tarehe haipo" : "No date"} · {sale.payment_method}
                     </p>
                   </div>
                   <div className="text-left sm:text-right">

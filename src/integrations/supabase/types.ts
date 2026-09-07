@@ -1466,47 +1466,71 @@ export type Database = {
       }
       sales: {
         Row: {
+          cash_amount: number | null
           cashier_id: string | null
           created_at: string | null
           customer_id: string | null
+          customer_name: string | null
           discount: number | null
+          discount_amount: number | null
+          discount_percent: number | null
           id: string
           invoice_number: string | null
           loyalty_points_earned: number | null
           loyalty_points_redeemed: number | null
+          mpesa_amount: number | null
+          mpesa_code: string | null
           payment_method: string
           refund_reason: string | null
           shop_id: string
+          status: string | null
+          subtotal: number | null
           tax_amount: number | null
           total: number
         }
         Insert: {
+          cash_amount?: number | null
           cashier_id?: string | null
           created_at?: string | null
           customer_id?: string | null
+          customer_name?: string | null
           discount?: number | null
+          discount_amount?: number | null
+          discount_percent?: number | null
           id?: string
           invoice_number?: string | null
           loyalty_points_earned?: number | null
           loyalty_points_redeemed?: number | null
+          mpesa_amount?: number | null
+          mpesa_code?: string | null
           payment_method?: string
           refund_reason?: string | null
           shop_id: string
+          status?: string | null
+          subtotal?: number | null
           tax_amount?: number | null
           total: number
         }
         Update: {
+          cash_amount?: number | null
           cashier_id?: string | null
           created_at?: string | null
           customer_id?: string | null
+          customer_name?: string | null
           discount?: number | null
+          discount_amount?: number | null
+          discount_percent?: number | null
           id?: string
           invoice_number?: string | null
           loyalty_points_earned?: number | null
           loyalty_points_redeemed?: number | null
+          mpesa_amount?: number | null
+          mpesa_code?: string | null
           payment_method?: string
           refund_reason?: string | null
           shop_id?: string
+          status?: string | null
+          subtotal?: number | null
           tax_amount?: number | null
           total?: number
         }

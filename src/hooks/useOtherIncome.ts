@@ -3,50 +3,74 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { logAudit } from "@/lib/audit";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type OtherIncome = Tables<"other_income">;
 export type OtherIncomeInsert = TablesInsert<"other_income">;
 
 export function useOtherIncome() {
+  const { shopId } = useAuth();
+
   return useQuery({
-    queryKey: ["other_income"],
+    queryKey: ["other_income", shopId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("other_income").select("*").order("date", { ascending: false });
+      let query = supabase.from("other_income").select("*").order("date", { ascending: false });
+      if (shopId) {
+        query = query.eq("shop_id", shopId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
+    enabled: !!shopId,
   });
 }
 
 export function useOtherIncomeByDateRange(startDate: string | null, endDate: string | null) {
+  const { shopId } = useAuth();
+
   return useQuery({
-    queryKey: ["other_income", "range", startDate, endDate],
+    queryKey: ["other_income", "range", shopId, startDate, endDate],
     queryFn: async () => {
       if (!startDate || !endDate) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("other_income")
         .select("*")
         .gte("date", startDate)
         .lte("date", endDate)
         .order("date", { ascending: false });
+
+      if (shopId) {
+        query = query.eq("shop_id", shopId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!startDate && !!endDate,
+    enabled: !!startDate && !!endDate && !!shopId,
   });
 }
 
 export function useCreateOtherIncome() {
   const queryClient = useQueryClient();
+  const { shopId } = useAuth();
+
   return useMutation({
     mutationFn: async (income: OtherIncomeInsert) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("You must be signed in");
-      const { data: profile } = await supabase.from("profiles").select("shop_id").eq("user_id", user.id).maybeSingle();
-      if (!profile?.shop_id) throw new Error("No business found");
-      const { data, error } = await supabase.from("other_income").insert({ ...income, shop_id: profile.shop_id }).select().single();
+      if (!shopId) throw new Error("No business found");
+      const { data, error } = await supabase
+        .from("other_income")
+        .insert({ ...income, shop_id: shopId })
+        .select()
+        .single();
       if (error) throw error;
-      await logAudit({ action: "other_income_created", entityType: "other_income", entityId: data.id, metadata: { amount: data.amount, category: data.category } });
+      await logAudit({
+        action: "other_income_created",
+        entityType: "other_income",
+        entityId: data.id,
+        metadata: { amount: data.amount, category: data.category }
+      });
       return data;
     },
     onSuccess: () => {

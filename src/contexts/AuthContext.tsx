@@ -3,6 +3,7 @@ import { type AuthError, type Session, type User } from "@supabase/supabase-js";
 import { clearStoredSupabaseAuth, supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { getAppUrl } from "@/lib/siteUrl";
+import { clearAppQueryCache } from "@/lib/queryClient";
 
 type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -99,10 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!isMounted) return;
 
       if (event === "SIGNED_OUT") {
+        clearAppQueryCache();
         setSessionExpired(true);
       }
 
       if (event === "SIGNED_IN") {
+        clearAppQueryCache();
         setSessionExpired(false);
       }
 
@@ -114,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           void fetchProfile(nextSession.user.id);
         }, 0);
       } else {
+        clearAppQueryCache();
         setShopId(null);
         setProfile(null);
         setRole(null);
@@ -225,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     clearStoredSupabaseAuth();
+    clearAppQueryCache();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

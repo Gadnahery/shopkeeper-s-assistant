@@ -81,6 +81,7 @@ export default function Sales() {
   const [cashAmount, setCashAmount] = useState("");
   const [mpesaAmount, setMpesaAmount] = useState("");
   const [cashOverridden, setCashOverridden] = useState(false); // true = user typed a custom cash amount
+  const [paymentType, setPaymentType] = useState<"Cash" | "M-Pesa" | "Split" | "Credit">("Cash");
   const [mpesaCode, setMpesaCode] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("walk-in");
   const [customerMode, setCustomerMode] = useState<"walk-in" | "existing" | "custom">("walk-in");
@@ -240,12 +241,7 @@ export default function Sales() {
       toast.error(language === "sw" ? "Kikapu ni tupu" : "Cart is empty");
       return;
     }
-    if (totalPaid < total) {
-      toast.error(language === "sw" ? "Kiasi cha malipo hakitoshi" : "Payment amount is less than total");
-      return;
-    }
 
-    const paymentMethod = cashPaid > 0 && mpesaPaid > 0 ? "Split" : mpesaPaid > 0 ? "M-Pesa" : "Cash";
     const custName =
       customerMode === "walk-in"
         ? null
@@ -253,6 +249,39 @@ export default function Sales() {
         ? customers?.find((c) => c.id === selectedCustomer)?.name || null
         : customerName.trim() || null;
     const custId = customerMode === "existing" && selectedCustomer !== "walk-in" ? selectedCustomer : null;
+
+    if (paymentType === "Credit") {
+      if (!custId) {
+        toast.error(
+          language === "sw"
+            ? "Mauzo ya mkopo yanahitaji kumchagua mteja aliyepo"
+            : "Credit sales require selecting an existing customer"
+        );
+        setCustomerMode("existing");
+        return;
+      }
+    } else {
+      if (totalPaid < total) {
+        toast.error(language === "sw" ? "Kiasi cha malipo hakitoshi" : "Payment amount is less than total");
+        return;
+      }
+    }
+
+    const paymentMethod = paymentType;
+    let finalCashAmount = 0;
+    let finalMpesaAmount = 0;
+
+    if (paymentMethod === "Cash") {
+      finalCashAmount = total;
+    } else if (paymentMethod === "M-Pesa") {
+      finalMpesaAmount = total;
+    } else if (paymentMethod === "Split") {
+      finalCashAmount = cashPaid;
+      finalMpesaAmount = mpesaPaid;
+    } else if (paymentMethod === "Credit") {
+      finalCashAmount = 0;
+      finalMpesaAmount = 0;
+    }
 
     try {
       const sale = await createSale.mutateAsync({
@@ -262,6 +291,8 @@ export default function Sales() {
         mpesa_code: mpesaCode || null,
         discount_amount: discount,
         discount_percent: parseInt(discountPercent) || 0,
+        cash_amount: finalCashAmount,
+        mpesa_amount: finalMpesaAmount,
         items: cartItems.map((item) => ({
           product_id: item.product_id,
           product_name: item.name,
@@ -522,42 +553,133 @@ export default function Sales() {
           </div>
         </div>
 
-        {/* Payment Amount & Method */}
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-foreground">Cash (TSH)</Label>
-              <Input
-                type="number"
-                value={cashAmount}
-                onChange={(e) => { setCashOverridden(true); setCashAmount(e.target.value); }}
-                onFocus={(e) => { if (e.target.value === "0") { setCashAmount(""); } }}
-                onBlur={(e) => {
-                  // If user clears cash, go back to auto-mode
-                  if (!e.target.value.trim()) { setCashOverridden(false); }
-                }}
-                placeholder="0"
-                className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] font-semibold text-foreground">M-Pesa / Mobile (TSH)</Label>
-              <Input
-                type="number"
-                value={mpesaAmount}
-                onChange={(e) => setMpesaAmount(e.target.value)}
-                onFocus={(e) => { if (e.target.value === "0") setMpesaAmount(""); }}
-                placeholder="0"
-                className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
-              />
-            </div>
+        {/* Payment Method Selector */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-[11px] font-semibold text-foreground">{language === "sw" ? "Njia ya Malipo" : "Payment Method"}</Label>
+            <span className="text-[10px] text-muted-foreground font-medium">{paymentType}</span>
           </div>
+          <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted/60 p-1 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType("Cash");
+                setCashOverridden(false);
+                setMpesaAmount("");
+                setCashAmount(String(total));
+              }}
+              className={cn(
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "Cash" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Cash
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType("M-Pesa");
+                setCashOverridden(true);
+                setCashAmount("0");
+                setMpesaAmount(String(total));
+              }}
+              className={cn(
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "M-Pesa" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              M-Pesa
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType("Split");
+                setCashOverridden(true);
+              }}
+              className={cn(
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "Split" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Split
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType("Credit");
+                if (customerMode !== "existing") {
+                  setCustomerMode("existing");
+                  if (customers && customers.length > 0 && selectedCustomer === "walk-in") {
+                    setSelectedCustomer(customers[0].id);
+                  }
+                }
+              }}
+              className={cn(
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "Credit" ? "bg-amber-500 text-white shadow-2xs font-bold" : "text-amber-600 hover:text-amber-700"
+              )}
+            >
+              {language === "sw" ? "Mkopo" : "Credit"}
+            </button>
+          </div>
+        </div>
 
-          {changeDue > 0 && (
-            <div className="flex justify-between rounded-xl bg-[var(--success-bg)] p-2.5 text-xs font-bold text-[var(--success-text)]">
-              <span>{language === "sw" ? "Chenji ya Mteja" : "Change Due"}</span>
-              <span>{formatMoney(changeDue)}</span>
+        {/* Payment Amount & Method Inputs */}
+        <div className="space-y-2">
+          {paymentType === "Credit" ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/40 p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-100">
+                <Users className="h-4 w-4 text-amber-600" />
+                <span>{language === "sw" ? "Mauzo ya Mkopo (Deni)" : "Credit Sale (Customer Debt)"}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                {language === "sw"
+                  ? `Kiasi cha ${formatMoney(total)} kitaongezwa kwenye akaunti ya mteja. Malipo hayahitajiki papo hapo.`
+                  : `Amount of ${formatMoney(total)} will be assigned to customer receivable balance. No immediate cash collected.`}
+              </p>
+              {customerMode !== "existing" || selectedCustomer === "walk-in" ? (
+                <p className="text-[11px] font-bold text-rose-600 pt-0.5">
+                  {language === "sw" ? "⚠️ Tafadhali chagua mteja aliyepo hapo juu." : "⚠️ Please select a customer above."}
+                </p>
+              ) : null}
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-foreground">Cash (TSH)</Label>
+                  <Input
+                    type="number"
+                    value={cashAmount}
+                    onChange={(e) => { setCashOverridden(true); setCashAmount(e.target.value); }}
+                    onFocus={(e) => { if (e.target.value === "0") { setCashAmount(""); } }}
+                    onBlur={(e) => {
+                      if (!e.target.value.trim()) { setCashOverridden(false); }
+                    }}
+                    placeholder="0"
+                    className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-foreground">M-Pesa / Mobile (TSH)</Label>
+                  <Input
+                    type="number"
+                    value={mpesaAmount}
+                    onChange={(e) => setMpesaAmount(e.target.value)}
+                    onFocus={(e) => { if (e.target.value === "0") setMpesaAmount(""); }}
+                    placeholder="0"
+                    className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+                  />
+                </div>
+              </div>
+
+              {changeDue > 0 && (
+                <div className="flex justify-between rounded-xl bg-[var(--success-bg)] p-2.5 text-xs font-bold text-[var(--success-text)]">
+                  <span>{language === "sw" ? "Chenji ya Mteja" : "Change Due"}</span>
+                  <span>{formatMoney(changeDue)}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
