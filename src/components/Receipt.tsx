@@ -31,6 +31,8 @@ interface ReceiptData {
   receiptFooter?: string | null;
   /** Shop logo URL (from shop settings) */
   logoUrl?: string | null;
+  /** If the sale was recorded in offline mode */
+  isOfflinePending?: boolean;
 }
 
 interface ReceiptProps {
@@ -134,6 +136,11 @@ export function Receipt({ data, onClose }: ReceiptProps) {
             <div className="mt-2 text-xs font-bold uppercase tracking-wider">
               {t("receipt.title")}
             </div>
+            {data.isOfflinePending && (
+              <div className="mt-1.5 inline-block rounded-md bg-amber-100 dark:bg-amber-900/40 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:text-amber-200 uppercase">
+                ⚡ {language === "sw" ? "Mauzo ya Bila Mtandao (Yatasawazishwa)" : "Offline Sale (Will Auto-Sync)"}
+              </div>
+            )}
           </div>
 
           <div className="divider my-2 border-t border-dashed border-gray-400" />

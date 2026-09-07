@@ -7,6 +7,10 @@ import {
   Menu,
   Plus,
   ShieldCheck,
+  WifiOff,
+  RefreshCw,
+  AlertCircle,
+  CloudOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -16,6 +20,8 @@ import { useLowStockProducts } from "@/hooks/useProducts";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { useIsPlatformAdmin } from "@/hooks/usePlatformAdmin";
+import { useSyncQueue } from "@/hooks/useSyncQueue";
+import { PendingSyncDialog } from "@/components/sync/PendingSyncDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +39,8 @@ export function Header() {
   const { unreadCount } = useNotifications();
   const { data: lowStock } = useLowStockProducts();
   const { data: isPlatformAdmin } = useIsPlatformAdmin();
+  const { isOnline, totalCount, isSyncing, failedCount, pendingCount } = useSyncQueue();
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const hasAlerts = (unreadCount > 0) || ((lowStock?.length ?? 0) > 0);
   const { formatDate } = useShopFormatting();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("today");
@@ -275,6 +283,48 @@ export function Header() {
           </Button>
         )}
 
+        {/* Offline / Pending Sync Indicator Button */}
+        {(!isOnline || totalCount > 0) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSyncDialogOpen(true)}
+            className={cn(
+              "h-9 gap-1.5 rounded-xl px-2.5 sm:px-3 text-xs font-semibold shadow-xs transition-colors",
+              failedCount > 0
+                ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                : isSyncing
+                ? "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20"
+                : !isOnline
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20"
+                : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+            )}
+            title={language === "sw" ? "Msururu wa Usawazishaji" : "Pending Sync Queue"}
+          >
+            {failedCount > 0 ? (
+              <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+            ) : isSyncing ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-600 shrink-0" />
+            ) : !isOnline ? (
+              <WifiOff className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            ) : (
+              <CloudOff className="h-3.5 w-3.5 text-primary shrink-0" />
+            )}
+
+            <span className="truncate max-w-[100px] sm:max-w-none">
+              {failedCount > 0
+                ? `${failedCount} ${language === "sw" ? "Imeshindwa" : "Failed"}`
+                : isSyncing
+                ? `${totalCount} ${language === "sw" ? "Inasawazisha..." : "Syncing..."}`
+                : totalCount > 0
+                ? `${totalCount} ${language === "sw" ? "Zinasubiri" : "Pending"}`
+                : language === "sw"
+                ? "Bila Mtandao"
+                : "Offline"}
+            </span>
+          </Button>
+        )}
+
         {/* Notification Bell */}
         <Button
           variant="outline"
@@ -289,6 +339,8 @@ export function Header() {
           )}
         </Button>
       </div>
+
+      <PendingSyncDialog open={syncDialogOpen} onOpenChange={setSyncDialogOpen} />
     </header>
   );
 }

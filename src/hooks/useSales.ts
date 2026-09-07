@@ -4,8 +4,14 @@ import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { calculateCashReceived } from "@/lib/financials";
+import { syncManager } from "@/lib/syncManager";
+import type { OptimisticSaleRecord } from "@/lib/db";
 
-export type Sale = Tables<"sales">;
+export type Sale = Tables<"sales"> & {
+  is_offline_pending?: boolean;
+  sync_status?: "pending" | "syncing" | "failed";
+  sync_error?: string;
+};
 
 interface CartItem {
   product_id: string;
@@ -27,6 +33,35 @@ export interface CreateSaleInput {
   mpesa_amount?: number;
 }
 
+async function mergeOfflineSales(serverSales: any[], shopId?: string | null): Promise<any[]> {
+  try {
+    const pending = await syncManager.getPendingActions(shopId);
+    const offlineRecords = pending
+      .filter((p) => p.type === "complete_sale" && p.optimisticRecord)
+      .map((p) => ({
+        ...p.optimisticRecord,
+        sync_status: p.status,
+        sync_error: p.errorMessage,
+      }));
+
+    if (offlineRecords.length === 0) return serverSales;
+
+    const serverIds = new Set(serverSales.map((s) => s.id));
+    const serverIdempotencyKeys = new Set(serverSales.map((s) => (s as any).idempotency_key).filter(Boolean));
+    const serverInvoices = new Set(serverSales.map((s) => s.invoice_number));
+
+    const uniqueOffline = offlineRecords.filter(
+      (off) => !serverIds.has(off.id) && !serverIdempotencyKeys.has(off.id) && !serverInvoices.has(off.invoice_number)
+    );
+
+    const merged = [...uniqueOffline, ...serverSales];
+    merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return merged;
+  } catch {
+    return serverSales;
+  }
+}
+
 export function useSales() {
   const { shopId } = useAuth();
 
@@ -42,8 +77,14 @@ export function useSales() {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-      return data;
+      if (error) {
+        if (syncManager.isNetworkError(error)) {
+          // If offline and query fails, fallback to cached offline actions
+          return await mergeOfflineSales([], shopId);
+        }
+        throw error;
+      }
+      return await mergeOfflineSales(data || [], shopId);
     },
     enabled: !!shopId,
   });
@@ -68,8 +109,15 @@ export function useSalesByCustomer(customerId: string | null) {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      if (error) {
+        if (syncManager.isNetworkError(error)) {
+          const allMerged = await mergeOfflineSales([], shopId);
+          return allMerged.filter((s) => s.customer_id === customerId);
+        }
+        throw error;
+      }
+      const merged = await mergeOfflineSales(data || [], shopId);
+      return merged.filter((s) => s.customer_id === customerId);
     },
     enabled: !!customerId && !!shopId,
   });
@@ -94,8 +142,21 @@ export function useSalesByDateRange(startDate: string | null, endDate: string | 
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      if (error) {
+        if (syncManager.isNetworkError(error)) {
+          const allMerged = await mergeOfflineSales([], shopId);
+          return allMerged.filter((s) => {
+            const d = (s.created_at || "").slice(0, 10);
+            return d >= startDate && d <= endDate;
+          });
+        }
+        throw error;
+      }
+      const merged = await mergeOfflineSales(data || [], shopId);
+      return merged.filter((s) => {
+        const d = (s.created_at || "").slice(0, 10);
+        return d >= startDate && d <= endDate;
+      });
     },
     enabled: !!startDate && !!endDate && !!shopId,
   });
@@ -136,8 +197,13 @@ export function useSalesSummaryByRange(start: string, end: string) {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-      return aggregateSales(data || []);
+      if (error && !syncManager.isNetworkError(error)) throw error;
+      const merged = await mergeOfflineSales(data || [], shopId);
+      const filtered = merged.filter((s) => {
+        const d = (s.created_at || "").slice(0, 10);
+        return d >= start && d <= end;
+      });
+      return aggregateSales(filtered);
     },
     enabled: !!start && !!end && !!shopId,
   });
@@ -161,11 +227,39 @@ export function useTodaySales() {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-      
-      return aggregateSales(data || []);
+      if (error && !syncManager.isNetworkError(error)) throw error;
+      const merged = await mergeOfflineSales(data || [], shopId);
+      const filtered = merged.filter((s) => {
+        const d = (s.created_at || "").slice(0, 10);
+        return d === today;
+      });
+      return aggregateSales(filtered);
     },
     enabled: !!shopId,
+  });
+}
+
+/**
+ * Optimistically deduct stock in React Query cache
+ */
+function applyOptimisticStockDeduction(queryClient: ReturnType<typeof useQueryClient>, items: CartItem[]) {
+  const stockDeltas = new Map<string, number>();
+  for (const it of items) {
+    stockDeltas.set(it.product_id, (stockDeltas.get(it.product_id) || 0) + it.quantity);
+  }
+
+  queryClient.setQueriesData({ queryKey: ["products"] }, (oldProducts: any[] | undefined) => {
+    if (!oldProducts || !Array.isArray(oldProducts)) return oldProducts;
+    return oldProducts.map((p) => {
+      const delta = stockDeltas.get(p.id);
+      if (delta && p.track_inventory !== false && p.item_type !== "service") {
+        return {
+          ...p,
+          stock: Math.max(0, (Number(p.stock) || 0) - delta),
+        };
+      }
+      return p;
+    });
   });
 }
 
@@ -174,7 +268,16 @@ export function useCreateSale() {
   const { shopId } = useAuth();
   
   return useMutation({
-    mutationFn: async (input: CreateSaleInput) => {
+    mutationFn: async (input: CreateSaleInput): Promise<Sale> => {
+      const idempotencyKey = crypto.randomUUID();
+
+      // If already offline, bypass live network call immediately to provide instant response
+      if (!syncManager.isOnline()) {
+        const offlineRecord = await syncManager.queueSaleAction(input, shopId, idempotencyKey);
+        applyOptimisticStockDeduction(queryClient, input.items);
+        return offlineRecord as unknown as Sale;
+      }
+
       const payload: any = {
         p_customer_id: input.customer_id ?? null,
         p_customer_name: input.customer_name ?? null,
@@ -186,18 +289,55 @@ export function useCreateSale() {
         p_items: input.items,
         p_cash_amount: input.cash_amount ?? null,
         p_mpesa_amount: input.mpesa_amount ?? null,
+        p_idempotency_key: idempotencyKey,
       };
 
-      const { data: sale, error } = await (supabase as any).rpc("complete_sale_transaction", payload);
+      try {
+        // Execute with a 4.5-second network timeout
+        const rpcPromise = (supabase as any).rpc("complete_sale_transaction", payload);
+        const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
+          setTimeout(() => reject(new Error("Network timeout: Sale took too long to complete")), 4500)
+        );
 
-      if (error) throw error;
-      return sale as Sale;
+        const { data: sale, error } = await Promise.race([rpcPromise, timeoutPromise]);
+
+        if (error) {
+          if (syncManager.isNetworkError(error)) {
+            // Fallback to offline queue on network error
+            const offlineRecord = await syncManager.queueSaleAction(input, shopId, idempotencyKey);
+            applyOptimisticStockDeduction(queryClient, input.items);
+            return offlineRecord as unknown as Sale;
+          }
+          throw error;
+        }
+
+        return sale as Sale;
+      } catch (err: any) {
+        if (syncManager.isNetworkError(err)) {
+          // Fallback to offline queue on timeout or fetch failure
+          const offlineRecord = await syncManager.queueSaleAction(input, shopId, idempotencyKey);
+          applyOptimisticStockDeduction(queryClient, input.items);
+          return offlineRecord as unknown as Sale;
+        }
+        throw err;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (sale) => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success("Sale completed successfully!");
+      queryClient.invalidateQueries({ queryKey: ["sales", "today"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "summary"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "range"] });
+
+      if (sale.is_offline_pending) {
+        toast.info("Saved Offline (Queued for Sync)", {
+          description: `Sale ${sale.invoice_number} will automatically sync when connection returns.`,
+          duration: 5000,
+        });
+      } else {
+        toast.success("Sale completed successfully!");
+      }
     },
     onError: (error) => {
       toast.error("Failed to complete sale: " + error.message);
@@ -221,7 +361,10 @@ export function useDraftSales() {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        if (syncManager.isNetworkError(error)) return [];
+        throw error;
+      }
       return data || [];
     },
     enabled: !!shopId,

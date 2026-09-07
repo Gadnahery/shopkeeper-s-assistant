@@ -31,16 +31,6 @@ export function Hero() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Column (Hero Copy) */}
           <div className="text-center lg:text-left lg:col-span-7 space-y-6">
-            {/* Pill Tag */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-muted/60 px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>
-                {language === "sw"
-                  ? "Mfumo Kamili wa POS & ERP ya Maduka Tanzania"
-                  : "Complete Retail POS & ERP for Modern Tanzanian Shops"}
-              </span>
-            </div>
-
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

@@ -433,7 +433,19 @@ export default function Reports() {
                     (sales || []).slice(0, 15).map((s) => (
                       <TableRow key={s.id} className="text-xs">
                         <TableCell className="font-medium text-foreground">
-                          {format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
+                            {(s as any).is_offline_pending && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-bold text-amber-600 dark:text-amber-400 border border-amber-300/40">
+                                ⚡ {language === "sw" ? "Bila Mtandao" : "Offline"}
+                              </span>
+                            )}
+                            {(s as any).sync_status === "failed" && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.2 text-[9px] font-bold text-destructive border border-destructive/30">
+                                ⚠️ {language === "sw" ? "Imeshindwa" : "Failed"}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {(s as any).customer_name || (language === "sw" ? "Moja kwa moja" : "Walk-in")}

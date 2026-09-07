@@ -322,6 +322,7 @@ export default function Sales() {
         shopName: (shopSettings as any)?.shop_name || "",
         shopPhone: (shopSettings as any)?.phone || undefined,
         shopAddress: (shopSettings as any)?.address || undefined,
+        isOfflinePending: (sale as any)?.is_offline_pending || false,
       });
 
       setShowReceipt(true);

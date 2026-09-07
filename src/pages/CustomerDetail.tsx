@@ -231,7 +231,14 @@ export default function CustomerDetail() {
                   className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{sale.invoice_number}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="truncate font-semibold">{sale.invoice_number}</p>
+                      {(sale as any).is_offline_pending && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-bold text-amber-600 dark:text-amber-400 border border-amber-300/40">
+                          ⚡ {language === "sw" ? "Bila Mtandao" : "Offline"}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {sale.created_at ? new Date(sale.created_at).toLocaleString() : language === "sw" ? "Tarehe haipo" : "No date"} · {sale.payment_method}
                     </p>

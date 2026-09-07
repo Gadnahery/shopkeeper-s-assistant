@@ -24,25 +24,63 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { PendingSyncDialog } from "@/components/sync/PendingSyncDialog";
+import { useSyncQueue } from "@/hooks/useSyncQueue";
+
 function OfflineBanner() {
-  const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const { isOnline, totalCount, pendingCount, failedCount } = useSyncQueue();
   const { language } = useLanguage();
-  useEffect(() => {
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
-  if (online) return null;
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+
+  if (isOnline && totalCount === 0) return null;
+
   return (
-    <div className="flex items-center justify-center gap-2 bg-amber-500/90 text-amber-950 px-4 py-1.5 text-sm font-medium">
-      <WifiOff className="h-4 w-4" />
-      {language === "sw" ? "Hauna muunganisho. Data itahifadhiwa inapounganishwa tena." : "You're offline. Data will sync when you reconnect."}
-    </div>
+    <>
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors",
+          !isOnline
+            ? "bg-amber-500/90 text-amber-950"
+            : failedCount > 0
+            ? "bg-rose-500/90 text-white"
+            : "bg-blue-600/90 text-white"
+        )}
+      >
+        {!isOnline ? (
+          <WifiOff className="h-4 w-4 shrink-0" />
+        ) : (
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+        )}
+        <span>
+          {!isOnline ? (
+            totalCount > 0 ? (
+              language === "sw"
+                ? `Hauna muunganisho. Mauzo ${totalCount} yamehifadhiwa bila mtandao na yatasawazishwa kiotomatiki.`
+                : `You're offline. ${totalCount} sale(s) saved locally and will sync automatically.`
+            ) : (
+              language === "sw"
+                ? "Hauna muunganisho. Mauzo ya POS yatahifadhiwa bila mtandao."
+                : "You're offline. POS sales will be saved locally."
+            )
+          ) : (
+            language === "sw"
+              ? `Mauzo ${totalCount} yanatunzwa na kusawazishwa na seva sasa...`
+              : `${totalCount} offline sale(s) syncing with server...`
+          )}
+        </span>
+        {totalCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setSyncDialogOpen(true)}
+            className="underline underline-offset-2 ml-1 font-bold hover:opacity-80 transition-opacity"
+          >
+            {language === "sw" ? "Tazama Foleni" : "View Queue"}
+          </button>
+        )}
+      </div>
+
+      <PendingSyncDialog open={syncDialogOpen} onOpenChange={setSyncDialogOpen} />
+    </>
   );
 }
 
