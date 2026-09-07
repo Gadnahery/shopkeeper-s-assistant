@@ -14,6 +14,8 @@ import {
   ShoppingCart,
   ChevronDown,
   ChevronRight,
+  CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,7 @@ import { preloadRoute } from "@/lib/routePreload";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsPlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { useMyPageAccess } from "@/hooks/useUserPageAccess";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { useTheme } from "@/hooks/useTheme";
@@ -63,6 +66,7 @@ export function Sidebar() {
   const { t, language, setLanguage } = useLanguage();
   const { signOut, profile, role } = useAuth();
   const { data: allowedPages } = useMyPageAccess();
+  const { data: isPlatformAdmin } = useIsPlatformAdmin();
   const { isMobile, isTablet, isDesktop } = useAdaptiveLayout();
   const { theme, toggleTheme } = useTheme();
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
@@ -387,6 +391,16 @@ export function Sidebar() {
                 <User className="h-3.5 w-3.5" />
                 {language === "sw" ? "Mipangilio ya Akaunti" : "Account Settings"}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/billing")} className="gap-2 text-xs">
+                <CreditCard className="h-3.5 w-3.5" />
+                {language === "sw" ? "Usajili na Malipo" : "Subscription & Billing"}
+              </DropdownMenuItem>
+              {isPlatformAdmin && (
+                <DropdownMenuItem onClick={() => navigate("/platform-admin")} className="gap-2 text-xs font-semibold text-primary">
+                  <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                  <span>Platform Admin</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={toggleTheme} className="gap-2 text-xs">
                 {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                 {theme === "dark" ? (language === "sw" ? "Mandhari ya Mwanga" : "Light Mode") : (language === "sw" ? "Mandhari ya Giza" : "Dark Mode")}

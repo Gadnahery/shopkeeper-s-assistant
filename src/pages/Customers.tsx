@@ -277,6 +277,7 @@ export default function Customers() {
             type="number"
             value={newCustomer.credit_balance}
             onChange={(e) => setNewCustomer({ ...newCustomer, credit_balance: e.target.value })}
+            onFocus={(e) => e.target.select()}
             placeholder="0"
             className="h-9 rounded-xl border-border bg-background text-xs"
           />
@@ -377,6 +378,7 @@ export default function Customers() {
                     type="number"
                     value={editForm?.credit_balance || 0}
                     onChange={(e) => setEditForm({ ...editForm, credit_balance: e.target.value })}
+                    onFocus={(e) => e.target.select()}
                     className="h-9 rounded-xl border-border bg-background text-xs font-bold"
                   />
                 </div>
@@ -404,6 +406,7 @@ export default function Customers() {
                     type="number"
                     value={payAmount}
                     onChange={(e) => setPayAmount(e.target.value)}
+                    onFocus={(e) => e.target.select()}
                     placeholder={String(selectedCustomer.credit_balance)}
                     className="h-9 flex-1 rounded-xl border-border bg-background text-xs font-bold"
                   />

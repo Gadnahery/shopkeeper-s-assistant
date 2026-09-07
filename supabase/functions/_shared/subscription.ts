@@ -1,4 +1,4 @@
-export const DEFAULT_SUBSCRIPTION_MONTHLY_PRICE_TZS = 10_000;
+export const DEFAULT_SUBSCRIPTION_MONTHLY_PRICE_TZS = 25_000;
 
 function parsePositiveNumber(value: string | null | undefined) {
   const amount = Number(value ?? "");
@@ -32,6 +32,7 @@ type PaymentRecord = {
   phone_number: string;
   shop_id: string;
   status: string;
+  provider?: string;
 };
 
 type SubscriptionRecord = {
@@ -48,6 +49,7 @@ type ApplyPaymentSuccessParams = {
   message?: string;
   providerReference: string;
   utilityReference?: string;
+  provider?: string;
 };
 
 export async function applySubscriptionPaymentSuccess({
@@ -58,6 +60,7 @@ export async function applySubscriptionPaymentSuccess({
   message,
   providerReference,
   utilityReference,
+  provider,
 }: ApplyPaymentSuccessParams) {
   const amountPaid = Number(payment.amount ?? 0);
 
@@ -106,7 +109,7 @@ export async function applySubscriptionPaymentSuccess({
     grace_ends_at: null,
     last_payment_at: new Date().toISOString(),
     monthly_price: amountConfigured > 0 ? amountConfigured : amountPaid,
-    provider: "azampay",
+    provider: provider ?? payment.provider ?? "azampay",
     metadata: {
       last_provider_reference: providerReference,
       last_payment_phone: payment.phone_number,

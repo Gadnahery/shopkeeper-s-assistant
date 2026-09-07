@@ -12,6 +12,159 @@ export type Database = {
   }
   public: {
     Tables: {
+      platform_admins: {
+        Row: {
+          user_id: string
+          created_at: string
+          created_by: string | null
+          notes: string | null
+        }
+        Insert: {
+          user_id: string
+          created_at?: string
+          created_by?: string | null
+          notes?: string | null
+        }
+        Update: {
+          user_id?: string
+          created_at?: string
+          created_by?: string | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      shop_subscriptions: {
+        Row: {
+          id: string
+          shop_id: string
+          status: string
+          trial_started_at: string | null
+          trial_ends_at: string | null
+          current_period_started_at: string | null
+          current_period_ends_at: string | null
+          grace_ends_at: string | null
+          monthly_price: number
+          provider: string
+          last_payment_at: string | null
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          shop_id: string
+          status?: string
+          trial_started_at?: string | null
+          trial_ends_at?: string | null
+          current_period_started_at?: string | null
+          current_period_ends_at?: string | null
+          grace_ends_at?: string | null
+          monthly_price?: number
+          provider?: string
+          last_payment_at?: string | null
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          shop_id?: string
+          status?: string
+          trial_started_at?: string | null
+          trial_ends_at?: string | null
+          current_period_started_at?: string | null
+          current_period_ends_at?: string | null
+          grace_ends_at?: string | null
+          monthly_price?: number
+          provider?: string
+          last_payment_at?: string | null
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_payments: {
+        Row: {
+          id: string
+          shop_id: string
+          initiated_by: string | null
+          external_id: string
+          provider: string
+          payment_channel: string
+          phone_number: string
+          amount: number
+          currency: string
+          billing_period_months: number | null
+          status: string
+          provider_reference: string | null
+          utility_reference: string | null
+          transaction_reference: string | null
+          message: string | null
+          callback_payload: Json
+          paid_for_period_start: string | null
+          paid_for_period_end: string | null
+          completed_at: string | null
+          proof_url: string | null
+          verified_by: string | null
+          verified_at: string | null
+          rejection_reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          shop_id: string
+          initiated_by?: string | null
+          external_id: string
+          provider?: string
+          payment_channel: string
+          phone_number: string
+          amount: number
+          currency?: string
+          billing_period_months?: number | null
+          status?: string
+          provider_reference?: string | null
+          utility_reference?: string | null
+          transaction_reference?: string | null
+          message?: string | null
+          callback_payload?: Json
+          paid_for_period_start?: string | null
+          paid_for_period_end?: string | null
+          completed_at?: string | null
+          proof_url?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          rejection_reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          shop_id?: string
+          initiated_by?: string | null
+          external_id?: string
+          provider?: string
+          payment_channel?: string
+          phone_number?: string
+          amount?: number
+          currency?: string
+          billing_period_months?: number | null
+          status?: string
+          provider_reference?: string | null
+          utility_reference?: string | null
+          transaction_reference?: string | null
+          message?: string | null
+          callback_payload?: Json
+          paid_for_period_start?: string | null
+          paid_for_period_end?: string | null
+          completed_at?: string | null
+          proof_url?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          rejection_reason?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       other_income: {
         Row: {
           amount: number

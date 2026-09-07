@@ -18,6 +18,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { hasValidSupabaseEnv } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { PlatformAdminRoute } from "./components/PlatformAdminRoute";
 
 const Auth = lazy(() => import("./pages/Auth"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -56,6 +57,12 @@ const Production = lazy(() => import("./pages/Production"));
 const Todo = lazy(() => import("./pages/Todo"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+const PlatformAdminLayout = lazy(() => import("./pages/platform-admin/PlatformAdminLayout"));
+const PlatformAdminOverview = lazy(() => import("./pages/platform-admin/PlatformAdminOverview"));
+const PlatformAdminPayments = lazy(() => import("./pages/platform-admin/PlatformAdminPayments"));
+const PlatformAdminSubscribers = lazy(() => import("./pages/platform-admin/PlatformAdminSubscribers"));
+const PlatformAdminRevenue = lazy(() => import("./pages/platform-admin/PlatformAdminRevenue"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -160,6 +167,22 @@ const App = () => (
                             <Route path="/loyalty" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Loyalty /></Suspense></ProtectedRoute>} />
                             <Route path="/notifications" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Notifications /></Suspense></ProtectedRoute>} />
                             <Route path="/settings" element={<ProtectedRoute allowedRoles={["owner", "manager"]}><Suspense fallback={<RouteFallback />}><Settings /></Suspense></ProtectedRoute>} />
+                          </Route>
+
+                          <Route
+                            path="/platform-admin"
+                            element={
+                              <PlatformAdminRoute>
+                                <Suspense fallback={<RouteFallback />}>
+                                  <PlatformAdminLayout />
+                                </Suspense>
+                              </PlatformAdminRoute>
+                            }
+                          >
+                            <Route index element={<Suspense fallback={<RouteFallback />}><PlatformAdminOverview /></Suspense>} />
+                            <Route path="payments" element={<Suspense fallback={<RouteFallback />}><PlatformAdminPayments /></Suspense>} />
+                            <Route path="subscribers" element={<Suspense fallback={<RouteFallback />}><PlatformAdminSubscribers /></Suspense>} />
+                            <Route path="revenue" element={<Suspense fallback={<RouteFallback />}><PlatformAdminRevenue /></Suspense>} />
                           </Route>
 
                           <Route path="*" element={<NotFound />} />

@@ -15,6 +15,7 @@ import {
   Plus,
   ChevronRight,
   Wallet,
+  CalendarDays,
 } from "lucide-react";
 import {
   LineChart,
@@ -31,6 +32,8 @@ import {
 import { format, subDays, startOfWeek, startOfMonth, startOfYear } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSales } from "@/hooks/useSales";
@@ -43,7 +46,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { cn } from "@/lib/utils";
 
-type Period = "today" | "week" | "month" | "year" | "all";
+type Period = "today" | "week" | "month" | "year" | "all" | "custom";
 
 function StatCardSkeleton() {
   return (
@@ -130,7 +133,7 @@ function ChartSkeleton() {
   );
 }
 
-const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
+const PERIOD_LABELS: Record<Exclude<Period, "custom">, Record<"en" | "sw", string>> = {
   today: { en: "Today", sw: "Leo" },
   week: { en: "This week", sw: "Wiki hii" },
   month: { en: "This month", sw: "Mwezi huu" },
@@ -138,7 +141,7 @@ const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
   all: { en: "All time", sw: "Muda wote" },
 };
 
-function getPeriodDates(period: Period): { start: string; end: string } {
+function getPeriodDates(period: Exclude<Period, "custom">): { start: string; end: string } {
   const now = new Date();
   const end = format(now, "yyyy-MM-dd");
   switch (period) {
@@ -156,6 +159,8 @@ export default function Dashboard() {
   const { formatMoney } = useShopFormatting();
   const { profile } = useAuth();
   const [period, setPeriod] = useState<Period>("today");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const shopName = profile?.shops?.name || "WiseCash";
 
@@ -170,7 +175,14 @@ export default function Dashboard() {
   const { data: customersList } = useCustomers();
 
   // Active period date boundaries
-  const { start: periodStart, end: periodEnd } = useMemo(() => getPeriodDates(period), [period]);
+  const { start: periodStart, end: periodEnd } = useMemo(() => {
+    if (period === "custom") {
+      const s = customRange.from ? format(customRange.from, "yyyy-MM-dd") : "1970-01-01";
+      const e = customRange.to ? format(customRange.to, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+      return { start: s, end: e };
+    }
+    return getPeriodDates(period as Exclude<Period, "custom">);
+  }, [period, customRange]);
 
   const isDateInPeriod = (dateStr?: string | null) => {
     if (!dateStr) return false;
@@ -381,21 +393,78 @@ export default function Dashboard() {
         </div>
 
         {/* Period selector */}
-        <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-xs self-start sm:self-auto">
-          {(["today", "week", "month", "year", "all"] as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={cn(
-                "rounded-lg px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-medium transition-all",
-                period === p
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-xs">
+            {(["today", "week", "month", "year", "all"] as Exclude<Period, "custom">[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={cn(
+                  "rounded-lg px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-medium transition-all",
+                  period === p
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {PERIOD_LABELS[p][language]}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Range Picker */}
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                onClick={() => { setPeriod("custom"); setCalendarOpen(true); }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-xl border border-border px-3 py-1 text-[11px] sm:text-xs font-medium transition-all",
+                  period === "custom"
+                    ? "bg-primary text-primary-foreground shadow-sm border-primary"
+                    : "bg-card text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <CalendarDays className="h-3 w-3" />
+                {period === "custom" && customRange.from
+                  ? customRange.to
+                    ? `${format(customRange.from, "dd MMM")} – ${format(customRange.to, "dd MMM")}`
+                    : format(customRange.from, "dd MMM yyyy")
+                  : language === "sw" ? "Chagua Tarehe" : "Custom"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 rounded-2xl shadow-xl border border-border" align="end">
+              <Calendar
+                mode="range"
+                selected={{ from: customRange.from, to: customRange.to }}
+                onSelect={(range) => {
+                  setCustomRange({ from: range?.from, to: range?.to });
+                  if (range?.from && range?.to) {
+                    setPeriod("custom");
+                    setCalendarOpen(false);
+                  }
+                }}
+                numberOfMonths={2}
+                disabled={{ after: new Date() }}
+                className="p-3"
+              />
+              {period === "custom" && customRange.from && (
+                <div className="border-t border-border p-2 flex justify-between items-center">
+                  <span className="text-[11px] text-muted-foreground px-2">
+                    {customRange.to
+                      ? `${format(customRange.from, "MMM dd")} → ${format(customRange.to, "MMM dd, yyyy")}`
+                      : language === "sw" ? "Chagua tarehe ya mwisho" : "Pick end date"}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => { setCustomRange({}); setPeriod("today"); }}
+                    className="h-7 text-xs text-muted-foreground"
+                  >
+                    {language === "sw" ? "Futa" : "Clear"}
+                  </Button>
+                </div>
               )}
-            >
-              {PERIOD_LABELS[p][language]}
-            </button>
-          ))}
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -408,7 +477,11 @@ export default function Dashboard() {
               {language === "sw" ? "Mauzo ya Kipindi" : "Period Sales"}
             </span>
             <span className="badge-neutral text-[10px]">
-              {PERIOD_LABELS[period][language]}
+              {period === "custom"
+                ? customRange.from && customRange.to
+                  ? `${format(customRange.from, "dd MMM")} – ${format(customRange.to, "dd MMM")}`
+                  : language === "sw" ? "Maalum" : "Custom"
+                : PERIOD_LABELS[period as Exclude<Period, "custom">][language]}
             </span>
           </div>
 

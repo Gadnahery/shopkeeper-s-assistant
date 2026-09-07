@@ -57,6 +57,33 @@ export function useCreateOtherIncome() {
   });
 }
 
+export function useUpdateOtherIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<OtherIncomeInsert> }) => {
+      const { data, error } = await supabase
+        .from("other_income")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      await logAudit({
+        action: "other_income_updated",
+        entityType: "other_income",
+        entityId: id,
+        metadata: { amount: data.amount, category: data.category },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["other_income"] });
+      toast.success("Income updated");
+    },
+    onError: (error) => toast.error(`Failed to update income: ${error.message}`),
+  });
+}
+
 export function useDeleteOtherIncome() {
   const queryClient = useQueryClient();
   return useMutation({

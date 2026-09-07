@@ -80,6 +80,7 @@ export default function Sales() {
   const [discountPercent, setDiscountPercent] = useState("0");
   const [cashAmount, setCashAmount] = useState("");
   const [mpesaAmount, setMpesaAmount] = useState("");
+  const [cashOverridden, setCashOverridden] = useState(false); // true = user typed a custom cash amount
   const [mpesaCode, setMpesaCode] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("walk-in");
   const [customerMode, setCustomerMode] = useState<"walk-in" | "existing" | "custom">("walk-in");
@@ -219,12 +220,16 @@ export default function Sales() {
   const totalPaid = cashPaid + mpesaPaid;
   const changeDue = Math.max(0, totalPaid - total);
 
-  // Auto-fill cash input with exact total if user hasn't typed
+  // Auto-sync cash to match cart total unless user has manually overridden
   useEffect(() => {
-    if (total > 0 && !cashAmount && !mpesaAmount) {
-      setCashAmount(String(total));
+    if (!cashOverridden && !mpesaAmount) {
+      setCashAmount(total > 0 ? String(total) : "");
+    } else if (!cashOverridden && mpesaAmount) {
+      // M-Pesa covers part — set cash to remainder
+      const remainder = total - (parseFloat(mpesaAmount) || 0);
+      setCashAmount(remainder > 0 ? String(remainder) : "");
     }
-  }, [total]);
+  }, [total, cashOverridden, mpesaAmount]);
 
   if (products === undefined || productsLoading) {
     return <PageLoader message="Loading POS..." messageSw="Inapakia mfumo wa mauzo..." language={language} />;
@@ -297,6 +302,7 @@ export default function Sales() {
       setCashAmount("");
       setMpesaAmount("");
       setMpesaCode("");
+      setCashOverridden(false);
       setSelectedCustomer("walk-in");
       setCustomerName("");
 
@@ -524,7 +530,12 @@ export default function Sales() {
               <Input
                 type="number"
                 value={cashAmount}
-                onChange={(e) => setCashAmount(e.target.value)}
+                onChange={(e) => { setCashOverridden(true); setCashAmount(e.target.value); }}
+                onFocus={(e) => { if (e.target.value === "0") { setCashAmount(""); } }}
+                onBlur={(e) => {
+                  // If user clears cash, go back to auto-mode
+                  if (!e.target.value.trim()) { setCashOverridden(false); }
+                }}
                 placeholder="0"
                 className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
               />
@@ -535,6 +546,7 @@ export default function Sales() {
                 type="number"
                 value={mpesaAmount}
                 onChange={(e) => setMpesaAmount(e.target.value)}
+                onFocus={(e) => { if (e.target.value === "0") setMpesaAmount(""); }}
                 placeholder="0"
                 className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
               />

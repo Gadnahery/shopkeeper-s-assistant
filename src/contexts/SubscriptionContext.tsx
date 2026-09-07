@@ -7,7 +7,12 @@ import { BILLING_ENABLED } from "@/lib/billing";
 import { resolveSubscriptionMonthlyPrice } from "@/lib/subscription";
 
 type ShopSubscription = Tables<"shop_subscriptions">;
-type SubscriptionPayment = Tables<"subscription_payments">;
+type SubscriptionPayment = Tables<"subscription_payments"> & {
+  proof_url?: string | null;
+  verified_by?: string | null;
+  verified_at?: string | null;
+  rejection_reason?: string | null;
+};
 
 type PaymentProviderOption = {
   value: string;
@@ -19,6 +24,16 @@ type InitiatePaymentInput = {
   phoneNumber: string;
 };
 
+export type SubmitManualPaymentInput = {
+  payment_channel: string;
+  phone_number: string;
+  amount: number;
+  transaction_reference: string;
+  payment_date?: string;
+  proof_url?: string | null;
+  billing_period_months?: number;
+};
+
 const DEFAULT_PAYMENT_OPTIONS: PaymentProviderOption[] = [
   { value: "Mpesa", label: "Vodacom M-Pesa" },
   { value: "Halopesa", label: "Halotel Halopesa" },
@@ -26,9 +41,11 @@ const DEFAULT_PAYMENT_OPTIONS: PaymentProviderOption[] = [
   { value: "Tigo", label: "Yas (TigoPesa)" },
   { value: "Azampesa", label: "AzamPesa" },
 ];
+
 type SubscriptionContextValue = {
   subscription: ShopSubscription | null;
   latestPayment: SubscriptionPayment | null;
+  pendingPayment: SubscriptionPayment | null;
   paymentOptions: PaymentProviderOption[];
   paymentAmount: number;
   isLoading: boolean;
@@ -41,6 +58,8 @@ type SubscriptionContextValue = {
   refreshSubscription: () => Promise<void>;
   initiatePayment: (input: InitiatePaymentInput) => Promise<{ message: string }>;
   isInitiatingPayment: boolean;
+  submitManualPayment: (input: SubmitManualPaymentInput) => Promise<{ ok: boolean; payment_id: string }>;
+  isSubmittingManualPayment: boolean;
 };
 
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
@@ -170,6 +189,26 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     refetchInterval: 60_000,
   });
 
+  const pendingPaymentQuery = useQuery({
+    queryKey: ["subscription-payments-pending", shopId],
+    queryFn: async () => {
+      if (!shopId) return null;
+      const { data, error } = await supabase
+        .from("subscription_payments")
+        .select("*")
+        .eq("shop_id", shopId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as SubscriptionPayment | null;
+    },
+    enabled: Boolean(shopId),
+    refetchInterval: 15_000,
+  });
+
   const paymentOptionsQuery = useQuery({
     queryKey: ["subscription-payment-options", user?.id],
     queryFn: async () => {
@@ -232,6 +271,28 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const submitManualPaymentMutation = useMutation({
+    mutationFn: async (input: SubmitManualPaymentInput) => {
+      const { data, error, response } = await invokeBillingFunction<{ ok: boolean; payment_id: string }>(
+        "submit-manual-payment",
+        { body: input }
+      );
+
+      if (error) {
+        throw new Error(await getFunctionErrorMessage(error, "Failed to submit payment", response));
+      }
+      return data as { ok: boolean; payment_id: string };
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["shop-subscription", shopId] }),
+        queryClient.invalidateQueries({ queryKey: ["subscription-payments-latest", shopId] }),
+        queryClient.invalidateQueries({ queryKey: ["subscription-payments-pending", shopId] }),
+        queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+      ]);
+    },
+  });
+
   useEffect(() => {
     if (!shopId) return;
 
@@ -242,6 +303,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         { event: "*", schema: "public", table: "subscription_payments", filter: `shop_id=eq.${shopId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: ["subscription-payments-latest", shopId] });
+          queryClient.invalidateQueries({ queryKey: ["subscription-payments-pending", shopId] });
           queryClient.invalidateQueries({ queryKey: ["shop-subscription", shopId] });
         },
       )
@@ -264,13 +326,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     };
   }, [shopId, queryClient]);
 
-  const daysRemaining = BILLING_ENABLED ? getDaysRemaining(subscriptionQuery.data) : null;
-  const isTrialing = BILLING_ENABLED ? subscriptionQuery.data?.status === "trialing" : false;
-  const isActive = BILLING_ENABLED ? subscriptionQuery.data?.status === "active" || isTrialing : true;
-  const isBillingLocked = false;
+  const daysRemaining = getDaysRemaining(subscriptionQuery.data);
+  const isTrialing = subscriptionQuery.data?.status === "trialing";
+  const isActive = subscriptionQuery.data?.status === "active" || isTrialing;
+  const isBillingLocked = !isActive && subscriptionQuery.data !== null && subscriptionQuery.data !== undefined;
 
   const renewalDateLabel = useMemo(() => {
-    if (!BILLING_ENABLED) return null;
     if (!subscriptionQuery.data) return null;
     const dateValue =
       subscriptionQuery.data.status === "trialing"
@@ -289,6 +350,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     () => ({
       subscription: subscriptionQuery.data ?? null,
       latestPayment: latestPaymentQuery.data ?? null,
+      pendingPayment: pendingPaymentQuery.data ?? null,
       paymentOptions: paymentOptionsQuery.data?.providers?.length
         ? paymentOptionsQuery.data.providers
         : DEFAULT_PAYMENT_OPTIONS,
@@ -310,15 +372,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["shop-subscription"] }),
           queryClient.invalidateQueries({ queryKey: ["subscription-payments-latest"] }),
+          queryClient.invalidateQueries({ queryKey: ["subscription-payments-pending"] }),
           queryClient.invalidateQueries({ queryKey: ["notifications"] }),
         ]);
       },
       initiatePayment: (input) => initiatePaymentMutation.mutateAsync(input),
       isInitiatingPayment: initiatePaymentMutation.isPending,
+      submitManualPayment: (input) => submitManualPaymentMutation.mutateAsync(input),
+      isSubmittingManualPayment: submitManualPaymentMutation.isPending,
     }),
     [
       subscriptionQuery.data,
       latestPaymentQuery.data,
+      pendingPaymentQuery.data,
       paymentOptionsQuery.data,
       subscriptionQuery.isLoading,
       latestPaymentQuery.isLoading,
@@ -331,6 +397,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       renewalDateLabel,
       queryClient,
       initiatePaymentMutation,
+      submitManualPaymentMutation,
     ],
   );
 

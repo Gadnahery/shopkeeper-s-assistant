@@ -357,6 +357,7 @@ export default function Expenses() {
               type="number"
               value={newForm.amount}
               onChange={(e) => setNewForm({ ...newForm, amount: e.target.value })}
+              onFocus={(e) => e.target.select()}
               placeholder="50000"
               className="h-9 rounded-xl border-border bg-background text-xs font-bold"
             />
@@ -462,6 +463,7 @@ export default function Expenses() {
                 type="number"
                 value={editForm.amount}
                 onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                onFocus={(e) => e.target.select()}
                 className="h-9 rounded-xl border-border bg-background text-xs font-bold"
               />
             </div>
