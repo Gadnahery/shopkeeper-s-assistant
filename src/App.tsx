@@ -19,6 +19,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { hasValidSupabaseEnv } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { PublicOnlyRoute } from "./components/PublicOnlyRoute";
 import { PlatformAdminRoute } from "./components/PlatformAdminRoute";
 
 const Auth = lazy(() => import("./pages/Auth"));
@@ -123,9 +124,9 @@ const App = () => (
                           <Route path="/about" element={<AboutPage />} />
                           <Route path="/contact" element={<ContactPage />} />
                           <Route path="/auth/confirm" element={<AuthConfirmPage />} />
-                          <Route path="/login" element={<LoginPage />} />
-                          <Route path="/signup" element={<SignupPage />} />
-                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+                          <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
+                          <Route path="/auth" element={<PublicOnlyRoute><Auth /></PublicOnlyRoute>} />
                           <Route path="/forgot-password" element={<ForgotPassword />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
                           <Route path="/auth/oauth-setup" element={<GoogleOnboardingPage />} />

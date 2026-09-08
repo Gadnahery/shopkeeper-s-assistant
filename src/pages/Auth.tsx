@@ -56,7 +56,9 @@ export default function Auth() {
                 : "Invalid email or password"
               : error.message,
           );
+          return;
         }
+        navigate("/dashboard", { replace: true });
       } else {
         if (!form.fullName || !form.shopName) {
           toast.error(language === "sw" ? "Tafadhali jaza sehemu zote" : "Please fill in all fields");

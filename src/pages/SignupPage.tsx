@@ -14,7 +14,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const { user, signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const { language } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,11 +27,6 @@ export default function SignupPage() {
     fullName: "",
     shopName: "",
   });
-
-  if (user) {
-    navigate("/dashboard", { replace: true });
-    return null;
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

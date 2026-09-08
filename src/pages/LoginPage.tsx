@@ -14,7 +14,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { user, session, signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const { language } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,12 +23,6 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
-
-  useEffect(() => {
-    if (user && session) navigate("/dashboard", { replace: true });
-  }, [user, session, navigate]);
-
-  if (user && session) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +37,9 @@ export default function LoginPage() {
               : "Invalid email or password"
             : error.message,
         );
+        return;
       }
+      navigate("/dashboard", { replace: true });
     } finally {
       setLoading(false);
     }
