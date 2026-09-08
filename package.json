@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.cjs",
     "build:dev": "vite build --mode development",
     "env:check": "node scripts/check-env.cjs",
     "deploy:check": "node scripts/verify-deploy.cjs",

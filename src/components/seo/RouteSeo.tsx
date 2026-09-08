@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getAppUrl } from "@/lib/siteUrl";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type SeoConfig = {
   title: string;
@@ -193,10 +194,13 @@ function getSeoConfig(pathname: string): SeoConfig {
 
 export function RouteSeo() {
   const location = useLocation();
+  const { language } = useLanguage();
 
   useEffect(() => {
     const seo = getSeoConfig(location.pathname);
     const canonicalUrl = buildUrl(seo.canonicalPath);
+    const baseUrl = getAppUrl();
+    const previewImageUrl = `${baseUrl}/og-preview.png`;
     const structuredData = seo.jsonLd
       ? Array.isArray(seo.jsonLd)
         ? seo.jsonLd
@@ -204,7 +208,7 @@ export function RouteSeo() {
       : null;
 
     document.title = seo.title;
-    document.documentElement.lang = "en";
+    document.documentElement.lang = language || "sw";
 
     upsertMeta('meta[name="description"]', { name: "description", content: seo.description });
     upsertMeta('meta[name="robots"]', { name: "robots", content: seo.robots });
@@ -212,8 +216,14 @@ export function RouteSeo() {
     upsertMeta('meta[property="og:description"]', { property: "og:description", content: seo.description });
     upsertMeta('meta[property="og:type"]', { property: "og:type", content: seo.ogType ?? "website" });
     upsertMeta('meta[property="og:url"]', { property: "og:url", content: canonicalUrl });
+    upsertMeta('meta[property="og:image"]', { property: "og:image", content: previewImageUrl });
+    upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: "1200" });
+    upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: "630" });
+    upsertMeta('meta[property="og:image:type"]', { property: "og:image:type", content: "image/png" });
+    upsertMeta('meta[name="twitter:card"]', { name: "twitter:card", content: "summary_large_image" });
     upsertMeta('meta[name="twitter:title"]', { name: "twitter:title", content: seo.title });
     upsertMeta('meta[name="twitter:description"]', { name: "twitter:description", content: seo.description });
+    upsertMeta('meta[name="twitter:image"]', { name: "twitter:image", content: previewImageUrl });
     upsertLink('link[rel="canonical"]', { rel: "canonical", href: canonicalUrl });
 
     const existingJsonLd = document.getElementById("route-seo-jsonld");

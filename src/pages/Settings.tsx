@@ -14,9 +14,16 @@ import {
   Shield,
   Smartphone,
   Store,
+  Trash2,
+  AlertTriangle,
+  AlertOctagon,
+  History,
+  RotateCcw,
   User,
   Zap,
 } from "lucide-react";
+import { format } from "date-fns";
+import { useDataResetLogs, useResetModule, useResetAllData, type ResettableModule } from "@/hooks/useDataReset";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,13 +49,59 @@ import { type BusinessType, type CapabilityKey, resolveCapabilities } from "@/li
 
 export default function Settings() {
   const { t, language, setLanguage } = useLanguage();
-  const { profile, shopId } = useAuth();
+  const { profile, shopId, isOwner } = useAuth();
   const { data: shopSettings, isLoading } = useShopSettings();
   const updateSettings = useUpdateShopSettings();
   const { canInstall, install, isInstalled } = usePWAContext();
   const { isSubscribed, subscribe, unsubscribe } = usePushNotifications();
 
   const [activeTab, setActiveTab] = useState("shop");
+
+  // Data Management & Reset State (Restricted to Shop Owner)
+  const [selectedModule, setSelectedModule] = useState<ResettableModule>("sales");
+  const [moduleConfirmText, setModuleConfirmText] = useState("");
+  const [fullResetConfirmText, setFullResetConfirmText] = useState("");
+
+  const resetModuleMutation = useResetModule();
+  const resetAllDataMutation = useResetAllData();
+  const { data: resetLogs, isLoading: resetLogsLoading } = useDataResetLogs();
+
+  const handleModuleReset = async () => {
+    if (moduleConfirmText.trim().toUpperCase() !== selectedModule.toUpperCase()) {
+      toast.error(language === "sw" ? "Neno la uthibitisho halilingani" : "Confirmation word does not match");
+      return;
+    }
+    try {
+      await resetModuleMutation.mutateAsync(selectedModule);
+      toast.success(
+        language === "sw"
+          ? `Moduli ya ${selectedModule.toUpperCase()} imefutwa kikamilifu`
+          : `Module ${selectedModule.toUpperCase()} data reset successfully`
+      );
+      setModuleConfirmText("");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to reset module data");
+    }
+  };
+
+  const handleFullReset = async () => {
+    const expectedShopName = shopForm.shop_name.trim();
+    if (fullResetConfirmText.trim().toLowerCase() !== expectedShopName.toLowerCase()) {
+      toast.error(language === "sw" ? "Jina la duka halilingani" : "Shop name confirmation does not match");
+      return;
+    }
+    try {
+      await resetAllDataMutation.mutateAsync();
+      toast.success(
+        language === "sw"
+          ? "Data zote za biashara zimefutwa. Duka liko tayari kuanza upya!"
+          : "All business data has been reset. Your shop is ready to start fresh!"
+      );
+      setFullResetConfirmText("");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to perform full reset");
+    }
+  };
   const [shopForm, setShopForm] = useState({
     shop_name: "",
     phone: "",
@@ -304,6 +357,15 @@ export default function Settings() {
               <TabsTrigger value="system" className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs">
                 {language === "sw" ? "Mfumo na PWA" : "System & PWA"}
               </TabsTrigger>
+              {isOwner && (
+                <TabsTrigger
+                  value="data"
+                  className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-destructive data-[state=active]:shadow-xs text-destructive/80 hover:text-destructive flex items-center gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>{language === "sw" ? "Usimamizi wa Data" : "Data Management"}</span>
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -572,6 +634,255 @@ export default function Settings() {
               </div>
             )}
           </TabsContent>
+
+          {/* TAB 5: Data Management (Restricted to Owner) */}
+          {isOwner && (
+            <TabsContent value="data" className="m-0 p-6 space-y-6">
+              {/* Informative Security Guarantee Banner */}
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 sm:p-5 flex items-start gap-3.5">
+                <AlertOctagon className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="space-y-1 text-xs">
+                  <h4 className="font-bold text-foreground text-sm">
+                    {language === "sw" ? "Eneo la Kufuta na Kuanza Upya Data ya Biashara" : "Shop Data Reset & Deletion Tools"}
+                  </h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {language === "sw"
+                      ? "Sehemu hii inamruhusu mmiliki pekee kufuta data za moduli moja au data zote za kibiashara ili kuanza upya. Akaunti yako, nenosiri, majukumu ya wafanyakazi, mipangilio ya duka na usajili unaofanya kazi (subscription) HAUTAFUTWA kamwe."
+                      : "This area allows the shop owner to wipe specific module data or clear all business records to start fresh. Your shop account, login credentials, staff roles, store settings, and active subscription will NEVER be deleted."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Module-by-Module Reset Card */}
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
+                      <Trash2 className="h-4.5 w-4.5 text-accent" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">
+                        {language === "sw" ? "1. Futa Moduli Moja" : "1. Reset Single Module"}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        {language === "sw" ? "Chagua eneo moja unalotaka kufuta bila kuathiri mengine" : "Wipe data from a specific area without touching the rest"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <Label className="text-xs font-semibold text-foreground">
+                      {language === "sw" ? "Chagua Moduli ya Kufuta" : "Select Module to Reset"}
+                    </Label>
+                    <Select
+                      value={selectedModule}
+                      onValueChange={(val) => {
+                        setSelectedModule(val as ResettableModule);
+                        setModuleConfirmText("");
+                      }}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl border-border bg-background text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sales">
+                          {language === "sw" ? "Mauzo na Rasimu (Sales & Drafts)" : "Sales & Drafts (sales, sale_items)"}
+                        </SelectItem>
+                        <SelectItem value="inventory">
+                          {language === "sw" ? "Bidhaa na Stoki (Inventory & Products)" : "Inventory & Products (products, stock_history)"}
+                        </SelectItem>
+                        <SelectItem value="purchases">
+                          {language === "sw" ? "Manunuzi ya Bidhaa (Purchases)" : "Purchases (stock_received & items)"}
+                        </SelectItem>
+                        <SelectItem value="production">
+                          {language === "sw" ? "Kazi za Uzalishaji (Production)" : "Production (production_batches)"}
+                        </SelectItem>
+                        <SelectItem value="customers">
+                          {language === "sw" ? "Wateja na Madeni (Customers)" : "Customers & Receivables (customers, payments)"}
+                        </SelectItem>
+                        <SelectItem value="expenses">
+                          {language === "sw" ? "Matumizi (Expenses)" : "Expenses (expenses)"}
+                        </SelectItem>
+                        <SelectItem value="suppliers">
+                          {language === "sw" ? "Wasambazaji (Suppliers)" : "Suppliers (suppliers)"}
+                        </SelectItem>
+                        <SelectItem value="orders">
+                          {language === "sw" ? "Oda za Wateja (Orders)" : "Customer Orders (orders & notes)"}
+                        </SelectItem>
+                        <SelectItem value="other_income">
+                          {language === "sw" ? "Mapato Mengine (Other Income)" : "Other Income"}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="rounded-xl border border-border/80 bg-muted/20 p-3 text-xs space-y-2">
+                    <p className="font-semibold text-foreground">
+                      {language === "sw" ? "Uthibitisho wa lazima:" : "Deliberate Confirmation:"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {language === "sw"
+                        ? `Kuthibitisha kufuta moduli hii, andika neno "${selectedModule.toUpperCase()}" hapa chini:`
+                        : `To confirm deleting this module, type "${selectedModule.toUpperCase()}" below:`}
+                    </p>
+                    <Input
+                      value={moduleConfirmText}
+                      onChange={(e) => setModuleConfirmText(e.target.value)}
+                      placeholder={`Type ${selectedModule.toUpperCase()}`}
+                      className="h-9 rounded-xl border-border bg-background text-xs font-mono"
+                    />
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleModuleReset}
+                    disabled={
+                      resetModuleMutation.isPending ||
+                      moduleConfirmText.trim().toUpperCase() !== selectedModule.toUpperCase()
+                    }
+                    className={cn(
+                      "w-full h-9 rounded-xl text-xs font-bold gap-2 transition-all",
+                      moduleConfirmText.trim().toUpperCase() === selectedModule.toUpperCase()
+                        ? "border-destructive text-destructive hover:bg-destructive/10 cursor-pointer"
+                        : "opacity-60 cursor-not-allowed"
+                    )}
+                  >
+                    {resetModuleMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>{language === "sw" ? "Inafuta moduli..." : "Resetting module..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>
+                          {language === "sw"
+                            ? `Futa Moduli ya ${selectedModule.toUpperCase()}`
+                            : `Wipe ${selectedModule.toUpperCase()} Data`}
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Full Reset Card */}
+                <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                      <AlertTriangle className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-destructive">
+                        {language === "sw" ? "2. Futa Data Zote (Anza Upya)" : "2. Full Business Reset (Start Afresh)"}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        {language === "sw" ? "Inafuta taarifa zote za biashara lakini inabakisha akaunti na usajili" : "Erases all transactional records while keeping shop & subscription safe"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {language === "sw"
+                      ? "Kitendo hiki kitafuta mauzo, bidhaa, manunuzi, uzalishaji, wateja, matumizi, na oda zote. Duka lako litarudi kama jipya tayari kuingiza taarifa upya."
+                      : "This wipes all sales, inventory products, purchases, production batches, customers, expenses, and orders in one operation. Your store will be reset clean for fresh entry."}
+                  </p>
+
+                  <div className="rounded-xl border border-destructive/20 bg-background/80 p-3 text-xs space-y-2">
+                    <p className="font-semibold text-destructive">
+                      {language === "sw" ? "Uthibitisho wa kiwango cha juu:" : "High-Friction Confirmation:"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {language === "sw"
+                        ? `Ili kufuta kabisa data zote, andika jina kamili la duka lako "${shopForm.shop_name}" hapa chini:`
+                        : `To permanently wipe all data, type your exact shop name "${shopForm.shop_name}" below:`}
+                    </p>
+                    <Input
+                      value={fullResetConfirmText}
+                      onChange={(e) => setFullResetConfirmText(e.target.value)}
+                      placeholder={`Type "${shopForm.shop_name}"`}
+                      className="h-9 rounded-xl border-destructive/30 bg-background text-xs font-mono"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleFullReset}
+                    disabled={
+                      resetAllDataMutation.isPending ||
+                      fullResetConfirmText.trim().toLowerCase() !== shopForm.shop_name.trim().toLowerCase()
+                    }
+                    className={cn(
+                      "w-full h-9 rounded-xl text-xs font-bold gap-2 transition-all",
+                      fullResetConfirmText.trim().toLowerCase() === shopForm.shop_name.trim().toLowerCase()
+                        ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer shadow-xs"
+                        : "opacity-60 cursor-not-allowed bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {resetAllDataMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>{language === "sw" ? "Inafuta data zote..." : "Wiping business data..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span>{language === "sw" ? "Futa Data Zote & Anza Upya" : "Wipe All Business Data & Start Fresh"}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Audit Trail Section */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <History className="h-4 w-4 text-accent" />
+                    <h4 className="text-sm font-bold text-foreground">
+                      {language === "sw" ? "Kumbukumbu ya Vitendo vya Kufuta Data (Audit Trail)" : "Data Reset Audit Trail"}
+                    </h4>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    {language === "sw" ? "Rekodi za kudumu" : "Durable logs"}
+                  </span>
+                </div>
+
+                {resetLogsLoading ? (
+                  <div className="py-6 flex items-center justify-center text-xs text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span>{language === "sw" ? "Inapakia kumbukumbu..." : "Loading audit log..."}</span>
+                  </div>
+                ) : !resetLogs || resetLogs.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-muted-foreground">
+                    {language === "sw"
+                      ? "Hakuna kumbukumbu ya kufuta data iliyorekodiwa kwenye duka hili."
+                      : "No data reset events recorded for this shop yet."}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/60">
+                    {resetLogs.map((log) => (
+                      <div key={log.id} className="py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div>
+                          <p className="font-semibold text-foreground">
+                            {log.reset_type === "all"
+                              ? language === "sw" ? "Kufuta Data Zote za Biashara" : "Full Business Data Reset"
+                              : `${language === "sw" ? "Kufuta Moduli ya" : "Reset Module:"} ${String(log.module_name || "").toUpperCase()}`}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {log.user_email || "Shop Owner"} · {format(new Date(log.created_at), "dd MMM yyyy, HH:mm")}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-flex items-center rounded-lg bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                            {JSON.stringify(log.row_counts)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </Card>
     </div>

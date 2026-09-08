@@ -20,8 +20,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   RefreshCw,
-  CloudOff,
-  CloudCheck,
   AlertCircle,
   Clock,
   Trash2,
@@ -30,7 +28,6 @@ import {
   RotateCcw,
   Wifi,
   WifiOff,
-  ShoppingBag,
 } from "lucide-react";
 import { useSyncQueue } from "@/hooks/useSyncQueue";
 import { useLanguage } from "@/contexts/LanguageContext";

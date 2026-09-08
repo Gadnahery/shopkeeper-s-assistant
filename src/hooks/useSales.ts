@@ -62,11 +62,20 @@ async function mergeOfflineSales(serverSales: any[], shopId?: string | null): Pr
   }
 }
 
-export function useSales() {
+export interface UseSalesOptions {
+  startDate?: string | null;
+  endDate?: string | null;
+  limit?: number;
+}
+
+export function useSales(options?: UseSalesOptions) {
   const { shopId } = useAuth();
+  const startDate = options?.startDate;
+  const endDate = options?.endDate;
+  const limit = options?.limit;
 
   return useQuery({
-    queryKey: ["sales", shopId],
+    queryKey: ["sales", shopId, startDate, endDate, limit],
     queryFn: async () => {
       let query = (supabase.from("sales" as any) as any)
         .select("*, customers(name), sale_items(*)")
@@ -76,11 +85,26 @@ export function useSales() {
         query = query.eq("shop_id", shopId);
       }
 
+      if (startDate) {
+        query = query.gte("created_at", `${startDate}T00:00:00`);
+      }
+      if (endDate) {
+        query = query.lte("created_at", `${endDate}T23:59:59`);
+      }
+      if (limit) {
+        query = query.limit(limit);
+      }
+
       const { data, error } = await query;
       if (error) {
         if (syncManager.isNetworkError(error)) {
           // If offline and query fails, fallback to cached offline actions
-          return await mergeOfflineSales([], shopId);
+          const offline = await mergeOfflineSales([], shopId);
+          return offline.filter((s) => {
+            if (startDate && s.created_at < `${startDate}T00:00:00`) return false;
+            if (endDate && s.created_at > `${endDate}T23:59:59`) return false;
+            return true;
+          });
         }
         throw error;
       }

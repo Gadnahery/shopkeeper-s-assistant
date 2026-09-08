@@ -842,6 +842,7 @@ export type Database = {
           notes: string | null
           order_number: string | null
           paid_amount: number | null
+          sale_id: string | null
           shop_id: string
           status: string | null
           total: number
@@ -855,6 +856,7 @@ export type Database = {
           notes?: string | null
           order_number?: string | null
           paid_amount?: number | null
+          sale_id?: string | null
           shop_id: string
           status?: string | null
           total: number
@@ -868,6 +870,7 @@ export type Database = {
           notes?: string | null
           order_number?: string | null
           paid_amount?: number | null
+          sale_id?: string | null
           shop_id?: string
           status?: string | null
           total?: number
@@ -879,6 +882,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
             referencedColumns: ["id"]
           },
           {

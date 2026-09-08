@@ -88,8 +88,19 @@ async function updateOrderLegacy(id: string, updates: { status?: string; priorit
         quantity: Number(it.quantity) || 1,
       }));
 
+      let customerName: string | null = null;
+      if (order.customer_id) {
+        const { data: cust } = await supabase
+          .from("customers")
+          .select("name")
+          .eq("id", order.customer_id)
+          .maybeSingle();
+        customerName = cust?.name || null;
+      }
+
       const { data: sale } = await (supabase as any).rpc("complete_sale_transaction", {
-        p_customer_name: order.customer_name ?? null,
+        p_customer_id: order.customer_id ?? null,
+        p_customer_name: customerName,
         p_payment_method: "Cash",
         p_items: items,
       });

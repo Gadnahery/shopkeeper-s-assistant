@@ -165,16 +165,6 @@ export default function Dashboard() {
 
   const shopName = profile?.shops?.name || "WiseCash";
 
-  // Queries
-  const { data: allSales, isLoading: salesLoading } = useSales();
-  const { data: purchasesList, isLoading: purchasesLoading } = usePurchases();
-  const { data: productionList } = useProductionBatches();
-  const { data: expensesList, isLoading: expensesLoading } = useExpenses();
-  const { data: otherIncomeList } = useOtherIncome();
-  const { data: allProducts, isLoading: productsLoading } = useProducts();
-  const { data: lowStockProducts, isLoading: lowStockLoading } = useLowStockProducts();
-  const { data: customersList } = useCustomers();
-
   // Active period date boundaries
   const { start: periodStart, end: periodEnd } = useMemo(() => {
     if (period === "custom") {
@@ -184,6 +174,28 @@ export default function Dashboard() {
     }
     return getPeriodDates(period as Exclude<Period, "custom">);
   }, [period, customRange]);
+
+  const sevenDaysAgoStr = useMemo(() => format(subDays(new Date(), 7), "yyyy-MM-dd"), []);
+  const salesQueryOptions = useMemo(() => {
+    if (period === "all") {
+      return { limit: 500 };
+    }
+    const earliestStart = periodStart < sevenDaysAgoStr ? periodStart : sevenDaysAgoStr;
+    return {
+      startDate: earliestStart,
+      endDate: periodEnd,
+    };
+  }, [period, periodStart, periodEnd, sevenDaysAgoStr]);
+
+  // Queries
+  const { data: allSales, isLoading: salesLoading } = useSales(salesQueryOptions);
+  const { data: purchasesList, isLoading: purchasesLoading } = usePurchases();
+  const { data: productionList } = useProductionBatches();
+  const { data: expensesList, isLoading: expensesLoading } = useExpenses();
+  const { data: otherIncomeList } = useOtherIncome();
+  const { data: allProducts, isLoading: productsLoading } = useProducts();
+  const { data: lowStockProducts, isLoading: lowStockLoading } = useLowStockProducts();
+  const { data: customersList } = useCustomers();
 
   const isDateInPeriod = (dateStr?: string | null) => {
     if (!dateStr) return false;

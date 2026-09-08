@@ -241,6 +241,10 @@ export default function Sales() {
       return;
     }
 
+    const custId =
+      customerMode === "existing" && selectedCustomer !== "walk-in"
+        ? selectedCustomer
+        : null;
     const custName =
       customerMode === "walk-in"
         ? null
