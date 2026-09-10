@@ -46,6 +46,7 @@ import { useProducts, useLowStockProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { cn } from "@/lib/utils";
+import { toLocalDayString, isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
 type Period = "today" | "week" | "month" | "year" | "all" | "custom";
 
@@ -211,9 +212,7 @@ export default function Dashboard() {
   const isDateInPeriod = (dateStr?: string | null) => {
     if (!dateStr) return false;
     if (period === "all") return true;
-    const str = typeof dateStr === "string" ? dateStr : String(dateStr);
-    const d = str.slice(0, 10);
-    return d >= periodStart && d <= periodEnd;
+    return isTimestampInLocalDayRange(dateStr, periodStart, periodEnd);
   };
 
   // Synchronize all period-sensitive business streams
@@ -281,12 +280,12 @@ export default function Dashboard() {
     return dayDates.map((dateObj) => {
       const dayStr = format(dateObj, "yyyy-MM-dd");
       const daySalesList = (allSales || []).filter(
-        (s) => s.status === "completed" && String(s.created_at || "").startsWith(dayStr)
+        (s) => s.status === "completed" && toLocalDayString(s.created_at) === dayStr
       );
       const dayExpenses = (expensesList || [])
-        .filter((e) => String(e.date || e.created_at || "").startsWith(dayStr));
+        .filter((e) => toLocalDayString(e.date || e.created_at) === dayStr);
       const dayIncome = (otherIncomeList || [])
-        .filter((i) => String(i.date || i.created_at || "").startsWith(dayStr));
+        .filter((i) => toLocalDayString(i.date || i.created_at) === dayStr);
 
       const dayPnl = calculatePnL(daySalesList, dayExpenses, dayIncome);
 

@@ -31,6 +31,7 @@ import { EditSaleDialog } from "./EditSaleDialog";
 import { Receipt } from "@/components/Receipt";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import { isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
 type Period = "today" | "week" | "month" | "year" | "all" | "custom";
 
@@ -119,10 +120,16 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
 
   const { data: rawSales, isLoading: salesLoading } = useSales(salesQueryOptions);
 
-  // Filter out drafts from sales history
+  // Filter out drafts from sales history and ensure local day range
   const periodSales = useMemo(() => {
-    return (rawSales || []).filter((s) => s.status !== "draft");
-  }, [rawSales]);
+    return (rawSales || []).filter((s) => {
+      if (s.status === "draft") return false;
+      if (period !== "all" && s.created_at) {
+        return isTimestampInLocalDayRange(s.created_at, periodStart, periodEnd);
+      }
+      return true;
+    });
+  }, [rawSales, period, periodStart, periodEnd]);
 
   // Period KPI Metrics
   const totalSalesVal = useMemo(() => {

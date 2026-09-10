@@ -6,6 +6,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { calculateCashReceived } from "@/lib/financials";
 import { syncManager } from "@/lib/syncManager";
 import type { OptimisticSaleRecord } from "@/lib/db";
+import {
+  getLocalDayStartIso,
+  getLocalDayEndIso,
+  toLocalDayString,
+  isTimestampInLocalDayRange,
+} from "@/lib/dateUtils";
 
 export type Sale = Tables<"sales"> & {
   is_offline_pending?: boolean;
@@ -86,10 +92,12 @@ export function useSales(options?: UseSalesOptions) {
       }
 
       if (startDate) {
-        query = query.gte("created_at", `${startDate}T00:00:00`);
+        const startIso = getLocalDayStartIso(startDate);
+        query = query.gte("created_at", startIso);
       }
       if (endDate) {
-        query = query.lte("created_at", `${endDate}T23:59:59`);
+        const endIso = getLocalDayEndIso(endDate);
+        query = query.lte("created_at", endIso);
       }
       if (limit) {
         query = query.limit(limit);
@@ -100,15 +108,15 @@ export function useSales(options?: UseSalesOptions) {
         if (syncManager.isNetworkError(error)) {
           // If offline and query fails, fallback to cached offline actions
           const offline = await mergeOfflineSales([], shopId);
-          return offline.filter((s) => {
-            if (startDate && s.created_at < `${startDate}T00:00:00`) return false;
-            if (endDate && s.created_at > `${endDate}T23:59:59`) return false;
-            return true;
-          });
+          return offline.filter((s) => isTimestampInLocalDayRange(s.created_at, startDate, endDate));
         }
         throw error;
       }
-      return await mergeOfflineSales(data || [], shopId);
+      const merged = await mergeOfflineSales(data || [], shopId);
+      if (startDate || endDate) {
+        return merged.filter((s) => isTimestampInLocalDayRange(s.created_at, startDate, endDate));
+      }
+      return merged;
     },
     enabled: !!shopId,
   });
@@ -154,11 +162,14 @@ export function useSalesByDateRange(startDate: string | null, endDate: string | 
     queryKey: ["sales", "range", shopId, startDate, endDate],
     queryFn: async () => {
       if (!startDate || !endDate) return [];
+      const startIso = getLocalDayStartIso(startDate);
+      const endIso = getLocalDayEndIso(endDate);
+
       let query = (supabase.from("sales" as any) as any)
         .select("*, customers(name), sale_items(*)")
         .eq("status", "completed")
-        .gte("created_at", `${startDate}T00:00:00`)
-        .lte("created_at", `${endDate}T23:59:59`)
+        .gte("created_at", startIso)
+        .lte("created_at", endIso)
         .order("created_at", { ascending: false });
 
       if (shopId) {
@@ -169,18 +180,12 @@ export function useSalesByDateRange(startDate: string | null, endDate: string | 
       if (error) {
         if (syncManager.isNetworkError(error)) {
           const allMerged = await mergeOfflineSales([], shopId);
-          return allMerged.filter((s) => {
-            const d = (s.created_at || "").slice(0, 10);
-            return d >= startDate && d <= endDate;
-          });
+          return allMerged.filter((s) => isTimestampInLocalDayRange(s.created_at, startDate, endDate));
         }
         throw error;
       }
       const merged = await mergeOfflineSales(data || [], shopId);
-      return merged.filter((s) => {
-        const d = (s.created_at || "").slice(0, 10);
-        return d >= startDate && d <= endDate;
-      });
+      return merged.filter((s) => isTimestampInLocalDayRange(s.created_at, startDate, endDate));
     },
     enabled: !!startDate && !!endDate && !!shopId,
   });
@@ -210,11 +215,14 @@ export function useSalesSummaryByRange(start: string, end: string) {
   return useQuery({
     queryKey: ["sales", "summary", shopId, start, end],
     queryFn: async () => {
+      const startIso = getLocalDayStartIso(start);
+      const endIso = getLocalDayEndIso(end);
+
       let query = (supabase.from("sales" as any) as any)
         .select("*")
         .eq("status", "completed")
-        .gte("created_at", `${start}T00:00:00`)
-        .lte("created_at", `${end}T23:59:59`);
+        .gte("created_at", startIso)
+        .lte("created_at", endIso);
 
       if (shopId) {
         query = query.eq("shop_id", shopId);
@@ -223,10 +231,7 @@ export function useSalesSummaryByRange(start: string, end: string) {
       const { data, error } = await query;
       if (error && !syncManager.isNetworkError(error)) throw error;
       const merged = await mergeOfflineSales(data || [], shopId);
-      const filtered = merged.filter((s) => {
-        const d = (s.created_at || "").slice(0, 10);
-        return d >= start && d <= end;
-      });
+      const filtered = merged.filter((s) => isTimestampInLocalDayRange(s.created_at, start, end));
       return aggregateSales(filtered);
     },
     enabled: !!start && !!end && !!shopId,
@@ -239,12 +244,14 @@ export function useTodaySales() {
   return useQuery({
     queryKey: ["sales", "today", shopId],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const now = new Date();
+      const startIso = getLocalDayStartIso(now);
+      const endIso = getLocalDayEndIso(now);
       
       let query = (supabase.from("sales" as any) as any)
         .select("*")
-        .gte("created_at", `${today}T00:00:00`)
-        .lte("created_at", `${today}T23:59:59`);
+        .gte("created_at", startIso)
+        .lte("created_at", endIso);
 
       if (shopId) {
         query = query.eq("shop_id", shopId);
@@ -253,10 +260,8 @@ export function useTodaySales() {
       const { data, error } = await query;
       if (error && !syncManager.isNetworkError(error)) throw error;
       const merged = await mergeOfflineSales(data || [], shopId);
-      const filtered = merged.filter((s) => {
-        const d = (s.created_at || "").slice(0, 10);
-        return d === today;
-      });
+      const todayStr = toLocalDayString(now);
+      const filtered = merged.filter((s) => toLocalDayString(s.created_at) === todayStr);
       return aggregateSales(filtered);
     },
     enabled: !!shopId,
