@@ -225,32 +225,41 @@ export default function CustomerDetail() {
                 {language === "sw" ? "Bado hakuna mauzo yaliyohusishwa na mteja huyu." : "No sales have been recorded for this customer yet."}
               </div>
             ) : (
-              customerSales.map((sale) => (
-                <div
-                  key={sale.id}
-                  className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="truncate font-semibold">{sale.invoice_number}</p>
-                      {(sale as any).is_offline_pending && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-bold text-amber-600 dark:text-amber-400 border border-amber-300/40">
-                          ⚡ {language === "sw" ? "Bila Mtandao" : "Offline"}
-                        </span>
-                      )}
+              customerSales.map((sale) => {
+                const itemNames = ((sale as any).sale_items || []).map((it: any) => `${it.product_name || "Item"} (x${it.quantity})`).filter(Boolean);
+                const itemsLabel = itemNames.length
+                  ? itemNames.length > 2
+                    ? `${itemNames.slice(0, 2).join(", ")} +${itemNames.length - 2} ${language === "sw" ? "zaidi" : "more"}`
+                    : itemNames.join(", ")
+                  : sale.invoice_number;
+
+                return (
+                  <div
+                    key={sale.id}
+                    className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-semibold text-sm text-foreground truncate">{itemsLabel}</p>
+                        {(sale as any).is_offline_pending && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-bold text-amber-600 dark:text-amber-400 border border-amber-300/40">
+                            ⚡ {language === "sw" ? "Bila Mtandao" : "Offline"}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {sale.invoice_number} · {sale.created_at ? new Date(sale.created_at).toLocaleString() : language === "sw" ? "Tarehe haipo" : "No date"} · {sale.payment_method}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {sale.created_at ? new Date(sale.created_at).toLocaleString() : language === "sw" ? "Tarehe haipo" : "No date"} · {sale.payment_method}
-                    </p>
+                    <div className="text-left sm:text-right">
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        {language === "sw" ? "Jumla" : "Total"}
+                      </p>
+                      <p className="text-lg font-semibold">{Number(sale.total || 0).toLocaleString()}</p>
+                    </div>
                   </div>
-                  <div className="text-left sm:text-right">
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                      {language === "sw" ? "Jumla" : "Total"}
-                    </p>
-                    <p className="text-lg font-semibold">{Number(sale.total || 0).toLocaleString()}</p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>

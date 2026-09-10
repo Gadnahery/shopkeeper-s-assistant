@@ -303,17 +303,29 @@ export default function Dashboard() {
     const incomeSource = (periodOtherIncome || []).length > 0 ? periodOtherIncome : (otherIncomeList || []);
 
     const acts = [
-      ...salesSource.slice(0, 10).map((s) => ({
-        type: "sale",
-        title: `Sale #${String(s.id || "").slice(0, 6).toUpperCase()}`,
-        subtitle: `${s.payment_method || "Cash"}${s.created_at ? ` · ${format(new Date(s.created_at), "dd MMM, HH:mm")}` : ""}`,
-        date: s.created_at,
-        amount: `+${formatMoney(s.total)}`,
-        isPositive: true,
-        icon: ShoppingBag,
-        color: "text-blue-600",
-        bg: "bg-blue-50 dark:bg-blue-950/40",
-      })),
+      ...salesSource.slice(0, 10).map((s) => {
+        const itemNames = ((s as any).sale_items || []).map((it: any) => it.product_name).filter(Boolean);
+        const itemsLabel = itemNames.length
+          ? itemNames.length > 2
+            ? `${itemNames.slice(0, 2).join(", ")} +${itemNames.length - 2} ${language === "sw" ? "zaidi" : "more"}`
+            : itemNames.join(", ")
+          : (s.invoice_number || `Sale #${String(s.id || "").slice(0, 6).toUpperCase()}`);
+
+        const customerLabel = s.customer_name || (s as any).customers?.name || (language === "sw" ? "Mteja wa kawaida" : "Walk-in");
+        const dateLabel = s.created_at ? ` · ${format(new Date(s.created_at), "dd MMM, HH:mm")}` : "";
+
+        return {
+          type: "sale",
+          title: itemsLabel,
+          subtitle: `${customerLabel} · ${s.payment_method || "Cash"}${dateLabel}`,
+          date: s.created_at,
+          amount: `+${formatMoney(s.total)}`,
+          isPositive: true,
+          icon: ShoppingBag,
+          color: "text-blue-600",
+          bg: "bg-blue-50 dark:bg-blue-950/40",
+        };
+      }),
       ...expensesSource.slice(0, 10).map((e) => ({
         type: "expense",
         title: (e as any).title || e.description || (language === "sw" ? "Gharama" : "Expense"),

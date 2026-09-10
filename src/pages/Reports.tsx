@@ -417,6 +417,7 @@ export default function Reports() {
                 <TableHeader>
                   <TableRow className="bg-muted/40 text-xs font-semibold">
                     <TableHead>{t("sales.date")}</TableHead>
+                    <TableHead>{language === "sw" ? "Bidhaa Zilizouzwa" : "Items Sold"}</TableHead>
                     <TableHead>{t("sales.customer")}</TableHead>
                     <TableHead>{t("sales.paymentMethod")}</TableHead>
                     <TableHead className="text-right">{t("sales.total")}</TableHead>
@@ -425,39 +426,51 @@ export default function Reports() {
                 <TableBody>
                   {(sales || []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-6 text-xs text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-6 text-xs text-muted-foreground">
                         {language === "sw" ? "Hakuna miamala kwenye kipindi hiki." : "No transactions recorded in this range."}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    (sales || []).slice(0, 15).map((s) => (
-                      <TableRow key={s.id} className="text-xs">
-                        <TableCell className="font-medium text-foreground">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
-                            {(s as any).is_offline_pending && (
-                              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-bold text-amber-600 dark:text-amber-400 border border-amber-300/40">
-                                ⚡ {language === "sw" ? "Bila Mtandao" : "Offline"}
-                              </span>
-                            )}
-                            {(s as any).sync_status === "failed" && (
-                              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.2 text-[9px] font-bold text-destructive border border-destructive/30">
-                                ⚠️ {language === "sw" ? "Imeshindwa" : "Failed"}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {(s as any).customer_name || (language === "sw" ? "Moja kwa moja" : "Walk-in")}
-                        </TableCell>
-                        <TableCell>
-                          <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground">
-                            {s.payment_method}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-foreground">{formatMoney(s.total)}</TableCell>
-                      </TableRow>
-                    ))
+                    (sales || []).slice(0, 15).map((s) => {
+                      const itemNames = ((s as any).sale_items || []).map((it: any) => `${it.product_name || "Item"} (x${it.quantity})`).filter(Boolean);
+                      const itemsLabel = itemNames.length
+                        ? itemNames.length > 2
+                          ? `${itemNames.slice(0, 2).join(", ")} +${itemNames.length - 2}`
+                          : itemNames.join(", ")
+                        : ((s as any).invoice_number || "Sale");
+
+                      return (
+                        <TableRow key={s.id} className="text-xs">
+                          <TableCell className="font-medium text-foreground whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
+                              {(s as any).is_offline_pending && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-bold text-amber-600 dark:text-amber-400 border border-amber-300/40">
+                                  ⚡ {language === "sw" ? "Bila Mtandao" : "Offline"}
+                                </span>
+                              )}
+                              {(s as any).sync_status === "failed" && (
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.2 text-[9px] font-bold text-destructive border border-destructive/30">
+                                  ⚠️ {language === "sw" ? "Imeshindwa" : "Failed"}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium text-foreground max-w-[180px] truncate" title={itemNames.join(", ")}>
+                            {itemsLabel}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground whitespace-nowrap">
+                            {(s as any).customer_name || (language === "sw" ? "Moja kwa moja" : "Walk-in")}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground">
+                              {s.payment_method}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-foreground">{formatMoney(s.total)}</TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>

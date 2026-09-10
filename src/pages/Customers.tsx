@@ -470,6 +470,7 @@ export default function Customers() {
                 <TableHeader>
                   <TableRow className="bg-muted/40 text-xs">
                     <TableHead>{t("sales.date")}</TableHead>
+                    <TableHead>{language === "sw" ? "Bidhaa" : "Items"}</TableHead>
                     <TableHead>{t("sales.paymentMethod")}</TableHead>
                     <TableHead className="text-right">{t("sales.total")}</TableHead>
                   </TableRow>
@@ -477,18 +478,28 @@ export default function Customers() {
                 <TableBody>
                   {!customerSales || customerSales.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4 text-xs text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-4 text-xs text-muted-foreground">
                         {language === "sw" ? "Hakuna historia bado." : "No sales history yet."}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    customerSales.slice(0, 10).map((s: any) => (
-                      <TableRow key={s.id} className="text-xs">
-                        <TableCell className="font-medium text-foreground">{format(new Date(s.created_at), "MMM d, yyyy")}</TableCell>
-                        <TableCell className="capitalize text-muted-foreground">{s.payment_method}</TableCell>
-                        <TableCell className="text-right font-bold text-foreground">{formatMoney(s.total)}</TableCell>
-                      </TableRow>
-                    ))
+                    customerSales.slice(0, 10).map((s: any) => {
+                      const itemNames = (s.sale_items || []).map((it: any) => it.product_name).filter(Boolean);
+                      const itemsText = itemNames.length
+                        ? itemNames.length > 2
+                          ? `${itemNames.slice(0, 2).join(", ")} +${itemNames.length - 2}`
+                          : itemNames.join(", ")
+                        : (s.invoice_number || "Sale");
+
+                      return (
+                        <TableRow key={s.id} className="text-xs">
+                          <TableCell className="font-medium text-foreground whitespace-nowrap">{format(new Date(s.created_at), "MMM d, yyyy")}</TableCell>
+                          <TableCell className="text-foreground font-medium max-w-[160px] truncate" title={itemNames.join(", ")}>{itemsText}</TableCell>
+                          <TableCell className="capitalize text-muted-foreground">{s.payment_method}</TableCell>
+                          <TableCell className="text-right font-bold text-foreground">{formatMoney(s.total)}</TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
