@@ -10,7 +10,7 @@ const DISMISS_STORAGE_KEY = "wisecash_grace_banner_dismissed_at";
 const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export const SubscriptionGraceBanner: React.FC = () => {
-  const { isBillingLocked, daysRemaining, subscription } = useSubscription();
+  const { isBillingLocked, isTrialing, daysRemaining, subscription, paymentAmount } = useSubscription();
   const { data: isPlatformAdmin } = useIsPlatformAdmin();
   const { language } = useLanguage();
   const [isDismissed, setIsDismissed] = useState<boolean>(true);
@@ -34,8 +34,16 @@ export const SubscriptionGraceBanner: React.FC = () => {
   // Platform admin doesn't need to see the grace banner for themselves
   if (isPlatformAdmin) return null;
 
-  // Case 1: Billing is locked (past due or expired or pending with 0 days)
-  if (isBillingLocked) {
+  // New users, trialing accounts, or pending free trials must NEVER see the locked banner
+  if (isTrialing || subscription?.status === "trialing" || subscription?.status === "pending") {
+    return null;
+  }
+
+  // If subscription is still active or in positive grace period, don't show locked
+  if (daysRemaining !== null && daysRemaining > 0 && subscription?.status === "active") {
+    // Proceed to grace/expiring check below
+  } else if (isBillingLocked) {
+    const formattedPrice = (paymentAmount || 10000).toLocaleString();
     return (
       <div
         className="w-full bg-destructive text-destructive-foreground px-4 py-2.5 shadow-md flex items-center justify-between flex-wrap gap-2 text-sm z-50 animate-in fade-in duration-300"
@@ -46,11 +54,11 @@ export const SubscriptionGraceBanner: React.FC = () => {
           <span>
             {language === "sw" ? (
               <>
-                <strong>Akaunti haijawashwa:</strong> WiseCash inahitaji usajili wa kila mwezi (TZS 25,000). Uandikaji wa mauzo na bidhaa umesitishwa mpaka uamilishe.
+                <strong>Usajili Unahitajika:</strong> WiseCash inahitaji usajili wa kila mwezi (TZS {formattedPrice}). Uandikaji wa mauzo na stoki umesitishwa mpaka uamilishe.
               </>
             ) : (
               <>
-                <strong>Subscription Required:</strong> WiseCash requires an active subscription (TZS 25,000/mo). Data creation is locked until activated.
+                <strong>Subscription Required:</strong> WiseCash requires an active subscription (TZS {formattedPrice}/mo). Data creation is locked until activated.
               </>
             )}
           </span>
@@ -108,13 +116,13 @@ export const SubscriptionGraceBanner: React.FC = () => {
           {language === "sw" ? (
             <>
               <strong>Taarifa ya Usajili:</strong> WiseCash sasa inatumia usajili wa kila mwezi wa{" "}
-              <span className="font-semibold text-primary">TZS 25,000</span>. Una siku{" "}
+              <span className="font-semibold text-primary">TZS {formattedPrice}</span>. Una siku{" "}
               <span className="font-bold text-amber-600 dark:text-amber-400">{daysRemaining}</span> zilizobaki za kipindi cha mpito. Lipa kwa M-Pesa au Halotel kuendelea kutumia bila usumbufu.
             </>
           ) : (
             <>
               <strong>Subscription Notice:</strong> WiseCash now requires a monthly subscription of{" "}
-              <span className="font-semibold text-primary">TZS 25,000</span>. You have{" "}
+              <span className="font-semibold text-primary">TZS {formattedPrice}</span>. You have{" "}
               <span className="font-bold text-amber-600 dark:text-amber-400">{daysRemaining} days remaining</span> in your transition grace window. Pay via M-Pesa or Halotel to keep uninterrupted access.
             </>
           )}
@@ -128,7 +136,7 @@ export const SubscriptionGraceBanner: React.FC = () => {
           className="h-8 text-xs font-medium shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Link to="/billing">
-            {language === "sw" ? "Lipia Sasa (TZS 25,000)" : "Pay Now (TZS 25,000)"}
+            {language === "sw" ? `Lipia Sasa (TZS ${formattedPrice})` : `Pay Now (TZS ${formattedPrice})`}
             <ArrowRight className="h-3.5 w-3.5 ml-1" />
           </Link>
         </Button>

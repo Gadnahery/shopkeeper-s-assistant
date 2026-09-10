@@ -14,6 +14,7 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { getShellMeta } from "./app-navigation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SubscriptionGraceBanner } from "@/components/subscription/SubscriptionGraceBanner";
+import { FreeTrialWelcomeDialog } from "@/components/subscription/FreeTrialWelcomeDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,6 +151,7 @@ export function MainLayout() {
     <SidebarProvider>
       <>
         <LayoutContent />
+        <FreeTrialWelcomeDialog />
         <AlertDialog open={sessionExpired}>
           <AlertDialogContent>
             <AlertDialogHeader>

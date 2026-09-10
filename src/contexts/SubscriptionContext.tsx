@@ -156,7 +156,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     queryKey: ["shop-subscription", shopId],
     queryFn: async () => {
       if (!shopId) return null;
-      await (supabase.rpc as any)("ensure_subscription_notifications");
+      try {
+        await (supabase.rpc as any)("ensure_subscription_notifications");
+      } catch {
+        // Best effort
+      }
+
       const { data, error } = await supabase
         .from("shop_subscriptions")
         .select("*")
@@ -164,6 +169,30 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) throw error;
+
+      // If pending or new account without trial, proactively grant 14-day trial
+      if (data && (data.status === "pending" || (!data.trial_ends_at && data.status !== "active"))) {
+        try {
+          const { data: trialData, error: trialError } = await (supabase.rpc as any)(
+            "grant_monthly_free_trial",
+            { target_shop_id: shopId }
+          );
+          if (!trialError && trialData) {
+            return trialData;
+          }
+        } catch {
+          // RPC fallback
+        }
+
+        // Optimistic 14-day trial fallback for new/pending shops
+        return {
+          ...data,
+          status: "trialing",
+          trial_started_at: new Date().toISOString(),
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        };
+      }
+
       return data;
     },
     enabled: Boolean(shopId),
@@ -411,18 +440,29 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const daysRemaining = getDaysRemaining(subscriptionQuery.data);
   const isTrialing =
-    subscriptionQuery.data?.status === "trialing" &&
-    (daysRemaining === null || daysRemaining > 0);
+    (subscriptionQuery.data?.status === "trialing" ||
+      subscriptionQuery.data?.status === "pending" ||
+      Boolean(subscriptionQuery.data?.trial_ends_at && new Date(subscriptionQuery.data.trial_ends_at).getTime() > Date.now())) &&
+    (daysRemaining === null || daysRemaining > 0 || subscriptionQuery.data?.status === "pending");
+
   const isActive =
     (subscriptionQuery.data?.status === "active" && (daysRemaining === null || daysRemaining > 0)) ||
     isTrialing;
-  const isBillingLocked = !isActive && subscriptionQuery.data !== null && subscriptionQuery.data !== undefined;
+
+  // New users or trialing users are NEVER locked
+  const isBillingLocked =
+    !isActive &&
+    !isTrialing &&
+    subscriptionQuery.data !== null &&
+    subscriptionQuery.data !== undefined &&
+    subscriptionQuery.data.status !== "pending" &&
+    subscriptionQuery.data.status !== "trialing";
 
   const renewalDateLabel = useMemo(() => {
     if (!subscriptionQuery.data) return null;
     const dateValue =
-      subscriptionQuery.data.status === "trialing"
-        ? subscriptionQuery.data.trial_ends_at
+      subscriptionQuery.data.status === "trialing" || subscriptionQuery.data.status === "pending"
+        ? subscriptionQuery.data.trial_ends_at || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
         : subscriptionQuery.data.current_period_ends_at;
 
     if (!dateValue) return null;
