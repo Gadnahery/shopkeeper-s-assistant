@@ -99,11 +99,41 @@ serve(async (req) => {
       }
     }
 
+    // ── 3. Grant monthly 14-day free trials to eligible shops ────────────────────
+    let trialsGranted = 0;
+    try {
+      const { data: bulkCount, error: rpcErr } = await adminClient.rpc("grant_monthly_free_trials_bulk");
+      if (!rpcErr && typeof bulkCount === "number") {
+        trialsGranted = bulkCount;
+      } else {
+        // Fallback: grant individually for any shop not currently active or trialing
+        const currentMonth = todayStr.slice(0, 7);
+        const { data: subs } = await adminClient
+          .from("shop_subscriptions")
+          .select("shop_id, status, current_period_ends_at, trial_ends_at, last_free_trial_granted_at");
+
+        for (const sub of subs ?? []) {
+          const isActive = sub.status === "active" && (!sub.current_period_ends_at || new Date(sub.current_period_ends_at) > now);
+          const isTrialing = sub.status === "trialing" && (sub.trial_ends_at && new Date(sub.trial_ends_at) > now);
+          const lastMonth = sub.last_free_trial_granted_at ? sub.last_free_trial_granted_at.slice(0, 7) : null;
+          if (!isActive && !isTrialing && lastMonth !== currentMonth) {
+            const { error: grantErr } = await adminClient.rpc("grant_monthly_free_trial", {
+              target_shop_id: sub.shop_id,
+            });
+            if (!grantErr) trialsGranted++;
+          }
+        }
+      }
+    } catch (trialErr) {
+      console.warn("Could not grant monthly free trials:", trialErr);
+    }
+
     return json({
       ok: true,
       date: todayStr,
       expired_shops: expiredCount,
       reminders_sent: remindersInserted,
+      trials_granted: trialsGranted,
     });
   } catch (err) {
     console.error("subscription-daily-cron error:", err);

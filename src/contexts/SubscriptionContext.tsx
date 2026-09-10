@@ -410,15 +410,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [shopId, queryClient]);
 
   const daysRemaining = getDaysRemaining(subscriptionQuery.data);
-  const isTrialing = false;
-  const isActive =
-    subscriptionQuery.data?.status === "active" &&
+  const isTrialing =
+    subscriptionQuery.data?.status === "trialing" &&
     (daysRemaining === null || daysRemaining > 0);
+  const isActive =
+    (subscriptionQuery.data?.status === "active" && (daysRemaining === null || daysRemaining > 0)) ||
+    isTrialing;
   const isBillingLocked = !isActive && subscriptionQuery.data !== null && subscriptionQuery.data !== undefined;
 
   const renewalDateLabel = useMemo(() => {
     if (!subscriptionQuery.data) return null;
-    const dateValue = subscriptionQuery.data.current_period_ends_at;
+    const dateValue =
+      subscriptionQuery.data.status === "trialing"
+        ? subscriptionQuery.data.trial_ends_at
+        : subscriptionQuery.data.current_period_ends_at;
 
     if (!dateValue) return null;
     return new Date(dateValue).toLocaleDateString("en-GB", {

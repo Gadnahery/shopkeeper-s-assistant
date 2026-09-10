@@ -56,6 +56,7 @@ export default function Billing() {
     submitManualPayment,
     isSubmittingManualPayment,
     refreshSubscription,
+    isTrialing,
   } = useSubscription();
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -160,9 +161,10 @@ export default function Billing() {
   }
 
   const isPending = Boolean(pendingPayment);
-  const isActive = subscription?.status === "active";
-  const isPendingActivation = subscription?.status === "pending";
-  const isExpired = subscription?.status === "expired" || (!isActive && !isPendingActivation);
+  const isPaidActive = subscription?.status === "active";
+  const isActive = isPaidActive || Boolean(isTrialing);
+  const isPendingActivation = subscription?.status === "pending" && !isTrialing;
+  const isExpired = subscription?.status === "expired" || (!isActive && !isPendingActivation && !isTrialing);
   const isExpiringSoon = isActive && daysRemaining !== null && daysRemaining <= 5;
 
   const currentChannelInfo = MANUAL_PAYMENT_CHANNELS.find((c) => c.value === selectedChannel);
@@ -192,7 +194,12 @@ export default function Billing() {
                 <Clock3 className="h-3.5 w-3.5 animate-pulse" />
                 {language === "sw" ? "Uhakiki Unasubiriwa" : "Verification Pending"}
               </Badge>
-            ) : isActive ? (
+            ) : isTrialing ? (
+              <Badge variant="outline" className="border-primary bg-primary/10 text-primary gap-1.5 py-1 px-3">
+                <Clock3 className="h-3.5 w-3.5" />
+                {language === "sw" ? `Jaribio la Bure (${daysRemaining ?? 0} siku)` : `Free Trial (${daysRemaining ?? 0}d left)`}
+              </Badge>
+            ) : isPaidActive ? (
               <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-700 gap-1.5 py-1 px-3">
                 <BadgeCheck className="h-3.5 w-3.5" />
                 {language === "sw" ? "Mpango Hai" : "Active Plan"}
@@ -227,7 +234,9 @@ export default function Billing() {
             <p className="text-base sm:text-xl font-bold tracking-tight text-foreground truncate">
               {isPending
                 ? language === "sw" ? "Inahakikiwa" : "In Review"
-                : isActive
+                : isTrialing
+                ? language === "sw" ? `Jaribio la Bure (${daysRemaining ?? 0} siku)` : `14-Day Free Trial (${daysRemaining ?? 0}d left)`
+                : isPaidActive
                 ? language === "sw" ? "WiseCash Pro Hai" : "WiseCash Pro Active"
                 : isPendingActivation
                 ? language === "sw" ? "Inasubiri Malipo" : "Pending Activation"

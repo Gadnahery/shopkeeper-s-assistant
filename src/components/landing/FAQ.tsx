@@ -35,10 +35,10 @@ const faqItems = [
   {
     enQuestion: "Is there a free trial?",
     enAnswer:
-      "No, WiseCash does not have a free trial. You activate your shop directly with an affordable monthly payment of TZS 25,000 via mobile money. This grants you immediate, unrestricted access to every feature with no commitments, and existing active shops are protected with a 14-day grace period.",
+      "Yes! WiseCash offers a 14-day free trial once every calendar month so you can explore all features risk-free. Once you're ready for continuous, uninterrupted business operations, you can renew for TZS 25,000/month directly via mobile money (M-Pesa or HaloPesa).",
     swQuestion: "Je, kuna kipindi cha jaribio la bure?",
     swAnswer:
-      "Hapana, WiseCash haina kipindi cha jaribio la bure. Unaamsha duka lako moja kwa moja kwa malipo ya mwezi ya TZS 25,000 kupitia M-Pesa au Halotel. Hii inakupa ufikiaji kamili wa moduli zote mara moja bila vikwazo.",
+      "Ndiyo! WiseCash inatoa jaribio la bure la siku 14 kila mwezi wa kalenda ili uweze kujifunza na kutumia mfumo mzima. Baada ya hapo unaweza kuendelea bila kikwazo kwa ada ya mwezi ya TZS 25,000 pekee kupitia M-Pesa au HaloPesa.",
   },
   {
     enQuestion: "Does WiseCash work on phones and without internet?",
