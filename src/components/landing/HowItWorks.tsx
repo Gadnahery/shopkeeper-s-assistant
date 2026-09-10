@@ -5,24 +5,24 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const steps = [
   {
     icon: UserPlus,
-    titleEn: "Create Account",
-    titleSw: "Fungua Akaunti",
-    descEn: "Sign up in minutes",
-    descSw: "Jisajili kwa dakika",
+    titleEn: "1. Create Free Account",
+    titleSw: "1. Fungua Akaunti Bure",
+    descEn: "Get 14 days free trial instantly — zero upfront payment",
+    descSw: "Pata siku 14 za bure papo hapo bila malipo ya awali",
   },
   {
     icon: Package,
-    titleEn: "Add Products",
-    titleSw: "Ongeza Bidhaa",
-    descEn: "Import your inventory",
-    descSw: "Ingiza hesabu yako",
+    titleEn: "2. Add Products & Stock",
+    titleSw: "2. Ongeza Bidhaa & Stoki",
+    descEn: "Set prices, barcode & stock levels in minutes",
+    descSw: "Weka bei, barcode na idadi ya bidhaa zako haraka",
   },
   {
     icon: ShoppingBag,
-    titleEn: "Start Selling",
-    titleSw: "Anza Kuuza",
-    descEn: "Go live immediately",
-    descSw: "Anza mara moja",
+    titleEn: "3. Sell & Explore Everything",
+    titleSw: "3. Anza Kuuza & Jaribu Vyote",
+    descEn: "POS, receipts, debt ledgers & P&L reports for 14 days free",
+    descSw: "POS, risiti, madeni na ripoti za faida bure kwa siku 14",
   },
 ];
 

@@ -15,13 +15,13 @@ export function CTA() {
           <div className="relative mx-auto max-w-2xl space-y-4">
             <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-white">
               {language === "sw"
-                ? "Boresha Usimamizi wa Biashara Yako Leo"
-                : "Transform Your Business Operations Today"}
+                ? "Anza na Siku 14 za Majaribio ya Bure Leo"
+                : "Start with a 14-Day Free Trial Today"}
             </h2>
             <p className="text-sm text-gray-300 sm:text-base leading-relaxed max-w-xl mx-auto">
               {language === "sw"
-                ? "Jiunge na wafanyabiashara wanaotumia WiseCash kusimamia manunuzi, stoki, wateja, na mauzo kwa wepesi na uhakika kwa TZS 25,000/mwezi tu."
-                : "Join growing retail, wholesale, and workshop businesses using WiseCash to power their stock, credit sales, and daily profits for just TZS 25,000/month."}
+                ? "Jiunge na WiseCash leo na upate siku 14 za bure kujaribu mfumo mzima bila malipo ya awali au kadi ya benki. Baada ya hapo, endelea kwa TZS 10,000/mwezi tu."
+                : "Join WiseCash today and get 14 days of free trial with zero upfront payment or credit card needed. After your trial, subscribe for just TZS 10,000/month."}
             </p>
 
             <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
@@ -31,7 +31,7 @@ export function CTA() {
                 className="h-12 rounded-xl bg-primary px-8 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90"
               >
                 <Link to="/signup" className="flex items-center gap-2">
-                  <span>{language === "sw" ? "Anza Sasa" : "Get Started"}</span>
+                  <span>{language === "sw" ? "Anza Siku 14 Bure Sasa" : "Start 14-Day Free Trial Now"}</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>

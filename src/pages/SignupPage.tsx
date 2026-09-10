@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,13 +97,17 @@ export default function SignupPage() {
           <Link to="/" className="mb-3 inline-block">
             <BrandLogo size="lg" />
           </Link>
+          <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 shadow-2xs">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{language === "sw" ? "Siku 14 Bure Ukijiunga" : "14-Day Free Trial Included"}</span>
+          </div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">
             {language === "sw" ? "Fungua Akaunti ya Biashara" : "Create Your Business Account"}
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">
             {language === "sw"
-              ? "Anza kutumia mfumo kamili wa ERP bure."
-              : "Start managing your ERP & POS workspace for free."}
+              ? "Jaribu mfumo kamili wa POS & ERP bure kwa siku 14 bila malipo ya mwanzo."
+              : "Explore the full POS & ERP system free for 14 days with zero upfront payment."}
           </p>
         </div>
 

@@ -64,7 +64,7 @@ export function Navbar() {
 
           <Button asChild size="sm" className="h-8 rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90">
             <Link to="/signup" className="flex items-center gap-1">
-              <span>{t("Get Started", "Anza Sasa")}</span>
+              <span>{t("Start Free Trial", "Anza Siku 14 Bure")}</span>
               <ArrowRight className="h-3.5 w-3.5 text-accent" />
             </Link>
           </Button>
@@ -109,7 +109,7 @@ export function Navbar() {
                 <span>{language === "sw" ? "English" : "Kiswahili"}</span>
               </button>
               <Button asChild className="h-9 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
-                <Link to="/signup">{t("Get Started", "Anza Sasa")}</Link>
+                <Link to="/signup">{t("Start 14-Day Free Trial", "Anza Siku 14 Bure")}</Link>
               </Button>
             </div>
           </motion.div>

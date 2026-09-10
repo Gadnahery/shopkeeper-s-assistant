@@ -12,13 +12,13 @@ export default function PricingPage() {
       eyebrow={language === "sw" ? "Bei" : "Pricing"}
       title={
         language === "sw"
-          ? "Anza kutumia WiseCash sasa huku global billing ikiandaliwa"
-          : "Start using WiseCash now while global billing is being prepared"
+          ? "Mpango rahisi na wazi — Anza na siku 14 bure leo"
+          : "Simple, transparent pricing — Start with 14 days free today"
       }
       description={
         language === "sw"
-          ? "Kwa sasa tunaruhusu matumizi mapana ya WiseCash bila kuzuia biashara kwa billing. Bei na njia rasmi za malipo za kimataifa zitatangazwa baada ya setup kukamilika."
-          : "For now, WiseCash is open for broader use without blocking businesses on billing. Official global pricing and payment options will be announced after setup is complete."
+          ? "Kila biashara inayojiunga na WiseCash inapata majaribio ya bure ya siku 14 bila malipo ya mwanzo. Baada ya hapo, furahia huduma zote kwa ada nafuu ya TZS 10,000 tu kwa mwezi."
+          : "Every business that joins WiseCash gets a full 14-day free trial with zero upfront payment. Continue thereafter with all modules unlocked for just TZS 10,000/month."
       }
     >
       <Pricing />

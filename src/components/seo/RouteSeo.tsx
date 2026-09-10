@@ -122,7 +122,7 @@ function buildHomeJsonLd() {
             acceptedAnswer: {
               "@type": "Answer",
               text:
-                "WiseCash costs TZS 25,000 per month with all features included, payable directly via mobile money (M-Pesa, Airtel Money, Tigo Pesa, or HaloPesa) with no card required.",
+                "WiseCash offers an automatic 14-day free trial for all new users on signup, and thereafter costs an affordable TZS 10,000 per month with all features included, payable directly via mobile money (M-Pesa or HaloPesa).",
             },
           },
         ],
@@ -136,9 +136,9 @@ function getSeoConfig(pathname: string): SeoConfig {
 
   const publicPages: Record<string, SeoConfig> = {
     "/": {
-      title: "WiseCash | POS, Inventory, Sales and Retail Management",
+      title: "WiseCash | 14-Day Free Trial • POS, Inventory & Business Management",
       description:
-        "WiseCash helps shops and growing businesses manage POS, inventory, sales, reports, staff, and daily operations in one modern web app.",
+        "WiseCash gives you a 14-day free trial on signup. Manage POS, inventory, sales, customer credit, and profit reports in one modern web app for Tanzanian shops.",
       robots: INDEXABLE_ROBOTS,
       canonicalPath: "/",
       ogType: "website",
@@ -153,9 +153,9 @@ function getSeoConfig(pathname: string): SeoConfig {
       ogType: "website",
     },
     "/pricing": {
-      title: "WiseCash Pricing | TZS 25,000/Month All-Inclusive",
+      title: "WiseCash Pricing | 14-Day Free Trial & TZS 10,000/Month",
       description:
-        "WiseCash costs TZS 25,000 per month with all features included. Pay easily with mobile money (M-Pesa, Halotel, Airtel Money, Tigo Pesa) — no card needed.",
+        "WiseCash includes a 14-day free trial on signup and costs TZS 10,000 per month with all modules included. Pay easily with mobile money — no card needed.",
       robots: INDEXABLE_ROBOTS,
       canonicalPath: "/pricing",
       ogType: "website",

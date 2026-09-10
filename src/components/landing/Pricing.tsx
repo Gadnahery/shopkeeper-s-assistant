@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const includedFeatures = [
+  { en: "14-Day Full Free Trial with zero upfront payment", sw: "Majaribio ya bure ya siku 14 bila malipo ya awali" },
   { en: "Point of Sale (POS) & custom receipts", sw: "Mauzo ya POS & risiti za wateja" },
   { en: "Live inventory & low stock notifications", sw: "Usimamizi wa stoki & tahadhari za bidhaa chache" },
   { en: "Customer credit & partial repayments", sw: "Mauzo ya mkopo & kumbukumbu za madeni ya wateja" },
@@ -29,17 +30,17 @@ export function Pricing() {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-14"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-3">
-            <Zap className="h-3.5 w-3.5" />
-            <span>{language === "sw" ? "Mpango Mmoja Kamili" : "One Transparent Plan"}</span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 mb-3">
+            <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{language === "sw" ? "Siku 14 za Bure Zimejumuishwa" : "14-Day Free Trial Included"}</span>
           </div>
           <h2 className="text-3xl font-extrabold text-foreground md:text-4xl">
-            {language === "sw" ? "Gharama Wazi Bila Ada Zilizofichwa" : "Simple, Transparent Pricing"}
+            {language === "sw" ? "Anza Bure, Kisha TZS 10,000/Mwezi" : "Start Free, Then TZS 10,000/Month"}
           </h2>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
             {language === "sw"
-              ? "Moduli zote 10 zimejumuishwa kwenye mpango mmoja wa bei nafuu. Lipa kwa simu, hauhitaji kadi ya benki."
-              : "All 10 modules included in one affordable plan. Pay with mobile money — no credit card needed."}
+              ? "Kila akaunti mpya inapata siku 14 za kujaribu mfumo mzima bure bila malipo yoyote ya awali. Baada ya hapo, lipia TZS 10,000 tu kwa mwezi kwa duka zima."
+              : "Every new account gets 14 days of free trial to explore all features with zero upfront payment. Continue after for just TZS 10,000/month."}
           </p>
         </motion.div>
 
@@ -56,31 +57,38 @@ export function Pricing() {
             <div>
               <h3 className="text-xl font-bold text-foreground">WiseCash Pro</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {language === "sw" ? "Mpango wa Biashara Kamili" : "Full Business Suite"}
+                {language === "sw" ? "Mpango Kamili wa Biashara" : "Full Business Suite"}
               </p>
             </div>
-            <Badge className="bg-primary/15 text-primary border-primary/30 font-bold text-xs py-1 px-3">
-              {language === "sw" ? "Ufikiaji Wote" : "All-Inclusive"}
+            <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-bold text-xs py-1 px-3">
+              {language === "sw" ? "Siku 14 Bure" : "14 Days Free"}
             </Badge>
           </div>
 
-          <div className="mt-6 flex items-baseline gap-2">
-            <span className="text-4xl sm:text-5xl font-black text-foreground">TZS 25,000</span>
-            <span className="text-sm font-medium text-muted-foreground">
-              {language === "sw" ? "/ mwezi kwa duka" : "/ month per shop"}
-            </span>
+          <div className="mt-6 flex flex-col gap-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl sm:text-5xl font-black text-foreground">TZS 10,000</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                {language === "sw" ? "/ mwezi" : "/ month"}
+              </span>
+            </div>
+            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              {language === "sw"
+                ? "✓ Siku 14 za kwanza ni bure kabisa kabla ya kuanza kulipia"
+                : "✓ First 14 days are 100% free before any payment"}
+            </p>
           </div>
 
           {/* Differentiator Banner: Mobile Money Supported */}
           <div className="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 space-y-1.5">
             <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
               <Smartphone className="h-4 w-4 text-emerald-600" />
-              <span>{language === "sw" ? "Lipa kwa Simu — Hakuna Kadi Inayohitajika" : "Pay with Mobile Money — No Card Needed"}</span>
+              <span>{language === "sw" ? "Hakuna Kadi — Lipa kwa Simu Baada ya Majaribio" : "No Card Needed — Pay with Mobile Money"}</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               {language === "sw"
-                ? "Tuma malipo moja kwa moja kupitia Vodacom M-Pesa au HaloPesa. Akaunti yako inathibitishwa na kuwa hai mara moja."
-                : "Send payment directly via Vodacom M-Pesa or HaloPesa. Your shop account is activated quickly."}
+                ? "Jaribu mfumo bure kwa siku 14 bila kadi. Ukipenda, lipia kupitia Vodacom M-Pesa au HaloPesa kwa urahisi."
+                : "Try the software completely free for 14 days without a card. When ready, pay easily via Vodacom M-Pesa or HaloPesa."}
             </p>
           </div>
 
@@ -102,15 +110,15 @@ export function Pricing() {
 
           <Button asChild size="lg" className="mt-8 h-12 w-full rounded-xl bg-primary text-sm font-bold shadow-md hover:bg-primary/90">
             <Link to="/signup" className="flex items-center justify-center gap-2">
-              <span>{language === "sw" ? "Anza Sasa (TZS 25,000/mwezi)" : "Get Started (TZS 25,000/mo)"}</span>
+              <span>{language === "sw" ? "Anza Majaribio ya Siku 14 Bure" : "Start 14-Day Free Trial"}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
 
           <p className="mt-3 text-center text-[11px] text-muted-foreground">
             {language === "sw"
-              ? "Hakuna mkataba wa lazima. Unaweza kuhuisha mwezi kwa mwezi upendavyo."
-              : "No lock-in contract. Renew monthly on your terms whenever you choose."}
+              ? "Hakuna kadi ya benki wala malipo ya awali. Unalipia tu baada ya siku 14 ukitaka kuendelea."
+              : "No credit card or upfront payment needed. You only subscribe after 14 days if you wish to continue."}
           </p>
         </motion.div>
       </div>

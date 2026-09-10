@@ -31,6 +31,21 @@ export function Hero() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Column (Hero Copy) */}
           <div className="text-center lg:text-left lg:col-span-7 space-y-6">
+            {/* Free Trial Announcement Pill */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs"
+            >
+              <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>
+                {language === "sw"
+                  ? "🎉 Majaribio ya Siku 14 Bure kwa Watumiaji Wapya • Hakuna Malipo ya Awali"
+                  : "🎉 14-Day Free Trial for All New Accounts • No Upfront Payment"}
+              </span>
+            </motion.div>
+
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -61,8 +76,8 @@ export function Hero() {
               className="max-w-2xl text-base text-muted-foreground sm:text-lg lg:text-xl font-normal leading-relaxed mx-auto lg:mx-0"
             >
               {language === "sw"
-                ? "Rekodi kila mauzo, fuatilia stoki inayobaki, dhibiti mauzo ya mkopo na ujue faida yako halisi kila jioni — yote kwenye simu au kompyuta yako hata bila intaneti."
-                : "Record every sale, track stock levels live, manage customer credit debts, and calculate your exact net profit every evening — works on any phone or laptop, even offline."}
+                ? "Rekodi kila mauzo, fuatilia stoki inayobaki, dhibiti mauzo ya mkopo na ujue faida yako halisi kila jioni — yote kwenye simu au kompyuta yako hata bila intaneti. Anza na siku 14 za bure leo!"
+                : "Record every sale, track stock levels live, manage customer credit debts, and calculate your exact net profit every evening — works on any phone or laptop, even offline. Get started with 14 days free!"}
             </motion.p>
 
             <motion.div
@@ -77,7 +92,7 @@ export function Hero() {
                 className="h-12 rounded-xl bg-primary px-8 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 w-full sm:w-auto"
               >
                 <Link to="/signup" className="flex items-center justify-center gap-2">
-                  <span>{language === "sw" ? "Anza Sasa" : "Get Started"}</span>
+                  <span>{language === "sw" ? "Anza Siku 14 Bure" : "Start 14-Day Free Trial"}</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
@@ -88,7 +103,7 @@ export function Hero() {
                 className="h-12 rounded-xl border-border bg-card px-8 text-sm font-semibold text-foreground hover:bg-muted w-full sm:w-auto"
               >
                 <a href="#pricing">
-                  {language === "sw" ? "Tazama Bei (TZS 25,000/mwezi)" : "See Pricing (TZS 25,000/mo)"}
+                  {language === "sw" ? "Tazama Mpango (TZS 10,000/mwezi)" : "See Pricing (TZS 10,000/mo)"}
                 </a>
               </Button>
             </motion.div>
@@ -97,15 +112,15 @@ export function Hero() {
             <div className="pt-2 flex flex-wrap items-center justify-center gap-5 text-xs text-muted-foreground lg:justify-start">
               <div className="flex items-center gap-1.5 font-medium">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>{language === "sw" ? "Inafanya kazi bila intaneti (Offline PWA)" : "Works 100% offline (PWA)"}</span>
+                <span>{language === "sw" ? "Jaribio la Siku 14 Bure" : "14-Day Free Trial"}</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                <span>{language === "sw" ? "Inafanya kazi bila intaneti (PWA)" : "Works 100% offline (PWA)"}</span>
               </div>
               <div className="flex items-center gap-1.5 font-medium">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 <span>{language === "sw" ? "Lipa kwa M-Pesa au Halotel" : "Pay via M-Pesa or Halotel"}</span>
-              </div>
-              <div className="flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>{language === "sw" ? "Kiswahili & Kiingereza" : "Swahili & English"}</span>
               </div>
             </div>
           </div>
@@ -207,10 +222,10 @@ export function Hero() {
               </div>
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-foreground">
-                  {language === "sw" ? "Fungua Akaunti ya Duka" : "Create Shop Account"}
+                  {language === "sw" ? "Fungua Akaunti (Siku 14 Bure)" : "Sign Up (14 Days Free)"}
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  {language === "sw" ? "Jaza jina la duka lako kwa sekunde 60 bila kadi." : "Fill in your shop details in 60 seconds with no credit card."}
+                  {language === "sw" ? "Jaza jina la duka lako kwa sekunde 60 upate siku 14 za bure papo hapo bila malipo ya mwanzo." : "Fill in your shop details in 60 seconds for instant 14 days free full access, no card needed."}
                 </p>
               </div>
             </div>
@@ -221,10 +236,10 @@ export function Hero() {
               </div>
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-foreground">
-                  {language === "sw" ? "Amilisha kwa M-Pesa / Halotel" : "Activate via Mobile Money"}
+                  {language === "sw" ? "Weka Bidhaa & Anza Kuuza" : "Add Inventory & Start Selling"}
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  {language === "sw" ? "Lipa TZS 25,000 kwa simu na akaunti itawashwa mara moja." : "Pay TZS 25,000/mo via M-Pesa or Halotel for instant activation."}
+                  {language === "sw" ? "Ingiza bidhaa, fanya mauzo ya POS, dhibiti madeni na uone faida yako kila jioni." : "Add inventory, run mobile POS, track debts, and see net profit every evening."}
                 </p>
               </div>
             </div>
@@ -235,10 +250,10 @@ export function Hero() {
               </div>
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-foreground">
-                  {language === "sw" ? "Anza Kurekodi Mauzo & Stoki" : "Start Tracking Sales & Stock"}
+                  {language === "sw" ? "Endelea kwa TZS 10,000/Mwezi" : "Renew at TZS 10,000/Mo"}
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  {language === "sw" ? "Ingiza bidhaa, toa risiti na uone faida yako kila jioni." : "Add inventory, print receipts, and see net profit every evening."}
+                  {language === "sw" ? "Kipindi cha siku 14 kikiisha, lipia TZS 10,000 tu kwa mwezi kwa M-Pesa au Halotel kuendelea." : "After your 14-day trial, renew smoothly for just TZS 10,000/month via M-Pesa or HaloPesa."}
                 </p>
               </div>
             </div>
