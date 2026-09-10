@@ -194,6 +194,10 @@ vi.mock("@/hooks/useSales", () => ({
     mutateAsync: mockCreateSaleMutateAsync,
     isPending: false,
   }),
+  useSales: () => ({
+    data: [],
+    isLoading: false,
+  }),
   useDraftSales: () => ({ data: [], isLoading: false }),
   useSaveDraftSale: () => ({ mutateAsync: vi.fn() }),
   useDeleteDraftSale: () => ({ mutateAsync: vi.fn() }),
