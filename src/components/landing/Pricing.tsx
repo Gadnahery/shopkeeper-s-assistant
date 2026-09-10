@@ -35,12 +35,12 @@ export function Pricing() {
             <span>{language === "sw" ? "Siku 14 za Bure Zimejumuishwa" : "14-Day Free Trial Included"}</span>
           </div>
           <h2 className="text-3xl font-extrabold text-foreground md:text-4xl">
-            {language === "sw" ? "Anza Bure, Kisha TZS 10,000/Mwezi" : "Start Free, Then TZS 10,000/Month"}
+            {language === "sw" ? "Anza Bure, Kisha TZS 25,000/Mwezi" : "Start Free, Then TZS 25,000/Month"}
           </h2>
           <p className="mt-3 text-sm text-muted-foreground sm:text-base">
             {language === "sw"
-              ? "Kila akaunti mpya inapata siku 14 za kujaribu mfumo mzima bure bila malipo yoyote ya awali. Baada ya hapo, lipia TZS 10,000 tu kwa mwezi kwa duka zima."
-              : "Every new account gets 14 days of free trial to explore all features with zero upfront payment. Continue after for just TZS 10,000/month."}
+              ? "Kila akaunti mpya inapata siku 14 za kujaribu mfumo mzima bure bila malipo yoyote ya awali. Baada ya hapo, lipia TZS 25,000 tu kwa mwezi kwa duka zima."
+              : "Every new account gets 14 days of free trial to explore all features with zero upfront payment. Continue after for just TZS 25,000/month."}
           </p>
         </motion.div>
 
@@ -67,7 +67,7 @@ export function Pricing() {
 
           <div className="mt-6 flex flex-col gap-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl sm:text-5xl font-black text-foreground">TZS 10,000</span>
+              <span className="text-4xl sm:text-5xl font-black text-foreground">TZS 25,000</span>
               <span className="text-sm font-medium text-muted-foreground">
                 {language === "sw" ? "/ mwezi" : "/ month"}
               </span>

@@ -103,7 +103,7 @@ export function Hero() {
                 className="h-12 rounded-xl border-border bg-card px-8 text-sm font-semibold text-foreground hover:bg-muted w-full sm:w-auto"
               >
                 <a href="#pricing">
-                  {language === "sw" ? "Tazama Mpango (TZS 10,000/mwezi)" : "See Pricing (TZS 10,000/mo)"}
+                  {language === "sw" ? "Tazama Mpango (TZS 25,000/mwezi)" : "See Pricing (TZS 25,000/mo)"}
                 </a>
               </Button>
             </motion.div>
@@ -250,10 +250,10 @@ export function Hero() {
               </div>
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-foreground">
-                  {language === "sw" ? "Endelea kwa TZS 10,000/Mwezi" : "Renew at TZS 10,000/Mo"}
+                  {language === "sw" ? "Endelea kwa TZS 25,000/Mwezi" : "Renew at TZS 25,000/Mo"}
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  {language === "sw" ? "Kipindi cha siku 14 kikiisha, lipia TZS 10,000 tu kwa mwezi kwa M-Pesa au Halotel kuendelea." : "After your 14-day trial, renew smoothly for just TZS 10,000/month via M-Pesa or HaloPesa."}
+                  {language === "sw" ? "Kipindi cha siku 14 kikiisha, lipia TZS 25,000 tu kwa mwezi kwa M-Pesa au Halotel kuendelea." : "After your 14-day trial, renew smoothly for just TZS 25,000/month via M-Pesa or HaloPesa."}
                 </p>
               </div>
             </div>

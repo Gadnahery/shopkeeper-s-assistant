@@ -19,26 +19,26 @@ const faqItems = [
   {
     enQuestion: "How much does WiseCash cost?",
     enAnswer:
-      "WiseCash costs an affordable, flat fee of TZS 10,000 per month for your entire shop, with all modules included and zero hidden charges. Every new user starts with an automatic 14-day free trial before being prompted for any subscription payment.",
+      "WiseCash costs an affordable, flat fee of TZS 25,000 per month for your entire shop, with all modules included and zero hidden charges. Every new user starts with an automatic 14-day free trial before being prompted for any subscription payment.",
     swQuestion: "WiseCash inagharimu kiasi gani?",
     swAnswer:
-      "WiseCash inagharimu ada nafuu ya TZS 10,000 tu kwa mwezi kwa duka lako zima. Moduli zote zimejumuishwa bila malipo yoyote yaliyofichwa. Kila mtumiaji mpya anaanza na siku 14 za bure kabla ya kuombwa kulipia usajili.",
+      "WiseCash inagharimu ada nafuu ya TZS 25,000 tu kwa mwezi kwa duka lako zima. Moduli zote zimejumuishwa bila malipo yoyote yaliyofichwa. Kila mtumiaji mpya anaanza na siku 14 za bure kabla ya kuombwa kulipia usajili.",
   },
   {
     enQuestion: "How do I make the subscription payment?",
     enAnswer:
-      "You can pay directly using local Tanzanian mobile money networks (Vodacom M-Pesa or HaloPesa). You do not need a bank card or international payment account. Once you send TZS 10,000, simply enter the transaction receipt code into the billing screen and your shop is activated immediately.",
+      "You can pay directly using local Tanzanian mobile money networks (Vodacom M-Pesa or HaloPesa). You do not need a bank card or international payment account. Once you send TZS 25,000, simply enter the transaction receipt code into the billing screen and your shop is activated immediately.",
     swQuestion: "Ninalipaje ada ya usajili wa WiseCash?",
     swAnswer:
-      "Unalipa moja kwa moja kupitia mitandao ya simu za mkononi hapa Tanzania (Vodacom M-Pesa au HaloPesa). Huhitaji kadi ya benki wala akaunti ya nje. Ukishatuma TZS 10,000, unaingiza namba ya kumbukumbu ya muamala (SMS receipt code) kwenye fomu ya mfumo na akaunti yako itawashwa mara moja.",
+      "Unalipa moja kwa moja kupitia mitandao ya simu za mkononi hapa Tanzania (Vodacom M-Pesa au HaloPesa). Huhitaji kadi ya benki wala akaunti ya nje. Ukishatuma TZS 25,000, unaingiza namba ya kumbukumbu ya muamala (SMS receipt code) kwenye fomu ya mfumo na akaunti yako itawashwa mara moja.",
   },
   {
     enQuestion: "Is there a free trial?",
     enAnswer:
-      "Yes! Every business that joins WiseCash gets an automatic 14-day free trial immediately upon creating an account. You have full access to POS, inventory, customer credit, purchases, and profit reports without paying anything upfront. You will only be prompted to subscribe (TZS 10,000/mo) after your 14 days have elapsed.",
+      "Yes! Every business that joins WiseCash gets an automatic 14-day free trial immediately upon creating an account. You have full access to POS, inventory, customer credit, purchases, and profit reports without paying anything upfront. You will only be prompted to subscribe (TZS 25,000/mo) after your 14 days have elapsed.",
     swQuestion: "Je, kuna kipindi cha jaribio la bure?",
     swAnswer:
-      "Ndiyo! Kila biashara inayojiunga na WiseCash inapata jaribio la bure la siku 14 mara tu inapofungua akaunti. Una uwezo wa kutumia moduli zote za POS, stoki, mikopo ya wateja, manunuzi, na ripoti za faida bila malipo yoyote ya awali. Utaombwa kulipia ada ya TZS 10,000/mwezi pale tu siku zako 14 za bure zitakapokamilika.",
+      "Ndiyo! Kila biashara inayojiunga na WiseCash inapata jaribio la bure la siku 14 mara tu inapofungua akaunti. Una uwezo wa kutumia moduli zote za POS, stoki, mikopo ya wateja, manunuzi, na ripoti za faida bila malipo yoyote ya awali. Utaombwa kulipia ada ya TZS 25,000/mwezi pale tu siku zako 14 za bure zitakapokamilika.",
   },
   {
     enQuestion: "Does WiseCash work on phones and without internet?",

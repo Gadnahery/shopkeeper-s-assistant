@@ -122,7 +122,7 @@ function buildHomeJsonLd() {
             acceptedAnswer: {
               "@type": "Answer",
               text:
-                "WiseCash offers an automatic 14-day free trial for all new users on signup, and thereafter costs an affordable TZS 10,000 per month with all features included, payable directly via mobile money (M-Pesa or HaloPesa).",
+                "WiseCash offers an automatic 14-day free trial for all new users on signup, and thereafter costs an affordable TZS 25,000 per month with all features included, payable directly via mobile money (M-Pesa or HaloPesa).",
             },
           },
         ],
@@ -153,9 +153,9 @@ function getSeoConfig(pathname: string): SeoConfig {
       ogType: "website",
     },
     "/pricing": {
-      title: "WiseCash Pricing | 14-Day Free Trial & TZS 10,000/Month",
+      title: "WiseCash Pricing | 14-Day Free Trial & TZS 25,000/Month",
       description:
-        "WiseCash includes a 14-day free trial on signup and costs TZS 10,000 per month with all modules included. Pay easily with mobile money — no card needed.",
+        "WiseCash includes a 14-day free trial on signup and costs TZS 25,000 per month with all modules included. Pay easily with mobile money — no card needed.",
       robots: INDEXABLE_ROBOTS,
       canonicalPath: "/pricing",
       ogType: "website",

@@ -5,6 +5,7 @@
 -- 1. Update default values on shop_subscriptions table
 ALTER TABLE public.shop_subscriptions
   ALTER COLUMN status SET DEFAULT 'trialing',
+  ALTER COLUMN monthly_price SET DEFAULT 25000,
   ALTER COLUMN trial_ends_at SET DEFAULT (now() + interval '14 days');
 
 -- 2. Update ensure_shop_subscription to automatically provision 14-day free trial on creation
@@ -40,7 +41,7 @@ BEGIN
   VALUES (
     target_shop_id,
     'trialing',
-    10000,
+    25000,
     'TZS',
     now(),
     now() + interval '14 days',

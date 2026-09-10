@@ -20,8 +20,8 @@ export function CTA() {
             </h2>
             <p className="text-sm text-gray-300 sm:text-base leading-relaxed max-w-xl mx-auto">
               {language === "sw"
-                ? "Jiunge na WiseCash leo na upate siku 14 za bure kujaribu mfumo mzima bila malipo ya awali au kadi ya benki. Baada ya hapo, endelea kwa TZS 10,000/mwezi tu."
-                : "Join WiseCash today and get 14 days of free trial with zero upfront payment or credit card needed. After your trial, subscribe for just TZS 10,000/month."}
+                ? "Jiunge na WiseCash leo na upate siku 14 za bure kujaribu mfumo mzima bila malipo ya awali au kadi ya benki. Baada ya hapo, endelea kwa TZS 25,000/mwezi tu."
+                : "Join WiseCash today and get 14 days of free trial with zero upfront payment or credit card needed. After your trial, subscribe for just TZS 25,000/month."}
             </p>
 
             <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
