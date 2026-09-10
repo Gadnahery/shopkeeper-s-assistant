@@ -137,7 +137,8 @@ const App = () => (
                             <Route path="/purchases" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Purchases /></Suspense></ProtectedRoute>} />
                             <Route path="/production" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Production /></Suspense></ProtectedRoute>} />
                             <Route path="/sales" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Sales /></Suspense></ProtectedRoute>} />
-                            <Route path="/sales/terminal" element={<Navigate to="/sales" replace />} />
+                            <Route path="/sales/new" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Sales initialView="new" /></Suspense></ProtectedRoute>} />
+                            <Route path="/sales/terminal" element={<Navigate to="/sales?view=new" replace />} />
                             <Route path="/inventory" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Inventory /></Suspense></ProtectedRoute>} />
                             <Route path="/inventory/add" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><AddProduct /></Suspense></ProtectedRoute>} />
                             <Route path="/inventory/receive" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><ReceiveStock /></Suspense></ProtectedRoute>} />
