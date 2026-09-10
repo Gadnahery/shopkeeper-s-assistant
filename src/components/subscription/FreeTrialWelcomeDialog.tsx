@@ -24,6 +24,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
+import { MANUAL_MONTHLY_PRICE_TZS } from "@/lib/subscription";
 
 export function FreeTrialWelcomeDialog() {
   const { isTrialing, subscription, paymentAmount } = useSubscription();
@@ -31,6 +32,7 @@ export function FreeTrialWelcomeDialog() {
   const { language } = useLanguage();
   const { formatMoney } = useShopFormatting();
   const [open, setOpen] = useState(false);
+  const displayPrice = paymentAmount && paymentAmount !== 10000 ? paymentAmount : MANUAL_MONTHLY_PRICE_TZS;
 
   useEffect(() => {
     if (!shopId && !user) return;
@@ -156,12 +158,12 @@ export function FreeTrialWelcomeDialog() {
             {language === "sw" ? (
               <>
                 Baada ya majaribio ya bure, unaweza kuendelea kwa{" "}
-                <strong className="text-foreground">{formatMoney(paymentAmount || 10000)}/mwezi</strong> tu.
+                <strong className="text-foreground">{formatMoney(displayPrice)}/mwezi</strong> tu.
               </>
             ) : (
               <>
                 After your trial, continue seamlessly for just{" "}
-                <strong className="text-foreground">{formatMoney(paymentAmount || 10000)}/month</strong>.
+                <strong className="text-foreground">{formatMoney(displayPrice)}/month</strong>.
               </>
             )}
           </span>

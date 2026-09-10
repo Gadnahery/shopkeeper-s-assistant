@@ -21,7 +21,7 @@ export type ManualPaymentChannel = (typeof MANUAL_PAYMENT_CHANNELS)[number]["val
 export function resolveSubscriptionMonthlyPrice(...values: unknown[]) {
   for (const value of values) {
     const amount = toPositiveNumber(value);
-    if (amount !== null) return amount;
+    if (amount !== null && amount !== 10000) return amount;
   }
 
   return DEFAULT_SUBSCRIPTION_MONTHLY_PRICE_TZS;

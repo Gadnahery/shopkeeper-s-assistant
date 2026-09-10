@@ -43,7 +43,7 @@ export const SubscriptionGraceBanner: React.FC = () => {
   if (daysRemaining !== null && daysRemaining > 0 && subscription?.status === "active") {
     // Proceed to grace/expiring check below
   } else if (isBillingLocked) {
-    const formattedPrice = (paymentAmount || 10000).toLocaleString();
+    const formattedPrice = (paymentAmount && paymentAmount !== 10000 ? paymentAmount : 25000).toLocaleString();
     return (
       <div
         className="w-full bg-destructive text-destructive-foreground px-4 py-2.5 shadow-md flex items-center justify-between flex-wrap gap-2 text-sm z-50 animate-in fade-in duration-300"

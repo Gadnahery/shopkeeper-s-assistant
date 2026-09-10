@@ -145,17 +145,22 @@ BEGIN
 END;
 $$;
 
--- 4. Backfill all existing pending or unactivated shops with the 14-day free trial immediately
+-- 4. Backfill all existing pending or unactivated shops with the 14-day free trial immediately and normalize monthly price to 25,000
 UPDATE public.shop_subscriptions
 SET status = 'trialing',
     trial_started_at = now(),
     trial_ends_at = now() + interval '14 days',
     last_free_trial_granted_at = now(),
     free_trial_month = to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM'),
+    monthly_price = 25000,
     updated_at = now()
 WHERE status = 'pending' 
    OR trial_ends_at IS NULL
    OR (status IN ('expired', 'past_due') AND (current_period_ends_at IS NULL OR current_period_ends_at <= now()));
+
+UPDATE public.shop_subscriptions
+SET monthly_price = 25000
+WHERE monthly_price = 10000 OR monthly_price IS NULL;
 
 -- 5. Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.ensure_shop_subscription(UUID) TO authenticated, service_role, anon;
