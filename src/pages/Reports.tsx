@@ -21,6 +21,7 @@ import {
   FileText,
   Loader2,
   Package,
+  Pencil,
   Printer,
   TrendingDown,
   TrendingUp,
@@ -34,6 +35,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSalesByDateRange } from "@/hooks/useSales";
 import { useExpensesByDateRange } from "@/hooks/useExpenses";
 import { useOtherIncomeByDateRange } from "@/hooks/useOtherIncome";
@@ -42,6 +44,7 @@ import { calculatePnL } from "@/lib/financials";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
 import { PageLoader } from "@/components/PageLoader";
+import { EditSaleDialog } from "@/components/sales/EditSaleDialog";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
@@ -67,11 +70,12 @@ function getRangeForType(type: DateRangeType, customStart?: Date, customEnd?: Da
 }
 
 export default function Reports() {
-  const { t, language } = useLanguage();
+  const { language, t } = useLanguage();
+  const { isOwner, role } = useAuth();
   const { formatMoney, formatNumber } = useShopFormatting();
   const [searchParams] = useSearchParams();
-
   const rangeParam = searchParams.get("range") as DateRangeType | null;
+
   const [rangeType, setRangeType] = useState<DateRangeType>(
     rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam) ? rangeParam : "monthly",
   );
@@ -85,6 +89,10 @@ export default function Reports() {
   const [customRange, setCustomRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 7), to: new Date() });
   const [customOpen, setCustomOpen] = useState(false);
   const [reportTab, setReportTab] = useState<string>("sales");
+  const [editingSale, setEditingSale] = useState<any | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const canEdit = isOwner || role === "manager" || role === "owner";
 
   const { start, end } = useMemo(
     () => getRangeForType(rangeType, customRange?.from, customRange?.to),
@@ -421,12 +429,13 @@ export default function Reports() {
                     <TableHead>{t("sales.customer")}</TableHead>
                     <TableHead>{t("sales.paymentMethod")}</TableHead>
                     <TableHead className="text-right">{t("sales.total")}</TableHead>
+                    {canEdit && <TableHead className="text-right">{language === "sw" ? "Kitendo" : "Action"}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(sales || []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-xs text-muted-foreground">
+                      <TableCell colSpan={canEdit ? 6 : 5} className="text-center py-6 text-xs text-muted-foreground">
                         {language === "sw" ? "Hakuna miamala kwenye kipindi hiki." : "No transactions recorded in this range."}
                       </TableCell>
                     </TableRow>
@@ -468,6 +477,22 @@ export default function Reports() {
                             </span>
                           </TableCell>
                           <TableCell className="text-right font-bold text-foreground">{formatMoney(s.total)}</TableCell>
+                          {canEdit && (
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs gap-1"
+                                onClick={() => {
+                                  setEditingSale(s);
+                                  setEditDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                {language === "sw" ? "Hariri" : "Edit"}
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })
@@ -606,6 +631,12 @@ export default function Reports() {
           </div>
         )}
       </Card>
+
+      <EditSaleDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        sale={editingSale}
+      />
     </div>
   );
 }

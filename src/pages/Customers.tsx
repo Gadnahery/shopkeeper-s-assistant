@@ -174,12 +174,17 @@ export default function Customers() {
         phone: editForm.phone?.trim() || null,
         email: editForm.email?.trim() || undefined,
         customer_type: editForm.customer_type,
-        credit_balance: parseFloat(editForm.credit_balance) || 0,
       } as any);
 
       toast.success(language === "sw" ? "Mteja amesasishwa" : "Customer updated");
       setIsEditing(false);
-      setSelectedCustomer({ ...editForm });
+      setSelectedCustomer((prev: any) => ({
+        ...prev,
+        name: editForm.name.trim(),
+        phone: editForm.phone?.trim() || null,
+        email: editForm.email?.trim() || undefined,
+        customer_type: editForm.customer_type,
+      }));
     } catch (err: any) {
       toast.error(err?.message || "Failed to update customer");
     }
@@ -377,14 +382,13 @@ export default function Customers() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold">{language === "sw" ? "Deni (TSH)" : "Debt"}</Label>
-                  <Input
-                    type="number"
-                    value={editForm?.credit_balance || 0}
-                    onChange={(e) => setEditForm({ ...editForm, credit_balance: e.target.value })}
-                    onFocus={(e) => e.target.select()}
-                    className="h-9 rounded-xl border-border bg-background text-xs font-bold"
-                  />
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Deni Lililopo (TSH)" : "Current Debt"}</Label>
+                  <div className="h-9 flex items-center px-3 rounded-xl border border-border bg-muted/40 text-xs font-bold text-muted-foreground">
+                    {formatMoney(editForm?.credit_balance || 0)}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {language === "sw" ? "Lipa kupitia 'Lipa Deni' hapa chini" : "Use 'Pay Debt' section below"}
+                  </p>
                 </div>
               </div>
               <Button onClick={handleUpdateCustomer} className="h-8 w-full rounded-xl bg-neutral-950 text-xs font-medium text-white hover:bg-neutral-900 dark:bg-white dark:text-neutral-950 shadow-xs">

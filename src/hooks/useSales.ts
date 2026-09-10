@@ -369,6 +369,64 @@ export function useCreateSale() {
   });
 }
 
+export interface EditSaleInput {
+  saleId: string;
+  items: CartItem[];
+  customerId?: string | null;
+  customerName?: string | null;
+  paymentMethod?: string;
+  discountAmount?: number;
+  discountPercent?: number;
+  taxAmount?: number;
+}
+
+export function useEditSale() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: EditSaleInput) => {
+      if (!input.saleId) throw new Error("Sale ID is required");
+      if (!input.items || input.items.length === 0) {
+        throw new Error("Sale must contain at least one item");
+      }
+
+      const payload = {
+        p_sale_id: input.saleId,
+        p_items: input.items.map((i) => ({
+          product_id: i.product_id,
+          product_name: i.product_name,
+          unit_price: i.unit_price,
+          quantity: i.quantity,
+        })),
+        p_customer_id: input.customerId ?? null,
+        p_customer_name: input.customerName ?? null,
+        p_payment_method: input.paymentMethod ?? "Cash",
+        p_discount_amount: input.discountAmount ?? 0,
+        p_discount_percent: input.discountPercent ?? 0,
+        p_tax_amount: input.taxAmount ?? 0,
+      };
+
+      const { data, error } = await (supabase as any).rpc("edit_sale_transaction", payload);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["stock_history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "today"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "summary"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "range"] });
+      toast.success("Sale updated successfully!");
+    },
+    onError: (error: any) => {
+      toast.error("Failed to edit sale: " + error.message);
+    },
+  });
+}
+
 export function useDraftSales() {
   const { shopId } = useAuth();
 

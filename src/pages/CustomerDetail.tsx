@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CreditCard, Phone, Receipt, UserRound, CheckCircle2, DollarSign, Loader2 } from "lucide-react";
+import { ArrowLeft, CreditCard, Phone, Receipt, UserRound, CheckCircle2, DollarSign, Loader2, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCustomers, useCustomerPayments, useRecordCustomerPayment } from "@/hooks/useCustomers";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/PageLoader";
 import { PageHeader } from "@/components/common/PageHeader";
+import { EditSaleDialog } from "@/components/sales/EditSaleDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -16,6 +18,7 @@ export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { isOwner, role } = useAuth();
   const { data: customers, isLoading } = useCustomers();
   const customer = useMemo(() => (customers || []).find((entry) => entry.id === id), [customers, id]);
   const { data: sales } = useSalesByCustomer(id || null);
@@ -23,6 +26,10 @@ export default function CustomerDetail() {
   const recordPayment = useRecordCustomerPayment();
 
   const [payAmount, setPayAmount] = useState("");
+  const [editingSale, setEditingSale] = useState<any | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const canEdit = isOwner || role === "manager" || role === "owner";
 
   if (customers === undefined || isLoading) {
     return <PageLoader message="Loading customer..." messageSw="Inapakia mteja..." language={language} />;
@@ -251,11 +258,27 @@ export default function CustomerDetail() {
                         {sale.invoice_number} · {sale.created_at ? new Date(sale.created_at).toLocaleString() : language === "sw" ? "Tarehe haipo" : "No date"} · {sale.payment_method}
                       </p>
                     </div>
-                    <div className="text-left sm:text-right">
-                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                        {language === "sw" ? "Jumla" : "Total"}
-                      </p>
-                      <p className="text-lg font-semibold">{Number(sale.total || 0).toLocaleString()}</p>
+                    <div className="flex items-center gap-3 self-start sm:self-center">
+                      <div className="text-left sm:text-right">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          {language === "sw" ? "Jumla" : "Total"}
+                        </p>
+                        <p className="text-lg font-semibold">{Number(sale.total || 0).toLocaleString()}</p>
+                      </div>
+                      {canEdit && !(sale as any).is_offline_pending && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 gap-1 text-xs"
+                          onClick={() => {
+                            setEditingSale(sale);
+                            setEditDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          {language === "sw" ? "Hariri" : "Edit"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -264,6 +287,12 @@ export default function CustomerDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <EditSaleDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        sale={editingSale}
+      />
     </div>
   );
 }
