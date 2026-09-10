@@ -8,6 +8,8 @@ ALTER TABLE public.shop_subscriptions
   ALTER COLUMN trial_ends_at SET DEFAULT (now() + interval '14 days');
 
 -- 2. Update ensure_shop_subscription to automatically provision 14-day free trial on creation
+DROP FUNCTION IF EXISTS public.ensure_shop_subscription(UUID);
+
 CREATE OR REPLACE FUNCTION public.ensure_shop_subscription(target_shop_id UUID)
 RETURNS public.shop_subscriptions
 LANGUAGE plpgsql
@@ -75,7 +77,11 @@ END;
 $$;
 
 -- 3. Update refresh_shop_subscription_state to recognize and maintain trialing state
-CREATE OR REPLACE FUNCTION public.refresh_shop_subscription_state(target_shop_id UUID)
+DROP FUNCTION IF EXISTS public.refresh_shop_subscription_state(UUID);
+
+CREATE OR REPLACE FUNCTION public.refresh_shop_subscription_state(
+  target_shop_id UUID DEFAULT public.get_user_shop_id(auth.uid())
+)
 RETURNS public.shop_subscriptions
 LANGUAGE plpgsql
 SECURITY DEFINER
