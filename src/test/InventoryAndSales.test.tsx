@@ -190,10 +190,12 @@ vi.mock("@/hooks/useCustomers", () => ({
 }));
 
 vi.mock("@/hooks/useSales", () => ({
+  useSales: () => ({ data: [], isLoading: false }),
   useCreateSale: () => ({
     mutateAsync: mockCreateSaleMutateAsync,
     isPending: false,
   }),
+  useEditSale: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDraftSales: () => ({ data: [], isLoading: false }),
   useSaveDraftSale: () => ({ mutateAsync: vi.fn() }),
   useDeleteDraftSale: () => ({ mutateAsync: vi.fn() }),
@@ -338,10 +340,23 @@ describe("Sales POS 5-Row Inward Scroll & Checkout Verification", () => {
     vi.clearAllMocks();
   });
 
-  it("displays 5-row table view with inward scroll and allows adding products and services to cart", async () => {
+  it("renders Sales History by default with Today period and Add Sale button", async () => {
     render(
       <MemoryRouter>
         <Sales />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("button", { name: /^Add Sale$/i })).toBeInTheDocument();
+    expect(screen.getByText("Today")).toBeInTheDocument();
+    expect(screen.getByText("This week")).toBeInTheDocument();
+    expect(screen.getByText("Total Revenue")).toBeInTheDocument();
+  });
+
+  it("displays 5-row table view with inward scroll and allows adding products and services to cart", async () => {
+    render(
+      <MemoryRouter>
+        <Sales initialView="new" />
       </MemoryRouter>
     );
 
@@ -375,7 +390,7 @@ describe("Sales POS 5-Row Inward Scroll & Checkout Verification", () => {
   it("filters sales catalog by type (Products vs Services)", async () => {
     render(
       <MemoryRouter>
-        <Sales />
+        <Sales initialView="new" />
       </MemoryRouter>
     );
 
