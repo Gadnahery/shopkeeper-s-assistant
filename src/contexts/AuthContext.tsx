@@ -4,6 +4,7 @@ import { clearStoredSupabaseAuth, supabase } from "@/integrations/supabase/clien
 import type { Database } from "@/integrations/supabase/types";
 import { getAppUrl } from "@/lib/siteUrl";
 import { clearAppQueryCache } from "@/lib/queryClient";
+import { getCountryByCode } from "@/lib/international";
 
 type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -19,7 +20,7 @@ interface AuthContextType {
   profile: ProfileWithShop | null;
   role: AppRole | null;
   isOwner: boolean;
-  signUp: (email: string, password: string, fullName: string, shopName: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, fullName: string, shopName: string, countryCode?: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: (intent?: "login" | "signup") => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
@@ -183,14 +184,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, shopName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    shopName: string,
+    countryCode: string = "TZ"
+  ) => {
     const redirectUrl = getAppUrl();
+    const country = getCountryByCode(countryCode);
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { full_name: fullName, shop_name: shopName },
+        data: {
+          full_name: fullName,
+          shop_name: shopName,
+          country_code: country.value,
+          currency: country.currency,
+          locale: country.locale,
+        },
       },
     });
     return { error };

@@ -1,16 +1,24 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Globe, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { checkPasswordStrength } from "@/lib/validation";
 import { toast } from "sonner";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { SHOP_COUNTRY_OPTIONS, getCountryByCode } from "@/lib/international";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -26,7 +34,10 @@ export default function SignupPage() {
     confirmPassword: "",
     fullName: "",
     shopName: "",
+    countryCode: "TZ",
   });
+
+  const selectedCountry = getCountryByCode(form.countryCode);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +61,13 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const { error } = await signUp(form.email, form.password, form.fullName, form.shopName);
+      const { error } = await signUp(
+        form.email,
+        form.password,
+        form.fullName,
+        form.shopName,
+        form.countryCode
+      );
       if (error) {
         toast.error(
           error.message.includes("already registered")
@@ -139,6 +156,41 @@ export default function SignupPage() {
                 onChange={(e) => setForm({ ...form, shopName: e.target.value })}
                 className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
               />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold flex items-center justify-between">
+                <span>{language === "sw" ? "Nchi / Taifa *" : "Country / Nation *"}</span>
+                <span className="text-[11px] font-normal text-muted-foreground flex items-center gap-1">
+                  <Globe className="h-3 w-3" />
+                  {selectedCountry.flag} {selectedCountry.currency}
+                </span>
+              </Label>
+              <Select
+                value={form.countryCode}
+                onValueChange={(val) => setForm({ ...form, countryCode: val })}
+              >
+                <SelectTrigger className="h-10 rounded-xl border-border bg-background text-xs focus:ring-accent">
+                  <SelectValue placeholder={language === "sw" ? "Chagua Nchi" : "Select Country"} />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 rounded-xl border-border bg-popover text-xs">
+                  {SHOP_COUNTRY_OPTIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <span className="flex items-center gap-2">
+                        <span className="text-sm">{c.flag}</span>
+                        <span className="font-medium">{language === "sw" ? c.labelSw : c.label}</span>
+                        <span className="text-muted-foreground text-[10px]">({c.currency})</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-0.5">
+                <span>{language === "sw" ? "Sarafu kuu itakayowekwa:" : "Default account currency:"}</span>
+                <span className="font-bold text-foreground">
+                  {selectedCountry.currency} ({language === "sw" ? selectedCountry.currencyNameSw : selectedCountry.currencyName})
+                </span>
+              </p>
             </div>
 
             <div className="space-y-1">

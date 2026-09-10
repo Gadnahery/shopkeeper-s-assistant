@@ -42,7 +42,7 @@ import { usePWAContext } from "@/contexts/PWAContext";
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { getCameraPermissionState, requestCameraPermission } from "@/lib/cameraPermissions";
-import { SHOP_COUNTRY_OPTIONS, SHOP_CURRENCY_OPTIONS, SHOP_LOCALE_OPTIONS } from "@/lib/international";
+import { SHOP_COUNTRY_OPTIONS, SHOP_CURRENCY_OPTIONS, SHOP_LOCALE_OPTIONS, getCountryByCode } from "@/lib/international";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 import { type BusinessType, type CapabilityKey, resolveCapabilities } from "@/lib/businessCapabilities";
@@ -106,9 +106,9 @@ export default function Settings() {
     shop_name: "",
     phone: "",
     address: "",
-    currency: "USD",
-    locale: "en-US",
-    country_code: "US",
+    currency: "TZS",
+    locale: "sw-TZ",
+    country_code: "TZ",
   });
   const [businessType, setBusinessType] = useState<BusinessType>("retail");
   const [capabilities, setCapabilities] = useState<Record<CapabilityKey, boolean>>(resolveCapabilities(null));
@@ -131,9 +131,9 @@ export default function Settings() {
       shop_name: shopSettings.name || "",
       phone: shopSettings.phone || "",
       address: shopSettings.address || "",
-      currency: shopSettings.currency || "USD",
-      locale: shopSettings.locale || "en-US",
-      country_code: shopSettings.country_code || "US",
+      currency: shopSettings.currency || "TZS",
+      locale: shopSettings.locale || "sw-TZ",
+      country_code: shopSettings.country_code || "TZ",
     });
     setBusinessType((shopSettings.business_type as BusinessType) || "retail");
     setCapabilities(resolveCapabilities(shopSettings.capabilities));
@@ -422,6 +422,37 @@ export default function Settings() {
                   <SelectContent className="rounded-xl border-border bg-popover text-xs">
                     <SelectItem value="sw">Kiswahili (Chaguo-msingi)</SelectItem>
                     <SelectItem value="en">English (US / UK)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">{language === "sw" ? "Nchi ya Biashara" : "Business Country / Nation"}</Label>
+                <Select
+                  value={shopForm.country_code}
+                  onValueChange={(val) => {
+                    const country = getCountryByCode(val);
+                    setShopForm({
+                      ...shopForm,
+                      country_code: val,
+                      currency: country.currency,
+                      locale: country.locale,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-xl border-border bg-background text-xs font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 rounded-xl border-border bg-popover text-xs">
+                    {SHOP_COUNTRY_OPTIONS.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm">{c.flag}</span>
+                          <span>{language === "sw" ? c.labelSw : c.label}</span>
+                          <span className="text-muted-foreground text-[10px]">({c.currency})</span>
+                        </span>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

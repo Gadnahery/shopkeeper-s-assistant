@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Loader2, Store, ShoppingBag, Scissors, Layers, Boxes, Factory, Pill } from "lucide-react";
+import { ArrowRight, Globe, Loader2, Store, ShoppingBag, Scissors, Layers, Boxes, Factory, Pill } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { type BusinessType, getCapabilitiesForBusinessType } from "@/lib/businessCapabilities";
+import { SHOP_COUNTRY_OPTIONS, getCountryByCode } from "@/lib/international";
 
 function needsShopSetup(fullName: string | null | undefined, shopName: string | null | undefined) {
   const normalizedFullName = (fullName || "").trim().toLowerCase();
@@ -90,7 +98,8 @@ export default function GoogleOnboardingPage() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [businessType, setBusinessType] = useState<BusinessType>("retail");
-  const [form, setForm] = useState({ fullName: "", shopName: "" });
+  const [form, setForm] = useState({ fullName: "", shopName: "", countryCode: "TZ" });
+  const selectedCountry = getCountryByCode(form.countryCode);
 
   const intent = searchParams.get("intent");
   const profileShopName = profile?.shops?.name ?? "";
@@ -128,8 +137,9 @@ export default function GoogleOnboardingPage() {
     setForm((current) => ({
       fullName: current.fullName || (needsShopSetup(profile?.full_name, profileShopName) ? oauthName : profile?.full_name || oauthName),
       shopName: current.shopName || (profileShopName && profileShopName.toLowerCase() !== "my shop" ? profileShopName : oauthShopName),
+      countryCode: current.countryCode || (profile?.shops?.country_code || "TZ"),
     }));
-  }, [oauthName, oauthShopName, profile?.full_name, profileShopName]);
+  }, [oauthName, oauthShopName, profile?.full_name, profile?.shops?.country_code, profileShopName]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -145,6 +155,7 @@ export default function GoogleOnboardingPage() {
     setSaving(true);
     try {
       const capabilities = getCapabilitiesForBusinessType(businessType);
+      const countryInfo = getCountryByCode(form.countryCode);
 
       const { error: profileError } = await supabase
         .from("profiles")
@@ -160,6 +171,9 @@ export default function GoogleOnboardingPage() {
         .update({
           name: form.shopName.trim(),
           email: user.email ?? null,
+          country_code: countryInfo.value,
+          currency: countryInfo.currency,
+          locale: countryInfo.locale,
           business_type: businessType,
           capabilities,
         })
@@ -171,6 +185,9 @@ export default function GoogleOnboardingPage() {
           ...user.user_metadata,
           full_name: form.fullName.trim(),
           shop_name: form.shopName.trim(),
+          country_code: countryInfo.value,
+          currency: countryInfo.currency,
+          locale: countryInfo.locale,
         },
       });
       if (authError) throw authError;
@@ -221,7 +238,7 @@ export default function GoogleOnboardingPage() {
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina Kamili" : "Full Name"}</Label>
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina Kamili *" : "Full Name *"}</Label>
                   <Input
                     value={form.fullName}
                     onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
@@ -230,7 +247,7 @@ export default function GoogleOnboardingPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina la Duka / Biashara" : "Business Name"}</Label>
+                  <Label className="text-xs font-semibold">{language === "sw" ? "Jina la Duka / Biashara *" : "Business Name *"}</Label>
                   <Input
                     value={form.shopName}
                     onChange={(event) => setForm((current) => ({ ...current, shopName: event.target.value }))}
@@ -238,6 +255,42 @@ export default function GoogleOnboardingPage() {
                     required
                   />
                 </div>
+              </div>
+
+              {/* Country / Nation Selector */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold flex items-center justify-between">
+                  <span>{language === "sw" ? "Nchi / Taifa *" : "Country / Nation *"}</span>
+                  <span className="text-[11px] font-normal text-muted-foreground flex items-center gap-1">
+                    <Globe className="h-3 w-3" />
+                    {selectedCountry.flag} {selectedCountry.currency}
+                  </span>
+                </Label>
+                <Select
+                  value={form.countryCode}
+                  onValueChange={(val) => setForm((curr) => ({ ...curr, countryCode: val }))}
+                >
+                  <SelectTrigger className="h-10 rounded-xl border-border bg-background text-xs font-medium">
+                    <SelectValue placeholder={language === "sw" ? "Chagua Nchi" : "Select Country"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 rounded-xl border-border bg-popover text-xs">
+                    {SHOP_COUNTRY_OPTIONS.map((c) => (
+                      <SelectItem key={c.value} value={c.value} className="cursor-pointer">
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm">{c.flag}</span>
+                          <span className="font-medium">{language === "sw" ? c.labelSw : c.label}</span>
+                          <span className="text-muted-foreground text-[10px]">({c.currency})</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-0.5">
+                  <span>{language === "sw" ? "Sarafu kuu ya biashara itakayowekwa:" : "Default account currency:"}</span>
+                  <span className="font-bold text-foreground">
+                    {selectedCountry.currency} ({language === "sw" ? selectedCountry.currencyNameSw : selectedCountry.currencyName})
+                  </span>
+                </p>
               </div>
 
               {/* Business Type Selector */}
