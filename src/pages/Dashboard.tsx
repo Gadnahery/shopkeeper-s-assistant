@@ -154,6 +154,17 @@ function getPeriodDates(period: Exclude<Period, "custom">): { start: string; end
   }
 }
 
+function safeFormatDate(dateVal?: string | Date | null, formatStr = "dd MMM"): string {
+  if (!dateVal) return "";
+  try {
+    const d = typeof dateVal === "string" ? new Date(dateVal) : dateVal;
+    if (Number.isNaN(d.getTime())) return "";
+    return format(d, formatStr);
+  } catch {
+    return "";
+  }
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -312,7 +323,8 @@ export default function Dashboard() {
           : (s.invoice_number || `Sale #${String(s.id || "").slice(0, 6).toUpperCase()}`);
 
         const customerLabel = s.customer_name || (s as any).customers?.name || (language === "sw" ? "Mteja wa kawaida" : "Walk-in");
-        const dateLabel = s.created_at ? ` · ${format(new Date(s.created_at), "dd MMM, HH:mm")}` : "";
+        const formattedDate = safeFormatDate(s.created_at, "dd MMM, HH:mm");
+        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
 
         return {
           type: "sale",
@@ -326,39 +338,55 @@ export default function Dashboard() {
           bg: "bg-blue-50 dark:bg-blue-950/40",
         };
       }),
-      ...expensesSource.slice(0, 10).map((e) => ({
-        type: "expense",
-        title: (e as any).title || e.description || (language === "sw" ? "Gharama" : "Expense"),
-        subtitle: `${e.category || "General"}${(e.date || e.created_at) ? ` · ${format(new Date(e.date || e.created_at), "dd MMM")}` : ""}`,
-        date: e.date || e.created_at,
-        amount: `-${formatMoney(e.amount)}`,
-        isPositive: false,
-        icon: Receipt,
-        color: "text-rose-600",
-        bg: "bg-rose-50 dark:bg-rose-950/40",
-      })),
-      ...purchasesSource.slice(0, 10).map((p) => ({
-        type: "purchase",
-        title: `${language === "sw" ? "Ununuzi" : "Purchase"}: ${p.supplier_name || "Supplier"}`,
-        subtitle: `${p.items_count || 1} ${language === "sw" ? "bidhaa" : "items"}${p.created_at ? ` · ${format(new Date(p.created_at), "dd MMM")}` : ""}`,
-        date: p.created_at,
-        amount: `-${formatMoney(p.total_amount)}`,
-        isPositive: false,
-        icon: ShoppingCart,
-        color: "text-violet-600",
-        bg: "bg-violet-50 dark:bg-violet-950/40",
-      })),
-      ...incomeSource.slice(0, 5).map((income) => ({
-        type: "income",
-        title: income.title || (language === "sw" ? "Mapato Mengine" : "Other Income"),
-        subtitle: `${income.category || "General"}${income.date ? ` · ${format(new Date(income.date), "dd MMM")}` : ""}`,
-        date: income.date,
-        amount: `+${formatMoney(income.amount)}`,
-        isPositive: true,
-        icon: Banknote,
-        color: "text-emerald-600",
-        bg: "bg-emerald-50 dark:bg-emerald-950/40",
-      })),
+      ...expensesSource.slice(0, 10).map((e) => {
+        const dateRaw = e.date || e.created_at;
+        const formattedDate = safeFormatDate(dateRaw, "dd MMM");
+        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
+
+        return {
+          type: "expense",
+          title: (e as any).title || e.description || (language === "sw" ? "Gharama" : "Expense"),
+          subtitle: `${e.category || "General"}${dateLabel}`,
+          date: dateRaw,
+          amount: `-${formatMoney(e.amount)}`,
+          isPositive: false,
+          icon: Receipt,
+          color: "text-rose-600",
+          bg: "bg-rose-50 dark:bg-rose-950/40",
+        };
+      }),
+      ...purchasesSource.slice(0, 10).map((p) => {
+        const formattedDate = safeFormatDate(p.created_at, "dd MMM");
+        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
+
+        return {
+          type: "purchase",
+          title: `${language === "sw" ? "Ununuzi" : "Purchase"}: ${p.supplier_name || "Supplier"}`,
+          subtitle: `${p.items_count || 1} ${language === "sw" ? "bidhaa" : "items"}${dateLabel}`,
+          date: p.created_at,
+          amount: `-${formatMoney(p.total_amount)}`,
+          isPositive: false,
+          icon: ShoppingCart,
+          color: "text-violet-600",
+          bg: "bg-violet-50 dark:bg-violet-950/40",
+        };
+      }),
+      ...incomeSource.slice(0, 5).map((income) => {
+        const formattedDate = safeFormatDate(income.date, "dd MMM");
+        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
+
+        return {
+          type: "income",
+          title: income.title || (language === "sw" ? "Mapato Mengine" : "Other Income"),
+          subtitle: `${income.category || "General"}${dateLabel}`,
+          date: income.date,
+          amount: `+${formatMoney(income.amount)}`,
+          isPositive: true,
+          icon: Banknote,
+          color: "text-emerald-600",
+          bg: "bg-emerald-50 dark:bg-emerald-950/40",
+        };
+      }),
     ];
     return acts.sort((a, b) => getTime(b.date) - getTime(a.date)).slice(0, 8);
   }, [periodSales, allSales, periodExpenses, expensesList, periodPurchases, purchasesList, periodOtherIncome, otherIncomeList, formatMoney, language]);

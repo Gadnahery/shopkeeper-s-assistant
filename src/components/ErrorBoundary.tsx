@@ -99,10 +99,15 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-muted-foreground">
               An unexpected error occurred. Please try refreshing or returning to the home screen.
             </p>
-            {import.meta.env.DEV && (
-              <pre className="mt-4 max-h-48 overflow-auto rounded-lg bg-muted p-4 text-xs text-left">
-                {this.state.error.message}
-              </pre>
+            {this.state.error?.message && (
+              <details className="mt-4 text-left">
+                <summary className="text-xs text-muted-foreground cursor-pointer hover:underline">
+                  Error details
+                </summary>
+                <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-muted/80 p-3 text-[11px] text-muted-foreground font-mono">
+                  {this.state.error.message}
+                </pre>
+              </details>
             )}
             <div className="flex gap-3 justify-center pt-4">
               <Button
