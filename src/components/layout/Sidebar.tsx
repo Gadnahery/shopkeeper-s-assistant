@@ -401,7 +401,7 @@ export function Sidebar() {
                   <span>Platform Admin</span>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={toggleTheme} className="gap-2 text-xs">
+              <DropdownMenuItem onClick={(e) => toggleTheme(e)} className="gap-2 text-xs">
                 {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                 {theme === "dark" ? (language === "sw" ? "Mandhari ya Mwanga" : "Light Mode") : (language === "sw" ? "Mandhari ya Giza" : "Dark Mode")}
               </DropdownMenuItem>

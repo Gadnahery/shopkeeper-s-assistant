@@ -11,10 +11,13 @@ import {
   RefreshCw,
   AlertCircle,
   CloudOff,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/hooks/useTheme";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLowStockProducts } from "@/hooks/useProducts";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
@@ -35,6 +38,7 @@ export function Header() {
   const location = useLocation();
   const { setCollapsed } = useSidebar();
   const { t, language } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const { isMobile } = useAdaptiveLayout();
   const { unreadCount } = useNotifications();
   const { data: lowStock } = useLowStockProducts();
@@ -324,6 +328,21 @@ export function Header() {
             </span>
           </Button>
         )}
+
+        {/* Theme Toggle Button */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={(e) => toggleTheme(e)}
+          className="h-9 w-9 rounded-xl border-border bg-card text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground transition-all"
+          title={theme === "dark" ? (language === "sw" ? "Badili kwenda Mandhari ya Mwanga" : "Switch to Light Mode") : (language === "sw" ? "Badili kwenda Mandhari ya Giza" : "Switch to Dark Mode")}
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4 text-amber-500 hover:rotate-45 transition-transform" />
+          ) : (
+            <Moon className="h-4 w-4 text-slate-700 dark:text-slate-300 hover:-rotate-12 transition-transform" />
+          )}
+        </Button>
 
         {/* Notification Bell */}
         <Button

@@ -132,31 +132,33 @@
     scroll-behavior: smooth;
   }
 
-  /* Text snaps fast, backgrounds ease slightly longer for cleaner theme transitions. */
-  html.theme-transition,
-  html.theme-transition *,
-  html.theme-transition *::before,
-  html.theme-transition *::after {
-    transition:
-      color 200ms ease-in-out 0ms,
-      background-color 400ms ease-in-out 0ms,
-      border-color 400ms ease-in-out 0ms,
-      fill 400ms ease-in-out 0ms,
-      stroke 400ms ease-in-out 0ms,
-      box-shadow 400ms ease-in-out 0ms,
-      outline-color 400ms ease-in-out 0ms !important;
+  /* ==========================================================================
+     View Transitions API - Circular Ripple Theme Transition
+     ========================================================================== */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
   }
 
-  html.theme-transition p,
-  html.theme-transition h1,
-  html.theme-transition h2,
-  html.theme-transition h3,
-  html.theme-transition h4,
-  html.theme-transition h5,
-  html.theme-transition h6,
-  html.theme-transition span,
-  html.theme-transition a {
-    transition: color 200ms ease-in-out 0ms !important;
+  ::view-transition-image-pair(root) {
+    isolation: auto;
+  }
+
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  ::view-transition-new(root) {
+    z-index: 9999;
+  }
+
+  .dark::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  .dark::view-transition-new(root) {
+    z-index: 9999;
   }
 
   body {

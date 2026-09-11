@@ -58,6 +58,18 @@ export function Navbar() {
             <span>{language === "sw" ? "English" : "Kiswahili"}</span>
           </button>
 
+          <button
+            onClick={(e) => toggleTheme(e)}
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-3.5 w-3.5 text-amber-500" />
+            ) : (
+              <Moon className="h-3.5 w-3.5 text-foreground" />
+            )}
+          </button>
+
           <Button variant="ghost" size="sm" asChild className="text-xs font-semibold">
             <Link to="/login">{t("Login", "Ingia")}</Link>
           </Button>
@@ -107,6 +119,13 @@ export function Navbar() {
               >
                 <Globe className="h-4 w-4 text-accent" />
                 <span>{language === "sw" ? "English" : "Kiswahili"}</span>
+              </button>
+              <button
+                onClick={(e) => toggleTheme(e)}
+                className="flex items-center gap-2 rounded-lg py-2 text-xs font-medium text-muted-foreground"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4 text-accent" />}
+                <span>{theme === "dark" ? (language === "sw" ? "Mandhari ya Mwanga" : "Light Mode") : (language === "sw" ? "Mandhari ya Giza" : "Dark Mode")}</span>
               </button>
               <Button asChild className="h-9 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground">
                 <Link to="/signup">{t("Start 14-Day Free Trial", "Anza Siku 14 Bure")}</Link>
