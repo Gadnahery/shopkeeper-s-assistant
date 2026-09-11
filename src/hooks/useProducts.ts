@@ -73,6 +73,9 @@ export function useCreateProduct() {
       if (finalProduct.track_inventory === undefined) {
         finalProduct.track_inventory = finalProduct.item_type === "product";
       }
+      if ("unit" in finalProduct) {
+        delete finalProduct.unit;
+      }
       const { data, error } = await supabase
         .from("products")
         .insert(finalProduct)

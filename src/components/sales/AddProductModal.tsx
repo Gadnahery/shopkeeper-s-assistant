@@ -104,12 +104,11 @@ export function AddProductModal({
         sku: codeVal,
         item_type: itemType,
         track_inventory: !isService,
-        category_id: categoryId === "none" ? null : categoryId,
+        category_id: categoryId === "none" || !categoryId ? null : categoryId,
         buying_price: buyingNum,
         selling_price: priceNum,
         stock: stockNum,
         low_stock_alert: alertNum,
-        unit: "pcs",
       } as any);
 
       toast.success(
@@ -259,15 +258,15 @@ export function AddProductModal({
           {/* Category Selector */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">
-              {language === "sw" ? "Kundi la Bidhaa (Category)" : "Category"}
+              {language === "sw" ? "Kundi la Bidhaa (Hiari)" : "Category (Optional)"}
             </Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger className="h-9 rounded-xl border-border bg-background text-xs">
-                <SelectValue placeholder={language === "sw" ? "Chagua Kundi..." : "Select Category..."} />
+                <SelectValue placeholder={language === "sw" ? "Bila Kundi" : "None"} />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-border bg-popover text-xs">
                 <SelectItem value="none">
-                  {language === "sw" ? "Bila Kundi" : "Uncategorized"}
+                  {language === "sw" ? "Bila Kundi" : "None"}
                 </SelectItem>
                 {(categories || []).map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
