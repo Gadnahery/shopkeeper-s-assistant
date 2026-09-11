@@ -22,6 +22,7 @@ const PAGE_PATHS = [
   { path: "/notifications", label: "Notifications" },
   { path: "/user-management", label: "User Management" },
   { path: "/appointments", label: "Appointments" },
+  { path: "/recycle-bin", label: "Recycle Bin" },
 ];
 
 export { PAGE_PATHS };

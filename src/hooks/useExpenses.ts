@@ -149,8 +149,16 @@ export function useDeleteExpense() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("expenses").delete().eq("id", id);
-      if (error) throw error;
+      try {
+        const { error } = await (supabase as any).rpc("delete_expense_to_recycle_bin", {
+          p_expense_id: id,
+        });
+        if (error) throw error;
+      } catch (err: any) {
+        // Fallback to direct delete
+        const { error } = await supabase.from("expenses").delete().eq("id", id);
+        if (error) throw error;
+      }
       await logAudit({
         action: "expense_deleted",
         entityType: "expenses",
@@ -159,7 +167,8 @@ export function useDeleteExpense() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success("Expense deleted");
+      queryClient.invalidateQueries({ queryKey: ["recycle_bin"] });
+      toast.success("Expense moved to Recycle Bin (retained for 7 days)");
     },
     onError: (error) => { toast.error("Failed: " + error.message); },
   });

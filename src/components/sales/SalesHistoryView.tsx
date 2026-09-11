@@ -14,6 +14,9 @@ import {
   CheckCircle2,
   Filter,
   X,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,11 +25,21 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useShopSettings } from "@/hooks/useShopSettings";
-import { useSales } from "@/hooks/useSales";
+import { useSales, useDeleteSale } from "@/hooks/useSales";
 import { EditSaleDialog } from "./EditSaleDialog";
 import { Receipt } from "@/components/Receipt";
 import { PageLoader } from "@/components/PageLoader";
@@ -35,12 +48,13 @@ import { isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
 type Period = "today" | "week" | "month" | "year" | "all" | "custom";
 
-const PERIOD_LABELS: Record<Exclude<Period, "custom">, Record<"en" | "sw", string>> = {
+const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
   today: { en: "Today", sw: "Leo" },
   week: { en: "This week", sw: "Wiki hii" },
   month: { en: "This month", sw: "Mwezi huu" },
   year: { en: "This year", sw: "Mwaka huu" },
   all: { en: "All time", sw: "Muda wote" },
+  custom: { en: "Custom date", sw: "Tarehe maalum" },
 };
 
 function getPeriodDates(period: Exclude<Period, "custom">): { start: string; end: string } {
@@ -94,7 +108,9 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
   const [editingSale, setEditingSale] = useState<any | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [receiptSale, setReceiptSale] = useState<any | null>(null);
+  const [deletingSale, setDeletingSale] = useState<any | null>(null);
 
+  const deleteSale = useDeleteSale();
   const canEdit = isOwner || role === "manager" || role === "owner";
 
   // Date boundaries
@@ -237,11 +253,15 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
               ? language === "sw"
                 ? `Mauzo ya leo (${format(new Date(), "dd MMMM yyyy")})`
                 : `Today's sales (${format(new Date(), "MMMM dd, yyyy")})`
-              : period === "custom" && customRange.from
-              ? customRange.to
-                ? `${format(customRange.from, "dd MMM yyyy")} – ${format(customRange.to, "dd MMM yyyy")}`
-                : format(customRange.from, "dd MMM yyyy")
-              : PERIOD_LABELS[period as Exclude<Period, "custom">][language]}
+              : period === "custom"
+              ? customRange.from
+                ? customRange.to
+                  ? `${format(customRange.from, "dd MMM yyyy")} – ${format(customRange.to, "dd MMM yyyy")}`
+                  : `${format(customRange.from, "dd MMM yyyy")} – ...`
+                : language === "sw"
+                ? "Chagua tarehe kwenye kalenda"
+                : "Select date range from calendar"
+              : PERIOD_LABELS[period]?.[language] || ""}
           </p>
         </div>
 
@@ -632,18 +652,30 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
                           </Button>
 
                           {canEdit && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title={language === "sw" ? "Hariri Mauzo" : "Edit Sale"}
-                              className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-                              onClick={() => {
-                                setEditingSale(s);
-                                setEditDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={language === "sw" ? "Hariri Mauzo" : "Edit Sale"}
+                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                  setEditingSale(s);
+                                  setEditDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={language === "sw" ? "Futa Mauzo" : "Delete Sale"}
+                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeletingSale(s)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -675,6 +707,75 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
           onClose={() => setReceiptSale(null)}
         />
       )}
+
+      {/* Delete Sale Confirmation Dialog */}
+      <AlertDialog open={!!deletingSale} onOpenChange={(open) => !open && setDeletingSale(null)}>
+        <AlertDialogContent className="rounded-2xl border-border bg-card p-5 max-w-md">
+          <AlertDialogHeader className="space-y-2">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <AlertDialogTitle className="text-base font-bold">
+                {language === "sw" ? "Futa Rekodi ya Mauzo?" : "Delete Sale Record?"}
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                {language === "sw" ? (
+                  <>
+                    Una uhakika unataka kufuta rekodi hii ya mauzo{" "}
+                    <strong className="text-foreground">{deletingSale?.invoice_number}</strong> yenye thamani ya{" "}
+                    <strong className="text-foreground">{formatMoney(deletingSale?.total || 0)}</strong>?
+                    <br />
+                    <br />
+                    <span className="text-destructive font-semibold">Matokeo ya hatua hii:</span>
+                    <ul className="list-disc pl-4 mt-1 space-y-1 text-foreground">
+                      <li>Idadi ya bidhaa zilizouzwa itarejeshwa kiotomatiki kwenye stoo (inventory).</li>
+                      <li>Mapato ya mauzo haya yataondolewa kwenye ripoti zote, dashibodi na rekodi za fedha.</li>
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to permanently delete sale record{" "}
+                    <strong className="text-foreground">{deletingSale?.invoice_number}</strong> totaling{" "}
+                    <strong className="text-foreground">{formatMoney(deletingSale?.total || 0)}</strong>?
+                    <br />
+                    <br />
+                    <span className="text-destructive font-semibold">What happens next:</span>
+                    <ul className="list-disc pl-4 mt-1 space-y-1 text-foreground">
+                      <li>Sold item quantities will be automatically restored back to inventory stock.</li>
+                      <li>This transaction will be removed from all financial summaries, reports, and dashboard metrics.</li>
+                    </ul>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 pt-2">
+            <AlertDialogCancel className="h-9 rounded-xl text-xs">
+              {language === "sw" ? "Ghairi" : "Cancel"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteSale.isPending}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!deletingSale?.id) return;
+                try {
+                  await deleteSale.mutateAsync(deletingSale.id);
+                  setDeletingSale(null);
+                } catch {}
+              }}
+              className="h-9 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-bold gap-1.5"
+            >
+              {deleteSale.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              <span>{language === "sw" ? "Futa Mauzo na Rudisha Stoo" : "Delete Sale & Restore Stock"}</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

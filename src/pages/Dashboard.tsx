@@ -135,12 +135,13 @@ function ChartSkeleton() {
   );
 }
 
-const PERIOD_LABELS: Record<Exclude<Period, "custom">, Record<"en" | "sw", string>> = {
+const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
   today: { en: "Today", sw: "Leo" },
   week: { en: "This week", sw: "Wiki hii" },
   month: { en: "This month", sw: "Mwezi huu" },
   year: { en: "This year", sw: "Mwaka huu" },
   all: { en: "All time", sw: "Muda wote" },
+  custom: { en: "Custom date", sw: "Tarehe maalum" },
 };
 
 function getPeriodDates(period: Exclude<Period, "custom">): { start: string; end: string } {
@@ -499,7 +500,7 @@ export default function Dashboard() {
                 ? customRange.from && customRange.to
                   ? `${format(customRange.from, "dd MMM")} – ${format(customRange.to, "dd MMM")}`
                   : language === "sw" ? "Maalum" : "Custom"
-                : PERIOD_LABELS[period as Exclude<Period, "custom">][language]}
+                : PERIOD_LABELS[period]?.[language] || ""}
             </span>
           </div>
 

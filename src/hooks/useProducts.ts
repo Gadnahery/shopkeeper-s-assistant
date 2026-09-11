@@ -120,15 +120,24 @@ export function useDeleteProduct() {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      try {
+        const { error } = await (supabase as any).rpc("delete_product_to_recycle_bin", {
+          p_product_id: id,
+        });
+        if (error) throw error;
+      } catch (err: any) {
+        // Fallback to direct delete if RPC not yet deployed
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Product deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["recycle_bin"] });
+      toast.success("Product moved to Recycle Bin (retained for 7 days)");
     },
     onError: (error) => {
       toast.error("Failed to delete product: " + error.message);

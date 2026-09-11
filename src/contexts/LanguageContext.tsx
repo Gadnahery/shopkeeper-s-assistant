@@ -34,6 +34,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.loyalty": "Loyalty",
     "nav.notifications": "Notifications",
     "nav.assets": "Assets",
+    "nav.recycleBin": "Recycle Bin",
     "nav.main": "Main",
 
     // Quick Actions
@@ -441,6 +442,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.loyalty": "Uaminifu",
     "nav.notifications": "Arifa",
     "nav.assets": "Mali",
+    "nav.recycleBin": "Jalada la Taka (Recycle Bin)",
     "nav.main": "Kuu",
 
     // Quick Actions

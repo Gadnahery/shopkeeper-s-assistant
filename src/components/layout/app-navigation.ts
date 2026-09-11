@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Landmark,
   Wrench,
+  Trash2,
 } from "lucide-react";
 import { matchPath } from "react-router-dom";
 import { hasCapability } from "@/lib/businessCapabilities";
@@ -70,6 +71,7 @@ export const OLLY_NAVIGATION_ITEMS: AppNavItem[] = [
   { to: "/inventory", group: "operations", labelKey: "nav.inventory", icon: Package, mobileLabel: { en: "Stock", sw: "Stoki" } },
   { to: "/purchases", group: "operations", labelKey: "nav.purchases", icon: ShoppingCart, mobileLabel: { en: "Purchases", sw: "Manunuzi" } },
   { to: "/orders", group: "operations", labelKey: "nav.orders", icon: ClipboardList, mobileLabel: { en: "Orders", sw: "Maagizo" } },
+  { to: "/recycle-bin", group: "operations", labelKey: "nav.recycleBin", icon: Trash2, mobileLabel: { en: "Recycle Bin", sw: "Jalada la Taka" } },
   { to: "/production", group: "operations", labelKey: "nav.production", icon: Factory, mobileLabel: { en: "Production", sw: "Uzalishaji" }, capability: "manufacturing" },
   { to: "/appointments", group: "operations", labelKey: "nav.appointments", icon: CalendarDays, mobileLabel: { en: "Calendar", sw: "Kalenda" }, capability: "appointments" },
 

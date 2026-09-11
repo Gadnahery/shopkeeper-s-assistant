@@ -327,6 +327,13 @@ export function useDeleteOrder() {
   return useMutation({
     mutationFn: async (id: string) => {
       try {
+        const { error } = await (supabase as any).rpc("delete_order_to_recycle_bin", {
+          p_order_id: id,
+        });
+        if (!error) return;
+      } catch {}
+
+      try {
         const { error } = await (supabase as any).rpc("delete_order_transaction", {
           p_order_id: id,
         });
@@ -338,7 +345,8 @@ export function useDeleteOrder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      toast.success("Order deleted");
+      queryClient.invalidateQueries({ queryKey: ["recycle_bin"] });
+      toast.success("Order moved to Recycle Bin (retained for 7 days)");
     },
   });
 }

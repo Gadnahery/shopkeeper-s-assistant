@@ -521,3 +521,38 @@ export function useDeleteDraftSale() {
     onError: (e) => toast.error("Failed: " + (e as Error).message),
   });
 }
+
+export function useDeleteSale() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (saleId: string) => {
+      if (!saleId) throw new Error("Sale ID is required");
+
+      const { data, error } = await (supabase as any).rpc("delete_sale_transaction", {
+        p_sale_id: saleId,
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["stock_history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "today"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "summary"] });
+      queryClient.invalidateQueries({ queryKey: ["sales", "range"] });
+      queryClient.invalidateQueries({ queryKey: ["recycle_bin"] });
+
+      const invoice = res?.invoice_number ? ` (${res.invoice_number})` : "";
+      toast.success(`Sale${invoice} moved to Recycle Bin (stock restored to inventory)`);
+    },
+    onError: (error: any) => {
+      toast.error("Failed to delete sale: " + (error?.message || "Unknown error"));
+    },
+  });
+}

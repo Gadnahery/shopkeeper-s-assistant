@@ -54,9 +54,6 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.user_roles ur
     WHERE ur.user_id = v_caller_id AND ur.shop_id = v_shop_id AND ur.role IN ('owner', 'manager')
-  ) AND NOT EXISTS (
-    SELECT 1 FROM public.profiles p
-    WHERE p.user_id = v_caller_id AND p.shop_id = v_shop_id AND p.role IN ('owner', 'manager')
   ) THEN
     RAISE EXCEPTION 'Permission denied: Only an owner or manager can edit completed sales';
   END IF;
@@ -288,9 +285,6 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.user_roles ur
     WHERE ur.user_id = v_caller_id AND ur.shop_id = v_shop_id AND ur.role IN ('owner', 'manager')
-  ) AND NOT EXISTS (
-    SELECT 1 FROM public.profiles p
-    WHERE p.user_id = v_caller_id AND p.shop_id = v_shop_id AND p.role IN ('owner', 'manager')
   ) THEN
     RAISE EXCEPTION 'Permission denied: Only an owner or manager can correct stock entries';
   END IF;

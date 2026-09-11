@@ -58,6 +58,7 @@ const Purchases = lazy(() => import("./pages/Purchases"));
 const Production = lazy(() => import("./pages/Production"));
 const Todo = lazy(() => import("./pages/Todo"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
+const RecycleBin = lazy(() => import("./pages/RecycleBin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PlatformAdminLayout = lazy(() => import("./pages/platform-admin/PlatformAdminLayout"));
@@ -144,6 +145,7 @@ const App = () => (
                             <Route path="/inventory/receive" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><ReceiveStock /></Suspense></ProtectedRoute>} />
                             <Route path="/categories" element={<ProtectedRoute allowedRoles={["owner", "manager", "staff"]}><Suspense fallback={<RouteFallback />}><Categories /></Suspense></ProtectedRoute>} />
                             <Route path="/orders" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Orders /></Suspense></ProtectedRoute>} />
+                            <Route path="/recycle-bin" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><RecycleBin /></Suspense></ProtectedRoute>} />
                             <Route path="/todo" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Todo /></Suspense></ProtectedRoute>} />
                             <Route path="/customers" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><Customers /></Suspense></ProtectedRoute>} />
                             <Route path="/customers/:id" element={<ProtectedRoute><Suspense fallback={<RouteFallback />}><CustomerDetail /></Suspense></ProtectedRoute>} />

@@ -34,6 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Receipt } from "@/components/Receipt";
 import { PageLoader } from "@/components/PageLoader";
 import { MobileCameraScanner } from "@/components/common/MobileCameraScanner";
+import { AddProductModal } from "./AddProductModal";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,7 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [addProductModalOpen, setAddProductModalOpen] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -141,6 +143,19 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
       ];
     });
     playSound("click");
+  };
+
+  const handleProductCreated = (newProd: any, autoAddToCart: boolean) => {
+    if (autoAddToCart && newProd) {
+      addToCart({
+        id: newProd.id,
+        name: newProd.name,
+        selling_price: Number(newProd.selling_price || 0),
+        stock: Number(newProd.stock || 0),
+        track_inventory: newProd.track_inventory ?? (newProd.item_type !== "service"),
+        item_type: newProd.item_type || "product",
+      } as any);
+    }
   };
 
   const updateQuantity = (productId: string, qty: number) => {
@@ -756,10 +771,19 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
                 variant="outline"
                 size="icon"
                 onClick={() => setCameraScannerOpen(true)}
-                className="h-10 w-10 rounded-xl border-border"
+                className="h-10 w-10 rounded-xl border-border shrink-0"
                 title="Camera Scanner"
               >
                 <ScanLine className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => setAddProductModalOpen(true)}
+                className="h-10 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 px-3.5 text-xs font-bold gap-1.5 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200 shrink-0"
+                title={language === "sw" ? "Ongeza Bidhaa Mpya" : "Add New Product"}
+              >
+                <Plus className="h-4 w-4 text-accent" />
+                <span className="hidden sm:inline">{language === "sw" ? "Ongeza Bidhaa" : "Add Product"}</span>
+                <span className="sm:hidden">{language === "sw" ? "Bidhaa" : "Add"}</span>
               </Button>
             </div>
           </Card>
@@ -1080,6 +1104,13 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
           }}
         />
       )}
+
+      {/* Quick Add Product Modal */}
+      <AddProductModal
+        open={addProductModalOpen}
+        onOpenChange={setAddProductModalOpen}
+        onProductCreated={handleProductCreated}
+      />
     </div>
   );
 }
