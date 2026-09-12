@@ -1,182 +1,63 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  ShoppingBag,
-  ShoppingCart,
-  Factory,
-  Banknote,
-  Package,
-  Users,
-  Receipt,
-  TrendingUp,
-  ArrowUp,
-  ArrowDown,
-  AlertTriangle,
-  Plus,
-  ChevronRight,
-  Wallet,
-  CalendarDays,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
 import { format, subDays, startOfWeek, startOfMonth, startOfYear } from "date-fns";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSales } from "@/hooks/useSales";
-import { usePurchases } from "@/hooks/usePurchases";
-import { calculatePnL, calculateCashReceived } from "@/lib/financials";
-import { useProductionBatches } from "@/hooks/useProduction";
-import { useExpenses } from "@/hooks/useExpenses";
-import { useOtherIncome } from "@/hooks/useOtherIncome";
 import { useProducts, useLowStockProducts } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useOrders } from "@/hooks/useOrders";
+import { usePurchases } from "@/hooks/usePurchases";
+import { useExpenses } from "@/hooks/useExpenses";
+import { useOtherIncome } from "@/hooks/useOtherIncome";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
-import { cn } from "@/lib/utils";
+import { calculatePnL, calculateCashReceived } from "@/lib/financials";
 import { toLocalDayString, isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
-type Period = "today" | "week" | "month" | "year" | "all" | "custom";
+import {
+  DashboardGreeting,
+  type DashboardPeriod,
+} from "@/components/dashboard/DashboardGreeting";
+import {
+  DashboardKpis,
+  DashboardKpiSkeleton,
+} from "@/components/dashboard/DashboardKpis";
+import { NeedsAttention } from "@/components/dashboard/NeedsAttention";
+import { SalesPerformanceChart } from "@/components/dashboard/SalesPerformanceChart";
+import { TopSellingProducts } from "@/components/dashboard/TopSellingProducts";
+import { RecentSalesList } from "@/components/dashboard/RecentSalesList";
 
-function StatCardSkeleton() {
-  return (
-    <div className="stat-card">
-      <div className="flex gap-4">
-        <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-3 w-20" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  delta,
-  deltaType,
-  icon: Icon,
-  colorClass,
-  bgColorClass,
-  onClick,
-}: {
-  title: string;
-  value: string;
-  delta?: string;
-  deltaType?: "positive" | "negative" | "neutral";
-  icon: React.ElementType;
-  colorClass: string;
-  bgColorClass: string;
-  onClick?: () => void;
-}) {
-  return (
-    <div
-      className={cn("stat-card", onClick && "cursor-pointer")}
-      onClick={onClick}
-    >
-      <div className="flex gap-4">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg shrink-0 ${bgColorClass}`}>
-          <Icon className={`h-5 w-5 ${colorClass}`} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-xs font-medium text-muted-foreground truncate">{title}</h3>
-          <p className="money-display-sm mt-1 truncate">{value}</p>
-          {delta && (
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-1.5 text-xs font-medium">
-              {deltaType === "positive" && <ArrowUp className="h-3 w-3 text-emerald-600 shrink-0" />}
-              {deltaType === "negative" && <ArrowDown className="h-3 w-3 text-rose-600 shrink-0" />}
-              <span className={cn(
-                "shrink-0",
-                deltaType === "positive" ? "text-emerald-600" : deltaType === "negative" ? "text-rose-600" : "text-muted-foreground"
-              )}>
-                {delta}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SectionCard({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
-  return (
-    <div className="page-section">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</h3>
-        {action}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function ChartSkeleton() {
-  return (
-    <div className="page-section p-5">
-      <Skeleton className="h-4 w-48 mb-5" />
-      <Skeleton className="h-56 w-full rounded-lg" />
-    </div>
-  );
-}
-
-const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
-  today: { en: "Today", sw: "Leo" },
-  week: { en: "This week", sw: "Wiki hii" },
-  month: { en: "This month", sw: "Mwezi huu" },
-  year: { en: "This year", sw: "Mwaka huu" },
-  all: { en: "All time", sw: "Muda wote" },
-  custom: { en: "Custom date", sw: "Tarehe maalum" },
-};
-
-function getPeriodDates(period: Exclude<Period, "custom">): { start: string; end: string } {
+function getPeriodDates(period: Exclude<DashboardPeriod, "custom">): { start: string; end: string } {
   const now = new Date();
   const end = format(now, "yyyy-MM-dd");
   switch (period) {
-    case "today": return { start: end, end };
-    case "week": return { start: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"), end };
-    case "month": return { start: format(startOfMonth(now), "yyyy-MM-dd"), end };
-    case "year": return { start: format(startOfYear(now), "yyyy-MM-dd"), end };
-    case "all": return { start: "1970-01-01", end };
-  }
-}
-
-function safeFormatDate(dateVal?: string | Date | null, formatStr = "dd MMM"): string {
-  if (!dateVal) return "";
-  try {
-    const d = typeof dateVal === "string" ? new Date(dateVal) : dateVal;
-    if (Number.isNaN(d.getTime())) return "";
-    return format(d, formatStr);
-  } catch {
-    return "";
+    case "today":
+      return { start: end, end };
+    case "week":
+      return { start: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"), end };
+    case "month":
+      return { start: format(startOfMonth(now), "yyyy-MM-dd"), end };
+    case "year":
+      return { start: format(startOfYear(now), "yyyy-MM-dd"), end };
+    case "all":
+      return { start: "1970-01-01", end };
   }
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const { formatMoney } = useShopFormatting();
-  const { profile } = useAuth();
-  const [period, setPeriod] = useState<Period>("today");
+  const { profile, user } = useAuth();
+
+  const [period, setPeriod] = useState<DashboardPeriod>("today");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
-  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const shopName = profile?.shops?.name || "WiseCash";
+  const userName =
+    profile?.full_name ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    "";
 
   // Active period date boundaries
   const { start: periodStart, end: periodEnd } = useMemo(() => {
@@ -185,13 +66,14 @@ export default function Dashboard() {
       const e = customRange.to ? format(customRange.to, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
       return { start: s, end: e };
     }
-    return getPeriodDates(period as Exclude<Period, "custom">);
+    return getPeriodDates(period as Exclude<DashboardPeriod, "custom">);
   }, [period, customRange]);
 
+  // Ensure sales query fetches enough history for comparisons and charts
   const sevenDaysAgoStr = useMemo(() => format(subDays(new Date(), 7), "yyyy-MM-dd"), []);
   const salesQueryOptions = useMemo(() => {
-    if (period === "all") {
-      return { limit: 500 };
+    if (period === "all" || period === "year") {
+      return { limit: 1000 };
     }
     const earliestStart = periodStart < sevenDaysAgoStr ? periodStart : sevenDaysAgoStr;
     return {
@@ -200,15 +82,15 @@ export default function Dashboard() {
     };
   }, [period, periodStart, periodEnd, sevenDaysAgoStr]);
 
-  // Queries
+  // Core Data Queries (All scoped by authenticated shop via Supabase RLS)
   const { data: allSales, isLoading: salesLoading } = useSales(salesQueryOptions);
-  const { data: purchasesList, isLoading: purchasesLoading } = usePurchases();
-  const { data: productionList } = useProductionBatches();
-  const { data: expensesList, isLoading: expensesLoading } = useExpenses();
-  const { data: otherIncomeList } = useOtherIncome();
   const { data: allProducts, isLoading: productsLoading } = useProducts();
   const { data: lowStockProducts, isLoading: lowStockLoading } = useLowStockProducts();
-  const { data: customersList } = useCustomers();
+  const { data: customersList, isLoading: customersLoading } = useCustomers();
+  const { data: ordersList } = useOrders();
+  const { data: purchasesList } = usePurchases();
+  const { data: expensesList } = useExpenses();
+  const { data: otherIncomeList } = useOtherIncome();
 
   const isDateInPeriod = (dateStr?: string | null) => {
     if (!dateStr) return false;
@@ -216,18 +98,12 @@ export default function Dashboard() {
     return isTimestampInLocalDayRange(dateStr, periodStart, periodEnd);
   };
 
-  // Synchronize all period-sensitive business streams
+  // Filter items for the active selected period
   const periodSales = useMemo(() => {
-    return (allSales || []).filter((s) => s.status === "completed" && isDateInPeriod(s.created_at));
+    return (allSales || []).filter(
+      (s) => s.status === "completed" && isDateInPeriod(s.created_at)
+    );
   }, [allSales, periodStart, periodEnd, period]);
-
-  const periodPurchases = useMemo(() => {
-    return (purchasesList || []).filter((p) => isDateInPeriod(p.created_at));
-  }, [purchasesList, periodStart, periodEnd, period]);
-
-  const periodProduction = useMemo(() => {
-    return (productionList || []).filter((b) => isDateInPeriod(b.created_at));
-  }, [productionList, periodStart, periodEnd, period]);
 
   const periodExpenses = useMemo(() => {
     return (expensesList || []).filter((e) => isDateInPeriod(e.date || e.created_at));
@@ -237,783 +113,157 @@ export default function Dashboard() {
     return (otherIncomeList || []).filter((i) => isDateInPeriod(i.date || i.created_at));
   }, [otherIncomeList, periodStart, periodEnd, period]);
 
-  // Financial KPI calculations using single source of truth
+  // Single source of truth financial calculations
   const pnl = useMemo(() => {
     return calculatePnL(periodSales, periodExpenses, periodOtherIncome);
   }, [periodSales, periodExpenses, periodOtherIncome]);
-
-  const totalSalesVal = pnl.grossSales;
-  const revenueVal = pnl.revenue;
-  const periodCogsVal = pnl.cogs;
-  const grossProfitVal = pnl.grossProfit;
-  const totalExpensesVal = pnl.totalExpenses;
-  const totalOtherIncomeVal = pnl.totalOtherIncome;
-  const netProfitVal = pnl.netProfit;
-  const taxCollectedVal = pnl.taxCollected;
-
-  const totalPurchasesVal = useMemo(
-    () => periodPurchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0),
-    [periodPurchases]
-  );
-
-  const totalProductionCostVal = useMemo(
-    () => periodProduction.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
-    [periodProduction]
-  );
 
   const cashReceivedVal = useMemo(() => {
     return calculateCashReceived(periodSales);
   }, [periodSales]);
 
-  const stockValueVal = useMemo(
-    () => (allProducts || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.selling_price) || 0), 0),
-    [allProducts]
-  );
-
-  const customersOweVal = useMemo(
-    () => (customersList || []).reduce((sum, c) => sum + (Number(c.credit_balance) || 0), 0),
-    [customersList]
-  );
-
-  // Chart data — last 7 days safe calculation using shared P&L
-  const chartData = useMemo(() => {
-    const dayDates = [6, 5, 4, 3, 2, 1, 0].map((d) => subDays(new Date(), d));
-    return dayDates.map((dateObj) => {
-      const dayStr = format(dateObj, "yyyy-MM-dd");
-      const daySalesList = (allSales || []).filter(
-        (s) => s.status === "completed" && toLocalDayString(s.created_at) === dayStr
+  // Previous period comparison for Sales growth
+  const salesGrowthPercent = useMemo(() => {
+    if (period === "today") {
+      const yesterdayStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+      const yesterdaySales = (allSales || []).filter(
+        (s) => s.status === "completed" && toLocalDayString(s.created_at) === yesterdayStr
       );
-      const dayExpenses = (expensesList || [])
-        .filter((e) => toLocalDayString(e.date || e.created_at) === dayStr);
-      const dayIncome = (otherIncomeList || [])
-        .filter((i) => toLocalDayString(i.date || i.created_at) === dayStr);
+      const yesterdayTotal = yesterdaySales.reduce((sum, s) => sum + Number(s.total || 0), 0);
+      if (yesterdayTotal === 0) return null;
+      return Math.round(((pnl.grossSales - yesterdayTotal) / yesterdayTotal) * 100);
+    }
+    return null;
+  }, [period, allSales, pnl.grossSales]);
 
-      const dayPnl = calculatePnL(daySalesList, dayExpenses, dayIncome);
+  // Cost data verification: check if physical products were sold without recorded cost
+  const hasPhysicalItemsSoldWithoutCost = useMemo(() => {
+    for (const sale of periodSales) {
+      const items = Array.isArray(sale.sale_items) ? sale.sale_items : [];
+      for (const item of items) {
+        const isPhysical = item.item_type !== "service";
+        const unitCost = Number(item.buying_price_at_sale ?? 0);
+        if (isPhysical && unitCost === 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [periodSales]);
 
-      return {
-        name: format(dateObj, "dd MMM"),
-        date: dayStr,
-        [language === "sw" ? "Mauzo" : "Sales"]: dayPnl.grossSales,
-        [language === "sw" ? "Matumizi" : "Expenses"]: dayPnl.totalExpenses,
-        [language === "sw" ? "Faida" : "Profit"]: dayPnl.netProfit,
-      };
-    });
-  }, [allSales, expensesList, otherIncomeList, language]);
+  // Actionable exceptions for Needs Attention
+  const outOfStockCount = useMemo(() => {
+    return (allProducts || []).filter(
+      (p) => p.track_inventory !== false && p.item_type !== "service" && Number(p.stock) <= 0
+    ).length;
+  }, [allProducts]);
 
-  // Recent activities safe mapping and sorting with visible dates
-  const recentActivities = useMemo(() => {
-    const getTime = (d?: string | null) => {
-      if (!d) return 0;
-      const t = new Date(d).getTime();
-      return Number.isNaN(t) ? 0 : t;
-    };
+  const lowStockCount = useMemo(() => {
+    return (lowStockProducts || []).length;
+  }, [lowStockProducts]);
 
-    const salesSource = (periodSales || []).length > 0 ? periodSales : (allSales || []);
-    const expensesSource = (periodExpenses || []).length > 0 ? periodExpenses : (expensesList || []);
-    const purchasesSource = (periodPurchases || []).length > 0 ? periodPurchases : (purchasesList || []);
-    const incomeSource = (periodOtherIncome || []).length > 0 ? periodOtherIncome : (otherIncomeList || []);
+  const customerDebtTotal = useMemo(() => {
+    return (customersList || []).reduce(
+      (sum, c) => sum + (Number(c.credit_balance) || 0),
+      0
+    );
+  }, [customersList]);
 
-    const acts = [
-      ...salesSource.slice(0, 10).map((s) => {
-        const itemNames = ((s as any).sale_items || []).map((it: any) => it.product_name).filter(Boolean);
-        const itemsLabel = itemNames.length
-          ? itemNames.length > 2
-            ? `${itemNames.slice(0, 2).join(", ")} +${itemNames.length - 2} ${language === "sw" ? "zaidi" : "more"}`
-            : itemNames.join(", ")
-          : (s.invoice_number || `Sale #${String(s.id || "").slice(0, 6).toUpperCase()}`);
+  const debtorsCount = useMemo(() => {
+    return (customersList || []).filter((c) => Number(c.credit_balance) > 0).length;
+  }, [customersList]);
 
-        const customerLabel = s.customer_name || (s as any).customers?.name || (language === "sw" ? "Mteja wa kawaida" : "Walk-in");
-        const formattedDate = safeFormatDate(s.created_at, "dd MMM, HH:mm");
-        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
+  const pendingOrdersCount = useMemo(() => {
+    return (ordersList || []).filter(
+      (o: any) => o.status === "pending" || o.status === "processing"
+    ).length;
+  }, [ordersList]);
 
-        return {
-          type: "sale",
-          title: itemsLabel,
-          subtitle: `${customerLabel} · ${s.payment_method || "Cash"}${dateLabel}`,
-          date: s.created_at,
-          amount: `+${formatMoney(s.total)}`,
-          isPositive: true,
-          icon: ShoppingBag,
-          color: "text-blue-600",
-          bg: "bg-blue-50 dark:bg-blue-950/40",
-        };
-      }),
-      ...expensesSource.slice(0, 10).map((e) => {
-        const dateRaw = e.date || e.created_at;
-        const formattedDate = safeFormatDate(dateRaw, "dd MMM");
-        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
+  const pendingPurchasesCount = useMemo(() => {
+    return (purchasesList || []).filter((p) => p.status === "pending").length;
+  }, [purchasesList]);
 
-        return {
-          type: "expense",
-          title: (e as any).title || e.description || (language === "sw" ? "Gharama" : "Expense"),
-          subtitle: `${e.category || "General"}${dateLabel}`,
-          date: dateRaw,
-          amount: `-${formatMoney(e.amount)}`,
-          isPositive: false,
-          icon: Receipt,
-          color: "text-rose-600",
-          bg: "bg-rose-50 dark:bg-rose-950/40",
-        };
-      }),
-      ...purchasesSource.slice(0, 10).map((p) => {
-        const formattedDate = safeFormatDate(p.created_at, "dd MMM");
-        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
-
-        return {
-          type: "purchase",
-          title: `${language === "sw" ? "Ununuzi" : "Purchase"}: ${p.supplier_name || "Supplier"}`,
-          subtitle: `${p.items_count || 1} ${language === "sw" ? "bidhaa" : "items"}${dateLabel}`,
-          date: p.created_at,
-          amount: `-${formatMoney(p.total_amount)}`,
-          isPositive: false,
-          icon: ShoppingCart,
-          color: "text-violet-600",
-          bg: "bg-violet-50 dark:bg-violet-950/40",
-        };
-      }),
-      ...incomeSource.slice(0, 5).map((income) => {
-        const formattedDate = safeFormatDate(income.date, "dd MMM");
-        const dateLabel = formattedDate ? ` · ${formattedDate}` : "";
-
-        return {
-          type: "income",
-          title: income.title || (language === "sw" ? "Mapato Mengine" : "Other Income"),
-          subtitle: `${income.category || "General"}${dateLabel}`,
-          date: income.date,
-          amount: `+${formatMoney(income.amount)}`,
-          isPositive: true,
-          icon: Banknote,
-          color: "text-emerald-600",
-          bg: "bg-emerald-50 dark:bg-emerald-950/40",
-        };
-      }),
-    ];
-    return acts.sort((a, b) => getTime(b.date) - getTime(a.date)).slice(0, 8);
-  }, [periodSales, allSales, periodExpenses, expensesList, periodPurchases, purchasesList, periodOtherIncome, otherIncomeList, formatMoney, language]);
-
-  const kpiLoading = salesLoading || purchasesLoading || expensesLoading || productsLoading;
-  const salesLabelKey = language === "sw" ? "Mauzo" : "Sales";
-  const expensesLabelKey = language === "sw" ? "Matumizi" : "Expenses";
-  const profitLabelKey = language === "sw" ? "Faida" : "Profit";
-
-  const [mobileTab, setMobileTab] = useState<"activity" | "trends" | "alerts">("activity");
+  const isInitialLoading = salesLoading && productsLoading;
 
   return (
-    <div className="space-y-4 sm:space-y-5 pb-12">
-      {/* Page Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            {language === "sw" ? `Habari, ${shopName}` : `Overview — ${shopName}`}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {format(new Date(), language === "sw" ? "EEEE, dd MMMM yyyy" : "EEEE, MMMM dd yyyy")}
-          </p>
+    <div className="space-y-6 pb-16">
+      {/* 1. Executive Header & Contextual Greeting */}
+      <DashboardGreeting
+        userName={userName}
+        shopName={shopName}
+        language={language}
+        period={period}
+        onPeriodChange={setPeriod}
+        customRange={customRange}
+        onCustomRangeChange={setCustomRange}
+      />
+
+      {/* 2. Primary 3 KPI Cards: Sales, Profit, Cash Received */}
+      {isInitialLoading ? (
+        <DashboardKpiSkeleton />
+      ) : (
+        <DashboardKpis
+          period={period}
+          language={language}
+          formatMoney={formatMoney}
+          totalSales={pnl.grossSales}
+          orderCount={periodSales.length}
+          netProfit={pnl.netProfit}
+          grossProfit={pnl.grossProfit}
+          cogs={pnl.cogs}
+          revenue={pnl.revenue}
+          totalExpenses={pnl.totalExpenses}
+          cashReceived={cashReceivedVal}
+          hasPhysicalItemsSoldWithoutCost={hasPhysicalItemsSoldWithoutCost}
+          salesGrowthPercent={salesGrowthPercent}
+          isLoading={salesLoading}
+        />
+      )}
+
+      {/* 3. Needs Attention Section (Actionable exceptions only) */}
+      <NeedsAttention
+        language={language}
+        formatMoney={formatMoney}
+        outOfStockCount={outOfStockCount}
+        lowStockCount={lowStockCount}
+        customerDebtTotal={customerDebtTotal}
+        debtorsCount={debtorsCount}
+        pendingOrdersCount={pendingOrdersCount}
+        pendingPurchasesCount={pendingPurchasesCount}
+      />
+
+      {/* 4. Sales Performance Chart & Top Selling Products (2-col on desktop, stacked on mobile) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
+        <div className="lg:col-span-2">
+          <SalesPerformanceChart
+            period={period}
+            language={language}
+            formatMoney={formatMoney}
+            allSales={allSales || []}
+            expensesList={expensesList || []}
+            otherIncomeList={otherIncomeList || []}
+            periodSales={periodSales}
+            periodStart={periodStart}
+            periodEnd={periodEnd}
+            isLoading={salesLoading}
+          />
         </div>
 
-        {/* Period selector */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-xs">
-            {(["today", "week", "month", "year", "all"] as Exclude<Period, "custom">[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "rounded-lg px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-medium transition-all",
-                  period === p
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {PERIOD_LABELS[p][language]}
-              </button>
-            ))}
-          </div>
-
-          {/* Custom Date Range Picker */}
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <button
-                onClick={() => { setPeriod("custom"); setCalendarOpen(true); }}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-xl border border-border px-3 py-1 text-[11px] sm:text-xs font-medium transition-all",
-                  period === "custom"
-                    ? "bg-primary text-primary-foreground shadow-sm border-primary"
-                    : "bg-card text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <CalendarDays className="h-3 w-3" />
-                {period === "custom" && customRange.from
-                  ? customRange.to
-                    ? `${format(customRange.from, "dd MMM")} – ${format(customRange.to, "dd MMM")}`
-                    : format(customRange.from, "dd MMM yyyy")
-                  : language === "sw" ? "Chagua Tarehe" : "Custom"}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 rounded-2xl shadow-xl border border-border" align="end">
-              <Calendar
-                mode="range"
-                selected={{ from: customRange.from, to: customRange.to }}
-                onSelect={(range) => {
-                  setCustomRange({ from: range?.from, to: range?.to });
-                  if (range?.from && range?.to) {
-                    setPeriod("custom");
-                    setCalendarOpen(false);
-                  }
-                }}
-                numberOfMonths={2}
-                disabled={{ after: new Date() }}
-                className="p-3"
-              />
-              {period === "custom" && customRange.from && (
-                <div className="border-t border-border p-2 flex justify-between items-center">
-                  <span className="text-[11px] text-muted-foreground px-2">
-                    {customRange.to
-                      ? `${format(customRange.from, "MMM dd")} → ${format(customRange.to, "MMM dd, yyyy")}`
-                      : language === "sw" ? "Chagua tarehe ya mwisho" : "Pick end date"}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => { setCustomRange({}); setPeriod("today"); }}
-                    className="h-7 text-xs text-muted-foreground"
-                  >
-                    {language === "sw" ? "Futa" : "Clear"}
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
+        <div className="lg:col-span-1">
+          <TopSellingProducts
+            periodSales={periodSales}
+            language={language}
+            formatMoney={formatMoney}
+          />
         </div>
       </div>
 
-      {/* MOBILE COMPACT VIEW (md:hidden) — Simple, light, no excessive scrolling */}
-      <div className="space-y-3.5 md:hidden">
-        {/* Mobile Hero Card */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              {language === "sw" ? "Mauzo ya Kipindi" : "Period Sales"}
-            </span>
-            <span className="badge-neutral text-[10px]">
-              {period === "custom"
-                ? customRange.from && customRange.to
-                  ? `${format(customRange.from, "dd MMM")} – ${format(customRange.to, "dd MMM")}`
-                  : language === "sw" ? "Maalum" : "Custom"
-                : PERIOD_LABELS[period]?.[language] || ""}
-            </span>
-          </div>
-
-          <div className="mt-2 flex items-center justify-between">
-            <div>
-              <p className="text-2xl font-black tracking-tight text-foreground">{formatMoney(totalSalesVal)}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                {periodSales.length} {language === "sw" ? "miamala ya mauzo" : "sales completed"}
-              </p>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => navigate("/sales?view=new")}
-              className="h-8 rounded-xl bg-neutral-950 px-3 text-xs font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1 text-accent" />
-              <span>{language === "sw" ? "Uza" : "Sell"}</span>
-            </Button>
-          </div>
-
-          {/* 3-Column Mini Metrics */}
-          <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-border/60 pt-3">
-            <div className="rounded-xl bg-muted/40 p-2 text-center">
-              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Iliyolipwa" : "Cash In"}</p>
-              <p className="text-xs font-bold text-emerald-600 truncate mt-0.5">{formatMoney(cashReceivedVal)}</p>
-            </div>
-            <div className="rounded-xl bg-muted/40 p-2 text-center cursor-pointer" onClick={() => navigate("/customers")}>
-              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Madeni" : "Due"}</p>
-              <p className="text-xs font-bold text-amber-600 truncate mt-0.5">{formatMoney(customersOweVal)}</p>
-            </div>
-            <div className="rounded-xl bg-muted/40 p-2 text-center cursor-pointer" onClick={() => navigate("/expenses")}>
-              <p className="text-[10px] font-medium text-muted-foreground">{language === "sw" ? "Faida Halisi" : "Net Profit"}</p>
-              <p className={cn("text-xs font-bold truncate mt-0.5", netProfitVal >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                {netProfitVal < 0 ? `-${formatMoney(Math.abs(netProfitVal))}` : formatMoney(netProfitVal)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 4 Primary Touch Actions */}
-        <div className="grid grid-cols-4 gap-2">
-          <button
-            type="button"
-            onClick={() => navigate("/sales")}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-2xs">
-              <ShoppingBag className="h-4 w-4" />
-            </div>
-            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "Mauzo" : "Sale"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/inventory?new=true")}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
-              <Package className="h-4 w-4" />
-            </div>
-            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "+ Stoki" : "+ Stock"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/customers")}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
-              <Users className="h-4 w-4" />
-            </div>
-            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "Madeni" : "Debts"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/expenses?new=true")}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-2xs active:scale-95 transition-transform"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600">
-              <Receipt className="h-4 w-4" />
-            </div>
-            <span className="text-[11px] font-semibold text-foreground truncate">{language === "sw" ? "+ Gharama" : "+ Expense"}</span>
-          </button>
-        </div>
-
-        {/* Mobile Segmented Control */}
-        <div className="flex rounded-xl border border-border bg-muted/40 p-1">
-          <button
-            type="button"
-            onClick={() => setMobileTab("activity")}
-            className={cn(
-              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all",
-              mobileTab === "activity" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {language === "sw" ? "Miamala" : "Activity"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab("trends")}
-            className={cn(
-              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all",
-              mobileTab === "trends" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {language === "sw" ? "Mwelekeo" : "Trends"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab("alerts")}
-            className={cn(
-              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all flex items-center justify-center gap-1.5",
-              mobileTab === "alerts" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <span>{language === "sw" ? "Stoki Ndogo" : "Alerts"}</span>
-            {lowStockProducts && lowStockProducts.length > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
-                {lowStockProducts.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Segment Content */}
-        {mobileTab === "activity" && (
-          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {language === "sw" ? "Miamala ya Karibuni" : "Recent Activity"}
-              </span>
-              <button
-                onClick={() => navigate("/sales")}
-                className="text-xs font-semibold text-primary hover:underline"
-              >
-                {language === "sw" ? "Zote" : "View All"}
-              </button>
-            </div>
-            {recentActivities.length === 0 ? (
-              <div className="p-6 text-center text-xs text-muted-foreground">
-                {language === "sw" ? "Hakuna miamala kwa sasa." : "No transactions recorded yet."}
-              </div>
-            ) : (
-              <div className="divide-y divide-border/60">
-                {recentActivities.slice(0, 4).map((act, index) => (
-                  <div key={index} className="flex items-center gap-3 px-4 py-3">
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${act.bg}`}>
-                      <act.icon className={`h-3.5 w-3.5 ${act.color}`} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold text-foreground">{act.title}</p>
-                      <p className="text-[10px] text-muted-foreground">{act.subtitle}</p>
-                    </div>
-                    <span className={cn("text-xs font-bold shrink-0", act.isPositive ? "text-emerald-600" : "text-foreground")}>
-                      {act.amount}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {mobileTab === "trends" && (
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
-              {language === "sw" ? "Mwelekeo wa Mauzo na Faida (Siku 7)" : "7-Day Sales & Profit Trend"}
-            </h3>
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} dy={6} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} width={34} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 10 }}
-                    formatter={(val: unknown) => formatMoney(Number(val) || 0)}
-                  />
-                  <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 10, paddingTop: 6 }} />
-                  <Line type="monotone" dataKey={salesLabelKey} stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey={profitLabelKey} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {mobileTab === "alerts" && (
-          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {language === "sw" ? "Bidhaa Zenye Stoki Ndogo" : "Low Stock Alerts"}
-              </span>
-              <button
-                onClick={() => navigate("/inventory")}
-                className="text-xs font-semibold text-primary hover:underline"
-              >
-                {language === "sw" ? "Stoki" : "View Inventory"}
-              </button>
-            </div>
-            {lowStockProducts && lowStockProducts.length > 0 ? (
-              <div className="divide-y divide-border/60">
-                {lowStockProducts.slice(0, 4).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between px-4 py-3">
-                    <div className="min-w-0 pr-2">
-                      <p className="text-xs font-semibold text-foreground truncate">{item.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{language === "sw" ? "Kiwango cha tahadhari" : "Limit"}: {item.low_stock_alert ?? 5}</p>
-                    </div>
-                    <span className="badge-warning shrink-0">{item.stock} pcs</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-6 text-center text-xs text-muted-foreground">
-                {language === "sw" ? "Stoki yote iko katika kiwango cha kuridhisha." : "All stock levels are healthy."}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* DESKTOP EXPANDED VIEW (hidden md:block) — 8 Full ERP StatCards */}
-      <div className="hidden md:block space-y-4">
-        {/* Row 1: Sales, Purchases, Production, Cash Received */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3.5">
-          {kpiLoading ? (
-            <>
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-            </>
-          ) : (
-            <>
-              <StatCard
-                title={language === "sw" ? "Jumla ya Mauzo" : "Total Sales"}
-                value={formatMoney(totalSalesVal)}
-                delta={periodSales.length > 0 ? `${periodSales.length} ${language === "sw" ? "miamala" : "orders"}` : undefined}
-                deltaType="neutral"
-                icon={ShoppingBag}
-                colorClass="text-blue-600"
-                bgColorClass="bg-blue-50 dark:bg-blue-950/40"
-                onClick={() => navigate("/sales")}
-              />
-              <StatCard
-                title={language === "sw" ? "Jumla ya Manunuzi" : "Total Purchases"}
-                value={formatMoney(totalPurchasesVal)}
-                delta={periodPurchases.length > 0 ? `${periodPurchases.length} ${language === "sw" ? "shehena" : "purchases"}` : undefined}
-                deltaType="neutral"
-                icon={ShoppingCart}
-                colorClass="text-purple-600"
-                bgColorClass="bg-purple-50 dark:bg-purple-950/40"
-                onClick={() => navigate("/purchases")}
-              />
-              <StatCard
-                title={language === "sw" ? "Thamani ya Uzalishaji (Stoki)" : "Value Added to Inventory"}
-                value={formatMoney(totalProductionCostVal)}
-                delta={periodProduction.length > 0 ? `${periodProduction.length} ${language === "sw" ? "awamu" : "batches"}` : undefined}
-                deltaType="neutral"
-                icon={Factory}
-                colorClass="text-amber-600"
-                bgColorClass="bg-amber-50 dark:bg-amber-950/40"
-                onClick={() => navigate("/production")}
-              />
-              <StatCard
-                title={language === "sw" ? "Pesa Zilizopokelewa" : "Cash Received"}
-                value={formatMoney(cashReceivedVal)}
-                delta={totalSalesVal > 0 ? `${Math.round((cashReceivedVal / totalSalesVal) * 100)}% collected` : undefined}
-                deltaType="positive"
-                icon={Banknote}
-                colorClass="text-emerald-600"
-                bgColorClass="bg-emerald-50 dark:bg-emerald-950/40"
-              />
-            </>
-          )}
-        </div>
-
-        {/* Row 2: Stock Value, Customers Owe, Expenses, Net Profit */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3.5">
-          {kpiLoading ? (
-            <>
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-            </>
-          ) : (
-            <>
-              <StatCard
-                title={language === "sw" ? "Thamani ya Stoki" : "Stock Value"}
-                value={formatMoney(stockValueVal)}
-                delta={`${(allProducts || []).length} ${language === "sw" ? "bidhaa" : "items"}`}
-                deltaType="neutral"
-                icon={Package}
-                colorClass="text-cyan-600"
-                bgColorClass="bg-cyan-50 dark:bg-cyan-950/40"
-                onClick={() => navigate("/inventory")}
-              />
-              <StatCard
-                title={language === "sw" ? "Madeni ya Wateja" : "Customers Owe"}
-                value={formatMoney(customersOweVal)}
-                delta={customersOweVal > 0 ? `${language === "sw" ? "Inasubiri" : "Outstanding"}` : `${language === "sw" ? "Hakuna madeni" : "Settled"}`}
-                deltaType={customersOweVal > 0 ? "negative" : "positive"}
-                icon={Users}
-                colorClass="text-rose-600"
-                bgColorClass="bg-rose-50 dark:bg-rose-950/40"
-                onClick={() => navigate("/customers")}
-              />
-              <StatCard
-                title={language === "sw" ? "Jumla ya Matumizi" : "Total Expenses"}
-                value={formatMoney(totalExpensesVal)}
-                delta={periodExpenses.length > 0 ? `${periodExpenses.length} ${language === "sw" ? "rekodi" : "entries"}` : undefined}
-                deltaType="neutral"
-                icon={Receipt}
-                colorClass="text-orange-600"
-                bgColorClass="bg-orange-50 dark:bg-orange-950/40"
-                onClick={() => navigate("/expenses")}
-              />
-              <StatCard
-                title={language === "sw" ? "Faida Halisi" : "Net Profit"}
-                value={netProfitVal < 0 ? `-${formatMoney(Math.abs(netProfitVal))}` : formatMoney(netProfitVal)}
-                delta={
-                  totalSalesVal > 0
-                    ? `${((netProfitVal / totalSalesVal) * 100).toFixed(1)}% margin`
-                    : netProfitVal < 0
-                    ? "Net Loss"
-                    : "Balanced"
-                }
-                deltaType={netProfitVal > 0 ? "positive" : netProfitVal < 0 ? "negative" : "neutral"}
-                icon={TrendingUp}
-                colorClass={netProfitVal >= 0 ? "text-emerald-600" : "text-rose-600"}
-                bgColorClass={netProfitVal >= 0 ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-rose-50 dark:bg-rose-950/40"}
-                onClick={() => navigate("/reports")}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Charts Row (Desktop) */}
-      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {salesLoading || expensesLoading ? (
-          <>
-            <ChartSkeleton />
-            <ChartSkeleton />
-          </>
-        ) : (
-          <>
-            {/* Chart 1: Sales vs Expenses vs Profit */}
-            <div className="page-section p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-5">
-                {language === "sw" ? "Mauzo vs Matumizi vs Faida" : "Sales vs Expenses vs Profit"}
-              </h3>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} dy={8} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} width={40} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: 10, border: "1px solid hsl(var(--border))", fontSize: 11 }}
-                      formatter={(val: unknown) => formatMoney(Number(val) || 0)}
-                    />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                    <Line type="monotone" dataKey={salesLabelKey} stroke="#3b82f6" strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4 }} />
-                    <Line type="monotone" dataKey={expensesLabelKey} stroke="#f43f5e" strokeWidth={2} dot={{ r: 2.5 }} />
-                    <Line type="monotone" dataKey={profitLabelKey} stroke="#10b981" strokeWidth={2} dot={{ r: 2.5 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Chart 2: Net Profit Trend */}
-            <div className="page-section p-5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-5">
-                {language === "sw" ? "Mwelekeo wa Faida Halisi" : "Net Profit Trend"}
-              </h3>
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                    <defs>
-                      <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} dy={8} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} width={40} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: 10, border: "1px solid hsl(var(--border))", fontSize: 11 }}
-                      formatter={(val: unknown) => formatMoney(Number(val) || 0)}
-                    />
-                    <Area type="monotone" dataKey={profitLabelKey} stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#gradProfit)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Bottom Row: Low Stock + Recent Activities (Desktop) */}
-      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Low Stock Alerts */}
-        <SectionCard
-          title={language === "sw" ? "Tahadhari za Stoki Ndogo" : "Low Stock Alerts"}
-          action={
-            <Button variant="ghost" size="sm" onClick={() => navigate("/inventory")} className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground">
-              {language === "sw" ? "Tazama Stoki" : "View All"}
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          }
-        >
-          {lowStockLoading ? (
-            <div className="p-4 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-            </div>
-          ) : lowStockProducts && lowStockProducts.length > 0 ? (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{language === "sw" ? "Bidhaa" : "Product"}</th>
-                  <th className="text-right">{language === "sw" ? "Iliyobaki" : "Stock"}</th>
-                  <th className="text-right">{language === "sw" ? "Kiwango" : "Limit"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lowStockProducts.slice(0, 5).map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        <span className="font-medium truncate max-w-[180px]">{item.name}</span>
-                      </div>
-                    </td>
-                    <td className="text-right">
-                      <span className="badge-warning">{item.stock}</span>
-                    </td>
-                    <td className="text-right text-muted-foreground text-xs">{item.low_stock_alert ?? 5}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="empty-state py-10">
-              <div className="empty-state-icon">
-                <Package className="h-7 w-7" />
-              </div>
-              <p className="text-sm font-medium text-foreground">{language === "sw" ? "Stoki Iko Sawa" : "Stock levels healthy"}</p>
-              <p className="text-xs text-muted-foreground">{language === "sw" ? "Hakuna bidhaa zenye stoki ndogo." : "No items are running low."}</p>
-            </div>
-          )}
-        </SectionCard>
-
-        {/* Recent Activity */}
-        <SectionCard
-          title={language === "sw" ? "Miamala ya Hivi Karibuni" : "Recent Activity"}
-          action={
-            <Button variant="ghost" size="sm" onClick={() => navigate("/sales")} className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground">
-              {language === "sw" ? "Tazama Zaidi" : "View All"}
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          }
-        >
-          {kpiLoading || expensesLoading || purchasesLoading ? (
-            <div className="p-4 space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <Skeleton className="h-3 w-36" />
-                    <Skeleton className="h-2.5 w-20" />
-                  </div>
-                  <Skeleton className="h-3 w-20" />
-                </div>
-              ))}
-            </div>
-          ) : recentActivities.length > 0 ? (
-            <div className="divide-y divide-border">
-              {recentActivities.map((act, index) => (
-                <div key={index} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${act.bg}`}>
-                    <act.icon className={`h-3.5 w-3.5 ${act.color}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-foreground max-w-[200px]">{act.title}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{act.subtitle}</p>
-                  </div>
-                  <span className={cn(
-                    "text-xs font-bold shrink-0",
-                    act.isPositive ? "text-emerald-600" : "text-foreground"
-                  )}>
-                    {act.amount}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state py-10">
-              <div className="empty-state-icon">
-                <ShoppingBag className="h-7 w-7" />
-              </div>
-              <p className="text-sm font-medium text-foreground">{language === "sw" ? "Hakuna Miamala" : "No recent activity"}</p>
-              <Button size="sm" onClick={() => navigate("/sales")} className="mt-1 h-8 text-xs rounded-xl">
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                {language === "sw" ? "Anza Mauzo" : "Start a Sale"}
-              </Button>
-            </div>
-          )}
-        </SectionCard>
-      </div>
+      {/* 5. Recent Sales Stream (Full-width footer) */}
+      <RecentSalesList
+        sales={periodSales.length > 0 ? periodSales : allSales || []}
+        language={language}
+        formatMoney={formatMoney}
+      />
     </div>
   );
 }
