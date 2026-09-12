@@ -203,7 +203,7 @@ export function Sidebar() {
                       <span>{t("quick.newPurchase")}</span>
                     </button>
                     <button
-                      onClick={() => { setCollapsed(true); navigate("/sales"); }}
+                      onClick={() => { setCollapsed(true); navigate("/sales?view=new"); }}
                       className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
                     >
                       <ShoppingBag className="h-3.5 w-3.5 text-accent" />
@@ -330,7 +330,7 @@ export function Sidebar() {
                 <span>{t("quick.newPurchase")}</span>
               </button>
               <button
-                onClick={() => navigate("/sales")}
+                onClick={() => navigate("/sales?view=new")}
                 className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <Plus className="h-3.5 w-3.5 text-accent" />

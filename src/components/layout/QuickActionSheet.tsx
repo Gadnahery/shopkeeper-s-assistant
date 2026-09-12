@@ -33,7 +33,7 @@ export function QuickActionSheet() {
     {
       label: language === "sw" ? "Mauzo mapya" : "New Sale",
       icon: Tag,
-      to: "/sales",
+      to: "/sales?view=new",
       color: "text-emerald-600",
       bg: "bg-emerald-50 dark:bg-emerald-950/40",
       show: hasCapability(capabilities, "sales"),

@@ -49,45 +49,63 @@ BEGIN
 
   -- Step A: Reverse prior sale_items inventory impact and restore stock
   FOR v_old_item IN
-    SELECT product_id, quantity
+    SELECT product_id, quantity, product_name
     FROM public.sale_items
     WHERE sale_id = v_sale.id
   LOOP
+    v_product := NULL;
+
+    -- 1. Match by product_id
     IF v_old_item.product_id IS NOT NULL THEN
       SELECT * INTO v_product
       FROM public.products
-      WHERE id = v_old_item.product_id AND shop_id = v_shop_id
+      WHERE id = v_old_item.product_id AND (shop_id = v_shop_id OR shop_id IS NULL)
       FOR UPDATE;
+    END IF;
 
-      IF FOUND THEN
-        -- Only adjust physical inventory tracking products
-        IF COALESCE(v_product.track_inventory, true) THEN
-          UPDATE public.products
-          SET stock = stock + v_old_item.quantity
-          WHERE id = v_product.id;
+    -- 2. Fallback: match by product_name if product_id is null or not found
+    IF v_product.id IS NULL AND v_old_item.product_name IS NOT NULL THEN
+      SELECT * INTO v_product
+      FROM public.products
+      WHERE LOWER(TRIM(name)) = LOWER(TRIM(v_old_item.product_name))
+        AND (shop_id = v_shop_id OR shop_id IS NULL)
+      ORDER BY created_at DESC
+      LIMIT 1
+      FOR UPDATE;
+    END IF;
 
-          INSERT INTO public.stock_history (
-            product_id,
-            quantity_change,
-            previous_stock,
-            new_stock,
-            change_type,
-            notes,
-            shop_id
-          )
-          VALUES (
-            v_product.id,
-            v_old_item.quantity,
-            v_product.stock,
-            v_product.stock + v_old_item.quantity,
-            'sale_deleted_reversal',
-            'Sale deleted: ' || COALESCE(v_sale.invoice_number, v_sale.id::text),
-            v_shop_id
-          );
+    IF v_product.id IS NOT NULL THEN
+      IF v_product.shop_id IS NULL THEN
+        UPDATE public.products SET shop_id = v_shop_id WHERE id = v_product.id;
+      END IF;
 
-          v_items_restored := v_items_restored + 1;
-          v_qty_restored := v_qty_restored + v_old_item.quantity;
-        END IF;
+      -- Only adjust physical inventory tracking products
+      IF COALESCE(v_product.track_inventory, true) AND COALESCE(v_product.item_type, 'product') <> 'service' THEN
+        UPDATE public.products
+        SET stock = COALESCE(stock, 0) + v_old_item.quantity
+        WHERE id = v_product.id;
+
+        INSERT INTO public.stock_history (
+          product_id,
+          quantity_change,
+          previous_stock,
+          new_stock,
+          change_type,
+          notes,
+          shop_id
+        )
+        VALUES (
+          v_product.id,
+          v_old_item.quantity,
+          COALESCE(v_product.stock, 0),
+          COALESCE(v_product.stock, 0) + v_old_item.quantity,
+          'sale_deleted_reversal',
+          'Sale deleted: ' || COALESCE(v_sale.invoice_number, v_sale.id::text),
+          v_shop_id
+        );
+
+        v_items_restored := v_items_restored + 1;
+        v_qty_restored := v_qty_restored + v_old_item.quantity;
       END IF;
     END IF;
   END LOOP;

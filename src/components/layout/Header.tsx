@@ -183,7 +183,7 @@ export function Header() {
       showPeriod: true,
       action: {
         label: t("quick.newSale"),
-        onClick: () => navigate("/sales"),
+        onClick: () => navigate("/sales?view=new"),
       },
     };
   };

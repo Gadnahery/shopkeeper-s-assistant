@@ -266,7 +266,7 @@ export default function Dashboard() {
   }, [periodSales]);
 
   const stockValueVal = useMemo(
-    () => (allProducts || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0), 0),
+    () => (allProducts || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.selling_price) || 0), 0),
     [allProducts]
   );
 
@@ -513,7 +513,7 @@ export default function Dashboard() {
             </div>
             <Button
               size="sm"
-              onClick={() => navigate("/sales")}
+              onClick={() => navigate("/sales?view=new")}
               className="h-8 rounded-xl bg-neutral-950 px-3 text-xs font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950"
             >
               <Plus className="h-3.5 w-3.5 mr-1 text-accent" />
