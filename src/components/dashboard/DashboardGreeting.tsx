@@ -65,28 +65,28 @@ export function DashboardGreeting({
       : `Performance overview for ${shopName} for the selected period.`;
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
       {/* Greeting & Shop Context */}
       <div className="min-w-0 flex-1">
-        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+        <h1 className="text-lg sm:text-xl font-black tracking-tight text-foreground truncate">
           {greetingText}
         </h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+        <p className="text-[11px] sm:text-xs text-muted-foreground">
           {periodSubtitle}
         </p>
       </div>
 
       {/* Actions: Period Selector + New Sale on the same row */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {/* Period Selector Tabs */}
-        <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-2xs overflow-x-auto">
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-0.5 shadow-2xs overflow-x-auto">
           {(["today", "week", "month", "year", "all"] as Exclude<DashboardPeriod, "custom">[]).map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => onPeriodChange(p)}
               className={cn(
-                "rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap",
+                "rounded-lg px-2 py-1 text-[11px] font-semibold transition-all whitespace-nowrap",
                 period === p
                   ? "bg-primary text-primary-foreground shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -106,7 +106,7 @@ export function DashboardGreeting({
                   setCalendarOpen(true);
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap",
+                  "flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-all whitespace-nowrap",
                   period === "custom"
                     ? "bg-primary text-primary-foreground shadow-2xs"
                     : "text-muted-foreground hover:text-foreground"
@@ -169,7 +169,7 @@ export function DashboardGreeting({
         <Button
           size="sm"
           onClick={() => navigate("/sales?view=new")}
-          className="h-8 sm:h-9 rounded-xl px-3.5 sm:px-4 text-xs font-bold gap-1.5 shadow-2xs bg-primary text-primary-foreground hover:opacity-90 shrink-0 whitespace-nowrap"
+          className="h-7 sm:h-8 rounded-xl px-3 text-xs font-bold gap-1 shadow-2xs bg-primary text-primary-foreground hover:opacity-90 shrink-0 whitespace-nowrap"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>{language === "sw" ? "Uza Sasa" : "New Sale"}</span>

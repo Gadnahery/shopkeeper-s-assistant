@@ -51,23 +51,23 @@ export function TopSellingProducts({
 
     return Array.from(productMap.values())
       .sort((a, b) => b.quantitySold - a.quantitySold || b.totalRevenue - a.totalRevenue)
-      .slice(0, 5);
+      .slice(0, 4);
   }, [periodSales]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+    <div className="rounded-2xl border border-border bg-card p-3 shadow-2xs space-y-2 flex flex-col justify-between h-full">
       {/* Header */}
       <div>
-        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-foreground">
+            <h2 className="text-xs sm:text-sm font-bold text-foreground">
               {language === "sw" ? "Bidhaa Zinazoongoza" : "Top Selling Products"}
             </h2>
           </div>
           <button
             type="button"
             onClick={() => navigate("/inventory")}
-            className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            className="flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:underline"
           >
             <span>{language === "sw" ? "Zote" : "View all"}</span>
             <ArrowRight className="h-3 w-3" />
@@ -76,17 +76,17 @@ export function TopSellingProducts({
 
         {/* Content */}
         {topProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground space-y-2">
-            <Package className="h-8 w-8 text-muted-foreground/40" />
-            <p className="text-xs sm:text-sm font-medium">
+          <div className="flex flex-col items-center justify-center text-center p-4 text-muted-foreground space-y-1.5">
+            <Package className="h-7 w-7 text-muted-foreground/40" />
+            <p className="text-xs font-medium">
               {language === "sw"
-                ? "Hakuna mauzo ya bidhaa katika kipindi hiki."
+                ? "Hakuna mauzo ya bidhaa bado."
                 : "No products sold in this period."}
             </p>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-[10px] text-muted-foreground/70">
               {language === "sw"
-                ? "Mauzo yatakapofanyika, bidhaa bora zitaonekana hapa."
-                : "Recorded sales will rank your top-performing products here."}
+                ? "Bidhaa zikouzwa zitaonekana hapa."
+                : "Top-performing products rank here."}
             </p>
           </div>
         ) : (
@@ -98,12 +98,12 @@ export function TopSellingProducts({
               return (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between py-2.5 sm:py-3 group transition-colors"
+                  className="flex items-center justify-between py-1.5 group transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
                     {/* Rank Badge */}
                     <div
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[11px] font-black ${
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-black ${
                         isTop
                           ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
                           : "bg-muted text-muted-foreground"
@@ -114,10 +114,10 @@ export function TopSellingProducts({
 
                     {/* Product Info */}
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
+                      <p className="text-xs font-semibold text-foreground truncate">
                         {p.name}
                       </p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[10px] text-muted-foreground">
                         {p.quantitySold} {language === "sw" ? "ziliuzwa" : "sold"}
                       </p>
                     </div>
@@ -125,7 +125,7 @@ export function TopSellingProducts({
 
                   {/* Revenue */}
                   <div className="text-right shrink-0">
-                    <p className="text-xs sm:text-sm font-bold text-foreground">
+                    <p className="text-xs font-bold text-foreground">
                       {formatMoney(p.totalRevenue)}
                     </p>
                   </div>
@@ -138,13 +138,13 @@ export function TopSellingProducts({
 
       {/* Footer link if items exist */}
       {topProducts.length > 0 && (
-        <div className="pt-2 border-t border-border/40">
+        <div className="pt-1.5 border-t border-border/40">
           <button
             type="button"
             onClick={() => navigate("/inventory")}
-            className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            className="w-full text-center text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            {language === "sw" ? "Dhibiti Stoki na Bei →" : "Manage Inventory & Pricing →"}
+            {language === "sw" ? "Dhibiti Stoki na Bei →" : "Manage Inventory →"}
           </button>
         </div>
       )}

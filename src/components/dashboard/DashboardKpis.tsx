@@ -24,15 +24,15 @@ interface DashboardKpisProps {
 
 export function DashboardKpiSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs space-y-3">
+        <div key={i} className="rounded-2xl border border-border bg-card p-2.5 sm:p-3 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-8 w-8 rounded-xl" />
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-7 w-7 rounded-lg" />
           </div>
-          <Skeleton className="h-7 sm:h-8 w-36" />
-          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-6 w-28" />
+          <Skeleton className="h-2.5 w-24" />
         </div>
       ))}
     </div>
@@ -121,31 +121,31 @@ export function DashboardKpis({
   const isFullyCollected = totalSales > 0 && creditOutstanding <= 0;
 
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 h-full">
       {/* CARD 1: SALES */}
       <div
         onClick={() => navigate("/sales")}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && navigate("/sales")}
-        className="group relative rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer select-none"
+        className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-2.5 sm:p-3 shadow-2xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer select-none"
       >
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             {getSalesTitle()}
           </span>
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-105 transition-transform">
-            <ShoppingBag className="h-4 w-4" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-105 transition-transform">
+            <ShoppingBag className="h-3.5 w-3.5" />
           </div>
         </div>
 
-        <div className="mt-3">
-          <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
+        <div className="mt-1">
+          <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
             {formatMoney(totalSales)}
           </p>
         </div>
 
-        <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
           <span className="font-medium text-foreground">{ordersLabel}</span>
           {salesGrowthPercent !== null && salesGrowthPercent !== undefined && (
             <>
@@ -156,7 +156,7 @@ export function DashboardKpis({
                   salesGrowthPercent >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                 )}
               >
-                {salesGrowthPercent >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                {salesGrowthPercent >= 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
                 {Math.abs(salesGrowthPercent)}% vs prev
               </span>
             </>
@@ -170,32 +170,32 @@ export function DashboardKpis({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && navigate("/reports")}
-        className="group relative rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer select-none"
+        className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-2.5 sm:p-3 shadow-2xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer select-none"
       >
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             {getProfitTitle()}
           </span>
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-            <TrendingUp className="h-4 w-4" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
+            <TrendingUp className="h-3.5 w-3.5" />
           </div>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-1">
           {isCostDataMissing ? (
             <div className="space-y-0.5">
-              <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
+              <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
                 {formatMoney(netProfit)}
               </p>
-              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                <HelpCircle className="h-3 w-3" />
+              <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                <HelpCircle className="h-2.5 w-2.5" />
                 <span>{language === "sw" ? "Gharama haijajazwa" : "Estimated (Cost data missing)"}</span>
               </div>
             </div>
           ) : (
             <p
               className={cn(
-                "text-2xl sm:text-3xl font-black tracking-tight truncate",
+                "text-xl sm:text-2xl font-black tracking-tight truncate",
                 netProfit >= 0 ? "text-foreground" : "text-rose-600 dark:text-rose-400"
               )}
             >
@@ -204,7 +204,7 @@ export function DashboardKpis({
           )}
         </div>
 
-        <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
           {totalSales > 0 ? (
             <>
               <span className={cn("font-semibold", netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
@@ -214,7 +214,7 @@ export function DashboardKpis({
               <span>{language === "sw" ? "Baada ya gharama" : "After expenses"}</span>
             </>
           ) : (
-            <span>{language === "sw" ? "Hakuna mauzo bado" : "No sales recorded yet"}</span>
+            <span>{language === "sw" ? "Hakuna mauzo bado" : "No sales yet"}</span>
           )}
         </div>
       </div>
@@ -225,31 +225,31 @@ export function DashboardKpis({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && navigate("/sales")}
-        className="group relative rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer select-none"
+        className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-2.5 sm:p-3 shadow-2xs hover:border-primary/40 hover:shadow-xs transition-all cursor-pointer select-none"
       >
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             {getCashTitle()}
           </span>
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 group-hover:scale-105 transition-transform">
-            <Banknote className="h-4 w-4" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 group-hover:scale-105 transition-transform">
+            <Banknote className="h-3.5 w-3.5" />
           </div>
         </div>
 
-        <div className="mt-3">
-          <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
+        <div className="mt-1">
+          <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
             {formatMoney(cashReceived)}
           </p>
         </div>
 
-        <div className="mt-2 flex items-center gap-1.5 text-xs truncate">
+        <div className="mt-1 flex items-center gap-1.5 text-[11px] truncate">
           {totalSales > 0 ? (
             isFullyCollected ? (
               <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                 ✓ {language === "sw" ? "Imelipwa yote kikamilifu" : "Fully collected"}
               </span>
             ) : (
-              <span className="font-semibold text-amber-600 dark:text-amber-400">
+              <span className="font-semibold text-amber-600 dark:text-amber-400 truncate">
                 {formatMoney(creditOutstanding)} {language === "sw" ? "madeni / haijalipwa" : "outstanding on credit"}
               </span>
             )

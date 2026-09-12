@@ -214,4 +214,48 @@ describe("WiseCash Dashboard Redesign Verification", () => {
     expect(screen.getByText("INV-001041")).toBeInTheDocument();
     expect(screen.getByText("+TZS 25,000")).toBeInTheDocument();
   });
+
+  it("renders compact NeedsAttention beside KPI cards in zero-scroll desktop layout", () => {
+    render(
+      <MemoryRouter>
+        <NeedsAttention
+          language="en"
+          formatMoney={mockFormatMoney}
+          outOfStockCount={3}
+          lowStockCount={2}
+          customerDebtTotal={150000}
+          debtorsCount={2}
+          pendingOrdersCount={0}
+          pendingPurchasesCount={0}
+          compact={true}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Needs Attention")).toBeInTheDocument();
+    expect(screen.getByText(/3 products are out of stock/i)).toBeInTheDocument();
+    expect(screen.getByText("View inventory")).toBeInTheDocument();
+  });
+
+  it("renders compact NeedsAttention healthy state when no exceptions exist", () => {
+    render(
+      <MemoryRouter>
+        <NeedsAttention
+          language="en"
+          formatMoney={mockFormatMoney}
+          outOfStockCount={0}
+          lowStockCount={0}
+          customerDebtTotal={0}
+          debtorsCount={0}
+          pendingOrdersCount={0}
+          pendingPurchasesCount={0}
+          compact={true}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Attention")).toBeInTheDocument();
+    expect(screen.getByText("All systems healthy")).toBeInTheDocument();
+    expect(screen.getByText("✓ 0 pending exceptions")).toBeInTheDocument();
+  });
 });

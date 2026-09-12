@@ -195,14 +195,14 @@ export function SalesPerformanceChart({
   const hasData = totalCurrentMetric > 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs space-y-4">
+    <div className="rounded-2xl border border-border bg-card p-3 shadow-2xs space-y-2.5 flex flex-col justify-between h-full">
       {/* Chart Header & Metric Switcher */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-3.5">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-2">
         <div>
-          <h2 className="text-sm font-bold text-foreground">
+          <h2 className="text-xs sm:text-sm font-bold text-foreground">
             {language === "sw" ? "Mwenendo wa Mauzo" : "Sales Performance"}
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[11px] text-muted-foreground">
             {metricConfig.label}:{" "}
             <span className="font-bold text-foreground">
               {metric === "orders" ? `${totalCurrentMetric} orders` : formatMoney(totalCurrentMetric)}
@@ -211,14 +211,14 @@ export function SalesPerformanceChart({
         </div>
 
         {/* Metric Switcher Tabs */}
-        <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 self-start sm:self-auto">
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-0.5 self-start sm:self-auto">
           {(["sales", "profit", "orders"] as ChartMetric[]).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMetric(m)}
               className={cn(
-                "rounded-lg px-2.5 py-1 text-xs font-semibold capitalize transition-all",
+                "rounded-lg px-2 py-0.5 text-[11px] font-semibold capitalize transition-all",
                 metric === m
                   ? "bg-card text-foreground shadow-2xs font-bold"
                   : "text-muted-foreground hover:text-foreground"
@@ -241,16 +241,16 @@ export function SalesPerformanceChart({
       </div>
 
       {/* Chart Canvas */}
-      <div className="h-60 sm:h-72 w-full">
+      <div className="h-44 sm:h-48 w-full">
         {!hasData ? (
-          <div className="flex h-full flex-col items-center justify-center text-center p-6 text-muted-foreground space-y-2">
-            <metricConfig.icon className="h-8 w-8 text-muted-foreground/40" />
-            <p className="text-xs sm:text-sm font-medium">
+          <div className="flex h-full flex-col items-center justify-center text-center p-4 text-muted-foreground space-y-1.5">
+            <metricConfig.icon className="h-7 w-7 text-muted-foreground/40" />
+            <p className="text-xs font-medium">
               {language === "sw"
                 ? "Hakuna takwimu za mwenendo kwa kipindi hiki bado."
                 : "No performance data recorded for this period yet."}
             </p>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-[10px] text-muted-foreground/70">
               {language === "sw"
                 ? "Kamilisha mauzo ili kuona grafu ya mwenendo hapa."
                 : "Complete transactions to see your performance visualized here."}
@@ -258,7 +258,7 @@ export function SalesPerformanceChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: -15 }}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -15 }}>
               <defs>
                 <linearGradient id={`gradient-${metric}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={metricConfig.stroke} stopOpacity={0.25} />
