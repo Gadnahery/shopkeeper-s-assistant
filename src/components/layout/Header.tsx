@@ -64,13 +64,7 @@ export function Header() {
         title: t("nav.purchases"),
         breadcrumb: t("nav.purchases"),
         showPeriod: true,
-        action: {
-          label: t("purchases.newPurchase"),
-          onClick: () => {
-            window.dispatchEvent(new CustomEvent("open-new-purchase"));
-            if (location.pathname !== "/purchases") navigate("/purchases?new=true");
-          },
-        },
+        action: null,
       };
     }
     if (path.startsWith("/production")) {
@@ -78,13 +72,7 @@ export function Header() {
         title: t("nav.production"),
         breadcrumb: t("nav.production"),
         showPeriod: true,
-        action: {
-          label: t("production.newRun"),
-          onClick: () => {
-            window.dispatchEvent(new CustomEvent("open-new-production"));
-            if (location.pathname !== "/production") navigate("/production?new=true");
-          },
-        },
+        action: null,
       };
     }
     if (path.startsWith("/sales")) {
@@ -100,13 +88,7 @@ export function Header() {
         title: language === "sw" ? "Maagizo" : "Orders",
         breadcrumb: language === "sw" ? "Maagizo" : "Orders",
         showPeriod: true,
-        action: {
-          label: language === "sw" ? "+ Ongeza Agizo" : "+ Add Order",
-          onClick: () => {
-            window.dispatchEvent(new CustomEvent("open-new-order"));
-            if (location.pathname !== "/orders") navigate("/orders?new=true");
-          },
-        },
+        action: null,
       };
     }
     if (path.startsWith("/inventory")) {
@@ -114,16 +96,7 @@ export function Header() {
         title: t("nav.inventory"),
         breadcrumb: t("nav.inventory"),
         showPeriod: false,
-        action: {
-          label: `+ ${t("inventory.addProduct")}`,
-          onClick: () => {
-            if (location.pathname === "/inventory") {
-              navigate("/inventory?new=true");
-            } else {
-              navigate("/inventory?new=true");
-            }
-          },
-        },
+        action: null,
       };
     }
     if (path.startsWith("/customers")) {
