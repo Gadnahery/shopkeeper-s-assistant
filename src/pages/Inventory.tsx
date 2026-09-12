@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Download,
+  Filter,
   FolderTree,
   Loader2,
   Package,
@@ -137,7 +138,7 @@ export default function Inventory() {
       const tracksInventory = p.track_inventory !== false && p.item_type !== "service";
       const matchesStock =
         stockFilter === "all" ||
-        (stockFilter === "in-stock" && (!tracksInventory || p.stock > alertLimit)) ||
+        (stockFilter === "in-stock" && tracksInventory && p.stock > alertLimit) ||
         (stockFilter === "low" && tracksInventory && p.stock > 0 && p.stock <= alertLimit) ||
         (stockFilter === "out" && tracksInventory && p.stock <= 0);
 
@@ -163,6 +164,10 @@ export default function Inventory() {
 
   const totalStockValue = useMemo(() => {
     return (products || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.selling_price) || 0), 0);
+  }, [products]);
+
+  const inStockCount = useMemo(() => {
+    return (products || []).filter((p) => p.track_inventory !== false && p.stock > (p.low_stock_alert ?? 5)).length;
   }, [products]);
 
   const lowStockCount = useMemo(() => {
@@ -756,7 +761,13 @@ export default function Inventory() {
     <div className="space-y-6 pb-12">
       {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
-        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card
+          onClick={() => setStockFilter("all")}
+          className={cn(
+            "border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm cursor-pointer select-none",
+            stockFilter === "all" ? "ring-2 ring-blue-500/40 border-blue-500/50" : "hover:border-border/80"
+          )}
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{t("inventory.totalStockValue")}</span>
             <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex-shrink-0">
@@ -769,7 +780,13 @@ export default function Inventory() {
           </div>
         </Card>
 
-        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card
+          onClick={() => setStockFilter((prev) => (prev === "in-stock" ? "all" : "in-stock"))}
+          className={cn(
+            "border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm cursor-pointer select-none",
+            stockFilter === "in-stock" ? "ring-2 ring-emerald-500 border-emerald-500/60 bg-emerald-500/5" : "hover:border-emerald-500/30"
+          )}
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zenye Stoki" : "In Stock"}</span>
             <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
@@ -778,13 +795,19 @@ export default function Inventory() {
           </div>
           <div className="mt-2 sm:mt-3">
             <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground">
-              {(products?.length || 0) - lowStockCount - outOfStockCount}
+              {inStockCount}
             </p>
             <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{language === "sw" ? "Kiwango safi" : "Healthy levels"}</p>
           </div>
         </Card>
 
-        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card
+          onClick={() => setStockFilter((prev) => (prev === "low" ? "all" : "low"))}
+          className={cn(
+            "border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm cursor-pointer select-none",
+            stockFilter === "low" ? "ring-2 ring-amber-500 border-amber-500/60 bg-amber-500/5" : "hover:border-amber-500/30"
+          )}
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Stoki Ndogo" : "Low Stock"}</span>
             <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex-shrink-0">
@@ -797,7 +820,13 @@ export default function Inventory() {
           </div>
         </Card>
 
-        <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
+        <Card
+          onClick={() => setStockFilter((prev) => (prev === "out" ? "all" : "out"))}
+          className={cn(
+            "border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm cursor-pointer select-none",
+            stockFilter === "out" ? "ring-2 ring-rose-500 border-rose-500/60 bg-rose-500/5" : "hover:border-rose-500/30"
+          )}
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zimeisha" : "Out of Stock"}</span>
             <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex-shrink-0">
@@ -852,6 +881,38 @@ export default function Inventory() {
                     <SelectItem value="service">{language === "sw" ? "Huduma Pekee" : "Services Only"}</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Stock Level Filter Prompt */}
+                <Select value={stockFilter} onValueChange={(v: any) => setStockFilter(v)}>
+                  <SelectTrigger
+                    className={cn(
+                      "h-9 w-36 rounded-xl border-border bg-background text-xs gap-1.5",
+                      stockFilter !== "all" && "border-primary/60 bg-primary/10 text-primary font-semibold"
+                    )}
+                  >
+                    <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder={language === "sw" ? "Chuja Stoki" : "Filter Stock"} />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
+                    <SelectItem value="all">{language === "sw" ? "Stoki Zote" : "All Stock"}</SelectItem>
+                    <SelectItem value="in-stock">{language === "sw" ? "Kiwango Safi" : "Healthy Levels"}</SelectItem>
+                    <SelectItem value="low">{language === "sw" ? "Stoki Ndogo" : "Low Stock"}</SelectItem>
+                    <SelectItem value="out">{language === "sw" ? "Zimeisha" : "Out of Stock"}</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {stockFilter !== "all" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStockFilter("all")}
+                    className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground rounded-xl"
+                    title={language === "sw" ? "Ondoa kichujio" : "Clear stock filter"}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    <span className="hidden sm:inline">{language === "sw" ? "Weka upya" : "Clear"}</span>
+                  </Button>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

@@ -176,6 +176,71 @@ export function Header() {
       };
     }
 
+    if (path.startsWith("/suppliers")) {
+      return {
+        title: language === "sw" ? "Wasambazaji" : "Suppliers",
+        breadcrumb: language === "sw" ? "Wasambazaji" : "Suppliers",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/recycle-bin")) {
+      return {
+        title: language === "sw" ? "Jalala" : "Recycle Bin",
+        breadcrumb: language === "sw" ? "Jalala" : "Recycle Bin",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/assets")) {
+      return {
+        title: language === "sw" ? "Rasilimali" : "Assets",
+        breadcrumb: language === "sw" ? "Rasilimali" : "Assets",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/categories")) {
+      return {
+        title: language === "sw" ? "Makundi" : "Categories",
+        breadcrumb: language === "sw" ? "Makundi" : "Categories",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/loyalty")) {
+      return {
+        title: language === "sw" ? "Uaminifu" : "Loyalty",
+        breadcrumb: language === "sw" ? "Uaminifu" : "Loyalty",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/notifications")) {
+      return {
+        title: language === "sw" ? "Taarifa" : "Notifications",
+        breadcrumb: language === "sw" ? "Taarifa" : "Notifications",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/todo")) {
+      return {
+        title: language === "sw" ? "Mambo ya Kufanya" : "Todo",
+        breadcrumb: language === "sw" ? "Mambo ya Kufanya" : "Todo",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/appointments")) {
+      return {
+        title: language === "sw" ? "Miadi" : "Appointments",
+        breadcrumb: language === "sw" ? "Miadi" : "Appointments",
+        showPeriod: false,
+        action: null,
+      };
+    }
+
     // Default: Overview
     return {
       title: t("nav.overview"),
