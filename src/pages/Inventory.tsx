@@ -52,6 +52,22 @@ import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
+const INITIAL_NEW_PRODUCT = {
+  item_type: "product" as "product" | "service",
+  name: "",
+  name_sw: "",
+  code: "",
+  category_id: "none",
+  buying_price: "",
+  selling_price: "",
+  stock: "0",
+  low_stock_alert: "5",
+  duration_minutes: "",
+  description: "",
+};
+
+const DRAFT_KEY = "wisecash_inventory_product_draft";
+
 export default function Inventory() {
   const { t, language } = useLanguage();
   const { formatMoney, formatNumber } = useShopFormatting();
@@ -65,27 +81,31 @@ export default function Inventory() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mobileProductPage, setMobileProductPage] = useState(1);
 
-  // Inline Master-Detail Panel State (NO POPUPS)
-  const [isAddingProduct, setIsAddingProduct] = useState(searchParams.get("new") === "true");
+  // Check if there is an unsaved draft from a previous session
+  const initialDraft = useMemo(() => {
+    try {
+      const saved = sessionStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.name?.trim() || (parsed.buying_price && parsed.buying_price !== "0") || (parsed.selling_price && parsed.selling_price !== "0"))) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  }, []);
+
+  // Inline Master-Detail Panel State: closed by default unless deep-linked or unsaved draft
+  const [isAddingProduct, setIsAddingProduct] = useState(
+    searchParams.get("new") === "true" || Boolean(initialDraft)
+  );
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showBarcodePreview, setShowBarcodePreview] = useState(false);
   const [barcodeType, setBarcodeType] = useState<"barcode" | "qr">("barcode");
 
   // New Product / Service Form
-  const [newProduct, setNewProduct] = useState({
-    item_type: "product" as "product" | "service",
-    name: "",
-    name_sw: "",
-    code: "",
-    category_id: "none",
-    buying_price: "",
-    selling_price: "",
-    stock: "0",
-    low_stock_alert: "5",
-    duration_minutes: "",
-    description: "",
-  });
+  const [newProduct, setNewProduct] = useState(initialDraft || INITIAL_NEW_PRODUCT);
 
   // Edit Product Form State
   const [editForm, setEditForm] = useState<any>(null);
@@ -111,17 +131,24 @@ export default function Inventory() {
     if (searchParams.get("new") === "true") {
       setIsAddingProduct(true);
       setSelectedProduct(null);
+      setEditForm(null);
     }
   }, [searchParams]);
 
-  // Auto-select first product if none selected
+  // Persist unsaved draft when user modifies new product form
   useEffect(() => {
-    if (products && products.length > 0 && !selectedProduct && !isAddingProduct) {
-      const first = products[0];
-      setSelectedProduct(first);
-      setEditForm({ ...first, category_id: first.category_id || "none" });
+    if (isAddingProduct) {
+      if (newProduct.name.trim() || (newProduct.buying_price && newProduct.buying_price !== "0") || (newProduct.selling_price && newProduct.selling_price !== "0")) {
+        try {
+          sessionStorage.setItem(DRAFT_KEY, JSON.stringify(newProduct));
+        } catch {}
+      } else {
+        try {
+          sessionStorage.removeItem(DRAFT_KEY);
+        } catch {}
+      }
     }
-  }, [products]);
+  }, [newProduct, isAddingProduct]);
 
   const categoryMap = new Map((categories || []).map((c) => [c.id, c.name]));
 
@@ -214,6 +241,15 @@ export default function Inventory() {
     if (isMobile) setMobileDrawerOpen(true);
   };
 
+  const handleCancelAddProduct = () => {
+    setIsAddingProduct(false);
+    setMobileDrawerOpen(false);
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+    } catch {}
+    setNewProduct(INITIAL_NEW_PRODUCT);
+  };
+
   const handleCreateProduct = async () => {
     if (!newProduct.name.trim()) {
       toast.error(language === "sw" ? "Jaza jina la bidhaa au huduma" : "Fill in item name");
@@ -230,7 +266,7 @@ export default function Inventory() {
 
       if (!shopId) throw new Error("No shop found");
 
-      const created = await createProduct.mutateAsync({
+      await createProduct.mutateAsync({
         shop_id: shopId,
         code: codeVal,
         name: newProduct.name.trim(),
@@ -250,20 +286,12 @@ export default function Inventory() {
       toast.success(isService ? (language === "sw" ? "Huduma imeongezwa" : "Service added successfully") : (language === "sw" ? "Bidhaa imeongezwa stoo" : "Product added to inventory"));
       setIsAddingProduct(false);
       setMobileDrawerOpen(false);
-      setNewProduct({
-        item_type: "product",
-        name: "",
-        name_sw: "",
-        code: "",
-        category_id: "none",
-        buying_price: "",
-        selling_price: "",
-        stock: "0",
-        low_stock_alert: "5",
-        duration_minutes: "",
-        description: "",
-      });
-      if (created) handleSelectProduct(created);
+      try {
+        sessionStorage.removeItem(DRAFT_KEY);
+      } catch {}
+      setNewProduct(INITIAL_NEW_PRODUCT);
+      setSelectedProduct(null);
+      setEditForm(null);
     } catch (err: any) {
       toast.error(err?.message || "Failed to add item");
     }
@@ -336,10 +364,7 @@ export default function Inventory() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              setIsAddingProduct(false);
-              setMobileDrawerOpen(false);
-            }}
+            onClick={handleCancelAddProduct}
             className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -347,6 +372,18 @@ export default function Inventory() {
         </CardHeader>
 
         <CardContent className="p-4 space-y-3.5">
+          {initialDraft && (
+            <div className="flex items-center justify-between rounded-xl bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400">
+              <span>{language === "sw" ? "Rasimu isiyohifadhiwa imerejeshwa" : "Restored unsaved draft"}</span>
+              <button
+                type="button"
+                onClick={handleCancelAddProduct}
+                className="font-bold underline hover:opacity-80"
+              >
+                {language === "sw" ? "Futa rasimu" : "Discard"}
+              </button>
+            </div>
+          )}
           {/* Item Type Switcher: Physical Product vs Service */}
           <div className="grid grid-cols-2 gap-1.5 p-1 bg-muted/60 rounded-xl">
             <button
@@ -502,10 +539,7 @@ export default function Inventory() {
           <div className="flex gap-2 pt-2">
             <Button
               variant="outline"
-              onClick={() => {
-                setIsAddingProduct(false);
-                setMobileDrawerOpen(false);
-              }}
+              onClick={handleCancelAddProduct}
               className="h-9 rounded-xl text-xs flex-1"
             >
               {t("common.cancel")}
