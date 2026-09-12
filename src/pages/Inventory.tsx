@@ -162,7 +162,7 @@ export default function Inventory() {
   }, [searchTerm, categoryFilter, stockFilter, itemTypeFilter]);
 
   const totalStockValue = useMemo(() => {
-    return (products || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.buying_price) || 0), 0);
+    return (products || []).reduce((sum, p) => sum + (Number(p.stock) || 0) * (Number(p.selling_price) || 0), 0);
   }, [products]);
 
   const lowStockCount = useMemo(() => {

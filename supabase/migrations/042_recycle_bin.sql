@@ -457,6 +457,7 @@ BEGIN
       'buying_price', v_product.buying_price,
       'stock', v_product.stock,
       'category_id', v_product.category_id,
+      'code', v_product.code,
       'barcode', v_product.barcode,
       'sku', v_product.sku,
       'item_type', v_product.item_type
@@ -894,7 +895,9 @@ BEGIN
     INSERT INTO public.products (
       id,
       shop_id,
+      code,
       name,
+      name_sw,
       description,
       selling_price,
       buying_price,
@@ -911,7 +914,14 @@ BEGIN
     VALUES (
       (v_product_data->>'id')::UUID,
       v_shop_id,
+      COALESCE(
+        NULLIF(v_product_data->>'code', ''),
+        NULLIF(v_product_data->>'barcode', ''),
+        NULLIF(v_product_data->>'sku', ''),
+        'PRD-' || UPPER(SUBSTRING(gen_random_uuid()::text, 1, 8))
+      ),
       v_product_data->>'name',
+      v_product_data->>'name_sw',
       v_product_data->>'description',
       COALESCE((v_product_data->>'selling_price')::NUMERIC, 0),
       COALESCE((v_product_data->>'buying_price')::NUMERIC, 0),
@@ -927,7 +937,9 @@ BEGIN
     )
     ON CONFLICT (id) DO UPDATE
     SET
+      code = EXCLUDED.code,
       name = EXCLUDED.name,
+      name_sw = EXCLUDED.name_sw,
       selling_price = EXCLUDED.selling_price,
       buying_price = EXCLUDED.buying_price,
       stock = EXCLUDED.stock,
