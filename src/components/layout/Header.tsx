@@ -180,11 +180,8 @@ export function Header() {
     return {
       title: t("nav.overview"),
       breadcrumb: t("nav.overview"),
-      showPeriod: true,
-      action: {
-        label: t("quick.newSale"),
-        onClick: () => navigate("/sales?view=new"),
-      },
+      showPeriod: false,
+      action: null,
     };
   };
 

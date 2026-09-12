@@ -759,8 +759,8 @@ export default function Inventory() {
         <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{t("inventory.totalStockValue")}</span>
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
-              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex-shrink-0">
+              <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
@@ -772,8 +772,8 @@ export default function Inventory() {
         <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zenye Stoki" : "In Stock"}</span>
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
-              <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+              <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
@@ -787,8 +787,8 @@ export default function Inventory() {
         <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Stoki Ndogo" : "Low Stock"}</span>
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
-              <AlertTriangle className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", lowStockCount > 0 ? "text-[var(--warning-text)]" : "text-muted-foreground")} />
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex-shrink-0">
+              <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 dark:text-amber-400" />
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
@@ -800,8 +800,8 @@ export default function Inventory() {
         <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{language === "sw" ? "Zimeisha" : "Out of Stock"}</span>
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-muted text-foreground flex-shrink-0">
-              <XCircle className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", outOfStockCount > 0 ? "text-[var(--danger-text)]" : "text-muted-foreground")} />
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex-shrink-0">
+              <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600 dark:text-rose-400" />
             </div>
           </div>
           <div className="mt-2 sm:mt-3">

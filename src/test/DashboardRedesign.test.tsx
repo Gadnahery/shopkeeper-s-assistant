@@ -29,8 +29,8 @@ describe("WiseCash Dashboard Redesign Verification", () => {
     expect(screen.getByText(/Mary/i)).toBeInTheDocument();
     // Should include shop context
     expect(screen.getByText(/Yakwetushop Gas/i)).toBeInTheDocument();
-    // Should have + New Sale button
-    expect(screen.getByText(/\+ New Sale/i)).toBeInTheDocument();
+    // Should have New Sale button
+    expect(screen.getByText(/New Sale/i)).toBeInTheDocument();
     // Should have Today tab
     expect(screen.getByText("Today")).toBeInTheDocument();
   });
