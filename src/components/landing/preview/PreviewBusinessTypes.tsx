@@ -1,7 +1,7 @@
 import { Store, Building2, Wrench, Scissors, Factory, ShoppingBag } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export function BusinessTypes() {
+export function PreviewBusinessTypes() {
   const { language } = useLanguage();
   const isSw = language === "sw";
 
@@ -54,7 +54,7 @@ export function BusinessTypes() {
     <section id="businesses" className="py-20 sm:py-24 bg-background border-b border-border/70 scroll-mt-12">
       <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
         <div className="text-center max-w-2xl mx-auto space-y-4 mb-12">
-          <span className="inline-block rounded-full border border-border bg-muted/60 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <span className="inline-block rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {isSw ? "Inafaa Biashara Yako" : "Built for Growing Businesses"}
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">

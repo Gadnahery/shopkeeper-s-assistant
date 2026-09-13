@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export function FAQ() {
+export function PreviewFAQ() {
   const { language } = useLanguage();
   const isSw = language === "sw";
 
@@ -52,7 +52,7 @@ export function FAQ() {
     <section id="faq" className="py-20 sm:py-24 bg-background border-b border-border/70 scroll-mt-12">
       <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
         <div className="text-center space-y-4 mb-12">
-          <span className="inline-block rounded-full border border-border bg-muted/60 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <span className="inline-block rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {isSw ? "Maswali ya Mara kwa Mara" : "Frequently Asked Questions"}
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
@@ -73,10 +73,10 @@ export function FAQ() {
               value={item.id}
               className="rounded-2xl border border-border/70 bg-card px-5 shadow-xs transition-colors data-[state=open]:border-primary/50"
             >
-              <AccordionTrigger className="text-left text-sm sm:text-base font-bold text-foreground py-4.5 hover:no-underline">
+              <AccordionTrigger className="text-left text-sm sm:text-base font-bold text-foreground py-4 hover:no-underline">
                 {isSw ? item.swQ : item.enQ}
               </AccordionTrigger>
-              <AccordionContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed pb-4.5">
+              <AccordionContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed pb-4">
                 {isSw ? item.swA : item.enA}
               </AccordionContent>
             </AccordionItem>

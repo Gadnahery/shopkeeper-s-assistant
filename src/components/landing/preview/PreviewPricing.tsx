@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export function Pricing() {
+export function PreviewPricing() {
   const { language } = useLanguage();
   const isSw = language === "sw";
 
@@ -22,7 +22,7 @@ export function Pricing() {
     <section id="pricing" className="py-20 sm:py-24 bg-muted/20 border-b border-border/70 scroll-mt-12">
       <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
         <div className="text-center max-w-2xl mx-auto space-y-4 mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
             <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>{isSw ? "Siku 14 za Bure Zimejumuishwa" : "14-Day Free Trial Included"}</span>
           </div>
@@ -85,7 +85,7 @@ export function Pricing() {
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {isSw ? "Kilichojumuishwa:" : "What's Included:"}
             </p>
-            <ul className="space-y-2.5 text-xs">
+            <ul className="space-y-2 text-xs">
               {features.map((f, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-foreground/90">
                   <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5">
@@ -97,16 +97,16 @@ export function Pricing() {
             </ul>
           </div>
 
-          {/* Enlarged & Immersed CTA Button */}
+          {/* CTA Button */}
           <div className="mt-8">
             <Button
               asChild
               size="lg"
-              className="w-full h-13 sm:h-14 rounded-2xl bg-primary text-sm sm:text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full h-12 rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90"
             >
-              <Link to="/signup" className="flex items-center justify-center gap-2.5">
+              <Link to="/signup" className="flex items-center justify-center gap-2">
                 <span>{isSw ? "Anza Majaribio ya Siku 14 Bure" : "Start 14-Day Free Trial"}</span>
-                <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <p className="text-center text-[11px] text-muted-foreground mt-2.5">

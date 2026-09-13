@@ -24,6 +24,7 @@ import { PlatformAdminRoute } from "./components/PlatformAdminRoute";
 
 const Auth = lazy(() => import("./pages/Auth"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
+const LandingPreview = lazy(() => import("./pages/LandingPreview"));
 const FeaturesPage = lazy(() => import("./pages/FeaturesPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
@@ -120,6 +121,8 @@ const App = () => (
                       <Suspense fallback={<AppLoader />}>
                         <Routes>
                           <Route path="/" element={<LandingPage />} />
+                          <Route path="/preview/landing" element={<LandingPreview />} />
+                          <Route path="/landing-preview" element={<Navigate to="/preview/landing" replace />} />
                           <Route path="/features" element={<FeaturesPage />} />
                           <Route path="/pricing" element={<PricingPage />} />
                           <Route path="/about" element={<AboutPage />} />

@@ -6,33 +6,37 @@ import {
   TrendingUp,
   Coins,
   Wallet,
+  Smartphone,
+  ShieldCheck,
   Zap,
   Lock,
   Plus,
+  Circle,
+  BarChart2,
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { BrandGlyph } from "@/components/brand/BrandLogo";
 
-export function Hero() {
+export function PreviewHero() {
   const { language } = useLanguage();
   const isSw = language === "sw";
 
   return (
     <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24 border-b border-border/70 bg-gradient-to-b from-background via-background to-muted/20">
-      {/* Subtle ambient lighting */}
+      {/* Subtle radial ambient lighting */}
       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[360px] bg-primary/8 blur-[130px] rounded-full pointer-events-none" />
 
       <div className="container relative mx-auto px-4 sm:px-6 max-w-6xl">
-        {/* Main Hero Header (Centered, Punchy, Product-Led) */}
+        {/* Main Hero Header (Centered, Punchy, High Impact) */}
         <div className="text-center max-w-3xl mx-auto space-y-6">
           {/* Announcement Pill */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs"
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs"
           >
             <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>
@@ -78,29 +82,28 @@ export function Hero() {
               : "Run your sales, stock, customer credit and finances from one simple business system — works on any phone or laptop, even offline."}
           </motion.p>
 
-          {/* CTA Group with ENLARGED, IMMERSED BUTTONS */}
+          {/* CTA Group */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2"
           >
             <Button
               asChild
               size="lg"
-              className="h-13 sm:h-14 w-full sm:w-auto rounded-2xl bg-primary px-8 sm:px-10 text-sm sm:text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="h-12 w-full sm:w-auto rounded-xl bg-primary px-8 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition-transform active:scale-[0.98]"
             >
-              <Link to="/signup" className="flex items-center justify-center gap-2.5">
+              <Link to="/signup" className="flex items-center justify-center gap-2">
                 <span>{isSw ? "Anza Siku 14 Bure" : "Start 14-Day Free Trial"}</span>
-                <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-
             <Button
               asChild
               variant="outline"
               size="lg"
-              className="h-13 sm:h-14 w-full sm:w-auto rounded-2xl border-border/80 bg-card px-7 sm:px-8 text-sm sm:text-base font-semibold text-foreground hover:bg-muted transition-all"
+              className="h-12 w-full sm:w-auto rounded-xl border-border bg-card px-7 text-sm font-semibold text-foreground hover:bg-muted"
             >
               <a href="#showcase" className="flex items-center justify-center gap-2">
                 <span>{isSw ? "Tazama Jinsi Inavyofanya Kazi" : "See How It Works"}</span>
@@ -121,7 +124,7 @@ export function Hero() {
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span>{isSw ? "Inafanya kazi bila intaneti" : "Works 100% offline (PWA)"}</span>
+              <span>{isSw ? "Inafanya kazi bila intaneti" : "Works 100% offline"}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
@@ -130,19 +133,19 @@ export function Hero() {
           </motion.div>
         </div>
 
-        {/* HERO PRODUCT VISUAL: Real WiseCash Desktop Browser Mockup */}
+        {/* HERO PRODUCT VISUAL: Real WiseCash UI Desktop Browser Mockup */}
         <motion.div
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
           className="relative mt-12 sm:mt-16 mx-auto max-w-5xl"
         >
-          {/* Ambient Shadow Glow behind Browser */}
+          {/* Subtle Ambient Shadow Glow behind Browser */}
           <div className="absolute -inset-1.5 bg-gradient-to-r from-primary/20 via-emerald-500/15 to-primary/20 rounded-3xl blur-2xl opacity-60 pointer-events-none" />
 
           {/* Browser Container */}
           <div className="relative rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-2xl overflow-hidden backdrop-blur-xs">
-            {/* Browser Header Bar */}
+            {/* Browser Header Chrome Bar */}
             <div className="flex items-center justify-between border-b border-border/80 bg-muted/60 px-4 py-3 sm:px-6 sm:py-3.5">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-rose-500/80" />
@@ -168,9 +171,9 @@ export function Hero() {
               </div>
             </div>
 
-            {/* Browser Content: Real WiseCash Dashboard UI */}
+            {/* Browser Content: High-Fidelity WiseCash Dashboard */}
             <div className="p-4 sm:p-6 space-y-4 bg-background">
-              {/* Dashboard Greeting Bar */}
+              {/* Dashboard Greeting & Header Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -186,7 +189,7 @@ export function Hero() {
                   </div>
                 </div>
 
-                {/* Period Filters & New Sale Action */}
+                {/* Filters and New Sale Action */}
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
                     <span className="rounded-md bg-card px-2.5 py-1 text-foreground shadow-xs">
@@ -246,7 +249,7 @@ export function Hero() {
 
               {/* Lower Section: Chart & Recent Sales Stream */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pt-1">
-                {/* Sales Chart Mockup */}
+                {/* Sales Chart Mockup (7 cols) */}
                 <div className="lg:col-span-7 rounded-2xl border border-border/70 bg-card p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -262,20 +265,24 @@ export function Hero() {
                     </span>
                   </div>
 
+                  {/* SVG Line Chart Graphic */}
                   <div className="h-28 sm:h-32 w-full pt-2">
                     <svg className="h-full w-full overflow-visible" viewBox="0 0 400 100" preserveAspectRatio="none">
                       <defs>
-                        <linearGradient id="liveHeroGradient" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="heroGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
                           <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.0" />
                         </linearGradient>
                       </defs>
+                      {/* Grid Lines */}
                       <line x1="0" y1="25" x2="400" y2="25" stroke="currentColor" strokeOpacity="0.08" />
                       <line x1="0" y1="65" x2="400" y2="65" stroke="currentColor" strokeOpacity="0.08" />
+                      {/* Area Fill */}
                       <path
                         d="M0,80 Q60,35 120,60 T240,30 T320,45 T400,15 L400,100 L0,100 Z"
-                        fill="url(#liveHeroGradient)"
+                        fill="url(#heroGradient)"
                       />
+                      {/* Line Stroke */}
                       <path
                         d="M0,80 Q60,35 120,60 T240,30 T320,45 T400,15"
                         fill="none"
@@ -283,11 +290,13 @@ export function Hero() {
                         strokeWidth="3"
                         strokeLinecap="round"
                       />
+                      {/* Highlight Peak Dot */}
                       <circle cx="400" cy="15" r="4.5" fill="hsl(var(--primary))" />
                       <circle cx="400" cy="15" r="7" fill="hsl(var(--primary))" fillOpacity="0.25" />
                     </svg>
                   </div>
 
+                  {/* Day labels */}
                   <div className="flex justify-between text-[10px] text-muted-foreground font-mono pt-1">
                     <span>Jum</span>
                     <span>Jmt</span>
@@ -299,7 +308,7 @@ export function Hero() {
                   </div>
                 </div>
 
-                {/* Live Transactions Stream */}
+                {/* Live Transactions Stream (5 cols) */}
                 <div className="lg:col-span-5 rounded-2xl border border-border/70 bg-card p-4 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-foreground">
@@ -338,15 +347,15 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Floating Subtle Micro-Pill */}
+          {/* Floating Subtle Micro-Pill (Sale Completed Reassurance) */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.7 }}
-            className="absolute -bottom-4 right-4 sm:-bottom-5 sm:right-8 inline-flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-card px-4 py-2.5 shadow-xl backdrop-blur-md text-xs font-semibold text-foreground"
+            className="absolute -bottom-4 right-4 sm:-bottom-5 sm:right-8 inline-flex items-center gap-2 rounded-2xl border border-emerald-500/40 bg-card px-3.5 py-2 shadow-xl backdrop-blur-md text-xs font-semibold text-foreground"
           >
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-              <Check className="h-3 w-3 stroke-[3]" />
+              <Check className="h-3 w-3" strokeWidth={3} />
             </div>
             <div>
               <p className="text-[11px] font-bold text-foreground">
