@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   CheckCircle2,
   Clock3,
@@ -18,8 +18,14 @@ import {
   FileText,
   BadgeCheck,
   Send,
+  Gift,
+  Users,
+  Plus,
+  Minus,
+  Share2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +36,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/common/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { MANUAL_PAYMENT_CHANNELS, MANUAL_MONTHLY_PRICE_TZS, type ManualPaymentChannel } from "@/lib/subscription";
+import { useShopSettings, useUpdateShopSettings } from "@/hooks/useShopSettings";
+import {
+  MANUAL_PAYMENT_CHANNELS,
+  MANUAL_MONTHLY_PRICE_TZS,
+  BASE_ADMIN_STAFF_LIMIT,
+  EXTRA_USER_SEAT_PRICE_TZS,
+  REFERRAL_DISCOUNT_PERCENT,
+  calculateSubscriptionBreakdown,
+  type ManualPaymentChannel,
+} from "@/lib/subscription";
 import { cn } from "@/lib/utils";
 
 function formatCurrency(amount: number) {
@@ -62,12 +77,58 @@ export default function Billing() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<ManualPaymentChannel>("Mpesa");
   const [senderPhone, setSenderPhone] = useState("");
-  const [amount, setAmount] = useState(String(MANUAL_MONTHLY_PRICE_TZS));
   const [reference, setReference] = useState("");
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+
+  const { data: shopSettings } = useShopSettings();
+  const updateShopSettings = useUpdateShopSettings();
+  const queryClient = useQueryClient();
+
+  const [selectedExtraSeats, setSelectedExtraSeats] = useState<number>(0);
+
+  useEffect(() => {
+    if (shopSettings?.extra_user_seats !== undefined) {
+      setSelectedExtraSeats(Number(shopSettings.extra_user_seats || 0));
+    }
+  }, [shopSettings?.extra_user_seats]);
+
+  const { data: referrals = [] } = useQuery({
+    queryKey: ["shop-referrals", shopId],
+    queryFn: async () => {
+      if (!shopId) return [];
+      const { data, error } = await supabase
+        .from("referrals" as any)
+        .select("*")
+        .eq("referrer_shop_id", shopId);
+      if (error) return [];
+      return data || [];
+    },
+    enabled: !!shopId,
+  });
+
+  const referralCode = shopSettings?.referral_code || "WISE-PRO";
+  const referralLink = typeof window !== "undefined"
+    ? `${window.location.origin}/signup?ref=${referralCode}`
+    : `https://wisecash.app/signup?ref=${referralCode}`;
+
+  const hasReferralDiscount = (referrals as any[]).length > 0;
+
+  const breakdown = useMemo(() => {
+    return calculateSubscriptionBreakdown({
+      basePrice: MANUAL_MONTHLY_PRICE_TZS,
+      extraSeats: selectedExtraSeats,
+      hasReferralDiscount,
+    });
+  }, [selectedExtraSeats, hasReferralDiscount]);
+
+  const [amount, setAmount] = useState(String(breakdown.total));
+
+  useEffect(() => {
+    setAmount(String(breakdown.total));
+  }, [breakdown.total]);
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -99,11 +160,11 @@ export default function Billing() {
     }
 
     const numericAmount = Number(amount);
-    if (!numericAmount || numericAmount < MANUAL_MONTHLY_PRICE_TZS) {
+    if (!numericAmount || numericAmount < breakdown.total) {
       toast.error(
         language === "sw"
-          ? `Kiasi cha chini ni TZS ${MANUAL_MONTHLY_PRICE_TZS.toLocaleString()}`
-          : `Minimum amount is TZS ${MANUAL_MONTHLY_PRICE_TZS.toLocaleString()}`
+          ? `Kiasi cha chini kinachotakiwa ni TZS ${breakdown.total.toLocaleString()}`
+          : `Minimum amount required is TZS ${breakdown.total.toLocaleString()}`
       );
       return;
     }
@@ -137,6 +198,11 @@ export default function Billing() {
         proof_url: proofUrl,
         billing_period_months: 1,
       });
+
+      if (selectedExtraSeats !== Number(shopSettings?.extra_user_seats || 0)) {
+        await updateShopSettings.mutateAsync({ extra_user_seats: selectedExtraSeats });
+        queryClient.invalidateQueries({ queryKey: ["shop_settings"] });
+      }
 
       toast.success(
         language === "sw"
@@ -375,6 +441,143 @@ export default function Billing() {
         </Card>
       )}
 
+      {/* Referral Program & User Seats Cards */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Referral Program Card */}
+        <Card className="border border-border/80 bg-card shadow-xs">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Gift className="h-5 w-5 text-primary" />
+                {language === "sw" ? "Mpango wa Rufaa wa WiseCash" : "WiseCash Referral Program"}
+              </CardTitle>
+              <Badge variant={hasReferralDiscount ? "default" : "secondary"} className="text-xs">
+                {hasReferralDiscount
+                  ? language === "sw" ? "Punguzo la 5% Limewashwa" : "5% Renewal Discount Active"
+                  : language === "sw" ? "Pata 5% Punguzo" : "Earn 5% Discount"}
+              </Badge>
+            </div>
+            <CardDescription className="text-xs">
+              {language === "sw"
+                ? "Alika wamiliki wengine wa maduka. Wakijiunga kupitia kiungo chako, unapata punguzo la 5% kwenye usajili wako unaofuata!"
+                : "Refer another shopkeeper. When they sign up using your referral code, you get a 5% discount on your next subscription renewal!"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3.5">
+            <div className="rounded-xl border border-border/80 bg-background/80 p-3 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                  {language === "sw" ? "Msimbo Wako wa Rufaa" : "Your Referral Code"}
+                </span>
+                <span className="font-mono text-base font-bold tracking-wider text-primary">
+                  {referralCode}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={() => copyToClipboard(referralCode, "ref-code")}
+                >
+                  {copiedKey === "ref-code" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  <span>{copiedKey === "ref-code" ? (language === "sw" ? "Imenakiliwa" : "Copied") : (language === "sw" ? "Msimbo" : "Code")}</span>
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 text-xs gap-1"
+                  onClick={() => copyToClipboard(referralLink, "ref-link")}
+                >
+                  {copiedKey === "ref-link" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Share2 className="h-3.5 w-3.5" />}
+                  <span>{copiedKey === "ref-link" ? (language === "sw" ? "Imenakiliwa" : "Copied") : (language === "sw" ? "Kiungo" : "Link")}</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                <span className="text-muted-foreground block">{language === "sw" ? "Maduka Uliyowaalika" : "Shops Referred"}</span>
+                <span className="text-base font-bold text-foreground">{(referrals as any[]).length}</span>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                <span className="text-muted-foreground block">{language === "sw" ? "Punguzo Lijalo" : "Next Discount"}</span>
+                <span className={cn("text-base font-bold", hasReferralDiscount ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
+                  {hasReferralDiscount ? "5% OFF" : "0%"}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* User Seats Expansion Card */}
+        <Card className="border border-border/80 bg-card shadow-xs">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                {language === "sw" ? "Nafasi za Watumiaji (Staff Seats)" : "User Seat Expansion"}
+              </CardTitle>
+              <Badge variant="outline" className="text-xs font-semibold">
+                TZS 5,000 / {language === "sw" ? "nafasi" : "seat"}
+              </Badge>
+            </div>
+            <CardDescription className="text-xs">
+              {language === "sw"
+                ? "Kikomo cha msingi ni watumiaji 4 chini ya mmiliki. Ongeza nafasi zaidi kwa TZS 5,000 kila mtumiaji kwa mwezi."
+                : "The admin can assign up to 4 users under them. Add more user capacity for 5,000 TZS per additional user space."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3.5">
+            <div className="rounded-xl border border-border/80 bg-background/80 p-3 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                  {language === "sw" ? "Nafasi za Ziada za Watumiaji" : "Additional User Seats"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {language === "sw"
+                    ? `Jumla ya nafasi: ${BASE_ADMIN_STAFF_LIMIT + selectedExtraSeats} (${BASE_ADMIN_STAFF_LIMIT} msingi + ${selectedExtraSeats} za ziada)`
+                    : `Total capacity: ${BASE_ADMIN_STAFF_LIMIT + selectedExtraSeats} (${BASE_ADMIN_STAFF_LIMIT} base + ${selectedExtraSeats} extra)`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg"
+                  onClick={() => setSelectedExtraSeats((prev) => Math.max(0, prev - 1))}
+                  disabled={selectedExtraSeats <= 0}
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </Button>
+                <span className="w-8 text-center font-bold text-sm">
+                  {selectedExtraSeats}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg"
+                  onClick={() => setSelectedExtraSeats((prev) => prev + 1)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-muted/20 border border-border/60 p-2.5 text-xs">
+              <span className="text-muted-foreground">
+                {language === "sw" ? "Gharama ya ziada kwa mwezi:" : "Extra monthly seat cost:"}
+              </span>
+              <span className="font-bold text-foreground">
+                +TZS {(selectedExtraSeats * EXTRA_USER_SEAT_PRICE_TZS).toLocaleString()}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Main Payment Section: Instructions + Verification Form */}
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left column: Step-by-Step Payment Instructions */}
@@ -571,6 +774,34 @@ export default function Billing() {
                     />
                   </div>
 
+                  {/* Itemized Calculation Summary */}
+                  <div className="rounded-xl border border-border/80 bg-muted/30 p-3 space-y-2 text-xs">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>{language === "sw" ? "Mpango wa Msingi (Wafanyakazi 4)" : "Base Pro Plan (4 Staff Seats)"}</span>
+                      <span>TZS {MANUAL_MONTHLY_PRICE_TZS.toLocaleString()}</span>
+                    </div>
+                    {breakdown.extraSeats > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>
+                          {language === "sw"
+                            ? `Nafasi za Ziada (${breakdown.extraSeats} × TZS 5,000)`
+                            : `Extra User Seats (${breakdown.extraSeats} × TZS 5,000)`}
+                        </span>
+                        <span className="text-foreground font-medium">+TZS {breakdown.extraSeatsCost.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {breakdown.hasReferralDiscount && (
+                      <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                        <span>{language === "sw" ? "Punguzo la Rufaa (5%)" : "Referral Discount (5%)"}</span>
+                        <span>-TZS {breakdown.discountAmount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-border pt-2 flex justify-between font-bold text-sm text-foreground">
+                      <span>{language === "sw" ? "Jumla ya Kulipa:" : "Total Payable:"}</span>
+                      <span className="text-primary font-mono">TZS {breakdown.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+
                   {/* Amount and Date */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -582,7 +813,7 @@ export default function Billing() {
                         inputMode="numeric"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        min={MANUAL_MONTHLY_PRICE_TZS}
+                        min={breakdown.total}
                         required
                         className="h-10 text-sm font-semibold"
                       />

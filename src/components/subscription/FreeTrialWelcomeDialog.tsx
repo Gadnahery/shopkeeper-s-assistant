@@ -28,7 +28,7 @@ import { MANUAL_MONTHLY_PRICE_TZS } from "@/lib/subscription";
 
 export function FreeTrialWelcomeDialog() {
   const { isTrialing, subscription, paymentAmount } = useSubscription();
-  const { shopId, user } = useAuth();
+  const { shopId, user, role } = useAuth();
   const { language } = useLanguage();
   const { formatMoney } = useShopFormatting();
   const [open, setOpen] = useState(false);
@@ -36,6 +36,8 @@ export function FreeTrialWelcomeDialog() {
 
   useEffect(() => {
     if (!shopId && !user) return;
+    // Suppress trial welcome popup for sub-users/staff registered under an admin
+    if (role && role !== "owner") return;
 
     const storageKey = `wisecash_free_trial_welcome_seen_${shopId || user?.id}`;
     const alreadySeen = localStorage.getItem(storageKey);
@@ -49,7 +51,11 @@ export function FreeTrialWelcomeDialog() {
     if (qualifiesForTrialWelcome && !alreadySeen) {
       setOpen(true);
     }
-  }, [shopId, user, isTrialing, subscription?.status]);
+  }, [shopId, user, role, isTrialing, subscription?.status]);
+
+  if (role && role !== "owner") {
+    return null;
+  }
 
   const handleDismiss = () => {
     const storageKey = `wisecash_free_trial_welcome_seen_${shopId || user?.id}`;

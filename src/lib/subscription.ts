@@ -18,6 +18,39 @@ export const MANUAL_PAYMENT_CHANNELS = [
 
 export type ManualPaymentChannel = (typeof MANUAL_PAYMENT_CHANNELS)[number]["value"];
 
+export const BASE_ADMIN_STAFF_LIMIT = 4;
+export const EXTRA_USER_SEAT_PRICE_TZS = 5_000;
+export const REFERRAL_DISCOUNT_PERCENT = 5;
+
+export function calculateSubscriptionBreakdown({
+  basePrice = MANUAL_MONTHLY_PRICE_TZS,
+  extraSeats = 0,
+  hasReferralDiscount = false,
+}: {
+  basePrice?: number;
+  extraSeats?: number;
+  hasReferralDiscount?: boolean;
+}) {
+  const sanitizedExtraSeats = Math.max(0, Math.floor(extraSeats || 0));
+  const extraSeatsCost = sanitizedExtraSeats * EXTRA_USER_SEAT_PRICE_TZS;
+  const subtotal = basePrice + extraSeatsCost;
+  const discountAmount = hasReferralDiscount
+    ? Math.round(subtotal * (REFERRAL_DISCOUNT_PERCENT / 100))
+    : 0;
+  const total = Math.max(0, subtotal - discountAmount);
+
+  return {
+    basePrice,
+    extraSeats: sanitizedExtraSeats,
+    extraSeatsCost,
+    subtotal,
+    hasReferralDiscount,
+    discountPercent: hasReferralDiscount ? REFERRAL_DISCOUNT_PERCENT : 0,
+    discountAmount,
+    total,
+  };
+}
+
 export function resolveSubscriptionMonthlyPrice(...values: unknown[]) {
   for (const value of values) {
     const amount = toPositiveNumber(value);

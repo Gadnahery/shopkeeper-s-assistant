@@ -98,10 +98,17 @@ export default function GoogleOnboardingPage() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [businessType, setBusinessType] = useState<BusinessType>("retail");
-  const [form, setForm] = useState({ fullName: "", shopName: "", countryCode: "TZ" });
+  const intent = searchParams.get("intent");
+  const refParam = (searchParams.get("ref") || (typeof window !== "undefined" ? localStorage.getItem("wisecash_referral_code") : "") || "").trim().toUpperCase();
+
+  const [form, setForm] = useState({
+    fullName: "",
+    shopName: "",
+    countryCode: "TZ",
+    referralCode: refParam,
+  });
   const selectedCountry = getCountryByCode(form.countryCode);
 
-  const intent = searchParams.get("intent");
   const profileShopName = profile?.shops?.name ?? "";
   const oauthName =
     (typeof user?.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
@@ -135,11 +142,13 @@ export default function GoogleOnboardingPage() {
 
   useEffect(() => {
     setForm((current) => ({
+      ...current,
       fullName: current.fullName || (needsShopSetup(profile?.full_name, profileShopName) ? oauthName : profile?.full_name || oauthName),
       shopName: current.shopName || (profileShopName && profileShopName.toLowerCase() !== "my shop" ? profileShopName : oauthShopName),
       countryCode: current.countryCode || (profile?.shops?.country_code || "TZ"),
+      referralCode: current.referralCode || refParam,
     }));
-  }, [oauthName, oauthShopName, profile?.full_name, profile?.shops?.country_code, profileShopName]);
+  }, [oauthName, oauthShopName, profile?.full_name, profile?.shops?.country_code, profileShopName, refParam]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -188,9 +197,53 @@ export default function GoogleOnboardingPage() {
           country_code: countryInfo.value,
           currency: countryInfo.currency,
           locale: countryInfo.locale,
+          referred_by_code: form.referralCode.trim().toUpperCase() || null,
         },
       });
       if (authError) throw authError;
+
+      // Apply referral code if present
+      const activeReferralCode = form.referralCode.trim().toUpperCase();
+      if (activeReferralCode) {
+        try {
+          // 1. Try via RPC apply_shop_referral
+          const { data: rpcRes, error: rpcErr } = await supabase.rpc("apply_shop_referral" as any, {
+            p_shop_id: profile.shop_id,
+            p_referral_code: activeReferralCode,
+          });
+
+          if (rpcErr || !(rpcRes as any)?.success) {
+            // 2. Direct fallback: find referrer shop and record
+            const { data: refShop } = await supabase
+              .from("shops")
+              .select("id")
+              .ilike("referral_code", activeReferralCode)
+              .maybeSingle();
+
+            if (refShop?.id && refShop.id !== profile.shop_id) {
+              await supabase
+                .from("shops")
+                .update({ referred_by_code: activeReferralCode })
+                .eq("id", profile.shop_id);
+
+              await supabase
+                .from("referrals" as any)
+                .upsert({
+                  referrer_shop_id: refShop.id,
+                  referred_shop_id: profile.shop_id,
+                  discount_percent: 5.0,
+                  status: "pending",
+                }, { onConflict: "referred_shop_id" });
+            }
+          }
+
+          try {
+            localStorage.removeItem("wisecash_referral_code");
+          } catch {}
+        } catch (refErr) {
+          console.warn("Failed to link referral during Google onboarding:", refErr);
+        }
+      }
 
       await refreshProfile();
       toast.success(language === "sw" ? "Taarifa za duka zimehifadhiwa." : "Shop details saved.");
@@ -334,6 +387,31 @@ export default function GoogleOnboardingPage() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Referral Code (Optional) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">
+                    {language === "sw" ? "Nambari ya Rufaa / Mwaliko (Hiari)" : "Referral Code (Optional)"}
+                  </Label>
+                  {refParam && (
+                    <span className="text-[10px] font-medium text-primary">
+                      {language === "sw" ? "Imewekwa kutoka kwa kiungo" : "Applied from referral link"}
+                    </span>
+                  )}
+                </div>
+                <Input
+                  placeholder="e.g. WISE-ABC123"
+                  value={form.referralCode}
+                  onChange={(e) => setForm((curr) => ({ ...curr, referralCode: e.target.value.toUpperCase() }))}
+                  className="h-10 rounded-xl border-border bg-background text-xs uppercase tracking-wider focus-visible:ring-accent"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {language === "sw"
+                    ? "Ikiwa ulialikwa na mmiliki mwingine wa duka, weka msimbo wake hapa ili apate punguzo la 5%."
+                    : "If referred by another shopkeeper, enter their referral code here to link accounts."}
+                </p>
               </div>
 
               <Button

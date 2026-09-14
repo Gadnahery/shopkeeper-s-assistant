@@ -20,9 +20,16 @@ interface AuthContextType {
   profile: ProfileWithShop | null;
   role: AppRole | null;
   isOwner: boolean;
-  signUp: (email: string, password: string, fullName: string, shopName: string, countryCode?: string) => Promise<{ error: AuthError | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    shopName: string,
+    countryCode?: string,
+    referralCode?: string
+  ) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: (intent?: "login" | "signup") => Promise<{ error: AuthError | null }>;
+  signInWithGoogle: (intent?: "login" | "signup", referralCode?: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -76,15 +83,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      setProfile(resolvedProfile);
-      setShopId(resolvedProfile.shop_id);
-
       const { data: roleData } = await (supabase.from("user_roles" as any) as any)
-        .select("role")
+        .select("role, shop_id")
         .eq("user_id", userId)
         .maybeSingle();
 
-      setRole((roleData?.role as AppRole) ?? null);
+      const userRole = (roleData?.role as AppRole) ?? null;
+      const userShopId = resolvedProfile.shop_id || roleData?.shop_id || null;
+
+      if (!userRole || !userShopId) {
+        if (import.meta.env.DEV) {
+          console.warn("fetchProfile: User has no active shop or role. Signing out deleted user.");
+        }
+        clearStoredSupabaseAuth();
+        clearAppQueryCache();
+        await supabase.auth.signOut();
+        setProfile(null);
+        setShopId(null);
+        setRole(null);
+        setUser(null);
+        setSession(null);
+        return;
+      }
+
+      setProfile(resolvedProfile);
+      setShopId(userShopId);
+      setRole(userRole);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("fetchProfile error:", error);
@@ -189,10 +213,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     fullName: string,
     shopName: string,
-    countryCode: string = "TZ"
+    countryCode: string = "TZ",
+    referralCode?: string
   ) => {
     const redirectUrl = getAppUrl();
     const country = getCountryByCode(countryCode);
+    const sanitizedReferralCode = referralCode?.trim() ? referralCode.trim().toUpperCase() : null;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -204,6 +231,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           country_code: country.value,
           currency: country.currency,
           locale: country.locale,
+          referred_by_code: sanitizedReferralCode,
+          referral_code: sanitizedReferralCode,
         },
       },
     });
@@ -213,7 +242,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (!error && data.session && data.user) {
+    if (error) {
+      return { error };
+    }
+
+    if (data.session && data.user) {
+      // 1. Verify this user account is active in a shop and has an assigned role
+      const [roleRes, profRes] = await Promise.all([
+        (supabase.from("user_roles" as any) as any)
+          .select("role, shop_id")
+          .eq("user_id", data.user.id)
+          .maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("id, shop_id")
+          .or(`id.eq.${data.user.id},user_id.eq.${data.user.id}`)
+          .maybeSingle(),
+      ]);
+
+      const activeRole = roleRes.data?.role;
+      const activeShopId = roleRes.data?.shop_id || profRes.data?.shop_id;
+
+      if (!activeRole || !activeShopId) {
+        // Account has been removed/deleted from the shop
+        await supabase.auth.signOut();
+        clearStoredSupabaseAuth();
+        clearAppQueryCache();
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setShopId(null);
+        setRole(null);
+        setLoading(false);
+        return {
+          error: new Error("ACCOUNT_DOES_NOT_EXIST"),
+        };
+      }
+
       authVersionRef.current += 1;
       setSession(data.session);
       setUser(data.user);
@@ -222,11 +287,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
 
-    return { error };
+    return { error: null };
   };
 
-  const signInWithGoogle = async (intent: "login" | "signup" = "login") => {
-    const redirectUrl = `${getAppUrl()}/auth/oauth-setup?intent=${intent}`;
+  const signInWithGoogle = async (intent: "login" | "signup" = "login", referralCode?: string) => {
+    const activeRef = (referralCode || localStorage.getItem("wisecash_referral_code") || "").trim().toUpperCase();
+    if (activeRef) {
+      try {
+        localStorage.setItem("wisecash_referral_code", activeRef);
+      } catch {}
+    }
+
+    const refQuery = activeRef ? `&ref=${encodeURIComponent(activeRef)}` : "";
+    const redirectUrl = `${getAppUrl()}/auth/oauth-setup?intent=${intent}${refQuery}`;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

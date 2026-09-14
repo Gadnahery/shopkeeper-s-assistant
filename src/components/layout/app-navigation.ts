@@ -129,25 +129,13 @@ const MOBILE_FOCUS_ROUTES = [
 
 export function filterItemsByAccess(
   items: AppNavItem[],
-  allowedPages?: string[],
+  _allowedPages?: string[],
   capabilities?: unknown,
-  role?: string | null,
+  _role?: string | null,
 ) {
-  const capabilityFiltered = items.filter((item) => !item.capability || hasCapability(capabilities, item.capability));
-  
-  // Owners and admins always have full access to all ERP modules
-  if (!role || role === "owner" || role === "admin") {
-    return capabilityFiltered;
-  }
-
-  if (!allowedPages || allowedPages.length === 0) return capabilityFiltered;
-  return capabilityFiltered.filter((item) => {
-    return (
-      allowedPages.includes(item.to) ||
-      (item.to === "/purchases" && (allowedPages.includes("/inventory") || allowedPages.includes("/suppliers"))) ||
-      (item.to === "/production" && allowedPages.includes("/inventory"))
-    );
-  });
+  // Filter by shop capabilities (e.g. manufacturing/appointments),
+  // while keeping ERP navigation accessible so clicking restricted tabs displays the restriction banner
+  return items.filter((item) => !item.capability || hasCapability(capabilities, item.capability));
 }
 
 export function groupNavItems(items: AppNavItem[]): Map<NavGroup, AppNavItem[]> {

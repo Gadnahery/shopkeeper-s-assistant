@@ -8,6 +8,9 @@ const authState = vi.hoisted(() => ({
   session: null as null | { access_token: string },
   loading: false,
   role: null as null | "owner" | "manager" | "cashier" | "staff" | "hr",
+  profile: undefined as any,
+  shopId: undefined as any,
+  signOut: vi.fn(),
 }));
 
 const accessState = vi.hoisted(() => ({
@@ -24,9 +27,13 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => authState,
 }));
 
-vi.mock("@/hooks/useUserPageAccess", () => ({
-  useMyPageAccess: () => accessState,
-}));
+vi.mock("@/hooks/useUserPageAccess", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/hooks/useUserPageAccess")>();
+  return {
+    ...actual,
+    useMyPageAccess: () => accessState,
+  };
+});
 
 vi.mock("@/contexts/SubscriptionContext", () => ({
   useSubscription: () => subscriptionState,
@@ -64,6 +71,8 @@ describe("ProtectedRoute", () => {
     authState.session = null;
     authState.loading = false;
     authState.role = null;
+    authState.profile = undefined;
+    authState.shopId = undefined;
     accessState.data = ["/dashboard", "/settings"];
     accessState.isLoading = false;
     subscriptionState.isBillingLocked = false;
@@ -85,14 +94,48 @@ describe("ProtectedRoute", () => {
     expect(screen.getByText("Dashboard content")).toBeInTheDocument();
   });
 
-  it("redirects users without the required role back to the dashboard", () => {
+  it("shows restriction view when user does not have the required role", () => {
     authState.user = { id: "user-2" };
     authState.session = { access_token: "token-2" };
     authState.role = "cashier";
 
     renderProtectedRoute("/settings", ["owner", "manager"]);
 
-    expect(screen.getByText("Dashboard content")).toBeInTheDocument();
+    expect(screen.getByText("Access Restricted")).toBeInTheDocument();
+  });
+
+  it("shows restriction view when page is not in user's allowed paths", () => {
+    authState.user = { id: "user-2" };
+    authState.session = { access_token: "token-2" };
+    authState.role = "cashier";
+    accessState.data = ["/dashboard"];
+
+    renderProtectedRoute("/settings");
+
+    expect(screen.getByText("Access Restricted")).toBeInTheDocument();
+  });
+
+  it("shows restriction view when user has no permissions (empty allowed paths)", () => {
+    authState.user = { id: "user-4" };
+    authState.session = { access_token: "token-4" };
+    authState.role = "staff";
+    accessState.data = [];
+
+    renderProtectedRoute("/dashboard");
+
+    expect(screen.getByText("Access Restricted")).toBeInTheDocument();
+  });
+
+  it("shows deactivated account view when user was removed from the shop", () => {
+    authState.user = { id: "user-5" };
+    authState.session = { access_token: "token-5" };
+    authState.role = null;
+    authState.profile = null;
+    authState.shopId = null;
+
+    renderProtectedRoute("/dashboard");
+
+    expect(screen.getByText("Account Does Not Exist or Has Been Deleted")).toBeInTheDocument();
   });
 
   it("allows authenticated users through even when billing is marked locked", () => {

@@ -24,12 +24,36 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("deleted") === "true") {
+      toast.error(
+        language === "sw"
+          ? "Akaunti hii haipo au imefutwa."
+          : "This account does not exist or has been deleted."
+      );
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [language]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const { error } = await signIn(form.email, form.password);
       if (error) {
+        if (
+          error.message === "ACCOUNT_DOES_NOT_EXIST" ||
+          error.message.includes("ACCOUNT_DOES_NOT_EXIST")
+        ) {
+          toast.error(
+            language === "sw"
+              ? "Akaunti hii haipo au imefutwa."
+              : "This account does not exist or has been deleted."
+          );
+          return;
+        }
+
         toast.error(
           error.message.includes("Invalid login")
             ? language === "sw"

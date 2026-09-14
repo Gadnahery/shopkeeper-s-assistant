@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyPageAccess } from "@/hooks/useUserPageAccess";
+import { RestrictedAccessView } from "@/components/common/RestrictedAccessView";
 
 type AppRole = "owner" | "manager" | "cashier" | "staff" | "hr";
 
@@ -12,7 +13,7 @@ type ProtectedRouteProps = {
 };
 
 function pathAllowed(pathname: string, allowedPaths: string[]) {
-  if (!allowedPaths.length) return true;
+  if (!allowedPaths || !allowedPaths.length) return false;
   return allowedPaths.some((p) => {
     if (p === pathname) return true;
     if (p.includes(":")) {
@@ -24,7 +25,7 @@ function pathAllowed(pathname: string, allowedPaths: string[]) {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, session, loading, role } = useAuth();
+  const { user, session, loading, role, profile, shopId } = useAuth();
   const location = useLocation();
   const { data: allowedPaths = [], isLoading: accessLoading } = useMyPageAccess();
 
@@ -40,12 +41,24 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (allowedRoles && allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
-    return <Navigate to="/dashboard" replace />;
+  // Owners always have full access to all pages
+  if (role === "owner") {
+    return <>{children}</>;
   }
 
+  // If authenticated user has no profile, no shop, and no role (account was removed from the shop)
+  if (profile === null && shopId === null && role === null) {
+    return <RestrictedAccessView pathname={location.pathname} moduleName="DEACTIVATED" />;
+  }
+
+  // Role-based restrictions
+  if (allowedRoles && allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
+    return <RestrictedAccessView pathname={location.pathname} />;
+  }
+
+  // Page-access checklist restrictions
   if (!pathAllowed(location.pathname, allowedPaths)) {
-    return <Navigate to="/dashboard" replace />;
+    return <RestrictedAccessView pathname={location.pathname} />;
   }
 
   return <>{children}</>;

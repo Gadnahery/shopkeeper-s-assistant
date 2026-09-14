@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, Globe, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,19 @@ import { SHOP_COUNTRY_OPTIONS, getCountryByCode } from "@/lib/international";
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCodeFromUrl = (searchParams.get("ref") || "").trim().toUpperCase();
+  const storedRef = (typeof window !== "undefined" ? localStorage.getItem("wisecash_referral_code") : "") || "";
+  const initialRef = refCodeFromUrl || storedRef;
+
+  useEffect(() => {
+    if (refCodeFromUrl) {
+      try {
+        localStorage.setItem("wisecash_referral_code", refCodeFromUrl);
+      } catch {}
+    }
+  }, [refCodeFromUrl]);
+
   const { signUp, signInWithGoogle } = useAuth();
   const { language } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +48,7 @@ export default function SignupPage() {
     fullName: "",
     shopName: "",
     countryCode: "TZ",
+    referralCode: initialRef,
   });
 
   const selectedCountry = getCountryByCode(form.countryCode);
@@ -66,7 +80,8 @@ export default function SignupPage() {
         form.password,
         form.fullName,
         form.shopName,
-        form.countryCode
+        form.countryCode,
+        form.referralCode
       );
       if (error) {
         toast.error(
@@ -92,7 +107,13 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     try {
-      const { error } = await signInWithGoogle("signup");
+      const activeRef = (form.referralCode || initialRef || "").trim().toUpperCase();
+      if (activeRef) {
+        try {
+          localStorage.setItem("wisecash_referral_code", activeRef);
+        } catch {}
+      }
+      const { error } = await signInWithGoogle("signup", activeRef);
       if (error) {
         toast.error(error.message);
       }
@@ -249,6 +270,30 @@ export default function SignupPage() {
                   className="h-10 rounded-xl border-border bg-background text-xs focus-visible:ring-accent"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">
+                  {language === "sw" ? "Nambari ya Mwaliko (Hiari)" : "Referral Code (Optional)"}
+                </Label>
+                {refCodeFromUrl && (
+                  <span className="text-[10px] font-medium text-primary">
+                    {language === "sw" ? "Imewekwa kutoka kwa kiungo" : "Applied from link"}
+                  </span>
+                )}
+              </div>
+              <Input
+                placeholder="e.g. WISE-ABC123"
+                value={form.referralCode}
+                onChange={(e) => setForm({ ...form, referralCode: e.target.value.toUpperCase() })}
+                className="h-10 rounded-xl border-border bg-background text-xs uppercase tracking-wider focus-visible:ring-accent"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                {language === "sw"
+                  ? "Ikiwa umetumwa na mmiliki mwingine wa duka, weka msimbo wake hapa."
+                  : "If invited by another shopkeeper, enter their referral code here."}
+              </p>
             </div>
 
             <Button

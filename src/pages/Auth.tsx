@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Globe, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,9 @@ import { SHOP_COUNTRY_OPTIONS, getCountryByCode } from "@/lib/international";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const [searchParams] = useSearchParams();
+  const refParam = (searchParams.get("ref") || (typeof window !== "undefined" ? localStorage.getItem("wisecash_referral_code") : "") || "").trim().toUpperCase();
+  const { user, role, shopId, signIn, signUp, signInWithGoogle } = useAuth();
   const { language } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -36,8 +38,26 @@ export default function Auth() {
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [updatePasswordLoading, setUpdatePasswordLoading] = useState(false);
-  const [form, setForm] = useState({ email: "", password: "", fullName: "", shopName: "", countryCode: "TZ" });
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    fullName: "",
+    shopName: "",
+    countryCode: "TZ",
+    referralCode: refParam,
+  });
   const selectedCountry = getCountryByCode(form.countryCode);
+
+  useEffect(() => {
+    if (searchParams.get("deleted") === "true") {
+      toast.error(
+        language === "sw"
+          ? "Akaunti hii haipo au imefutwa."
+          : "This account does not exist or has been deleted."
+      );
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [searchParams, language]);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -48,8 +68,8 @@ export default function Auth() {
   }, []);
 
   useEffect(() => {
-    if (user && !recoveryMode) navigate("/dashboard", { replace: true });
-  }, [user, recoveryMode, navigate]);
+    if (user && !recoveryMode && role && shopId) navigate("/dashboard", { replace: true });
+  }, [user, recoveryMode, navigate, role, shopId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +78,18 @@ export default function Auth() {
       if (isLogin) {
         const { error } = await signIn(form.email, form.password);
         if (error) {
+          if (
+            error.message === "ACCOUNT_DOES_NOT_EXIST" ||
+            error.message.includes("ACCOUNT_DOES_NOT_EXIST")
+          ) {
+            toast.error(
+              language === "sw"
+                ? "Akaunti hii haipo au imefutwa."
+                : "This account does not exist or has been deleted."
+            );
+            return;
+          }
+
           toast.error(
             error.message.includes("Invalid login")
               ? language === "sw"
@@ -81,7 +113,14 @@ export default function Auth() {
           );
           return;
         }
-        const { error } = await signUp(form.email, form.password, form.fullName, form.shopName, form.countryCode);
+        const { error } = await signUp(
+          form.email,
+          form.password,
+          form.fullName,
+          form.shopName,
+          form.countryCode,
+          form.referralCode
+        );
         if (error) {
           toast.error(
             error.message.includes("already registered")
@@ -152,7 +191,8 @@ export default function Auth() {
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
     try {
-      const { error } = await signInWithGoogle(isLogin ? "login" : "signup");
+      const activeRef = (form.referralCode || refParam || "").trim().toUpperCase();
+      const { error } = await signInWithGoogle(isLogin ? "login" : "signup", activeRef);
       if (error) toast.error(error.message);
     } finally {
       setGoogleLoading(false);
@@ -346,6 +386,27 @@ export default function Auth() {
                 </button>
               </div>
             </div>
+
+            {!isLogin && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">
+                    {language === "sw" ? "Nambari ya Mwaliko / Rufaa (Hiari)" : "Referral Code (Optional)"}
+                  </Label>
+                  {refParam && (
+                    <span className="text-[10px] font-medium text-primary">
+                      {language === "sw" ? "Imewekwa kutoka kwa kiungo" : "Applied from link"}
+                    </span>
+                  )}
+                </div>
+                <Input
+                  placeholder="e.g. WISE-ABC123"
+                  value={form.referralCode}
+                  onChange={(e) => setForm({ ...form, referralCode: e.target.value.toUpperCase() })}
+                  className="h-10 rounded-xl border-border bg-background text-xs uppercase tracking-wider"
+                />
+              </div>
+            )}
 
             <Button
               type="submit"

@@ -45,7 +45,99 @@ serve(async (req) => {
       });
     }
 
-    const body = (await req.json()) as CreateUserRequest;
+    const body = (await req.json()) as any;
+    const action = String(body.action || "create").toLowerCase();
+
+    // ----------------------------------------------------
+    // ACTION: DELETE STAFF USER (Full cleanup including auth.users)
+    // ----------------------------------------------------
+    if (action === "delete") {
+      const targetUserId = String(body.user_id || "").trim();
+      const targetShopId = String(body.shop_id || "").trim();
+
+      if (!targetUserId || !targetShopId) {
+        return new Response(JSON.stringify({ error: "Missing user_id or shop_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (targetUserId === callerAuth.user.id) {
+        return new Response(JSON.stringify({ error: "Cannot delete your own account" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Verify caller is owner or manager of targetShopId
+      const { data: callerRole } = await callerClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerAuth.user.id)
+        .eq("shop_id", targetShopId)
+        .maybeSingle();
+
+      if (!callerRole || !["owner", "manager"].includes(callerRole.role)) {
+        return new Response(JSON.stringify({ error: "Only shop owners or managers can remove staff users" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check target is not owner
+      const { data: targetRole } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", targetUserId)
+        .eq("shop_id", targetShopId)
+        .maybeSingle();
+
+      if (targetRole?.role === "owner") {
+        return new Response(JSON.stringify({ error: "Cannot delete a shop owner" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 1. Delete permissions, roles, and profile
+      await adminClient.from("user_page_access").delete().eq("user_id", targetUserId).eq("shop_id", targetShopId);
+      await adminClient.from("user_roles").delete().eq("user_id", targetUserId).eq("shop_id", targetShopId);
+      await adminClient.from("profiles").delete().eq("user_id", targetUserId).eq("shop_id", targetShopId);
+
+      // 2. Check if user has roles in any other shop
+      const { count: otherRolesCount } = await adminClient
+        .from("user_roles")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", targetUserId);
+
+      // 3. If no other roles exist, permanently delete from Supabase Auth so they cannot log in
+      // and their email is freed for fresh registration
+      if (!otherRolesCount || otherRolesCount === 0) {
+        try {
+          await adminClient.auth.admin.deleteUser(targetUserId);
+        } catch (delErr) {
+          console.error("auth.admin.deleteUser error:", delErr);
+        }
+      }
+
+      await adminClient.from("audit_log").insert({
+        shop_id: targetShopId,
+        user_id: callerAuth.user.id,
+        action: "user_deleted",
+        entity_type: "profiles",
+        entity_id: targetUserId,
+        metadata: { deleted_user_id: targetUserId },
+      });
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ----------------------------------------------------
+    // ACTION: CREATE STAFF USER
+    // ----------------------------------------------------
     const email = String(body.email || "").trim();
     const password = String(body.password || "");
     const fullName = String(body.full_name || "").trim();
@@ -94,6 +186,41 @@ serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Check staff seat capacity (Base 4 assigned staff under the owner + extra purchased seats)
+    const { data: shopData } = await adminClient
+      .from("shops")
+      .select("extra_user_seats")
+      .eq("id", shopId)
+      .maybeSingle();
+
+    const extraSeats = Number(shopData?.extra_user_seats || 0);
+    const maxAllowedAssignedUsers = 4 + extraSeats;
+
+    const { count: currentAssignedCount, error: countErr } = await adminClient
+      .from("user_roles")
+      .select("*", { count: "exact", head: true })
+      .eq("shop_id", shopId)
+      .neq("role", "owner");
+
+    if (countErr) {
+      return new Response(JSON.stringify({ error: "Failed to verify shop seat capacity" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if ((currentAssignedCount ?? 0) >= maxAllowedAssignedUsers) {
+      return new Response(
+        JSON.stringify({
+          error: `User seat limit reached (${currentAssignedCount}/${maxAllowedAssignedUsers} assigned). Additional user spaces cost 5,000 TZS per user in Billing.`,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
