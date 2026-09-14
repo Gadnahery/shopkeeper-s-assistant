@@ -138,17 +138,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        setTimeout(() => {
-          void fetchProfile(nextSession.user.id);
-        }, 0);
+        setLoading(true);
+        void fetchProfile(nextSession.user.id).finally(() => {
+          if (isMounted) setLoading(false);
+        });
       } else {
         clearAppQueryCache();
         setShopId(null);
         setProfile(null);
         setRole(null);
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
     void supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
@@ -174,8 +174,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(resolvedSession);
         setUser(resolvedUser);
         setSessionExpired(false);
-        void fetchProfile(resolvedUser.id);
-        setLoading(false);
+        await fetchProfile(resolvedUser.id);
+        if (isMounted) setLoading(false);
         return;
       }
 
