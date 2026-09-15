@@ -7,7 +7,6 @@ import { useMyPageAccess } from "@/hooks/useUserPageAccess";
 import { useIsPlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { MOBILE_PRIMARY_NAV, filterItemsByAccess, isRouteActive } from "./app-navigation";
 import { cn } from "@/lib/utils";
-import { QuickActionSheet } from "./QuickActionSheet";
 
 export function MobileBottomNav() {
   const location = useLocation();
@@ -21,9 +20,7 @@ export function MobileBottomNav() {
   const totalColumns = items.length + 1 + (isPlatformAdmin ? 1 : 0);
 
   return (
-    <>
-      <QuickActionSheet />
-      <nav className="safe-bottom fixed inset-x-3 bottom-3 z-30 md:hidden">
+    <nav className="safe-bottom fixed inset-x-3 bottom-3 z-30 md:hidden">
         <div
           className="mx-auto grid max-w-xl gap-1 rounded-2xl border border-border/80 bg-card/95 px-1.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.4rem)] pt-1.5 shadow-2xl backdrop-blur-xl"
           style={{ gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))` }}
@@ -89,6 +86,5 @@ export function MobileBottomNav() {
           </button>
         </div>
       </nav>
-    </>
   );
 }

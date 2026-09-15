@@ -93,16 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!userRole || !userShopId) {
         if (import.meta.env.DEV) {
-          console.warn("fetchProfile: User has no active shop or role. Signing out deleted user.");
+          console.warn("fetchProfile: User has no active shop or role. Displaying deactivated prompt.");
         }
-        clearStoredSupabaseAuth();
-        clearAppQueryCache();
-        await supabase.auth.signOut();
         setProfile(null);
         setShopId(null);
         setRole(null);
-        setUser(null);
-        setSession(null);
         return;
       }
 

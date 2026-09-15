@@ -38,7 +38,7 @@ export function RestrictedAccessView({ pathname, moduleName }: RestrictedAccessV
     try {
       await signOut();
     } finally {
-      navigate("/login?deleted=true", { replace: true });
+      navigate("/login", { replace: true });
     }
   };
 
@@ -91,12 +91,11 @@ export function RestrictedAccessView({ pathname, moduleName }: RestrictedAccessV
             {isDeactivated ? (
               <Button
                 size="lg"
-                variant="destructive"
                 className="w-full sm:w-auto gap-2 font-semibold shadow-md"
                 onClick={handleSignOut}
               >
-                <LogOut className="w-4 h-4" />
-                {language === "sw" ? "Toka & Rudi Kwenye Kuingia" : "Sign Out & Return to Login"}
+                <ArrowLeft className="w-4 h-4" />
+                {language === "sw" ? "Rudi Kwenye Kuingia" : "Back to Login"}
               </Button>
             ) : (
               <>
@@ -122,14 +121,16 @@ export function RestrictedAccessView({ pathname, moduleName }: RestrictedAccessV
           </div>
 
           {/* Helpful Footer Notice */}
-          <div className="mt-8 pt-6 border-t border-border/60 w-full flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <HelpCircle className="w-3.5 h-3.5 shrink-0" />
-            <span>
-              {language === "sw"
-                ? "Ikiwa una maswali au unahitaji ufikiaji, wasiliana na mwenye akaunti / mmiliki wa duka."
-                : "If you need access or believe this is an error, please contact your shop owner or administrator."}
-            </span>
-          </div>
+          {!isDeactivated && (
+            <div className="mt-8 pt-6 border-t border-border/60 w-full flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                {language === "sw"
+                  ? "Ikiwa una maswali au unahitaji ufikiaji, wasiliana na mwenye akaunti / mmiliki wa duka."
+                  : "If you need access or believe this is an error, please contact your shop owner or administrator."}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

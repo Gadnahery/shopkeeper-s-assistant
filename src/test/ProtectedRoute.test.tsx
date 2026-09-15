@@ -136,6 +136,10 @@ describe("ProtectedRoute", () => {
     renderProtectedRoute("/dashboard");
 
     expect(screen.getByText("Account Does Not Exist or Has Been Deleted")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /back to login/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /return to dashboard/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /go back/i })).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 
   it("allows authenticated users through even when billing is marked locked", () => {
