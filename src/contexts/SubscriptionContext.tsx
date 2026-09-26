@@ -280,17 +280,43 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      const { data, error, response } = await invokeBillingFunction<{ message: string }>("azampay-initiate-subscription", {
-        body: {
-          provider: input.provider,
-          phone_number: input.phoneNumber,
-        },
-      });
+      // Route to HarakaPay (preferred automated path) or AzamPay based on provider
+      const isHaraka =
+        input.provider === "harakapay" ||
+        input.provider === "HarakaPay" ||
+        String(input.provider || "").toLowerCase() === "harakapay";
+
+      const functionName = isHaraka
+        ? "harakapay-initiate-subscription"
+        : "azampay-initiate-subscription";
+
+      const body = isHaraka
+        ? {
+            phone_number: input.phoneNumber,
+            payment_channel: input.provider === "harakapay" ? "mobile_money" : input.provider,
+          }
+        : {
+            provider: input.provider,
+            phone_number: input.phoneNumber,
+          };
+
+      const { data, error, response } = await invokeBillingFunction<{
+        message?: string;
+        message_sw?: string;
+        ok?: boolean;
+        order_id?: string;
+        payment_id?: string;
+      }>(functionName, { body });
 
       if (error) {
         throw new Error(await getFunctionErrorMessage(error, "Failed to start payment", response));
       }
-      return (data ?? { message: "Payment request started" }) as { message: string };
+      return (data ?? { message: "Payment request started" }) as {
+        message: string;
+        message_sw?: string;
+        order_id?: string;
+        payment_id?: string;
+      };
     },
     onSuccess: async () => {
       await Promise.all([

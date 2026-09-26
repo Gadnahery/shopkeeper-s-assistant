@@ -13,6 +13,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { PWAProvider } from "@/contexts/PWAContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { PWAUpdateBanner } from "@/components/pwa/PWAUpdateBanner";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { RouteSeo } from "@/components/seo/RouteSeo";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CommandPalette } from "./components/CommandPalette";
@@ -29,6 +30,8 @@ const FeaturesPage = lazy(() => import("./pages/FeaturesPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const AuthConfirmPage = lazy(() => import("./pages/AuthConfirmPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
@@ -115,6 +118,7 @@ const App = () => (
                   <TooltipProvider>
                     <Toaster />
                     <Sonner />
+                    <CookieConsentBanner />
                     <PWAUpdateBanner />
                     <BrowserRouter>
                       <RouteSeo />
@@ -127,6 +131,8 @@ const App = () => (
                           <Route path="/pricing" element={<PricingPage />} />
                           <Route path="/about" element={<AboutPage />} />
                           <Route path="/contact" element={<ContactPage />} />
+                          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
                           <Route path="/auth/confirm" element={<AuthConfirmPage />} />
                           <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
                           <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />

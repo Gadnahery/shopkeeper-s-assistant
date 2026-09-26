@@ -41,6 +41,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -61,6 +62,14 @@ export default function SignupPage() {
     }
     if (!form.fullName || !form.shopName) {
       toast.error(language === "sw" ? "Tafadhali jaza sehemu zote" : "Please fill in all fields");
+      return;
+    }
+    if (!termsAccepted) {
+      toast.error(
+        language === "sw"
+          ? "Lazima ukubali Masharti na Sera ya Faragha"
+          : "You must accept the Terms and Privacy Policy",
+      );
       return;
     }
     const passwordCheck = checkPasswordStrength(form.password);
@@ -296,9 +305,43 @@ export default function SignupPage() {
               </p>
             </div>
 
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+              />
+              <span className="text-[11px] leading-snug text-muted-foreground">
+                {language === "sw" ? (
+                  <>
+                    Nakubali{" "}
+                    <Link to="/terms-of-service" target="_blank" className="font-semibold text-foreground underline-offset-2 hover:underline">
+                      Masharti ya Huduma
+                    </Link>{" "}
+                    na{" "}
+                    <Link to="/privacy-policy" target="_blank" className="font-semibold text-foreground underline-offset-2 hover:underline">
+                      Sera ya Faragha
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    I agree to the{" "}
+                    <Link to="/terms-of-service" target="_blank" className="font-semibold text-foreground underline-offset-2 hover:underline">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link to="/privacy-policy" target="_blank" className="font-semibold text-foreground underline-offset-2 hover:underline">
+                      Privacy Policy
+                    </Link>
+                  </>
+                )}
+              </span>
+            </label>
+
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !termsAccepted}
               className="mt-2 h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary/90"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}

@@ -14,6 +14,8 @@ export function Footer() {
     { labelEn: "Offline PWA", labelSw: "Bila Mtandao", href: "#offline" },
     { labelEn: "Pricing", labelSw: "Bei", href: "#pricing" },
     { labelEn: "FAQ", labelSw: "Maswali", href: "#faq" },
+    { labelEn: "Privacy", labelSw: "Faragha", href: "/privacy-policy" },
+    { labelEn: "Terms", labelSw: "Masharti", href: "/terms-of-service" },
     { labelEn: "Login", labelSw: "Ingia", href: "/login" },
     { labelEn: "Free Trial", labelSw: "Majaribio Bure", href: "/signup" },
   ];
@@ -67,9 +69,15 @@ export function Footer() {
           <div className="space-y-4 text-center md:text-right">
             <div className="flex flex-wrap items-center justify-center md:justify-end gap-4 text-xs font-medium text-muted-foreground">
               {links.map((link, i) => (
-                <a key={i} href={link.href} className="hover:text-foreground transition-colors">
-                  {isSw ? link.labelSw : link.labelEn}
-                </a>
+                link.href.startsWith("/") ? (
+                  <Link key={i} to={link.href} className="hover:text-foreground transition-colors">
+                    {isSw ? link.labelSw : link.labelEn}
+                  </Link>
+                ) : (
+                  <a key={i} href={link.href} className="hover:text-foreground transition-colors">
+                    {isSw ? link.labelSw : link.labelEn}
+                  </a>
+                )
               ))}
             </div>
             <div className="space-y-0.5 text-xs text-muted-foreground">
