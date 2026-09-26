@@ -130,8 +130,8 @@ export function Hero() {
             >
               <Shield className="h-3.5 w-3.5" />
               {isSw
-                ? "TZS 25,000/mwezi baada ya jaribio · HarakaPay au malipo ya mikono"
-                : "TZS 25,000/mo after trial · HarakaPay or manual payment"}
+                ? "TZS 25,000/mwezi baada ya jaribio · Lipa kwa simu au mikono"
+                : "TZS 25,000/mo after trial · Mobile money or manual payment"}
             </motion.p>
           </div>
 

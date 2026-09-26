@@ -249,7 +249,7 @@ export default function Billing() {
       // Realtime will flip UI when webhook updates the payment row
     } catch (err) {
       setHarakaWaiting(false);
-      toast.error(err instanceof Error ? err.message : "Failed to start HarakaPay payment");
+      toast.error(err instanceof Error ? err.message : "Failed to start payment");
     }
   };
 
@@ -624,14 +624,14 @@ export default function Billing() {
       </div>
 
 
-      {/* HarakaPay — recommended automated path */}
+      {/* Instant mobile-money payment (automated) */}
       {canManageBilling && (
         <Card className="border-primary/30 bg-primary/5 dark:bg-primary/10 shadow-xs overflow-hidden">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-primary" />
-                {language === "sw" ? "Lipa kwa HarakaPay (Inapendekezwa)" : "Pay with HarakaPay (Recommended)"}
+                {language === "sw" ? "Lipa kwa simu (Inapendekezwa)" : "Pay by phone (Recommended)"}
               </CardTitle>
               <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
                 <BadgeCheck className="h-3.5 w-3.5" />

@@ -61,7 +61,7 @@ serve(async (req) => {
     }
     if (!harakaApiKey) {
       return json(
-        { error: "HarakaPay is not configured. Set HARAKAPAY_API_KEY secret." },
+        { error: "Automated mobile payment is not configured." },
         500,
       );
     }
@@ -173,7 +173,7 @@ serve(async (req) => {
         .from("subscription_payments")
         .update({
           status: "failed",
-          message: `HarakaPay collect failed: ${collectResponse.status}`,
+          message: `Payment initiation failed: ${collectResponse.status}`,
           callback_payload: collectBody,
           completed_at: new Date().toISOString(),
         })
@@ -181,7 +181,7 @@ serve(async (req) => {
 
       return json(
         {
-          error: "Failed to initiate HarakaPay payment",
+          error: "Failed to initiate payment",
           details: collectBody,
         },
         502,

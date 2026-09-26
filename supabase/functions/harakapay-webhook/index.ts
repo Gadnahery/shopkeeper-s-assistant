@@ -206,7 +206,7 @@ serve(async (req) => {
           status: "failed",
           provider_reference: providerReference,
           transaction_reference: providerReference,
-          message: "Payment did not complete on HarakaPay",
+          message: "Payment did not complete",
           completed_at: new Date().toISOString(),
         })
         .eq("id", payment.id);
@@ -238,7 +238,7 @@ serve(async (req) => {
         payment: payment as any,
         amountConfigured,
         callbackPayload: { webhook: body, verified: verifiedPayload },
-        message: "HarakaPay payment confirmed",
+        message: "Payment confirmed",
         providerReference,
         utilityReference: orderId,
         provider: "harakapay",
@@ -267,7 +267,7 @@ serve(async (req) => {
       await adminClient.from("notifications").insert({
         shop_id: payment.shop_id,
         title: "Malipo Yamekubaliwa ✅",
-        message: `Malipo yako ya TZS ${Number(payment.amount).toLocaleString()} yamekubaliwa kupitia HarakaPay. WiseCash Pro imeamilishwa.`,
+        message: `Malipo yako ya TZS ${Number(payment.amount).toLocaleString()} yamekubaliwa. WiseCash Pro imeamilishwa.`,
         type: "payment_approved",
       });
     } catch (applyErr) {

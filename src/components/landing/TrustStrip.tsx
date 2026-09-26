@@ -16,7 +16,7 @@ export function TrustStrip() {
     },
     {
       icon: Smartphone,
-      label: isSw ? "Malipo: HarakaPay & mikono" : "HarakaPay & manual pay",
+      label: isSw ? "Malipo kwa simu au mikono" : "Mobile money or manual pay",
     },
     {
       icon: ShieldCheck,

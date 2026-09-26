@@ -67,10 +67,10 @@ export default function PrivacyPolicyPage() {
                 : "hosts database and files. Data may leave Tanzania depending on hosting region; cross-border transfers are regulated under the PDPA."}
             </li>
             <li>
-              <strong className="text-foreground">HarakaPay / AzamPay</strong> —{" "}
+              <strong className="text-foreground">Payment processors</strong> —{" "}
               {isSw
-                ? "wasindikaji wa malipo. Wanapokea namba ya simu na kiasi tu — si data yako yote ya mauzo."
-                : "payment processors. They receive phone number and amount only — never your full sales data."}
+                ? "wasindikaji wa malipo walioidhinishwa. Wanapokea namba ya simu na kiasi tu — si data yako yote ya mauzo."
+                : "licensed payment processors. They receive phone number and amount only — never your full sales data."}
             </li>
           </ul>
 
@@ -97,8 +97,8 @@ export default function PrivacyPolicyPage() {
           </h2>
           <p>
             {isSw
-              ? "WiseCash si benki. Malipo yanachakatwa na watoa huduma walioidhinishwa (HarakaPay, AzamPay, au malipo ya mikono), si na WiseCash moja kwa moja."
-              : "WiseCash is not a bank. Payment processing is handled by licensed third-party providers (HarakaPay, AzamPay, or manual verification), not by WiseCash itself."}
+              ? "WiseCash si benki. Malipo yanachakatwa na watoa huduma walioidhinishwa wa mobile money au malipo ya mikono, si na WiseCash moja kwa moja."
+              : "WiseCash is not a bank. Payment processing is handled by licensed mobile-money providers or manual verification, not by WiseCash itself."}
           </p>
 
           <p className="pt-4 text-xs">
