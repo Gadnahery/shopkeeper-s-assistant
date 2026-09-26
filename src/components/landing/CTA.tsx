@@ -1,78 +1,50 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Download, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { usePWAContext } from "@/contexts/PWAContext";
 
 export function CTA() {
   const { language } = useLanguage();
-  const { install, isInstalled } = usePWAContext();
   const isSw = language === "sw";
 
   return (
-    <section className="py-20 sm:py-24 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
-        <div className="relative overflow-hidden rounded-3xl bg-neutral-950 px-6 py-16 text-center text-white shadow-2xl sm:px-12 sm:py-20 border border-neutral-800">
-          {/* Subtle Ambient Radial Lighting */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
+    <section className="relative overflow-hidden border-t border-border/60">
+      <div className="absolute inset-0 bg-[#0a0f0d]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_50%_100%,rgba(16,185,129,0.18),transparent)]" />
 
-          <div className="relative mx-auto max-w-2xl space-y-5">
-            <span className="inline-block rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-400">
-              {isSw ? "Jaribu Bila Malipo Yoyote ya Awali" : "Zero Risk • 14-Day Free Trial"}
-            </span>
-
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-              {isSw ? "Endesha Biashara Yako kwa Uhakika Zaidi." : "Run Your Business With More Confidence."}
-            </h2>
-
-            <div className="space-y-1.5 text-base sm:text-lg font-medium text-neutral-300">
-              <p>{isSw ? "Jua mauzo yako halisi." : "Know your sales."}</p>
-              <p>{isSw ? "Jua stoki yako inayobaki." : "Know your stock."}</p>
-              <p className="font-bold text-white">{isSw ? "Jua faida yako kila jioni." : "Know your profit."}</p>
-            </div>
-
-            <p className="text-xs sm:text-sm text-neutral-400 max-w-md mx-auto pt-1 leading-relaxed">
-              {isSw
-                ? "Jiunge na wajasiriamali wa Tanzania wanaoacha madaftari na kuendesha biashara kisasa."
-                : "Join hundreds of Tanzanian shop owners moving from paper notebooks to modern business intelligence."}
-            </p>
-
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3.5">
-              <Button
-                asChild
-                size="lg"
-                className="h-13 sm:h-14 w-full sm:w-auto rounded-2xl bg-primary px-8 sm:px-10 text-sm sm:text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Link to="/signup" className="flex items-center justify-center gap-2.5">
-                  <span>{isSw ? "Anza Siku 14 Bure Sasa" : "Start 14-Day Free Trial"}</span>
-                  <ArrowRight className="h-4 w-4 stroke-[2.5]" />
-                </Link>
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => void install()}
-                disabled={isInstalled}
-                className="h-13 sm:h-14 w-full sm:w-auto rounded-2xl border-white/20 bg-white/10 px-7 sm:px-8 text-sm sm:text-base font-semibold text-white hover:bg-white/20 transition-all"
-              >
-                {isInstalled ? (
-                  <Check className="mr-2 h-4 w-4 text-emerald-400" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4 text-emerald-400" />
-                )}
-                <span>
-                  {isInstalled
-                    ? isSw
-                      ? "App Imesakinishwa"
-                      : "App Installed"
-                    : isSw
-                    ? "Pakua App (PWA)"
-                    : "Install App (PWA)"}
-                </span>
-              </Button>
-            </div>
-          </div>
+      <div className="container relative mx-auto max-w-6xl px-4 sm:px-6 py-20 sm:py-28 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-400/90">
+          {isSw ? "Anza leo" : "Get started"}
+        </p>
+        <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight max-w-2xl mx-auto">
+          {isSw
+            ? "Acha madaftari. Anza kujua faida yako."
+            : "Leave the notebooks. Start knowing your profit."}
+        </h2>
+        <p className="mt-4 max-w-lg mx-auto text-sm sm:text-base text-white/55 leading-relaxed">
+          {isSw
+            ? "Jaribu WiseCash siku 14 bure. Hakuna kadi, hakuna malipo ya awali — weka duka lako na uone tofauti."
+            : "Try WiseCash free for 14 days. No card, no upfront fee — set up your shop and see the difference."}
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            asChild
+            size="lg"
+            className="h-12 sm:h-14 rounded-full px-8 text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/25"
+          >
+            <Link to="/signup" className="inline-flex items-center gap-2">
+              {isSw ? "Fungua akaunti bure" : "Create free account"}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="h-12 sm:h-14 rounded-full px-6 text-sm border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+          >
+            <Link to="/contact">{isSw ? "Wasiliana nasi" : "Talk to us"}</Link>
+          </Button>
         </div>
       </div>
     </section>

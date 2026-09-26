@@ -4,360 +4,231 @@ import {
   ArrowRight,
   CheckCircle2,
   TrendingUp,
-  Coins,
   Wallet,
   Zap,
-  Lock,
-  Plus,
-  Check,
+  Shield,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { BrandGlyph } from "@/components/brand/BrandLogo";
+
+const fade = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] },
+});
 
 export function Hero() {
   const { language } = useLanguage();
   const isSw = language === "sw";
 
+  const bullets = isSw
+    ? [
+        "Faida halisi ya siku — si makadirio",
+        "Stoki, mauzo & malipo mahali pamoja",
+        "Inafanya kazi hata bila mtandao",
+      ]
+    : [
+        "True daily profit — not estimates",
+        "Stock, sales & payments in one place",
+        "Works offline when the network drops",
+      ];
+
   return (
-    <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24 border-b border-border/70 bg-gradient-to-b from-background via-background to-muted/20">
-      {/* Subtle ambient lighting */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[360px] bg-primary/8 blur-[130px] rounded-full pointer-events-none" />
+    <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-[#0a0f0d] text-white">
+      {/* Atmosphere */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(16,185,129,0.22),transparent)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+          }}
+        />
+      </div>
 
-      <div className="container relative mx-auto px-4 sm:px-6 max-w-6xl">
-        {/* Main Hero Header (Centered, Punchy, Product-Led) */}
-        <div className="text-center max-w-3xl mx-auto space-y-6">
-          {/* Announcement Pill */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs"
-          >
-            <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>
+      <div className="container relative mx-auto max-w-6xl px-4 sm:px-6 pt-28 pb-16 sm:pt-32 sm:pb-24">
+        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+          {/* Copy */}
+          <div className="lg:col-span-6 space-y-7">
+            <motion.p
+              {...fade(0)}
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-300/90 backdrop-blur-sm"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              {isSw ? "Siku 14 bure · Bila malipo ya awali" : "14-day free trial · No card required"}
+            </motion.p>
+
+            <motion.h1
+              {...fade(0.08)}
+              className="text-[2.15rem] sm:text-5xl lg:text-[3.35rem] font-semibold tracking-tight leading-[1.08] text-white"
+            >
+              {isSw ? (
+                <>
+                  Jua faida yako ya{" "}
+                  <span className="text-emerald-400">kweli</span>
+                  <br className="hidden sm:block" />
+                  kila siku.
+                </>
+              ) : (
+                <>
+                  Know your{" "}
+                  <span className="text-emerald-400">real profit</span>
+                  <br className="hidden sm:block" />
+                  every day.
+                </>
+              )}
+            </motion.h1>
+
+            <motion.p
+              {...fade(0.16)}
+              className="max-w-md text-base sm:text-lg text-white/65 leading-relaxed"
+            >
               {isSw
-                ? "Majaribio ya Siku 14 Bure • Hakuna Malipo ya Awali"
-                : "14-Day Free Trial for All New Accounts • No Upfront Payment"}
-            </span>
-          </motion.div>
+                ? "WiseCash ni POS & ERP ya wafanyabiashara wa Tanzania — mauzo, stoki, gharama na ripoti zilizo wazi, hata offline."
+                : "WiseCash is POS & ERP built for Tanzanian shops — sales, stock, expenses and clear reports, even offline."}
+            </motion.p>
 
-          {/* Core Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-foreground leading-[1.08]"
-          >
-            {isSw ? (
-              <>
-                Acha Kubahatisha Faida Yako <br className="hidden sm:inline" />
-                <span className="bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
-                  Mwisho wa Siku.
-                </span>
-              </>
-            ) : (
-              <>
-                Stop Guessing Your Profit <br className="hidden sm:inline" />
-                <span className="bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
-                  At The End Of The Day.
-                </span>
-              </>
-            )}
-          </motion.h1>
+            <motion.ul {...fade(0.22)} className="space-y-2.5">
+              {bullets.map((b) => (
+                <li key={b} className="flex items-center gap-2.5 text-sm text-white/80">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                  {b}
+                </li>
+              ))}
+            </motion.ul>
 
-          {/* Concise Single-Sentence Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="max-w-2xl text-base sm:text-lg text-muted-foreground font-normal leading-relaxed mx-auto"
-          >
-            {isSw
-              ? "Endesha mauzo, stoki, madeni ya wateja na fedha zako zote kwenye mfumo mmoja rahisi — kwenye simu au kompyuta hata bila intaneti."
-              : "Run your sales, stock, customer credit and finances from one simple business system — works on any phone or laptop, even offline."}
-          </motion.p>
-
-          {/* CTA Group with ENLARGED, IMMERSED BUTTONS */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2"
-          >
-            <Button
-              asChild
-              size="lg"
-              className="h-13 sm:h-14 w-full sm:w-auto rounded-2xl bg-primary px-8 sm:px-10 text-sm sm:text-base font-bold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            <motion.div
+              {...fade(0.28)}
+              className="flex flex-wrap items-center gap-3 pt-1"
             >
-              <Link to="/signup" className="flex items-center justify-center gap-2.5">
-                <span>{isSw ? "Anza Siku 14 Bure" : "Start 14-Day Free Trial"}</span>
-                <ArrowRight className="h-4 w-4 stroke-[2.5]" />
-              </Link>
-            </Button>
+              <Button
+                asChild
+                size="lg"
+                className="h-12 sm:h-14 rounded-full px-7 text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/25"
+              >
+                <Link to="/signup" className="inline-flex items-center gap-2">
+                  {isSw ? "Anza majaribio bure" : "Start free trial"}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-12 sm:h-14 rounded-full px-6 text-sm font-medium border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              >
+                <a href="#showcase">{isSw ? "Angalia jinsi inavyofanya kazi" : "See how it works"}</a>
+              </Button>
+            </motion.div>
 
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="h-13 sm:h-14 w-full sm:w-auto rounded-2xl border-border/80 bg-card px-7 sm:px-8 text-sm sm:text-base font-semibold text-foreground hover:bg-muted transition-all"
+            <motion.p
+              {...fade(0.34)}
+              className="text-xs text-white/45 flex items-center gap-2"
             >
-              <a href="#showcase" className="flex items-center justify-center gap-2">
-                <span>{isSw ? "Tazama Jinsi Inavyofanya Kazi" : "See How It Works"}</span>
-              </a>
-            </Button>
-          </motion.div>
+              <Shield className="h-3.5 w-3.5" />
+              {isSw
+                ? "TZS 25,000/mwezi baada ya jaribio · HarakaPay au malipo ya mikono"
+                : "TZS 25,000/mo after trial · HarakaPay or manual payment"}
+            </motion.p>
+          </div>
 
-          {/* Value Micro-Points */}
+          {/* Product preview card */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2 text-xs text-muted-foreground font-medium"
+            {...fade(0.2)}
+            className="lg:col-span-6 relative"
           >
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span>{isSw ? "Hakuna Kadi ya Benki" : "No credit card required"}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span>{isSw ? "Inafanya kazi bila intaneti" : "Works 100% offline (PWA)"}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span>{isSw ? "Lipa kwa M-Pesa / HaloPesa" : "Vodacom M-Pesa & HaloPesa"}</span>
+            <div className="relative mx-auto max-w-md lg:max-w-none">
+              {/* Glow behind card */}
+              <div className="absolute -inset-4 rounded-3xl bg-emerald-500/20 blur-2xl opacity-60" />
+
+              <div className="relative rounded-2xl border border-white/10 bg-[#111916]/90 backdrop-blur-xl shadow-2xl overflow-hidden">
+                {/* Fake window chrome */}
+                <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                  <span className="ml-2 text-[11px] text-white/40 font-medium">
+                    WiseCash · Dashboard
+                  </span>
+                </div>
+
+                <div className="p-5 sm:p-6 space-y-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider text-white/40">
+                        {isSw ? "Faida ya leo" : "Today’s profit"}
+                      </p>
+                      <p className="mt-1 text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+                        TZS 847,200
+                      </p>
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-emerald-400">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        +18% {isSw ? "vs jana" : "vs yesterday"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/20 p-2.5">
+                      <Wallet className="h-5 w-5 text-emerald-400" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[
+                      {
+                        label: isSw ? "Mauzo" : "Sales",
+                        value: "1.2M",
+                        icon: BarChart3,
+                      },
+                      {
+                        label: isSw ? "Gharama" : "Costs",
+                        value: "352K",
+                        icon: Wallet,
+                      },
+                      {
+                        label: isSw ? "Stoki chini" : "Low stock",
+                        value: "7",
+                        icon: Zap,
+                      },
+                    ].map((s) => (
+                      <div
+                        key={s.label}
+                        className="rounded-xl border border-white/8 bg-white/[0.03] p-3"
+                      >
+                        <s.icon className="h-3.5 w-3.5 text-white/35 mb-2" />
+                        <p className="text-sm font-semibold text-white">{s.value}</p>
+                        <p className="text-[10px] text-white/40 mt-0.5">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3.5 space-y-2.5">
+                    <p className="text-[11px] font-medium text-white/50">
+                      {isSw ? "Mauzo ya hivi karibuni" : "Recent sales"}
+                    </p>
+                    {[
+                      { name: "Mchele 25kg", amt: "45,000", time: "2m" },
+                      { name: "Mafuta 5L", amt: "28,500", time: "14m" },
+                      { name: "Sabuni ×3", amt: "12,000", time: "31m" },
+                    ].map((row) => (
+                      <div
+                        key={row.name}
+                        className="flex items-center justify-between text-xs"
+                      >
+                        <span className="text-white/75">{row.name}</span>
+                        <span className="text-white/90 font-medium">
+                          TZS {row.amt}
+                          <span className="text-white/35 font-normal ml-2">{row.time}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
-
-        {/* HERO PRODUCT VISUAL: Real WiseCash Desktop Browser Mockup */}
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.35 }}
-          className="relative mt-12 sm:mt-16 mx-auto max-w-5xl"
-        >
-          {/* Ambient Shadow Glow behind Browser */}
-          <div className="absolute -inset-1.5 bg-gradient-to-r from-primary/20 via-emerald-500/15 to-primary/20 rounded-3xl blur-2xl opacity-60 pointer-events-none" />
-
-          {/* Browser Container */}
-          <div className="relative rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-2xl overflow-hidden backdrop-blur-xs">
-            {/* Browser Header Bar */}
-            <div className="flex items-center justify-between border-b border-border/80 bg-muted/60 px-4 py-3 sm:px-6 sm:py-3.5">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-rose-500/80" />
-                <span className="h-3 w-3 rounded-full bg-amber-500/80" />
-                <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
-              </div>
-
-              {/* URL Address Bar */}
-              <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-background/80 px-3 py-1 text-xs text-muted-foreground w-64 sm:w-80 justify-center">
-                <Lock className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-mono text-[11px] font-medium text-foreground">wisecash.app/dashboard</span>
-              </div>
-
-              {/* Status Pill */}
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="hidden sm:inline text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  {isSw ? "Mfumo Hai" : "Live"}
-                </span>
-              </div>
-            </div>
-
-            {/* Browser Content: Real WiseCash Dashboard UI */}
-            <div className="p-4 sm:p-6 space-y-4 bg-background">
-              {/* Dashboard Greeting Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <BrandGlyph className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-foreground">
-                      {isSw ? "Habari ya asubuhi, Kariakoo General Store" : "Good morning, Kariakoo General Store"}
-                    </h2>
-                    <p className="text-[11px] text-muted-foreground">
-                      {isSw ? "Ijumaa, 12 Septemba 2026 • Dar es Salaam" : "Friday, Sep 12, 2026 • Dar es Salaam"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Period Filters & New Sale Action */}
-                <div className="flex items-center gap-2">
-                  <div className="hidden sm:flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
-                    <span className="rounded-md bg-card px-2.5 py-1 text-foreground shadow-xs">
-                      {isSw ? "Leo" : "Today"}
-                    </span>
-                    <span className="px-2.5 py-1 text-muted-foreground">{isSw ? "Wiki Hii" : "This Week"}</span>
-                    <span className="px-2.5 py-1 text-muted-foreground">{isSw ? "Mwezi Huu" : "This Month"}</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-xs">
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>{isSw ? "+ Mauzo Mapya" : "+ New Sale"}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3 Real KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* Metric 1: Sales */}
-                <div className="rounded-2xl border border-border/80 bg-card p-3.5 space-y-1 shadow-xs">
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span className="text-xs font-medium">{isSw ? "Mauzo ya Leo" : "Today's Sales"}</span>
-                    <TrendingUp className="h-4 w-4 text-emerald-500" />
-                  </div>
-                  <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground">TZS 1,480,000</p>
-                  <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <span>+18.4%</span>
-                    <span className="text-muted-foreground font-normal">{isSw ? "vs jana" : "vs yesterday"}</span>
-                  </p>
-                </div>
-
-                {/* Metric 2: Net Profit */}
-                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3.5 space-y-1 shadow-xs">
-                  <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
-                    <span className="text-xs font-semibold">{isSw ? "Faida Halisi (P&L)" : "Net Profit (P&L)"}</span>
-                    <Coins className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <p className="text-xl sm:text-2xl font-black tracking-tight text-emerald-700 dark:text-emerald-400">
-                    TZS 420,000
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {isSw ? "Baada ya manunuzi & matumizi" : "After COGS & shop expenses"}
-                  </p>
-                </div>
-
-                {/* Metric 3: Cash In */}
-                <div className="rounded-2xl border border-border/80 bg-card p-3.5 space-y-1 shadow-xs">
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span className="text-xs font-medium">{isSw ? "Pesa Taslimu / M-Pesa" : "Cash / M-Pesa In"}</span>
-                    <Wallet className="h-4 w-4 text-primary" />
-                  </div>
-                  <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground">TZS 1,130,000</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {isSw ? "M-Pesa 65% • Taslimu 35%" : "M-Pesa 65% • Cash 35%"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Lower Section: Chart & Recent Sales Stream */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pt-1">
-                {/* Sales Chart Mockup */}
-                <div className="lg:col-span-7 rounded-2xl border border-border/70 bg-card p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold text-foreground">
-                        {isSw ? "Mwenendo wa Mauzo ya Wiki" : "Weekly Sales Velocity"}
-                      </h4>
-                      <p className="text-[11px] text-muted-foreground">
-                        {isSw ? "Mauzo dhidi ya Faida Halisi" : "Gross revenue vs net margin"}
-                      </p>
-                    </div>
-                    <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                      {isSw ? "Siku 7 Zilizopita" : "Last 7 Days"}
-                    </span>
-                  </div>
-
-                  <div className="h-28 sm:h-32 w-full pt-2">
-                    <svg className="h-full w-full overflow-visible" viewBox="0 0 400 100" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="liveHeroGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      <line x1="0" y1="25" x2="400" y2="25" stroke="currentColor" strokeOpacity="0.08" />
-                      <line x1="0" y1="65" x2="400" y2="65" stroke="currentColor" strokeOpacity="0.08" />
-                      <path
-                        d="M0,80 Q60,35 120,60 T240,30 T320,45 T400,15 L400,100 L0,100 Z"
-                        fill="url(#liveHeroGradient)"
-                      />
-                      <path
-                        d="M0,80 Q60,35 120,60 T240,30 T320,45 T400,15"
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      />
-                      <circle cx="400" cy="15" r="4.5" fill="hsl(var(--primary))" />
-                      <circle cx="400" cy="15" r="7" fill="hsl(var(--primary))" fillOpacity="0.25" />
-                    </svg>
-                  </div>
-
-                  <div className="flex justify-between text-[10px] text-muted-foreground font-mono pt-1">
-                    <span>Jum</span>
-                    <span>Jmt</span>
-                    <span>Jmn</span>
-                    <span>Alh</span>
-                    <span>Ijm</span>
-                    <span>Mms</span>
-                    <span className="font-bold text-foreground">Leo (Ijp)</span>
-                  </div>
-                </div>
-
-                {/* Live Transactions Stream */}
-                <div className="lg:col-span-5 rounded-2xl border border-border/70 bg-card p-4 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-foreground">
-                      {isSw ? "Mauzo ya Hivi Karibuni" : "Recent Sales"}
-                    </h4>
-                    <span className="text-[10px] text-muted-foreground">{isSw ? "Muda Halisi" : "Real-time"}</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between rounded-xl bg-muted/30 p-2 text-xs border border-border/40">
-                      <div>
-                        <p className="font-semibold text-foreground">Azam Wheat Flour 2kg x 4</p>
-                        <p className="text-[10px] text-muted-foreground">M-Pesa • 14:32</p>
-                      </div>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">TZS 16,800</span>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-xl bg-muted/30 p-2 text-xs border border-border/40">
-                      <div>
-                        <p className="font-semibold text-foreground">Kilimanjaro Water 1.5L x 12</p>
-                        <p className="text-[10px] text-muted-foreground">{isSw ? "Taslimu" : "Cash"} • 14:28</p>
-                      </div>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">TZS 18,000</span>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-xl bg-muted/30 p-2 text-xs border border-border/40">
-                      <div>
-                        <p className="font-semibold text-foreground">Panadol Extra (Pack of 10)</p>
-                        <p className="text-[10px] text-muted-foreground">HaloPesa • 14:15</p>
-                      </div>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">TZS 8,500</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Floating Subtle Micro-Pill */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            className="absolute -bottom-4 right-4 sm:-bottom-5 sm:right-8 inline-flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-card px-4 py-2.5 shadow-xl backdrop-blur-md text-xs font-semibold text-foreground"
-          >
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-              <Check className="h-3 w-3 stroke-[3]" />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-foreground">
-                {isSw ? "Mauzo Yamekamilika • Risiti Imetumwa" : "Sale Completed • Receipt Issued"}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                {isSw ? "TZS 45,000 kupitia Vodacom M-Pesa" : "TZS 45,000 via Vodacom M-Pesa"}
-              </p>
-            </div>
-          </motion.div>
-        </motion.div>
       </div>
     </section>
   );

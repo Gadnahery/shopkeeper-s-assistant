@@ -1,41 +1,44 @@
-import { ShieldCheck, WifiOff, Smartphone, Wallet, Coins } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ShieldCheck, WifiOff, Smartphone, Store } from "lucide-react";
 
 export function TrustStrip() {
   const { language } = useLanguage();
   const isSw = language === "sw";
 
-  const trustItems = [
+  const items = [
     {
-      icon: ShieldCheck,
-      text: isSw ? "Siku 14 za Bure Kabisa" : "14-Day Free Trial",
+      icon: Store,
+      label: isSw ? "Imeundwa kwa duka la TZ" : "Built for TZ retail",
     },
     {
       icon: WifiOff,
-      text: isSw ? "Inafanya Kazi Bila Mtandao" : "Works 100% Offline (PWA)",
+      label: isSw ? "Inafanya kazi offline" : "Works offline",
     },
     {
       icon: Smartphone,
-      text: isSw ? "Simu na Kompyuta" : "Phone + Laptop Access",
+      label: isSw ? "Malipo: HarakaPay & mikono" : "HarakaPay & manual pay",
     },
     {
-      icon: Wallet,
-      text: isSw ? "M-Pesa na HaloPesa" : "M-Pesa & Mobile Payments",
-    },
-    {
-      icon: Coins,
-      text: isSw ? "TZS 25,000 tu kwa Mwezi" : "TZS 25,000 / Month Flat",
+      icon: ShieldCheck,
+      label: isSw ? "Data yako, duka lako" : "Your data, your shop",
     },
   ];
 
   return (
-    <section className="border-b border-border/60 bg-muted/20 py-4 sm:py-5">
-      <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-semibold text-muted-foreground">
-          {trustItems.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <item.icon className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-foreground/90">{item.text}</span>
+    <section className="border-b border-border/60 bg-background">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {items.map((item) => (
+            <div
+              key={item.label}
+              className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card/50 px-4 py-3.5"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <item.icon className="h-4 w-4" />
+              </div>
+              <span className="text-xs sm:text-sm font-medium text-foreground leading-snug">
+                {item.label}
+              </span>
             </div>
           ))}
         </div>

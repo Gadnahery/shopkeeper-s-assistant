@@ -1,165 +1,204 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Globe, Sun, Moon, ArrowRight } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Menu, Moon, Sun, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme } from "@/contexts/ThemeContext";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { cn } from "@/lib/utils";
+
+const navLinks = [
+  { href: "#showcase", labelEn: "Product", labelSw: "Bidhaa" },
+  { href: "#offline", labelEn: "Offline", labelSw: "Bila mtandao" },
+  { href: "#pricing", labelEn: "Pricing", labelSw: "Bei" },
+  { href: "#faq", labelEn: "FAQ", labelSw: "Maswali" },
+];
 
 export function Navbar() {
-  const [open, setOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
-
+  const { theme, setTheme } = useTheme();
   const isSw = language === "sw";
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  const navLinks = [
-    { href: "#showcase", labelEn: "Features", labelSw: "Vipengele" },
-    { href: "#offline", labelEn: "Offline PWA", labelSw: "Bila Mtandao" },
-    { href: "#businesses", labelEn: "Solutions", labelSw: "Biashara" },
-    { href: "#pricing", labelEn: "Pricing", labelSw: "Bei" },
-    { href: "#faq", labelEn: "FAQ", labelSw: "Maswali" },
-  ];
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const toggleTheme = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   return (
-    <motion.header
-      initial={{ y: -80 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-border/70 bg-card/90 backdrop-blur-xl transition-all"
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,border-color] duration-300",
+        scrolled
+          ? "border-b border-border/80 bg-background/85 backdrop-blur-xl shadow-sm"
+          : "border-b border-transparent bg-transparent",
+      )}
     >
-      <nav className="container mx-auto flex h-16 sm:h-17 items-center justify-between px-4 sm:px-6 max-w-6xl">
-        <Link to="/" className="flex items-center">
-          <BrandLogo size="md" />
+      <nav className="container mx-auto flex h-16 sm:h-[4.25rem] max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link to="/" className="relative z-10 shrink-0">
+          <BrandLogo
+            size="md"
+            className={cn(
+              !scrolled &&
+                "[&_span]:!text-white [&_div]:!bg-emerald-500/25 [&_div]:!text-emerald-300",
+            )}
+          />
         </Link>
 
-        {/* Desktop nav links */}
+        {/* Desktop links */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="rounded-xl px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className={cn(
+                "rounded-lg px-3.5 py-2 text-sm font-medium transition-colors",
+                scrolled
+                  ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  : "text-white/70 hover:text-white hover:bg-white/10",
+              )}
             >
               {isSw ? link.labelSw : link.labelEn}
             </a>
           ))}
         </div>
 
-        {/* Actions (Language, Theme, Login, Primary CTA) */}
-        <div className="hidden md:flex items-center gap-2.5">
-          {/* Language Toggle */}
+        {/* Desktop actions */}
+        <div className="hidden md:flex items-center gap-2">
           <button
             type="button"
             onClick={() => setLanguage(isSw ? "en" : "sw")}
-            className="flex items-center gap-1.5 rounded-xl border border-border/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-            title={isSw ? "Switch to English" : "Badilisha kwa Kiswahili"}
+            className={cn(
+              "rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-colors",
+              scrolled
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
           >
-            <Globe className="h-3.5 w-3.5 text-primary" />
-            <span>{isSw ? "English" : "Kiswahili"}</span>
+            {isSw ? "EN" : "SW"}
           </button>
-
-          {/* Theme Toggle */}
           <button
             type="button"
-            onClick={(e) => toggleTheme(e)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            onClick={toggleTheme}
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+              scrolled
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+            aria-label="Toggle theme"
           >
             {theme === "dark" ? (
-              <Sun className="h-4 w-4 text-amber-500" />
+              <Sun className="h-4 w-4 text-amber-400" />
             ) : (
-              <Moon className="h-4 w-4 text-foreground" />
+              <Moon className={cn("h-4 w-4", scrolled ? "text-foreground" : "text-white")} />
             )}
           </button>
-
-          {/* Login Link */}
-          <Button variant="ghost" size="sm" asChild className="h-9 px-3 text-xs font-semibold text-foreground">
-            <Link to="/login">{isSw ? "Ingia" : "Login"}</Link>
+          <Button
+            variant="ghost"
+            asChild
+            className={cn(
+              "h-9 rounded-full px-4 text-sm font-medium",
+              scrolled
+                ? "text-foreground hover:bg-muted"
+                : "text-white hover:bg-white/10 hover:text-white",
+            )}
+          >
+            <Link to="/login">{isSw ? "Ingia" : "Sign in"}</Link>
           </Button>
-
-          {/* ENLARGED & IMMERSED Primary CTA Button */}
           <Button
             asChild
-            className="h-10 sm:h-10.5 rounded-full bg-primary px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="h-9 rounded-full px-5 text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-emerald-950 shadow-md shadow-emerald-500/20"
           >
-            <Link to="/signup" className="flex items-center gap-2">
-              <span className="leading-none">{isSw ? "Anza Siku 14 Bure" : "Start Free Trial"}</span>
-              <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+            <Link to="/signup" className="inline-flex items-center gap-1.5">
+              {isSw ? "Anza bure" : "Start free"}
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
         </div>
 
-        {/* Mobile menu toggle & quick actions */}
-        <div className="flex md:hidden items-center gap-2">
+        {/* Mobile */}
+        <div className="flex md:hidden items-center gap-1.5">
           <button
             type="button"
             onClick={() => setLanguage(isSw ? "en" : "sw")}
-            className="flex items-center gap-1 rounded-lg border border-border/80 px-2 py-1 text-xs font-semibold text-muted-foreground"
+            className={cn(
+              "rounded-lg px-2 py-1 text-[11px] font-bold",
+              scrolled ? "text-muted-foreground" : "text-white/80",
+            )}
           >
-            <Globe className="h-3.5 w-3.5 text-primary" />
-            <span>{isSw ? "EN" : "SW"}</span>
+            {isSw ? "EN" : "SW"}
           </button>
-
           <button
             type="button"
-            onClick={(e) => toggleTheme(e)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 text-muted-foreground"
-          >
-            {theme === "dark" ? <Sun className="h-3.5 w-3.5 text-amber-500" /> : <Moon className="h-3.5 w-3.5 text-foreground" />}
-          </button>
-
-          <button
-            type="button"
-            className="p-2 rounded-xl hover:bg-muted text-foreground border border-border/70"
             onClick={() => setOpen(!open)}
-            aria-label="Toggle navigation menu"
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-xl",
+              scrolled
+                ? "border border-border text-foreground"
+                : "border border-white/20 text-white",
+            )}
+            aria-label="Menu"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile Drawer */}
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="border-b border-border bg-card/95 backdrop-blur-xl px-4 py-5 md:hidden space-y-4"
+            className="border-b border-border bg-background/95 backdrop-blur-xl md:hidden overflow-hidden"
           >
-            <div className="flex flex-col gap-1">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+            <div className="container max-w-6xl px-4 py-5 space-y-4">
+              <div className="flex flex-col gap-0.5">
+                {navLinks.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl px-3.5 py-3 text-sm font-semibold text-foreground hover:bg-muted"
+                  >
+                    {isSw ? link.labelSw : link.labelEn}
+                  </a>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2.5 pt-2 border-t border-border">
+                <Button variant="outline" asChild className="h-11 w-full rounded-xl">
+                  <Link to="/login" onClick={() => setOpen(false)}>
+                    {isSw ? "Ingia" : "Sign in"}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  className="h-11 w-full rounded-full bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-semibold"
                 >
-                  {isSw ? link.labelSw : link.labelEn}
-                </a>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-border/80 flex flex-col gap-2.5">
-              <Button variant="outline" asChild className="h-11 w-full justify-center text-xs font-semibold rounded-xl">
-                <Link to="/login" onClick={() => setOpen(false)}>
-                  {isSw ? "Ingia kwenye Akaunti" : "Sign In to Account"}
-                </Link>
-              </Button>
-
-              <Button asChild className="h-11 w-full justify-center bg-primary text-sm font-bold text-primary-foreground rounded-full shadow-md">
-                <Link to="/signup" onClick={() => setOpen(false)} className="flex items-center justify-center gap-2">
-                  <span>{isSw ? "Anza Majaribio ya Siku 14 Bure" : "Start 14-Day Free Trial"}</span>
-                  <ArrowRight className="h-4 w-4 stroke-[2.5]" />
-                </Link>
-              </Button>
+                  <Link
+                    to="/signup"
+                    onClick={() => setOpen(false)}
+                    className="inline-flex items-center justify-center gap-2"
+                  >
+                    {isSw ? "Anza majaribio bure" : "Start free trial"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
+    </header>
   );
 }
