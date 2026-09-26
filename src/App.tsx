@@ -109,17 +109,17 @@ const App = () => (
     {!hasValidSupabaseEnv ? (
       <EnvSetupMessage />
     ) : (
-      <AuthProvider>
-        <LanguageProvider>
-          <ThemeProvider>
-            <SubscriptionProvider>
-              <NotificationProvider>
-                <PWAProvider>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <PWAUpdateBanner />
-                    <BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <SubscriptionProvider>
+                <NotificationProvider>
+                  <PWAProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <PWAUpdateBanner />
                       <CookieConsentBanner />
                       <RouteSeo />
                       <Suspense fallback={<AppLoader />}>
@@ -190,14 +190,14 @@ const App = () => (
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </Suspense>
-                    </BrowserRouter>
-                  </TooltipProvider>
-                </PWAProvider>
-              </NotificationProvider>
-            </SubscriptionProvider>
-          </ThemeProvider>
-        </LanguageProvider>
-      </AuthProvider>
+                    </TooltipProvider>
+                  </PWAProvider>
+                </NotificationProvider>
+              </SubscriptionProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </BrowserRouter>
     )}
   </QueryClientProvider>
 );
