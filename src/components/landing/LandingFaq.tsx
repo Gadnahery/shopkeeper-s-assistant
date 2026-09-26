@@ -48,13 +48,12 @@ export function LandingFaq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="scroll-mt-24 bg-[#F7F7F5] px-5 py-24 sm:px-10 sm:py-32">
-      <div className="mx-auto max-w-[720px]">
-        <h2 className="font-display text-4xl text-[#1A1D29] sm:text-5xl">
+    <section id="faq" className="scroll-mt-24 bg-[#F7F7F5] px-5 py-14 sm:px-10 sm:py-18">
+      <div className="mx-auto max-w-[640px]">
+        <h2 className="font-display text-3xl text-[#1A1D29] sm:text-4xl">
           {isSw ? "Maswali, majibu." : "Questions, answered."}
         </h2>
-
-        <div className="mt-12 divide-y divide-[#E5E7EB] border-t border-[#E5E7EB]">
+        <div className="mt-8 divide-y divide-[#E5E7EB] border-t border-[#E5E7EB]">
           {FAQS.map((f, i) => {
             const isOpen = open === i;
             return (
@@ -62,10 +61,10 @@ export function LandingFaq() {
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 py-5 text-left"
+                  className="flex w-full items-center justify-between gap-4 py-4 text-left"
                   aria-expanded={isOpen}
                 >
-                  <span className="text-[15px] font-medium text-[#1A1D29] sm:text-base">
+                  <span className="text-[15px] font-medium text-[#1A1D29]">
                     {isSw ? f.qSw : f.qEn}
                   </span>
                   {isOpen ? (
@@ -74,13 +73,8 @@ export function LandingFaq() {
                     <Plus className="h-4 w-4 shrink-0 text-[#6B7280]" />
                   )}
                 </button>
-                <div
-                  className={cn(
-                    "overflow-hidden transition-all",
-                    isOpen ? "max-h-40 pb-5" : "max-h-0",
-                  )}
-                >
-                  <p className="text-sm leading-relaxed text-[#6B7280] sm:text-[15px]">
+                <div className={cn("overflow-hidden transition-all", isOpen ? "max-h-40 pb-4" : "max-h-0")}>
+                  <p className="text-sm leading-relaxed text-[#6B7280]">
                     {isSw ? f.aSw : f.aEn}
                   </p>
                 </div>

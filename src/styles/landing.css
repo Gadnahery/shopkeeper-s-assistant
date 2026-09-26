@@ -98,3 +98,14 @@
     transition: none !important;
   }
 }
+
+@keyframes landing-slide-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.landing-slide-progress {
+  width: 100%;
+  transform-origin: left;
+  animation: landing-slide-progress 5s linear forwards;
+}

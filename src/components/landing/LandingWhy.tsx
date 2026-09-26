@@ -12,17 +12,17 @@ export function LandingWhy() {
   const isSw = language === "sw";
 
   return (
-    <section className="bg-[#F7F7F5] px-5 py-24 sm:px-10 sm:py-32">
-      <div className="mx-auto max-w-[1280px]">
+    <section className="bg-[#F7F7F5] px-5 py-14 sm:px-10 sm:py-18">
+      <div className="mx-auto max-w-[1100px]">
         <p className="label-micro">{isSw ? "KWA NINI WISECASH" : "WHY WISECASH"}</p>
-        <h2 className="font-display mt-3 text-4xl text-[#1A1D29] sm:text-5xl">
+        <h2 className="font-display mt-2 text-3xl text-[#1A1D29] sm:text-4xl">
           {isSw ? "Rahisi kwa muundo." : "Simple by design."}
         </h2>
-        <div className="mt-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {POINTS.map((p) => (
             <div key={p.en}>
-              <h3 className="font-display text-3xl text-[#1A1D29]">{isSw ? p.sw : p.en}</h3>
-              <p className="mt-3 text-base leading-relaxed text-[#6B7280]">
+              <h3 className="font-display text-2xl text-[#1A1D29]">{isSw ? p.sw : p.en}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-[#6B7280]">
                 {isSw ? p.bodySw : p.bodyEn}
               </p>
             </div>
