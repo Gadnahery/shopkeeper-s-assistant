@@ -26,8 +26,9 @@ interface AuthContextType {
     fullName: string,
     shopName: string,
     countryCode?: string,
-    referralCode?: string
-  ) => Promise<{ error: AuthError | null }>;
+    referralCode?: string,
+    termsAccepted?: boolean
+  ) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: (intent?: "login" | "signup", referralCode?: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
@@ -209,7 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fullName: string,
     shopName: string,
     countryCode: string = "TZ",
-    referralCode?: string
+    referralCode?: string,
+    termsAccepted?: boolean
   ) => {
     const redirectUrl = getAppUrl();
     const country = getCountryByCode(countryCode);
@@ -228,6 +230,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           locale: country.locale,
           referred_by_code: sanitizedReferralCode,
           referral_code: sanitizedReferralCode,
+          terms_accepted: termsAccepted ? true : false,
+          terms_accepted_at: termsAccepted ? new Date().toISOString() : null,
         },
       },
     });

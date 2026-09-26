@@ -90,7 +90,8 @@ export default function SignupPage() {
         form.fullName,
         form.shopName,
         form.countryCode,
-        form.referralCode
+        form.referralCode,
+        termsAccepted
       );
       if (error) {
         toast.error(

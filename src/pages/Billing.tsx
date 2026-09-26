@@ -70,6 +70,8 @@ export default function Billing() {
     renewalDateLabel,
     submitManualPayment,
     isSubmittingManualPayment,
+    initiatePayment,
+    isInitiatingPayment,
     refreshSubscription,
     isTrialing,
   } = useSubscription();
@@ -82,6 +84,9 @@ export default function Billing() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [harakaPhone, setHarakaPhone] = useState("");
+  const [harakaWaiting, setHarakaWaiting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"harakapay" | "manual">("harakapay");
 
   const { data: shopSettings } = useShopSettings();
   const updateShopSettings = useUpdateShopSettings();
@@ -217,6 +222,46 @@ export default function Billing() {
       toast.error(err instanceof Error ? err.message : "Failed to submit payment");
     }
   };
+
+
+  const handleHarakaPay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canManageBilling) {
+      toast.error(language === "sw" ? "Huna ruhusa ya kulipa" : "You do not have permission to pay");
+      return;
+    }
+    const phone = harakaPhone.trim();
+    if (!phone) {
+      toast.error(language === "sw" ? "Weka namba ya simu" : "Enter your phone number");
+      return;
+    }
+    try {
+      setHarakaWaiting(true);
+      const result = await initiatePayment({
+        provider: "harakapay",
+        phoneNumber: phone,
+      });
+      toast.success(
+        language === "sw"
+          ? (result as any).message_sw || "Angalia simu yako — weka PIN kuthibitisha"
+          : result.message || "Check your phone — enter your PIN to confirm"
+      );
+      // Realtime will flip UI when webhook updates the payment row
+    } catch (err) {
+      setHarakaWaiting(false);
+      toast.error(err instanceof Error ? err.message : "Failed to start HarakaPay payment");
+    }
+  };
+
+  // Clear waiting when payment resolves via Realtime
+  useEffect(() => {
+    if (harakaWaiting && (pendingPayment || latestPayment?.status === "success" || latestPayment?.status === "failed")) {
+      // Keep waiting UI while pending; stop on terminal states handled by banners
+      if (latestPayment?.status === "success" || latestPayment?.status === "failed") {
+        setHarakaWaiting(false);
+      }
+    }
+  }, [harakaWaiting, pendingPayment, latestPayment?.status]);
 
   if (isLoading) {
     return (
@@ -578,6 +623,103 @@ export default function Billing() {
         </Card>
       </div>
 
+
+      {/* HarakaPay — recommended automated path */}
+      {canManageBilling && (
+        <Card className="border-primary/30 bg-primary/5 dark:bg-primary/10 shadow-xs overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Smartphone className="h-5 w-5 text-primary" />
+                {language === "sw" ? "Lipa kwa HarakaPay (Inapendekezwa)" : "Pay with HarakaPay (Recommended)"}
+              </CardTitle>
+              <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                {language === "sw" ? "Otomatiki" : "Automatic"}
+              </Badge>
+            </div>
+            <CardDescription>
+              {language === "sw"
+                ? "Weka namba ya simu → thibitisha PIN kwenye simu → usajili unaamilishwa moja kwa moja (hakuna kusubiri admin)."
+                : "Enter your phone → confirm PIN on your phone → subscription activates automatically (no admin wait)."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {harakaWaiting || (isPending && pendingPayment?.provider === "harakapay") ? (
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground">
+                    {language === "sw" ? "Angalia simu yako" : "Check your phone"}
+                  </h4>
+                  <p className="mt-1 text-sm text-muted-foreground max-w-md">
+                    {language === "sw"
+                      ? "USSD/prompt imetumwa. Weka PIN yako kuthibitisha. Hali itasasishwa kiotomatiki hapa."
+                      : "A USSD/prompt was sent. Enter your PIN to confirm. This page updates automatically when payment completes."}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setHarakaWaiting(false);
+                    refreshSubscription();
+                  }}
+                  className="mt-1"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  {language === "sw" ? "Sasisha hali" : "Refresh status"}
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleHarakaPay} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">
+                    {language === "sw" ? "Namba ya simu (M-Pesa / Airtel / Tigo / Halo)" : "Phone number (M-Pesa / Airtel / Tigo / Halo)"}
+                  </Label>
+                  <Input
+                    type="tel"
+                    inputMode="tel"
+                    value={harakaPhone}
+                    onChange={(e) => setHarakaPhone(e.target.value)}
+                    placeholder="07XXXXXXXX"
+                    required
+                    className="h-11 text-sm"
+                    disabled={isInitiatingPayment}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    type="submit"
+                    disabled={isInitiatingPayment || !harakaPhone.trim()}
+                    className="h-11 px-6 rounded-xl font-semibold gap-2"
+                  >
+                    {isInitiatingPayment ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    {language === "sw"
+                      ? `Lipa TZS ${breakdown.total.toLocaleString()}`
+                      : `Pay TZS ${breakdown.total.toLocaleString()}`}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("manual")}
+                    className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    {language === "sw" ? "Una shida? Lipa kwa mikono →" : "Having trouble? Pay manually →"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main Payment Section: Instructions + Verification Form */}
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left column: Step-by-Step Payment Instructions */}
@@ -586,7 +728,7 @@ export default function Billing() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-primary" />
-                {language === "sw" ? "Maelekezo ya Malipo ya Moja kwa Moja" : "Direct Payment Instructions"}
+                {language === "sw" ? "Njia mbadala: Malipo ya Mikono" : "Fallback: Manual Payment"}
               </CardTitle>
               <CardDescription>
                 {language === "sw"
