@@ -1,31 +1,36 @@
-import { Navbar } from "@/components/landing/Navbar";
-import { Hero } from "@/components/landing/Hero";
-import { TrustStrip } from "@/components/landing/TrustStrip";
-import { ShowcaseSlideshow } from "@/components/landing/ShowcaseSlideshow";
-import { ServicesGrid } from "@/components/landing/ServicesGrid";
-import { OfflineSection } from "@/components/landing/OfflineSection";
-import { BusinessTypes } from "@/components/landing/BusinessTypes";
-import { Pricing } from "@/components/landing/Pricing";
-import { FAQ } from "@/components/landing/FAQ";
-import { CTA } from "@/components/landing/CTA";
-import { Footer } from "@/components/landing/Footer";
+import "@/styles/landing.css";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { LandingHero } from "@/components/landing/LandingHero";
+import { LandingIntro } from "@/components/landing/LandingIntro";
+import { LandingFeatures } from "@/components/landing/LandingFeatures";
+import { LandingSlideshow } from "@/components/landing/LandingSlideshow";
+import { LandingOffline } from "@/components/landing/LandingOffline";
+import { LandingHowItWorks } from "@/components/landing/LandingHowItWorks";
+import { LandingBusinessTypes } from "@/components/landing/LandingBusinessTypes";
+import { LandingWhy } from "@/components/landing/LandingWhy";
+import { LandingPricing } from "@/components/landing/LandingPricing";
+import { LandingFaq } from "@/components/landing/LandingFaq";
+import { LandingCta } from "@/components/landing/LandingCta";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background text-foreground selection:bg-emerald-500/20">
-      <Navbar />
+    <div className="landing min-h-screen overflow-x-hidden selection:bg-[#D99A4E]/25">
+      <LandingNav />
       <main>
-        <Hero />
-        <TrustStrip />
-        <ShowcaseSlideshow />
-        <ServicesGrid />
-        <OfflineSection />
-        <BusinessTypes />
-        <Pricing />
-        <FAQ />
-        <CTA />
+        <LandingHero />
+        <LandingIntro />
+        <LandingFeatures />
+        <LandingSlideshow />
+        <LandingOffline />
+        <LandingHowItWorks />
+        <LandingBusinessTypes />
+        <LandingWhy />
+        <LandingPricing />
+        <LandingFaq />
+        <LandingCta />
       </main>
-      <Footer />
+      <LandingFooter />
     </div>
   );
 }
