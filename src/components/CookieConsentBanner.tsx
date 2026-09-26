@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 
@@ -48,12 +47,12 @@ export function CookieConsentBanner() {
           {isSw
             ? "WiseCash hutumia hifadhi ya ndani kukuweka umeingia, kukumbuka lugha, na kuruhusu app ifanye kazi bila mtandao."
             : "WiseCash uses local storage to keep you signed in, remember your language, and let the app work offline."}{" "}
-          <Link
-            to="/privacy-policy"
+          <a
+            href="/privacy-policy"
             className="font-semibold text-foreground underline-offset-2 hover:underline"
           >
             {isSw ? "Soma zaidi →" : "Learn more →"}
-          </Link>
+          </a>
         </p>
         <Button
           size="sm"

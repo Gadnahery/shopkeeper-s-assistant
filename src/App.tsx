@@ -118,9 +118,9 @@ const App = () => (
                   <TooltipProvider>
                     <Toaster />
                     <Sonner />
-                    <CookieConsentBanner />
                     <PWAUpdateBanner />
                     <BrowserRouter>
+                      <CookieConsentBanner />
                       <RouteSeo />
                       <Suspense fallback={<AppLoader />}>
                         <Routes>

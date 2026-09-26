@@ -17,7 +17,7 @@ const navLinks = [
 
 export function Navbar() {
   const { language, setLanguage } = useLanguage();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const isSw = language === "sw";
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -29,9 +29,9 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const toggleTheme = (e?: React.MouseEvent) => {
+  const onToggleTheme = (e?: React.MouseEvent) => {
     e?.preventDefault();
-    setTheme(theme === "dark" ? "light" : "dark");
+    toggleTheme(e);
   };
 
   return (
@@ -88,7 +88,7 @@ export function Navbar() {
           </button>
           <button
             type="button"
-            onClick={toggleTheme}
+            onClick={onToggleTheme}
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
               scrolled
