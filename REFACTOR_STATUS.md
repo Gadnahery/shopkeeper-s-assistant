@@ -1,37 +1,32 @@
 # WiseCash product refactor status
 
-Master prompt: complete product refactor & iOS-style UX.
-
-## Done (this commit)
+## Done
 
 | Phase | Item | Status |
 |-------|------|--------|
-| 2 | Rename `OLLY_NAVIGATION_ITEMS` → `APP_NAVIGATION_ITEMS` (compat alias kept) | Done |
-| 2 | Design token comment / brand alignment in `index.css` | Done |
-| 3 | Simpler nav group labels (Home, Money, Team…) | Done |
-| 4 | Mobile bottom nav: Home · Sales · **FAB New Sale** · Inventory · Customers · More | Done |
-| 11 | Landing redesign (earlier commits) | Done |
+| 2 | `OLLY_NAVIGATION_ITEMS` → `APP_NAVIGATION_ITEMS` | Done |
+| 4 | Mobile tab bar + center **New Sale** FAB | Done |
+| 7 (UI) | POS payment: Mobile first + waiting/success/failed overlays | Done |
+| 11 | Landing redesign | Done |
 
-## Next (priority order)
+## POS payment (this commit)
 
-1. **POS payment UX** — single “Pay with mobile money” flow + waiting / success / failed states (no provider picker)
-2. **Skeleton loading** system for dashboard, lists, POS
-3. **Dashboard** — action-first home (today’s numbers + quick actions + needs attention)
-4. **Progressive forms** — product / customer sheets (name + price / name + phone)
-5. **Permission checkbox double-toggle** fix in UserPermissionsDialog
-6. Feature folder split (`src/features/*`) — gradual
-7. Offline / sync indicator polish
-8. Full OLLY string sweep in LanguageContext translations if any remain
+- Default method: **Mobile money** (phone → Pay TZS → waiting overlay → success)
+- Secondary: **Cash**, **Credit** (credit needs a customer)
+- Removed: Split / multi-provider picker noise
+- Components: `PaymentWaiting`, `PaymentSuccess`, `PaymentFailed` under `src/features/payments/`
+- Live HarakaPay USSD for **POS sales** still to wire via Edge Function (subscription path already exists)
 
-## Payment rule (UI)
+## Next
 
-- User sees: **Mobile Money** only
-- Provider id remains `harakapay` server-side
-- API key only in Edge Function secrets
-- No HarakaPay brand name in user-facing app strings (per product decision)
+1. Edge Function `payments-create` / status for **sale** amounts (server-side amount, idempotency)
+2. Poll status while waiting; stop on success/fail
+3. Dashboard action-first home + skeletons
+4. Progressive product/customer sheets
+5. Permission checkbox double-toggle fix
 
-## Do not
+## Rules
 
-- Rebuild from scratch
-- Break sales / inventory / offline / RLS
-- Expose payment API keys in Vite
+- UI label: **Mobile money** (no provider brand in primary UI)
+- API keys only in Edge secrets
+- Cash kept for offline shops
