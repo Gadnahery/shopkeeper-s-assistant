@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -44,40 +44,40 @@ function renderLanding() {
 describe("Redesigned LandingPage Component", () => {
   it("renders the hero headline and value proposition cleanly", () => {
     renderLanding();
-    const hasSwahiliHero = screen.queryByText(/Acha Kubahatisha Faida Yako/i);
-    const hasEnglishHero = screen.queryByText(/Stop Guessing Your Profit/i);
-    expect(hasSwahiliHero || hasEnglishHero).toBeTruthy();
-    expect(screen.getAllByText(/Siku 14|14-Day/i).length).toBeGreaterThan(0);
+    // New hero: "Know your business. Grow with confidence." (EN)
+    // or "Jua biashara yako. Kua kwa ujasiri." (SW)
+    const hasEnglishHero = screen.queryByText(/Know your business/i);
+    const hasSwahiliHero = screen.queryByText(/Jua biashara yako/i);
+    expect(hasEnglishHero || hasSwahiliHero).toBeTruthy();
   });
 
-  it("renders the enlarged navbar CTA button with immersed text", () => {
+  it("renders the navbar CTA start free link", () => {
     renderLanding();
-    const ctaButtons = screen.getAllByRole("link", { name: /Anza Siku 14 Bure|Start Free Trial/i });
-    expect(ctaButtons.length).toBeGreaterThan(0);
+    // New nav CTA: "Start free" (EN) or "Anza bure" (SW)
+    const ctaLinks = screen.getAllByRole("link", { name: /Start free|Anza bure/i });
+    expect(ctaLinks.length).toBeGreaterThan(0);
   });
 
-  it("renders the desktop browser mockup with live KPI stats", () => {
+  it("renders the WISECASH brand name in the nav", () => {
     renderLanding();
-    expect(screen.getByText(/wisecash.app\/dashboard/i)).toBeDefined();
-    expect(screen.getByText(/TZS 1,480,000/i)).toBeDefined();
-    expect(screen.getByText(/TZS 420,000/i)).toBeDefined();
-    expect(screen.getByText(/TZS 1,130,000/i)).toBeDefined();
+    const brandElements = screen.getAllByText(/WISECASH/i);
+    expect(brandElements.length).toBeGreaterThan(0);
   });
 
-  it("switches tabs in the interactive product showcase", async () => {
+  it("renders the pricing section with correct monthly amount", () => {
     renderLanding();
-    const inventoryTab = screen.getByRole("button", { name: /Stoki|Inventory/i });
-    fireEvent.click(inventoryTab);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Orodha ya Stoki|Stock Inventory Ledger/i)).toBeDefined();
-    });
+    // Pricing section shows TZS 25,000/month
+    const pricingElements = screen.getAllByText(/25,000/i);
+    expect(pricingElements.length).toBeGreaterThan(0);
   });
 
-  it("renders the single plan pricing card and offline flow", () => {
+  it("renders the offline section with keep selling message", () => {
     renderLanding();
-    expect(screen.getByText(/WiseCash Pro/i)).toBeDefined();
-    expect(screen.getAllByText(/TZS 25,000/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Endelea Kuuza|Keep Selling/i)).toBeDefined();
+    const offlineMsgs = [
+      ...screen.queryAllByText(/Keep selling/i),
+      ...screen.queryAllByText(/Endelea Kuuza/i),
+    ];
+    expect(offlineMsgs.length).toBeGreaterThan(0);
   });
 });
+

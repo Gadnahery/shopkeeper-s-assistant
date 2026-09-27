@@ -103,11 +103,13 @@ export default function Billing() {
     try {
       setOutcome("idle");
       setErrorMessage("");
-      setWaiting(true);
+      // Only show "waiting" AFTER the Edge Function confirms the USSD push was sent
       await initiatePayment({
         provider: "harakapay",
         phoneNumber: p,
       });
+      // If we reach here, HarakaPay accepted the request → show waiting overlay
+      setWaiting(true);
     } catch (err) {
       const msg =
         err instanceof Error

@@ -187,10 +187,15 @@ serve(async (req) => {
 
     const webhookUrl = `${supabaseUrl}/functions/v1/harakapay-webhook`;
 
+    // Pre-generate the row id so we can use it as the external_id placeholder.
+    // external_id is NOT NULL; we'll overwrite it with HarakaPay's order_id once received.
+    const pendingId = crypto.randomUUID();
+
     // Create pending payment row first
     const { data: paymentRow, error: paymentError } = await adminClient
       .from("subscription_payments")
       .insert({
+        id: pendingId,
         shop_id: profile.shop_id,
         initiated_by: user.id,
         provider: "harakapay",
@@ -201,6 +206,7 @@ serve(async (req) => {
         currency: "TZS",
         billing_period_months: 1,
         status: "pending",
+        external_id: pendingId, // placeholder — overwritten with HarakaPay order_id below
         expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
         request_payload: {
           phone: phoneNumber,
