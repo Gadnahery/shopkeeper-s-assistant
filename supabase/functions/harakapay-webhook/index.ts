@@ -85,10 +85,16 @@ serve(async (req) => {
       }
 
       if (statusRes.ok) {
+        // HarakaPay wraps payment details inside a `payment` object:
+        // { success: true, payment: { status, amount, net_amount, fee_amount } }
+        // Fall back to top-level for forward-compat with any flat responses.
+        const paymentObj = (verifiedPayload.payment as Record<string, unknown>) ?? verifiedPayload;
+
         const rawStatus = String(
-          verifiedPayload.status ??
-            verifiedPayload.transaction_status ??
-            verifiedPayload.state ??
+          paymentObj.status ??
+            paymentObj.transaction_status ??
+            paymentObj.state ??
+            verifiedPayload.status ??
             "",
         )
           .trim()
@@ -111,21 +117,24 @@ serve(async (req) => {
         }
 
         feeAmount = Number(
-          verifiedPayload.fee_amount ??
-            verifiedPayload.fee ??
-            verifiedPayload.transaction_fee ??
+          paymentObj.fee_amount ??
+            paymentObj.fee ??
+            paymentObj.transaction_fee ??
+            verifiedPayload.fee_amount ??
             NaN,
         );
         netAmount = Number(
-          verifiedPayload.net_amount ??
-            verifiedPayload.netAmount ??
-            verifiedPayload.amount_received ??
+          paymentObj.net_amount ??
+            paymentObj.netAmount ??
+            paymentObj.amount_received ??
+            verifiedPayload.net_amount ??
             NaN,
         );
         providerReference = String(
-          verifiedPayload.provider_reference ??
-            verifiedPayload.transaction_reference ??
-            verifiedPayload.reference ??
+          paymentObj.provider_reference ??
+            paymentObj.transaction_reference ??
+            paymentObj.reference ??
+            verifiedPayload.provider_reference ??
             orderId,
         );
       } else {

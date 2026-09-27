@@ -1188,7 +1188,6 @@ export default function Inventory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
 
       <QuickAddProductSheet
         open={quickAddOpen}
@@ -1201,5 +1200,6 @@ export default function Inventory() {
           }
         }}
       />
+    </div>
   );
 }

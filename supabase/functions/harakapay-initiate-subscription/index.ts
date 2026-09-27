@@ -103,11 +103,20 @@ function extractProviderError(status: number, body: Record<string, unknown>, raw
   };
 }
 
+/**
+ * normalizePhoneNumber — HarakaPay /collect expects local Tanzanian format:
+ *   0XXXXXXXXX (10 digits, starts with 0)
+ * Accepts: 07XXXXXXXX, 06XXXXXXXX, 255XXXXXXXXX, +255XXXXXXXXX, or bare 9-digit.
+ * Returns "" on invalid input so callers can return a 400.
+ */
 function normalizePhoneNumber(input: string): string {
   const digits = input.replace(/\D/g, "");
-  if (digits.startsWith("255") && digits.length === 12) return digits;
-  if (digits.startsWith("0") && digits.length === 10) return `255${digits.slice(1)}`;
-  if (digits.length === 9) return `255${digits}`;
+  // International: 255 + 9 digits → strip country code → 0 + 9 digits
+  if (digits.startsWith("255") && digits.length === 12) return `0${digits.slice(3)}`;
+  // Already local: 0 + 9 digits (e.g. 0712345678)
+  if (digits.startsWith("0") && digits.length === 10) return digits;
+  // Bare 9-digit (missing leading 0 or country code)
+  if (digits.length === 9) return `0${digits}`;
   return "";
 }
 

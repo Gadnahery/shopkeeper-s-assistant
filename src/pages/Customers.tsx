@@ -777,7 +777,6 @@ export default function Customers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
 
       <QuickAddCustomerSheet
         open={quickAddOpen}
@@ -795,5 +794,6 @@ export default function Customers() {
           }
         }}
       />
+    </div>
   );
 }
