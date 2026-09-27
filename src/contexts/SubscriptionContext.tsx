@@ -76,12 +76,19 @@ async function getFunctionErrorMessage(error: unknown, fallback: string, respons
     try {
       const payload = (await resolvedResponse.clone().json()) as {
         error?: string;
+        error_sw?: string;
+        error_code?: string;
         message?: string;
         details?: unknown;
+        http_status?: number;
       };
 
-      if (payload.error) return payload.error;
-      if (payload.message) return payload.message;
+      // Prefer explicit error string from Edge Function
+      const primary = (payload.error || payload.message || "").trim();
+      if (primary) {
+        const code = payload.error_code ? `[${payload.error_code}] ` : "";
+        return `${code}${primary}`;
+      }
       if (typeof payload.details === "string" && payload.details.trim()) return payload.details;
     } catch {
       try {

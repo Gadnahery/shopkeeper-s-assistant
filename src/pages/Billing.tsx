@@ -48,6 +48,7 @@ export default function Billing() {
   const [phone, setPhone] = useState("");
   const [waiting, setWaiting] = useState(false);
   const [outcome, setOutcome] = useState<"idle" | "success" | "failed">("idle");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const breakdown = useMemo(
     () =>
@@ -70,6 +71,13 @@ export default function Billing() {
       setOutcome("success");
     } else if (status === "failed" || status === "cancelled" || status === "rejected") {
       setWaiting(false);
+      const payMsg = (latestPayment as { message?: string } | null)?.message;
+      setErrorMessage(
+        payMsg ||
+          (isSw
+            ? "Malipo yalikataliwa au yameisha muda."
+            : "Payment was declined or expired."),
+      );
       setOutcome("failed");
     }
   }, [waiting, latestPayment?.status]);
@@ -94,15 +102,23 @@ export default function Billing() {
     }
     try {
       setOutcome("idle");
+      setErrorMessage("");
       setWaiting(true);
       await initiatePayment({
         provider: "harakapay",
         phoneNumber: p,
       });
     } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : isSw
+            ? "Imeshindikana kuanzisha malipo"
+            : "Failed to start payment";
       setWaiting(false);
+      setErrorMessage(msg);
       setOutcome("failed");
-      toast.error(err instanceof Error ? err.message : isSw ? "Imeshindikana kuanzisha malipo" : "Failed to start payment");
+      toast.error(msg);
     }
   };
 
@@ -276,8 +292,15 @@ export default function Billing() {
       {outcome === "failed" && (
         <PaymentFailed
           language={isSw ? "sw" : "en"}
-          onRetry={() => setOutcome("idle")}
-          onDismiss={() => setOutcome("idle")}
+          message={errorMessage}
+          onRetry={() => {
+            setOutcome("idle");
+            setErrorMessage("");
+          }}
+          onDismiss={() => {
+            setOutcome("idle");
+            setErrorMessage("");
+          }}
         />
       )}
     </div>

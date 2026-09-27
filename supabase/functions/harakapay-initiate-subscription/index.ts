@@ -33,6 +33,76 @@ function json(data: unknown, status = 200) {
   });
 }
 
+
+function extractProviderError(status: number, body: Record<string, unknown>, rawText: string): {
+  error: string;
+  error_sw: string;
+  error_code: string;
+} {
+  const fromBody = String(
+    body.message ??
+      body.error ??
+      body.error_message ??
+      body.detail ??
+      body.details ??
+      (typeof body.raw === "string" ? body.raw : "") ??
+      "",
+  ).trim();
+
+  // Map common HTTP statuses to clear operator-facing text
+  if (status === 401 || status === 403) {
+    return {
+      error_code: "provider_auth",
+      error: fromBody || "Payment provider rejected the API key. Check HARAKAPAY_API_KEY in Supabase secrets.",
+      error_sw: fromBody || "Kitufe cha API hakikubaliwi. Angalia siri za HARAKAPAY_API_KEY.",
+    };
+  }
+  if (status === 400 || status === 422) {
+    return {
+      error_code: "provider_validation",
+      error: fromBody || "Payment provider rejected the request (invalid phone or amount).",
+      error_sw: fromBody || "Ombi limekataliwa (namba au kiasi si sahihi).",
+    };
+  }
+  if (status === 429) {
+    return {
+      error_code: "provider_rate_limit",
+      error: fromBody || "Too many payment requests. Please wait a moment and try again.",
+      error_sw: fromBody || "Maombi mengi sana. Subiri kidogo kisha jaribu tena.",
+    };
+  }
+  if (status === 440) {
+    return {
+      error_code: "provider_session",
+      error:
+        fromBody ||
+        "Payment provider returned session error (HTTP 440). API key may be inactive or the account needs activation by HarakaPay support.",
+      error_sw:
+        fromBody ||
+        "Huduma ya malipo imerudisha hitilafu ya kikao (440). Kitufe cha API kinaweza kuwa hakijawashwa.",
+    };
+  }
+  if (status >= 500) {
+    return {
+      error_code: "provider_unavailable",
+      error: fromBody || `Payment provider is temporarily unavailable (HTTP ${status}). Try again later.`,
+      error_sw: fromBody || `Huduma ya malipo haipatikani sasa (HTTP ${status}). Jaribu baadaye.`,
+    };
+  }
+  if (status === 0 || !status) {
+    return {
+      error_code: "provider_network",
+      error: "Could not reach the payment provider. Check HARAKAPAY_BASE_URL and network.",
+      error_sw: "Imeshindikana kuwasiliana na huduma ya malipo. Angalia mtandao.",
+    };
+  }
+  return {
+    error_code: `provider_http_${status}`,
+    error: fromBody || `Payment initiation failed (HTTP ${status}).`,
+    error_sw: fromBody || `Kuanzisha malipo kumeshindikana (HTTP ${status}).`,
+  };
+}
+
 function normalizePhoneNumber(input: string): string {
   const digits = input.replace(/\D/g, "");
   if (digits.startsWith("255") && digits.length === 12) return digits;
@@ -169,20 +239,36 @@ serve(async (req) => {
     }
 
     if (!collectResponse.ok) {
+      const mapped = extractProviderError(
+        collectResponse.status,
+        collectBody,
+        collectText,
+      );
+      const logMessage = `[${mapped.error_code}] HTTP ${collectResponse.status}: ${mapped.error}`;
+
       await adminClient
         .from("subscription_payments")
         .update({
           status: "failed",
-          message: `Payment initiation failed: ${collectResponse.status}`,
-          callback_payload: collectBody,
+          message: logMessage.slice(0, 500),
+          callback_payload: {
+            http_status: collectResponse.status,
+            error_code: mapped.error_code,
+            body: collectBody,
+            raw: collectText.slice(0, 2000),
+          },
           completed_at: new Date().toISOString(),
         })
         .eq("id", paymentRow.id);
 
+      // Surface clear error to client (no secrets)
       return json(
         {
-          error: "Failed to initiate payment",
-          details: collectBody,
+          error: mapped.error,
+          error_sw: mapped.error_sw,
+          error_code: mapped.error_code,
+          http_status: collectResponse.status,
+          payment_id: paymentRow.id,
         },
         502,
       );
@@ -238,8 +324,13 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("harakapay-initiate-subscription error:", err);
+    const msg = (err as Error).message ?? "Unexpected error";
     return json(
-      { error: (err as Error).message ?? "Unexpected error" },
+      {
+        error: msg,
+        error_sw: msg,
+        error_code: "internal_error",
+      },
       500,
     );
   }
