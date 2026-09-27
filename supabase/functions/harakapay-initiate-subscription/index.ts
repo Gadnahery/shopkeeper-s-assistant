@@ -53,7 +53,7 @@ serve(async (req) => {
     const harakaApiKey = Deno.env.get("HARAKAPAY_API_KEY");
     const harakaBaseUrl =
       Deno.env.get("HARAKAPAY_BASE_URL")?.replace(/\/$/, "") ||
-      "https://api.harakapay.net";
+      "https://api.harakapay.com";
     const authHeader = req.headers.get("Authorization");
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRole || !authHeader) {
