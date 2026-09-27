@@ -118,6 +118,70 @@ serve(async (req) => {
 
     // ── ACTION: CANCEL ──
     if (action === "cancel") {
+      // Safety check: before cancelling, verify if the customer already approved the transaction on their phone
+      const orderId = String(
+        payment.external_id || payment.provider_reference || payment.transaction_reference || "",
+      ).trim();
+
+      if (orderId && harakaApiKey && payment.status === "pending") {
+        try {
+          const statusRes = await fetch(
+            `${harakaBaseUrl}/api/v1/status/${encodeURIComponent(orderId)}`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "application/json",
+                "X-API-Key": harakaApiKey,
+              },
+            },
+          );
+          if (statusRes.ok) {
+            const verifiedPayload = (await statusRes.json().catch(() => ({}))) as Record<string, unknown>;
+            const paymentObj = (verifiedPayload.payment as Record<string, unknown>) ?? verifiedPayload;
+            const rawStatus = String(
+              paymentObj.status ??
+                paymentObj.transaction_status ??
+                paymentObj.state ??
+                verifiedPayload.status ??
+                "",
+            )
+              .trim()
+              .toLowerCase();
+
+            if (["completed", "complete", "success", "successful", "paid"].includes(rawStatus)) {
+              // Safety catch: Customer actually completed payment on phone right before pressing Cancel!
+              // Activate subscription immediately instead of cancelling!
+              const amountConfigured = getConfiguredSubscriptionMonthlyPrice();
+              const providerReference = String(
+                paymentObj.provider_reference ??
+                  paymentObj.transaction_reference ??
+                  paymentObj.reference ??
+                  orderId,
+              );
+              await applySubscriptionPaymentSuccess({
+                adminClient,
+                payment: payment as any,
+                amountConfigured,
+                callbackPayload: { verified: verifiedPayload },
+                message: "Payment confirmed via pre-cancellation check",
+                providerReference,
+                utilityReference: orderId,
+                provider: "harakapay",
+              });
+
+              return json({
+                ok: true,
+                status: "success",
+                payment_id: payment.id,
+                message: "Malipo yamekamilika na WiseCash Pro imeamilishwa!",
+              });
+            }
+          }
+        } catch (checkErr) {
+          console.error("Cancel pre-check error:", checkErr);
+        }
+      }
+
       if (payment.status === "pending") {
         await adminClient
           .from("subscription_payments")

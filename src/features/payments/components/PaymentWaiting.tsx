@@ -85,12 +85,12 @@ export function PaymentWaiting({
               variant="ghost"
               disabled={isCancelling}
               onClick={onCancel}
-              className="h-10 rounded-xl text-xs font-medium text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#1A1D29]"
+              className="h-10 rounded-xl text-xs font-semibold text-[#DC2626] hover:bg-[#FEE2E2]/60 hover:text-[#B91C1C]"
             >
               {isCancelling ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-[#DC2626]" />
               ) : (
-                <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                <XCircle className="mr-1.5 h-3.5 w-3.5 text-[#DC2626]" />
               )}
               {isSw ? "Ghairi" : "Cancel"}
             </Button>
