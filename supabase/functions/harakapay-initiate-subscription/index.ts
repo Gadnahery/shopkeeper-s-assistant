@@ -24,6 +24,7 @@ const corsHeaders = {
 type InitiateBody = {
   phone_number?: string;
   payment_channel?: string;
+  amount?: number;
 };
 
 function json(data: unknown, status = 200) {
@@ -145,11 +146,6 @@ serve(async (req) => {
       );
     }
 
-    const amount = getConfiguredSubscriptionMonthlyPrice();
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return json({ error: "Subscription amount is not configured" }, 500);
-    }
-
     // Authenticated caller
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -184,6 +180,25 @@ serve(async (req) => {
         400,
       );
     }
+
+    // Determine amount: client requested amount > configured secret > default 25,000 TZS
+    const configuredPrice = getConfiguredSubscriptionMonthlyPrice();
+    const clientAmount = Number(body.amount);
+    const amount = Number.isFinite(clientAmount) && clientAmount > 0
+      ? clientAmount
+      : (Number.isFinite(configuredPrice) && configuredPrice > 0 ? configuredPrice : 25_000);
+
+    // Cancel any older pending payments for this shop so they don't linger or trigger extra pushes
+    await adminClient
+      .from("subscription_payments")
+      .update({
+        status: "cancelled",
+        message: "Replaced by new payment attempt",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("shop_id", profile.shop_id)
+      .eq("provider", "harakapay")
+      .eq("status", "pending");
 
     const webhookUrl = `${supabaseUrl}/functions/v1/harakapay-webhook`;
 

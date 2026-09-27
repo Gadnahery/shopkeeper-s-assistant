@@ -56,8 +56,10 @@ type SubscriptionContextValue = {
   daysRemaining: number | null;
   renewalDateLabel: string | null;
   refreshSubscription: () => Promise<void>;
-  initiatePayment: (input: InitiatePaymentInput) => Promise<{ message: string }>;
+  initiatePayment: (input: InitiatePaymentInput) => Promise<{ message: string; payment_id?: string; order_id?: string }>;
   isInitiatingPayment: boolean;
+  checkPaymentStatus: (paymentId?: string) => Promise<{ status: string; message?: string }>;
+  cancelPayment: (paymentId?: string) => Promise<{ status: string; message?: string }>;
   submitManualPayment: (input: SubmitManualPaymentInput) => Promise<{ ok: boolean; payment_id: string }>;
   isSubmittingManualPayment: boolean;
 };
@@ -301,6 +303,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         ? {
             phone_number: input.phoneNumber,
             payment_channel: input.provider === "harakapay" ? "mobile_money" : input.provider,
+            amount: 25000,
           }
         : {
             provider: input.provider,
@@ -329,10 +332,52 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["shop-subscription"] }),
         queryClient.invalidateQueries({ queryKey: ["subscription-payments-latest"] }),
+        queryClient.invalidateQueries({ queryKey: ["subscription-payments-pending"] }),
         queryClient.invalidateQueries({ queryKey: ["notifications"] }),
       ]);
     },
   });
+
+  const checkPaymentStatus = async (paymentId?: string) => {
+    const { data, error, response } = await invokeBillingFunction<{
+      ok?: boolean;
+      status: string;
+      message?: string;
+      payment_id?: string;
+    }>("harakapay-check-status", { body: { action: "check", payment_id: paymentId } });
+
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error, "Failed to check payment status", response));
+    }
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["shop-subscription", shopId] }),
+      queryClient.invalidateQueries({ queryKey: ["subscription-payments-latest", shopId] }),
+      queryClient.invalidateQueries({ queryKey: ["subscription-payments-pending", shopId] }),
+    ]);
+
+    return (data ?? { status: "pending" }) as { status: string; message?: string };
+  };
+
+  const cancelPayment = async (paymentId?: string) => {
+    const { data, error, response } = await invokeBillingFunction<{
+      ok?: boolean;
+      status: string;
+      message?: string;
+    }>("harakapay-check-status", { body: { action: "cancel", payment_id: paymentId } });
+
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error, "Failed to cancel payment", response));
+    }
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["shop-subscription", shopId] }),
+      queryClient.invalidateQueries({ queryKey: ["subscription-payments-latest", shopId] }),
+      queryClient.invalidateQueries({ queryKey: ["subscription-payments-pending", shopId] }),
+    ]);
+
+    return (data ?? { status: "cancelled" }) as { status: string; message?: string };
+  };
 
   const submitManualPaymentMutation = useMutation({
     mutationFn: async (input: SubmitManualPaymentInput) => {
@@ -538,6 +583,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       },
       initiatePayment: (input) => initiatePaymentMutation.mutateAsync(input),
       isInitiatingPayment: initiatePaymentMutation.isPending,
+      checkPaymentStatus,
+      cancelPayment,
       submitManualPayment: (input) => submitManualPaymentMutation.mutateAsync(input),
       isSubmittingManualPayment: submitManualPaymentMutation.isPending,
     }),
@@ -558,6 +605,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       queryClient,
       initiatePaymentMutation,
       submitManualPaymentMutation,
+      shopId,
     ],
   );
 

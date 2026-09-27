@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, XCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Props = {
@@ -7,9 +7,19 @@ type Props = {
   language: "en" | "sw";
   onCancel?: () => void;
   onCheckAgain?: () => void;
+  isCancelling?: boolean;
+  isChecking?: boolean;
 };
 
-export function PaymentWaiting({ amountLabel, phoneLabel, language, onCancel, onCheckAgain }: Props) {
+export function PaymentWaiting({
+  amountLabel,
+  phoneLabel,
+  language,
+  onCancel,
+  onCheckAgain,
+  isCancelling,
+  isChecking,
+}: Props) {
   const isSw = language === "sw";
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#1A1D29]/55 p-4 backdrop-blur-sm">
@@ -22,35 +32,48 @@ export function PaymentWaiting({ amountLabel, phoneLabel, language, onCancel, on
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">
           {isSw
-            ? "Thibitisha ombi la malipo kwenye simu:"
-            : "Approve the mobile-money prompt on:"}
+            ? "Weka PIN kuthibitisha ombi kwenye simu:"
+            : "Enter your PIN on your phone to approve:"}
         </p>
         <p className="mt-1 text-base font-semibold text-[#1A1D29]">{phoneLabel}</p>
-        <p className="mt-4 text-2xl font-semibold tracking-tight text-[#1A1D29]">{amountLabel}</p>
+        <p className="mt-3 text-2xl font-bold tracking-tight text-[#1A1D29]">{amountLabel}</p>
         <p className="mt-2 text-xs text-[#6B7280]">
           {isSw
-            ? "Usilipie tena. Tunakagua kiotomatiki…"
-            : "Do not pay again. Checking automatically…"}
+            ? "Tunakagua kiotomatiki mara tu unapoweka PIN au ukighairi…"
+            : "Auto-checking as soon as you confirm or cancel on your phone…"}
         </p>
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="mt-6 flex flex-col gap-2.5">
           {onCheckAgain && (
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-xl"
+              disabled={isChecking || isCancelling}
+              className="h-11 rounded-xl border-[#E5E7EB] font-medium"
               onClick={onCheckAgain}
             >
-              {isSw ? "Angalia tena" : "Check again"}
+              {isChecking ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#D99A4E]" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4 text-[#D99A4E]" />
+              )}
+              {isSw ? "Nimekamilisha (Angalia Tena)" : "I Approved (Check Status)"}
             </Button>
           )}
           {onCancel && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              disabled={isCancelling}
               onClick={onCancel}
-              className="text-sm text-[#6B7280] hover:text-[#1A1D29]"
+              className="h-10 rounded-xl text-xs text-[#DC2626] hover:bg-[#FEE2E2]/50 hover:text-[#B91C1C]"
             >
-              {isSw ? "Ghairi" : "Cancel"}
-            </button>
+              {isCancelling ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <XCircle className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              {isSw ? "Nimeghairi kwenye simu / Ghairi" : "I Cancelled on Phone / Cancel"}
+            </Button>
           )}
         </div>
       </div>

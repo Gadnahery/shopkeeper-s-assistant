@@ -41,6 +41,8 @@ export default function Billing() {
     renewalDateLabel,
     initiatePayment,
     isInitiatingPayment,
+    checkPaymentStatus,
+    cancelPayment,
     refreshSubscription,
     isTrialing,
   } = useSubscription();
@@ -49,6 +51,9 @@ export default function Billing() {
   const [waiting, setWaiting] = useState(false);
   const [outcome, setOutcome] = useState<"idle" | "success" | "failed">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const breakdown = useMemo(
     () =>
@@ -80,7 +85,7 @@ export default function Billing() {
       );
       setOutcome("failed");
     }
-  }, [waiting, latestPayment?.status]);
+  }, [waiting, latestPayment?.status, isSw]);
 
   // If pending payment exists for this provider, show waiting
   useEffect(() => {
@@ -88,6 +93,47 @@ export default function Billing() {
       setWaiting(true);
     }
   }, [pendingPayment?.provider, pendingPayment?.status]);
+
+  // Active polling of HarakaPay status while waiting (every 3.5s)
+  useEffect(() => {
+    if (!waiting) return;
+
+    let isMounted = true;
+    const paymentIdToCheck = activePaymentId || pendingPayment?.id;
+
+    const interval = setInterval(async () => {
+      try {
+        const result = await checkPaymentStatus(paymentIdToCheck || undefined);
+        if (!isMounted) return;
+
+        if (result.status === "success") {
+          setWaiting(false);
+          setOutcome("success");
+          toast.success(
+            isSw
+              ? "Malipo yamekamilika! WiseCash Pro imeamilishwa."
+              : "Payment confirmed! WiseCash Pro is active.",
+          );
+        } else if (["failed", "cancelled", "rejected", "expired"].includes(result.status)) {
+          setWaiting(false);
+          setErrorMessage(
+            result.message ||
+              (isSw
+                ? "Malipo yalighairiwa au hayakukamilika kwenye simu."
+                : "Payment was cancelled or failed on your phone."),
+          );
+          setOutcome("failed");
+        }
+      } catch {
+        // Transient network failures during background poll are ignored
+      }
+    }, 3500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [waiting, activePaymentId, pendingPayment?.id, isSw, checkPaymentStatus]);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,11 +149,14 @@ export default function Billing() {
     try {
       setOutcome("idle");
       setErrorMessage("");
-      // Only show "waiting" AFTER the Edge Function confirms the USSD push was sent
-      await initiatePayment({
+      // Call initiate payment — passes 25,000 TZS
+      const res = await initiatePayment({
         provider: "harakapay",
         phoneNumber: p,
       });
+      if (res?.payment_id) {
+        setActivePaymentId(res.payment_id);
+      }
       // If we reach here, HarakaPay accepted the request → show waiting overlay
       setWaiting(true);
     } catch (err) {
@@ -121,6 +170,63 @@ export default function Billing() {
       setErrorMessage(msg);
       setOutcome("failed");
       toast.error(msg);
+    }
+  };
+
+  const handleCheckAgain = async () => {
+    try {
+      setIsChecking(true);
+      const paymentIdToCheck = activePaymentId || pendingPayment?.id;
+      const result = await checkPaymentStatus(paymentIdToCheck || undefined);
+      if (result.status === "success") {
+        setWaiting(false);
+        setOutcome("success");
+        toast.success(isSw ? "Malipo yamekamilika!" : "Payment completed!");
+      } else if (["failed", "cancelled", "rejected", "expired"].includes(result.status)) {
+        setWaiting(false);
+        setErrorMessage(
+          result.message ||
+            (isSw
+              ? "Malipo yalighairiwa au hayakukamilika kwenye simu."
+              : "Payment was cancelled or failed on your phone."),
+        );
+        setOutcome("failed");
+      } else {
+        toast.info(
+          isSw
+            ? "Muamala bado unashughulikiwa. Weka PIN kwenye simu yako."
+            : "Transaction still processing. Enter your PIN on your phone.",
+        );
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to verify status");
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleCancelPayment = async () => {
+    try {
+      setIsCancelling(true);
+      const paymentIdToCancel = activePaymentId || pendingPayment?.id;
+      await cancelPayment(paymentIdToCancel || undefined);
+      setWaiting(false);
+      setErrorMessage(
+        isSw
+          ? "Malipo yameghairiwa. Hujatozwa chochote."
+          : "Payment was cancelled. You have not been charged.",
+      );
+      setOutcome("failed");
+      toast.info(
+        isSw
+          ? "Malipo yameghairiwa. Hujatozwa chochote."
+          : "Payment cancelled. You were not charged.",
+      );
+    } catch (err) {
+      setWaiting(false);
+      toast.error(err instanceof Error ? err.message : "Failed to cancel");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -275,10 +381,12 @@ export default function Billing() {
       {waiting && (
         <PaymentWaiting
           amountLabel={amountLabel}
-          phoneLabel={phone || "—"}
+          phoneLabel={phone || pendingPayment?.phone_number || "—"}
           language={isSw ? "sw" : "en"}
-          onCheckAgain={() => refreshSubscription()}
-          onCancel={() => setWaiting(false)}
+          onCheckAgain={handleCheckAgain}
+          onCancel={handleCancelPayment}
+          isChecking={isChecking}
+          isCancelling={isCancelling}
         />
       )}
       {outcome === "success" && (
