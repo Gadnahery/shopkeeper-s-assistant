@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useRecordCustomerPayment, useCustomerPayments } from "@/hooks/useCustomers";
+import { QuickAddCustomerSheet } from "@/components/customers/QuickAddCustomerSheet";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { PageLoader } from "@/components/PageLoader";
@@ -60,7 +61,8 @@ export default function Customers() {
   const [mobileCustomerPage, setMobileCustomerPage] = useState(1);
 
   // Inline Master-Detail Panel State (NO POPUPS)
-  const [isAddingCustomer, setIsAddingCustomer] = useState(searchParams.get("new") === "true");
+  const [isAddingCustomer, setIsAddingCustomer] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(searchParams.get("new") === "true");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -138,7 +140,8 @@ export default function Customers() {
   };
 
   const handleStartAddCustomer = () => {
-    setIsAddingCustomer(true);
+    setQuickAddOpen(true);
+    setIsAddingCustomer(false);
     setSelectedCustomer(null);
     setIsEditing(false);
     if (isMobile) setMobileDrawerOpen(true);
@@ -775,5 +778,22 @@ export default function Customers() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+
+      <QuickAddCustomerSheet
+        open={quickAddOpen}
+        onOpenChange={(open) => {
+          setQuickAddOpen(open);
+          if (!open) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("new");
+            setSearchParams(next, { replace: true });
+          }
+        }}
+        onCreated={(c) => {
+          if (c && typeof c === "object" && "id" in (c as object)) {
+            handleSelectCustomer(c as any);
+          }
+        }}
+      />
   );
 }

@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts, useCreateProduct, useDeleteProduct, useUpdateProduct } from "@/hooks/useProducts";
+import { QuickAddProductSheet } from "@/components/inventory/QuickAddProductSheet";
 import { useCategories } from "@/hooks/useCategories";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { BarcodeGenerator } from "@/components/BarcodeGenerator";
@@ -96,8 +97,9 @@ export default function Inventory() {
   }, []);
 
   // Inline Master-Detail Panel State: closed by default unless deep-linked or unsaved draft
-  const [isAddingProduct, setIsAddingProduct] = useState(
-    searchParams.get("new") === "true" || Boolean(initialDraft)
+  const [isAddingProduct, setIsAddingProduct] = useState(Boolean(initialDraft));
+  const [quickAddOpen, setQuickAddOpen] = useState(
+    searchParams.get("new") === "true" || searchParams.get("new") === "1"
   );
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -128,8 +130,8 @@ export default function Inventory() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (searchParams.get("new") === "true") {
-      setIsAddingProduct(true);
+    if (searchParams.get("new") === "true" || searchParams.get("new") === "1") {
+      setQuickAddOpen(true);
       setSelectedProduct(null);
       setEditForm(null);
     }
@@ -1187,5 +1189,17 @@ export default function Inventory() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+
+      <QuickAddProductSheet
+        open={quickAddOpen}
+        onOpenChange={(open) => {
+          setQuickAddOpen(open);
+          if (!open) {
+            const next = new URLSearchParams(searchParams);
+            next.delete("new");
+            setSearchParams(next, { replace: true });
+          }
+        }}
+      />
   );
 }

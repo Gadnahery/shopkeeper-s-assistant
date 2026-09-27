@@ -49,6 +49,10 @@ import { NeedsAttention } from "@/components/dashboard/NeedsAttention";
 import { SalesPerformanceChart } from "@/components/dashboard/SalesPerformanceChart";
 import { TopSellingProducts } from "@/components/dashboard/TopSellingProducts";
 import { RecentSalesList } from "@/components/dashboard/RecentSalesList";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { QuickActionsSkeleton } from "@/components/dashboard/DashboardSkeletons";
+import { QuickAddProductSheet } from "@/components/inventory/QuickAddProductSheet";
+import { QuickAddCustomerSheet } from "@/components/customers/QuickAddCustomerSheet";
 
 function getPeriodDates(period: Exclude<DashboardPeriod, "custom">): { start: string; end: string } {
   const now = new Date();
@@ -77,6 +81,8 @@ export default function Dashboard() {
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<"activity" | "trends" | "alerts">("activity");
+  const [productSheetOpen, setProductSheetOpen] = useState(false);
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
 
   const shopName = profile?.shops?.name || "WiseCash";
   const userName =
@@ -286,6 +292,10 @@ export default function Dashboard() {
           onCustomRangeChange={setCustomRange}
         />
 
+        {isInitialLoading ? <QuickActionsSkeleton /> : (
+          <QuickActions />
+        )}
+
         {/* Row 1: 8-col Primary KPIs + 4-col Needs Attention Side-by-Side */}
         <div className="grid grid-cols-12 gap-2.5 items-stretch">
           <div className="col-span-8">
@@ -368,12 +378,14 @@ export default function Dashboard() {
         {/* Mobile Header: Shop & Today Date */}
         <div className="flex flex-col gap-0.5">
           <h1 className="text-lg font-black tracking-tight text-foreground">
-            Overview — {shopName}
+            {language === "sw" ? `Habari — ${shopName}` : `Hello — ${shopName}`}
           </h1>
           <p className="text-xs text-muted-foreground">
             {format(new Date(), "EEEE, MMMM d yyyy")}
           </p>
         </div>
+
+        {isInitialLoading ? <QuickActionsSkeleton /> : <QuickActions />}
 
         {/* Mobile Period Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
