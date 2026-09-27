@@ -52,17 +52,17 @@ export type AppNavItem = {
 };
 
 export const NAV_GROUP_LABELS: Record<NavGroup, Record<LanguageCode, string>> = {
-  overview: { en: "Overview", sw: "Muhtasari" },
-  operations: { en: "Operations", sw: "Shughuli za Biashara" },
-  relationships: { en: "Relationships", sw: "Mahusiano (CRM & SRM)" },
-  money: { en: "Finance & Accounting", sw: "Fedha na Hesabu" },
-  people: { en: "Human Resources", sw: "Rasilimali Watu (HRM)" },
-  insights: { en: "Reports & Analytics", sw: "Ripoti na Takwimu" },
-  management: { en: "Enterprise Assets", sw: "Mali na Usimamizi" },
-  administration: { en: "Administration", sw: "Utawala wa Mfumo" },
+  overview: { en: "Home", sw: "Nyumbani" },
+  operations: { en: "Operations", sw: "Shughuli" },
+  relationships: { en: "People", sw: "Watu" },
+  money: { en: "Money", sw: "Fedha" },
+  people: { en: "Team", sw: "Timu" },
+  insights: { en: "Reports", sw: "Ripoti" },
+  management: { en: "Assets", sw: "Mali" },
+  administration: { en: "Admin", sw: "Utawala" },
 };
 
-export const OLLY_NAVIGATION_ITEMS: AppNavItem[] = [
+export const APP_NAVIGATION_ITEMS: AppNavItem[] = [
   // Overview
   { to: "/dashboard", group: "overview", labelKey: "nav.overview", icon: LayoutDashboard, mobileLabel: { en: "Home", sw: "Nyumbani" } },
 
@@ -114,10 +114,10 @@ export const PRIMARY_GROUPS: NavGroup[] = [
 
 /** Mobile bottom nav — 4 primary destinations + Menu */
 export const MOBILE_PRIMARY_NAV: AppNavItem[] = [
-  OLLY_NAVIGATION_ITEMS.find((i) => i.to === "/dashboard")!,
-  OLLY_NAVIGATION_ITEMS.find((i) => i.to === "/sales")!,
-  OLLY_NAVIGATION_ITEMS.find((i) => i.to === "/inventory")!,
-  OLLY_NAVIGATION_ITEMS.find((i) => i.to === "/customers")!,
+  APP_NAVIGATION_ITEMS.find((i) => i.to === "/dashboard")!,
+  APP_NAVIGATION_ITEMS.find((i) => i.to === "/sales")!,
+  APP_NAVIGATION_ITEMS.find((i) => i.to === "/inventory")!,
+  APP_NAVIGATION_ITEMS.find((i) => i.to === "/customers")!,
 ];
 
 const MOBILE_FOCUS_ROUTES = [
@@ -164,3 +164,6 @@ export function getShellMeta(pathname: string) {
     backTo: matchedFocusRoute?.backTo ?? null,
   };
 }
+
+/** @deprecated Use APP_NAVIGATION_ITEMS */
+export const OLLY_NAVIGATION_ITEMS = APP_NAVIGATION_ITEMS;

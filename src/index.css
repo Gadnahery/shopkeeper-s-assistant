@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Olly design tokens */
+/* WiseCash design tokens — ink #1A1D29, amber #D99A4E, page #F7F7F5 */
 
 @layer base {
   :root {

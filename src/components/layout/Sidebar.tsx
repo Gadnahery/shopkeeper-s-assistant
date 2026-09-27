@@ -48,7 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  OLLY_NAVIGATION_ITEMS,
+  APP_NAVIGATION_ITEMS,
   NAV_GROUP_LABELS,
   PRIMARY_GROUPS,
   groupNavItems,
@@ -84,7 +84,7 @@ export function Sidebar() {
   const collapsedView = isTablet || isCollapsed;
   const sidebarWidth = collapsedView ? 72 : 230;
 
-  const navItems = filterItemsByAccess(OLLY_NAVIGATION_ITEMS, allowedPages, profile?.shops?.capabilities, role);
+  const navItems = filterItemsByAccess(APP_NAVIGATION_ITEMS, allowedPages, profile?.shops?.capabilities, role);
   const groupedItems = groupNavItems(navItems);
 
   const renderNavItem = (item: AppNavItem, collapsed: boolean) => {
