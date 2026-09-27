@@ -55,26 +55,20 @@ export function PaymentWaiting({
         <p className="mt-2 text-2xl font-bold tracking-tight text-[#1A1D29]">{amountLabel}</p>
 
         {/* 60-Second Countdown Timer Badge */}
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#F3F4F6] px-3.5 py-1 text-xs font-semibold text-[#4B5563]">
+        <div className="mt-3.5 inline-flex items-center gap-1.5 rounded-full bg-[#F3F4F6] px-3.5 py-1 text-xs font-semibold text-[#4B5563]">
           <Clock className="h-3.5 w-3.5 text-[#D99A4E]" />
           <span>
-            {isSw ? "Muda wa ombi:" : "Prompt expires in:"} {secondsLeft}s
+            {isSw ? "Muda uliobaki:" : "Expires in:"} {secondsLeft}s
           </span>
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-[#6B7280]">
-          {isSw
-            ? "Ukighairi kwenye simu, ukurasa huu utatambua moja kwa moja muda ukiisha au ukibonyeza Ghairi."
-            : "If you cancel on your phone, this screen updates automatically or tap Cancel below."}
-        </p>
-
-        <div className="mt-5 flex flex-col gap-2.5">
+        <div className="mt-6 flex flex-col gap-2.5">
           {onCheckAgain && (
             <Button
               type="button"
               variant="outline"
               disabled={isChecking || isCancelling}
-              className="h-11 rounded-xl border-[#E5E7EB] font-medium"
+              className="h-11 rounded-xl border-[#E5E7EB] font-medium text-sm text-[#1A1D29] hover:bg-[#F9FAFB]"
               onClick={onCheckAgain}
             >
               {isChecking ? (
@@ -91,14 +85,14 @@ export function PaymentWaiting({
               variant="ghost"
               disabled={isCancelling}
               onClick={onCancel}
-              className="h-10 rounded-xl text-xs font-medium text-[#DC2626] hover:bg-[#FEE2E2]/60 hover:text-[#B91C1C]"
+              className="h-10 rounded-xl text-xs font-medium text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#1A1D29]"
             >
               {isCancelling ? (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               ) : (
                 <XCircle className="mr-1.5 h-3.5 w-3.5" />
               )}
-              {isSw ? "Nimeghairi kwenye simu / Ghairi" : "I Cancelled on Phone / Cancel"}
+              {isSw ? "Ghairi" : "Cancel"}
             </Button>
           )}
         </div>
