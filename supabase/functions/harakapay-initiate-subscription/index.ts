@@ -162,11 +162,11 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceRole);
 
-    // Resolve shop membership (same pattern as azampay-initiate)
+    // Resolve shop membership — profiles.user_id is the FK to auth.users (not profiles.id)
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
       .select("shop_id, shops(name)")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (profileError || !profile?.shop_id) {
