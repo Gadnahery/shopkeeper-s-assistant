@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrders } from "@/hooks/useOrders";
-import { SalesHistoryView } from "@/components/sales/SalesHistoryView";
-import { POSSaleView } from "@/components/sales/POSSaleView";
+import { SalesHistoryView } from "@/features/sales/components/SalesHistoryView";
+import { POSSaleView } from "@/features/sales/components/POSSaleView";
 import Orders from "./Orders";
 
 interface SalesProps {

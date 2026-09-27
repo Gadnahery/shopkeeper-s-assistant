@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useProducts, useCreateProduct, useDeleteProduct, useUpdateProduct } from "@/hooks/useProducts";
-import { QuickAddProductSheet } from "@/components/inventory/QuickAddProductSheet";
+import { QuickAddProductSheet } from "@/features/inventory";
 import { useCategories } from "@/hooks/useCategories";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { BarcodeGenerator } from "@/components/BarcodeGenerator";

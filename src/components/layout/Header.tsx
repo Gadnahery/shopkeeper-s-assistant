@@ -24,7 +24,7 @@ import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { useIsPlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { useSyncQueue } from "@/hooks/useSyncQueue";
-import { PendingSyncDialog } from "@/components/sync/PendingSyncDialog";
+import { PendingSyncDialog } from "@/features/sync";
 import {
   DropdownMenu,
   DropdownMenuContent,

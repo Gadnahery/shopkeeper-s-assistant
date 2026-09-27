@@ -40,19 +40,19 @@ import {
   DashboardGreeting,
   DASHBOARD_PERIOD_LABELS,
   type DashboardPeriod,
-} from "@/components/dashboard/DashboardGreeting";
+} from "@/features/dashboard";
 import {
   DashboardKpis,
   DashboardKpiSkeleton,
-} from "@/components/dashboard/DashboardKpis";
-import { NeedsAttention } from "@/components/dashboard/NeedsAttention";
-import { SalesPerformanceChart } from "@/components/dashboard/SalesPerformanceChart";
-import { TopSellingProducts } from "@/components/dashboard/TopSellingProducts";
-import { RecentSalesList } from "@/components/dashboard/RecentSalesList";
-import { QuickActions } from "@/components/dashboard/QuickActions";
-import { QuickActionsSkeleton } from "@/components/dashboard/DashboardSkeletons";
-import { QuickAddProductSheet } from "@/components/inventory/QuickAddProductSheet";
-import { QuickAddCustomerSheet } from "@/components/customers/QuickAddCustomerSheet";
+} from "@/features/dashboard";
+import { NeedsAttention } from "@/features/dashboard";
+import { SalesPerformanceChart } from "@/features/dashboard";
+import { TopSellingProducts } from "@/features/dashboard";
+import { RecentSalesList } from "@/features/dashboard";
+import { QuickActions } from "@/features/dashboard";
+import { QuickActionsSkeleton } from "@/features/dashboard";
+import { QuickAddProductSheet } from "@/features/inventory";
+import { QuickAddCustomerSheet } from "@/features/customers";
 
 function getPeriodDates(period: Exclude<DashboardPeriod, "custom">): { start: string; end: string } {
   const now = new Date();

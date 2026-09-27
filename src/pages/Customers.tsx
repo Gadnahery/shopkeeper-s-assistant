@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useRecordCustomerPayment, useCustomerPayments } from "@/hooks/useCustomers";
-import { QuickAddCustomerSheet } from "@/components/customers/QuickAddCustomerSheet";
+import { QuickAddCustomerSheet } from "@/features/customers";
 import { useSalesByCustomer } from "@/hooks/useSales";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { PageLoader } from "@/components/PageLoader";

@@ -25,8 +25,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { PendingSyncDialog } from "@/components/sync/PendingSyncDialog";
-import { OfflineStatusListener } from "@/components/sync/OfflineStatusListener";
+import { PendingSyncDialog } from "@/features/sync";
+import { OfflineStatusListener } from "@/features/sync";
 import { useSyncQueue } from "@/hooks/useSyncQueue";
 
 function OfflineBanner() {
