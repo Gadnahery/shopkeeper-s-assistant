@@ -33,7 +33,7 @@ serve(async (req) => {
     const harakaApiKey = Deno.env.get("HARAKAPAY_API_KEY");
     const harakaBaseUrl =
       Deno.env.get("HARAKAPAY_BASE_URL")?.replace(/\/$/, "") ||
-      "https://api.harakapay.net";
+      "https://harakapay.net";
     const amountConfigured = getConfiguredSubscriptionMonthlyPrice();
 
     if (!supabaseUrl || !supabaseServiceRole || !harakaApiKey) {

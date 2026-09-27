@@ -123,7 +123,7 @@ serve(async (req) => {
     const harakaApiKey = Deno.env.get("HARAKAPAY_API_KEY");
     const harakaBaseUrl =
       Deno.env.get("HARAKAPAY_BASE_URL")?.replace(/\/$/, "") ||
-      "https://api.harakapay.com";
+      "https://harakapay.net";
     const authHeader = req.headers.get("Authorization");
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRole || !authHeader) {
@@ -238,6 +238,36 @@ serve(async (req) => {
       collectBody = { raw: collectText };
     }
 
+    // Official API returns HTTP 200 with { success: false, error: "..." } on business errors
+    const providerSuccess = collectBody.success === true;
+    if (collectResponse.ok && !providerSuccess) {
+      const errText = String(collectBody.error ?? collectBody.message ?? "Payment was not started").trim();
+      await adminClient
+        .from("subscription_payments")
+        .update({
+          status: "failed",
+          message: errText.slice(0, 500),
+          callback_payload: {
+            http_status: collectResponse.status,
+            error_code: "provider_rejected",
+            body: collectBody,
+          },
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", paymentRow.id);
+
+      return json(
+        {
+          error: errText,
+          error_sw: errText,
+          error_code: "provider_rejected",
+          http_status: collectResponse.status,
+          payment_id: paymentRow.id,
+        },
+        400,
+      );
+    }
+
     if (!collectResponse.ok) {
       const mapped = extractProviderError(
         collectResponse.status,
@@ -284,7 +314,7 @@ serve(async (req) => {
     ).trim();
 
     const feeAmount = Number(
-      collectBody.fee_amount ?? collectBody.fee ?? collectBody.transaction_fee ?? 0,
+      collectBody.fee ?? collectBody.fee_amount ?? collectBody.transaction_fee ?? 0,
     );
     const netAmount = Number(
       collectBody.net_amount ??
