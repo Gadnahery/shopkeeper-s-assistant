@@ -26,56 +26,62 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { PendingSyncDialog } from "@/components/sync/PendingSyncDialog";
+import { OfflineStatusListener } from "@/components/sync/OfflineStatusListener";
 import { useSyncQueue } from "@/hooks/useSyncQueue";
 
 function OfflineBanner() {
-  const { isOnline, totalCount, pendingCount, failedCount } = useSyncQueue();
+  const { isOnline, totalCount, isSyncing, failedCount } = useSyncQueue();
   const { language } = useLanguage();
+  const isSw = language === "sw";
   const [syncDialogOpen, setSyncDialogOpen] = useState(false);
 
   if (isOnline && totalCount === 0) return null;
+
+  const message = !isOnline
+    ? totalCount > 0
+      ? isSw
+        ? `Bila mtandao · ${totalCount} zimehifadhiwa kwenye kifaa`
+        : `Offline · ${totalCount} saved on this device`
+      : isSw
+        ? "Bila mtandao · unaweza kuendelea kuuza"
+        : "Offline · you can keep selling"
+    : failedCount > 0
+      ? isSw
+        ? `${failedCount} hazikufaulu kusawazisha`
+        : `${failedCount} failed to sync`
+      : isSyncing
+        ? isSw
+          ? "Inasawazisha…"
+          : "Syncing…"
+        : isSw
+          ? `${totalCount} zinasubiri kusawazishwa`
+          : `${totalCount} waiting to sync`;
 
   return (
     <>
       <div
         className={cn(
-          "flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors",
+          "flex flex-wrap items-center justify-center gap-2 border-b px-4 py-1.5 text-xs font-medium sm:text-sm",
           !isOnline
-            ? "bg-amber-500/90 text-amber-950"
+            ? "border-amber-500/20 bg-amber-500/15 text-amber-900 dark:text-amber-200"
             : failedCount > 0
-            ? "bg-rose-500/90 text-white"
-            : "bg-blue-600/90 text-white"
+            ? "border-destructive/20 bg-destructive/10 text-destructive"
+            : "border-border bg-muted/80 text-foreground",
         )}
       >
         {!isOnline ? (
-          <WifiOff className="h-4 w-4 shrink-0" />
+          <WifiOff className="h-3.5 w-3.5 shrink-0" />
         ) : (
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          <Loader2 className={cn("h-3.5 w-3.5 shrink-0", isSyncing && "animate-spin")} />
         )}
-        <span>
-          {!isOnline ? (
-            totalCount > 0 ? (
-              language === "sw"
-                ? `Hauna muunganisho. Mauzo ${totalCount} yamehifadhiwa bila mtandao na yatasawazishwa kiotomatiki.`
-                : `You're offline. ${totalCount} sale(s) saved locally and will sync automatically.`
-            ) : (
-              language === "sw"
-                ? "Hauna muunganisho. Mauzo ya POS yatahifadhiwa bila mtandao."
-                : "You're offline. POS sales will be saved locally."
-            )
-          ) : (
-            language === "sw"
-              ? `Mauzo ${totalCount} yanatunzwa na kusawazishwa na seva sasa...`
-              : `${totalCount} offline sale(s) syncing with server...`
-          )}
-        </span>
+        <span>{message}</span>
         {totalCount > 0 && (
           <button
             type="button"
             onClick={() => setSyncDialogOpen(true)}
-            className="underline underline-offset-2 ml-1 font-bold hover:opacity-80 transition-opacity"
+            className="ml-1 font-semibold underline underline-offset-2 hover:opacity-80"
           >
-            {language === "sw" ? "Tazama Foleni" : "View Queue"}
+            {isSw ? "Angalia" : "View"}
           </button>
         )}
       </div>
@@ -95,6 +101,7 @@ function LayoutContent() {
 
   return (
     <div className="min-h-screen max-w-full overflow-x-clip bg-background text-foreground">
+      <OfflineStatusListener />
       <GlobalProgressBar />
       <OfflineBanner />
       <Sidebar />

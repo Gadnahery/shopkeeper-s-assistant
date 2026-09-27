@@ -16,6 +16,7 @@ export function useSyncQueue() {
     failed: 0,
     total: 0,
   });
+  const [managerSyncing, setManagerSyncing] = useState(syncManager.getIsSyncing());
 
   // Bind queryClient to syncManager for automatic query invalidation
   useEffect(() => {
@@ -24,6 +25,7 @@ export function useSyncQueue() {
 
   const refreshData = useCallback(async () => {
     setIsOnline(syncManager.isOnline());
+    setManagerSyncing(syncManager.getIsSyncing());
     const actions = await syncManager.getPendingActions(shopId);
     const c = await syncManager.getCounts(shopId);
     setPendingActions(actions);
@@ -67,7 +69,7 @@ export function useSyncQueue() {
     syncingCount: counts.syncing,
     failedCount: counts.failed,
     totalCount: counts.total,
-    isSyncing: counts.syncing > 0,
+    isSyncing: managerSyncing || counts.syncing > 0,
     syncNow,
     discardAction,
     retryAction,

@@ -87,7 +87,7 @@ export function PendingSyncDialog({ open, onOpenChange }: PendingSyncDialogProps
                 </div>
                 <div>
                   <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                    <span>{language === "sw" ? "Msururu wa Usawazishaji wa Mauzo" : "Pending Offline Sync Queue"}</span>
+                    <span>{language === "sw" ? "Folio ya nje ya mtandao" : "Offline queue"}</span>
                     {totalCount > 0 && (
                       <Badge variant="secondary" className="text-xs px-2 py-0.5 rounded-full font-bold">
                         {totalCount}
@@ -96,8 +96,8 @@ export function PendingSyncDialog({ open, onOpenChange }: PendingSyncDialogProps
                   </DialogTitle>
                   <DialogDescription className="text-xs text-muted-foreground mt-0.5">
                     {language === "sw"
-                      ? "Mauzo yaliyofanywa bila mtandao yanayotunzwa na kusawazishwa moja kwa moja mtandao unapopatikana."
-                      : "Offline sales stored locally and replayed automatically when internet connectivity is active."}
+                      ? "Mauzo yaliyofanywa bila mtandao yamehifadhiwa hapa na yatasawazishwa ukirudi mtandaoni."
+                      : "Sales made offline are saved here and sync when you are back online."}
                   </DialogDescription>
                 </div>
               </div>

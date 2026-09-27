@@ -45,6 +45,10 @@ class SyncManager {
     return true;
   }
 
+  public getIsSyncing(): boolean {
+    return this.isSyncing;
+  }
+
   public subscribe(listener: SyncListener): () => void {
     this.listeners.add(listener);
     return () => {
@@ -281,9 +285,12 @@ class SyncManager {
                   retryCount: action.retryCount + 1,
                 });
                 failedCount++;
-                toast.error(`Sync conflict for offline sale: ${error.message}`, {
-                  duration: 8000,
-                });
+                toast.error(
+                  error.message
+                    ? `Could not sync a sale: ${error.message}`
+                    : "Could not sync a sale",
+                  { duration: 6000 },
+                );
                 continue;
               }
             }
@@ -293,9 +300,10 @@ class SyncManager {
             syncedCount++;
 
             const invNum = data?.invoice_number || action.optimisticRecord?.invoice_number;
-            toast.success(`Sale ${invNum} synced successfully!`, {
-              duration: 4000,
-            });
+            toast.success(
+              invNum ? `Sale ${invNum} synced` : "Sale synced",
+              { duration: 3000 },
+            );
           }
         } catch (err: any) {
           if (this.isNetworkError(err)) {
@@ -326,6 +334,10 @@ class SyncManager {
     } finally {
       this.isSyncing = false;
       this.notifyListeners();
+    }
+
+    if (syncedCount > 0 && failedCount === 0) {
+      toast.success("All changes synced", { duration: 2500 });
     }
 
     return { synced: syncedCount, failed: failedCount };

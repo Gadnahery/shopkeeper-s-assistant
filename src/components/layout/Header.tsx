@@ -338,7 +338,7 @@ export function Header() {
                 ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20"
                 : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
             )}
-            title={language === "sw" ? "Msururu wa Usawazishaji" : "Pending Sync Queue"}
+            title={language === "sw" ? "Hali ya mtandao" : "Network status"}
           >
             {failedCount > 0 ? (
               <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
@@ -350,15 +350,15 @@ export function Header() {
               <CloudOff className="h-3.5 w-3.5 text-primary shrink-0" />
             )}
 
-            <span className="truncate max-w-[100px] sm:max-w-none">
+            <span className="truncate max-w-[110px] sm:max-w-none">
               {failedCount > 0
-                ? `${failedCount} ${language === "sw" ? "Imeshindwa" : "Failed"}`
+                ? `${failedCount} ${language === "sw" ? "hazikufaulu" : "failed"}`
                 : isSyncing
-                ? `${totalCount} ${language === "sw" ? "Inasawazisha..." : "Syncing..."}`
+                ? (language === "sw" ? "Inasawazisha…" : "Syncing…")
                 : totalCount > 0
-                ? `${totalCount} ${language === "sw" ? "Zinasubiri" : "Pending"}`
+                ? `${totalCount} ${language === "sw" ? "zinasubiri" : "pending"}`
                 : language === "sw"
-                ? "Bila Mtandao"
+                ? "Bila mtandao"
                 : "Offline"}
             </span>
           </Button>
