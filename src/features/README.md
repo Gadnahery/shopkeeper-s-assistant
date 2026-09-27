@@ -1,34 +1,28 @@
 # WiseCash feature modules
 
-Domain code lives under `src/features/<domain>/`.
-
 ```
 src/features/
-  sales/          POS, sale history, sale dialogs
-  inventory/      Product sheets, stock correction
-  customers/      Customer quick-add
-  dashboard/      Home KPIs, quick actions, charts
-  payments/       Subscription payment waiting UI helpers
-  sync/           Offline banner toasts + pending queue dialog
+  sales/       POS, history, dialogs + hooks re-exports
+  inventory/   Product sheets, stock correction + hooks
+  customers/   Quick-add customer + hooks
+  dashboard/   Home KPIs, quick actions, charts
+  payments/    Subscription payment waiting / success / failed overlays
+  billing/     Subscription billing (uses payments overlays)
+  sync/        Offline status + pending queue dialog
 ```
 
-## Public API
+## Payment rules (product)
 
-Import from the barrel when possible:
+| Surface | Behavior |
+|---------|----------|
+| **POS** | Record only (Cash / Mobile / Split / Credit). No USSD push. |
+| **Billing / subscription** | Mobile money prompt via secure Edge Function. UI shows "Pay by phone" / "Waiting for payment". Provider name is not user-facing. |
+
+## Import style
 
 ```ts
-import { POSSaleView, SalesHistoryView } from "@/features/sales";
-import { QuickAddProductSheet } from "@/features/inventory";
-import { QuickActions } from "@/features/dashboard";
+import { POSSaleView, useCreateSale } from "@/features/sales";
+import { PaymentWaiting } from "@/features/payments";
 ```
 
-## Compatibility
-
-Legacy paths under `src/components/{sales,inventory,customers,dashboard,sync}/`
-re-export the feature modules so existing imports keep working.
-
-## Next (gradual)
-
-1. Move domain hooks (`useSales`, `useProducts`, …) into `features/*/hooks` and re-export from `src/hooks/`.
-2. Colocate feature-specific types and validation.
-3. Split large pages (`Inventory.tsx`, `POSSaleView.tsx`) further inside the feature.
+Legacy `@/components/...` paths re-export feature modules for compatibility.

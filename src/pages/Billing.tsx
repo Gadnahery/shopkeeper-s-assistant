@@ -25,6 +25,7 @@ import {
   Share2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PaymentWaiting, PaymentSuccess, PaymentFailed } from "@/features/payments";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,6 +87,7 @@ export default function Billing() {
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [harakaPhone, setHarakaPhone] = useState("");
   const [harakaWaiting, setHarakaWaiting] = useState(false);
+  const [mobilePayOutcome, setMobilePayOutcome] = useState<"idle" | "success" | "failed">("idle");
   const [paymentMethod, setPaymentMethod] = useState<"harakapay" | "manual">("harakapay");
 
   const { data: shopSettings } = useShopSettings();
@@ -253,15 +255,18 @@ export default function Billing() {
     }
   };
 
-  // Clear waiting when payment resolves via Realtime
+  // Resolve waiting UI when Realtime updates payment status
   useEffect(() => {
-    if (harakaWaiting && (pendingPayment || latestPayment?.status === "success" || latestPayment?.status === "failed")) {
-      // Keep waiting UI while pending; stop on terminal states handled by banners
-      if (latestPayment?.status === "success" || latestPayment?.status === "failed") {
-        setHarakaWaiting(false);
-      }
+    if (!harakaWaiting) return;
+    const status = latestPayment?.status;
+    if (status === "success") {
+      setHarakaWaiting(false);
+      setMobilePayOutcome("success");
+    } else if (status === "failed" || status === "cancelled" || status === "rejected") {
+      setHarakaWaiting(false);
+      setMobilePayOutcome("failed");
     }
-  }, [harakaWaiting, pendingPayment, latestPayment?.status]);
+  }, [harakaWaiting, latestPayment?.status]);
 
   if (isLoading) {
     return (
@@ -652,12 +657,12 @@ export default function Billing() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">
-                    {language === "sw" ? "Angalia simu yako" : "Check your phone"}
+                    {language === "sw" ? "Inasubiri malipo" : "Waiting for payment"}
                   </h4>
                   <p className="mt-1 text-sm text-muted-foreground max-w-md">
                     {language === "sw"
-                      ? "USSD/prompt imetumwa. Weka PIN yako kuthibitisha. Hali itasasishwa kiotomatiki hapa."
-                      : "A USSD/prompt was sent. Enter your PIN to confirm. This page updates automatically when payment completes."}
+                      ? "Thibitisha ombi kwenye simu yako. Hali itasasishwa kiotomatiki hapa."
+                      : "Approve the prompt on your phone. This page updates automatically when payment completes."}
                   </p>
                 </div>
                 <Button
@@ -665,13 +670,12 @@ export default function Billing() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setHarakaWaiting(false);
                     refreshSubscription();
                   }}
                   className="mt-1"
                 >
                   <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                  {language === "sw" ? "Sasisha hali" : "Refresh status"}
+                  {language === "sw" ? "Angalia tena" : "Check again"}
                 </Button>
               </div>
             ) : (
@@ -1042,5 +1046,33 @@ export default function Billing() {
         </div>
       </div>
     </div>
+
+      {/* Full-screen mobile money payment states (subscription only) */}
+      {harakaWaiting && (
+        <PaymentWaiting
+          amountLabel={formatCurrency(breakdown.total)}
+          phoneLabel={harakaPhone || "—"}
+          language={language === "sw" ? "sw" : "en"}
+          onCheckAgain={() => refreshSubscription()}
+          onCancel={() => setHarakaWaiting(false)}
+        />
+      )}
+      {mobilePayOutcome === "success" && (
+        <PaymentSuccess
+          amountLabel={formatCurrency(breakdown.total)}
+          language={language === "sw" ? "sw" : "en"}
+          onContinue={() => {
+            setMobilePayOutcome("idle");
+            refreshSubscription();
+          }}
+        />
+      )}
+      {mobilePayOutcome === "failed" && (
+        <PaymentFailed
+          language={language === "sw" ? "sw" : "en"}
+          onRetry={() => setMobilePayOutcome("idle")}
+          onDismiss={() => setMobilePayOutcome("idle")}
+        />
+      )}
   );
 }

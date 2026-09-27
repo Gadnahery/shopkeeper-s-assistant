@@ -3,3 +3,4 @@ export { POSSaleView } from "./components/POSSaleView";
 export { SalesHistoryView } from "./components/SalesHistoryView";
 export { AddProductModal } from "./components/AddProductModal";
 export { EditSaleDialog } from "./components/EditSaleDialog";
+export * from "./hooks/useSales";
