@@ -181,6 +181,58 @@ serve(async (req) => {
       );
     }
 
+    // Active pending check: prevent sending another USSD push while one is already active on the telecom gateway
+    const { data: activePending } = await adminClient
+      .from("subscription_payments")
+      .select("id, created_at, status")
+      .eq("shop_id", profile.shop_id)
+      .eq("provider", "harakapay")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (activePending?.created_at) {
+      const elapsedSec = (Date.now() - new Date(activePending.created_at).getTime()) / 1000;
+      if (elapsedSec < 45) {
+        const remaining = Math.ceil(45 - elapsedSec);
+        return json(
+          {
+            error: `Kuna ombi la malipo linalosubiri kwenye simu yako. Tafadhali thibitisha au subiri sekunde ${remaining} kabla ya kutuma jipya.`,
+            error_sw: `Kuna ombi la malipo linalosubiri kwenye simu yako. Tafadhali thibitisha au subiri sekunde ${remaining} kabla ya kutuma jipya.`,
+            error_code: "pending_prompt_active",
+            payment_id: activePending.id,
+          },
+          429,
+        );
+      }
+    }
+
+    // Cooldown check: prevent sending multiple USSD push prompts within 15 seconds
+    const { data: recentPayment } = await adminClient
+      .from("subscription_payments")
+      .select("id, created_at")
+      .eq("shop_id", profile.shop_id)
+      .eq("provider", "harakapay")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentPayment?.created_at) {
+      const elapsedSec = (Date.now() - new Date(recentPayment.created_at).getTime()) / 1000;
+      if (elapsedSec < 15) {
+        const remaining = Math.ceil(15 - elapsedSec);
+        return json(
+          {
+            error: `Tafadhali subiri sekunde ${remaining} kabla ya kutuma ombi jipya.`,
+            error_sw: `Tafadhali subiri sekunde ${remaining} kabla ya kutuma ombi jipya.`,
+            error_code: "cooldown_active",
+          },
+          429,
+        );
+      }
+    }
+
     // Determine amount: client requested amount > configured secret > default 25,000 TZS
     const configuredPrice = getConfiguredSubscriptionMonthlyPrice();
     const clientAmount = Number(body.amount);

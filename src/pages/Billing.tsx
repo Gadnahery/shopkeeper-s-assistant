@@ -127,7 +127,7 @@ export default function Billing() {
       } catch {
         // Transient network failures during background poll are ignored
       }
-    }, 3500);
+    }, 2500);
 
     return () => {
       isMounted = false;
@@ -210,25 +210,66 @@ export default function Billing() {
       setIsCancelling(true);
       const paymentIdToCancel = activePaymentId || pendingPayment?.id;
       await cancelPayment(paymentIdToCancel || undefined);
-      setWaiting(false);
-      setErrorMessage(
-        isSw
-          ? "Malipo yameghairiwa. Hujatozwa chochote."
-          : "Payment was cancelled. You have not been charged.",
-      );
-      setOutcome("failed");
-      toast.info(
-        isSw
-          ? "Malipo yameghairiwa. Hujatozwa chochote."
-          : "Payment cancelled. You were not charged.",
-      );
-    } catch (err) {
-      setWaiting(false);
-      toast.error(err instanceof Error ? err.message : "Failed to cancel");
+    } catch {
+      // Best effort
     } finally {
       setIsCancelling(false);
+      setWaiting(false);
+      setOutcome("idle");
+      toast.info(isSw ? "Ombi la malipo limeghairiwa." : "Payment request cancelled.");
     }
   };
+
+  const handleTimeout = async () => {
+    try {
+      const paymentIdToCancel = activePaymentId || pendingPayment?.id;
+      await cancelPayment(paymentIdToCancel || undefined);
+    } catch {
+      // Best effort
+    }
+    setWaiting(false);
+    setErrorMessage(
+      isSw
+        ? "Muda wa kuthibitisha kwenye simu umekwisha (sekunde 60) au ombi lilighairiwa. Hujatozwa chochote."
+        : "Confirmation window (60s) expired or prompt was cancelled. You were not charged.",
+    );
+    setOutcome("failed");
+  };
+
+  // Immediate status check when user returns to browser tab
+  useEffect(() => {
+    if (!waiting) return;
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const paymentIdToCheck = activePaymentId || pendingPayment?.id;
+        checkPaymentStatus(paymentIdToCheck || undefined)
+          .then((res) => {
+            if (res.status === "success") {
+              setWaiting(false);
+              setOutcome("success");
+            } else if (["failed", "cancelled", "rejected", "expired"].includes(res.status)) {
+              setWaiting(false);
+              setErrorMessage(
+                res.message ||
+                  (isSw
+                    ? "Malipo yalighairiwa au hayakukamilika kwenye simu."
+                    : "Payment was cancelled or failed on your phone."),
+              );
+              setOutcome("failed");
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
+  }, [waiting, activePaymentId, pendingPayment?.id, isSw, checkPaymentStatus]);
 
   if (isLoading) {
     return (
@@ -385,6 +426,7 @@ export default function Billing() {
           language={isSw ? "sw" : "en"}
           onCheckAgain={handleCheckAgain}
           onCancel={handleCancelPayment}
+          onTimeout={handleTimeout}
           isChecking={isChecking}
           isCancelling={isCancelling}
         />

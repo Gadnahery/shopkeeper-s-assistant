@@ -256,6 +256,29 @@ serve(async (req) => {
         });
       }
 
+      // If the USSD prompt has been pending for more than 60 seconds without completing,
+      // it has timed out on the telecom network (M-Pesa/Tigo USSD session expires in 60s).
+      const createdAtMs = new Date(String(payment.created_at)).getTime();
+      const ageMs = Date.now() - createdAtMs;
+      if (ageMs > 60_000) {
+        const timeoutMsg = "Muda wa kuthibitisha kwenye simu umekwisha au ombi lilighairiwa.";
+        await adminClient
+          .from("subscription_payments")
+          .update({
+            status: "failed",
+            message: timeoutMsg,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", payment.id);
+
+        return json({
+          ok: true,
+          status: "failed",
+          message: timeoutMsg,
+          payment_id: payment.id,
+        });
+      }
+
       return json({ ok: true, status: "pending", payment_id: payment.id });
     } catch (apiErr) {
       console.error("HarakaPay status check error:", apiErr);
