@@ -2,31 +2,23 @@
 
 ## Done
 
-| Phase | Item | Status |
-|-------|------|--------|
-| 2 | `OLLY_NAVIGATION_ITEMS` → `APP_NAVIGATION_ITEMS` | Done |
-| 4 | Mobile tab bar + center **New Sale** FAB | Done |
-| 7 (UI) | POS payment: Mobile first + waiting/success/failed overlays | Done |
-| 11 | Landing redesign | Done |
+| Item | Notes |
+|------|--------|
+| Landing redesign | Editorial, ink/amber, EN default, TZS 25k |
+| Nav: APP_NAVIGATION_ITEMS | OLLY alias deprecated |
+| Mobile tab bar + New Sale FAB | iOS-style |
+| POS payment | **Record only** (Cash / M-Pesa / Split / Credit) — no USSD |
+| Subscription payments | HarakaPay via Edge Functions only |
+| Permission dialog | Fixed double-toggle on checkbox |
 
-## POS payment (this commit)
+## Payment rules (confirmed)
 
-- Default method: **Mobile money** (phone → Pay TZS → waiting overlay → success)
-- Secondary: **Cash**, **Credit** (credit needs a customer)
-- Removed: Split / multi-provider picker noise
-- Components: `PaymentWaiting`, `PaymentSuccess`, `PaymentFailed` under `src/features/payments/`
-- Live HarakaPay USSD for **POS sales** still to wire via Edge Function (subscription path already exists)
+- **POS:** record how the customer paid (cash, mobile ref, credit). No USSD push.
+- **Subscription / Billing:** mobile money USSD via secure Edge Function only.
 
 ## Next
 
-1. Edge Function `payments-create` / status for **sale** amounts (server-side amount, idempotency)
-2. Poll status while waiting; stop on success/fail
-3. Dashboard action-first home + skeletons
-4. Progressive product/customer sheets
-5. Permission checkbox double-toggle fix
-
-## Rules
-
-- UI label: **Mobile money** (no provider brand in primary UI)
-- API keys only in Edge secrets
-- Cash kept for offline shops
+1. Dashboard action-first polish + skeletons
+2. Progressive product/customer sheets
+3. Offline sync indicator polish
+4. Feature folder migration (gradual)

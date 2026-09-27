@@ -38,9 +38,6 @@ import { AddProductModal } from "./AddProductModal";
 import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
-import { PaymentWaiting } from "@/features/payments/components/PaymentWaiting";
-import { PaymentSuccess } from "@/features/payments/components/PaymentSuccess";
-import { PaymentFailed } from "@/features/payments/components/PaymentFailed";
 
 interface CartItem {
   id: string;
@@ -66,10 +63,8 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
   const [cashAmount, setCashAmount] = useState("");
   const [mpesaAmount, setMpesaAmount] = useState("");
   const [cashOverridden, setCashOverridden] = useState(false);
-  const [paymentType, setPaymentType] = useState<"Cash" | "M-Pesa" | "Credit">("M-Pesa");
+  const [paymentType, setPaymentType] = useState<"Cash" | "M-Pesa" | "Split" | "Credit">("Cash");
   const [mpesaCode, setMpesaCode] = useState("");
-  const [mobilePhone, setMobilePhone] = useState("");
-  const [payUi, setPayUi] = useState<"idle" | "waiting" | "success" | "failed">("idle");
   const [selectedCustomer, setSelectedCustomer] = useState("walk-in");
   const [customerMode, setCustomerMode] = useState<"walk-in" | "existing" | "custom">("walk-in");
   const [customerName, setCustomerName] = useState("");
@@ -244,13 +239,12 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
         );
         return;
       }
-    } else if (paymentType === "Cash") {
+    } else {
       if (totalPaid < total) {
         toast.error(language === "sw" ? "Kiasi cha malipo hakitoshi" : "Payment amount is less than total");
         return;
       }
     }
-    // Mobile money: amount is the cart total (server / sale record uses total)
 
     const paymentMethod = paymentType;
     let finalCashAmount = 0;
@@ -260,6 +254,9 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
       finalCashAmount = total;
     } else if (paymentMethod === "M-Pesa") {
       finalMpesaAmount = total;
+    } else if (paymentMethod === "Split") {
+      finalCashAmount = cashPaid;
+      finalMpesaAmount = mpesaPaid;
     } else if (paymentMethod === "Credit") {
       finalCashAmount = 0;
       finalMpesaAmount = 0;
@@ -326,7 +323,6 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
       }
     } catch (e: any) {
       toast.error(e?.message || "Failed to complete sale");
-      throw e;
     }
   };
 
@@ -562,9 +558,24 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
           </div>
         </div>
 
-        {/* Payment — Mobile Money first (Cash / Credit secondary) */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 text-[11px] font-semibold">
+        {/* Payment Method Selector */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold text-foreground">{t("sales.paymentMethod")}</Label>
+          <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted/60 p-1 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType("Cash");
+                setCashOverridden(false);
+                setMpesaAmount("");
+              }}
+              className={cn(
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "Cash" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Cash
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -574,126 +585,137 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
                 setMpesaAmount(String(total));
               }}
               className={cn(
-                "rounded-lg py-2 transition-all text-center",
-                paymentType === "M-Pesa" ? "bg-card text-foreground shadow-xs font-bold" : "text-muted-foreground hover:text-foreground"
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "M-Pesa" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {language === "sw" ? "Simu" : "Mobile"}
+              M-Pesa
             </button>
             <button
               type="button"
               onClick={() => {
-                setPaymentType("Cash");
-                setCashOverridden(false);
-                setMpesaAmount("");
+                setPaymentType("Split");
+                setCashOverridden(true);
               }}
               className={cn(
-                "rounded-lg py-2 transition-all text-center",
-                paymentType === "Cash" ? "bg-card text-foreground shadow-xs font-bold" : "text-muted-foreground hover:text-foreground"
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "Split" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {language === "sw" ? "Fedha" : "Cash"}
+              Split
             </button>
             <button
               type="button"
               onClick={() => {
-                if (customerMode === "walk-in") {
-                  toast.error(language === "sw" ? "Chagua mteja kwa mkopo" : "Select a customer for credit");
-                  return;
-                }
                 setPaymentType("Credit");
+                if (customerMode !== "existing") {
+                  setCustomerMode("existing");
+                  if (customers && customers.length > 0 && selectedCustomer === "walk-in") {
+                    setSelectedCustomer(customers[0].id);
+                  }
+                }
               }}
               className={cn(
-                "rounded-lg py-2 transition-all text-center",
-                paymentType === "Credit" ? "bg-card text-foreground shadow-xs font-bold" : "text-muted-foreground hover:text-foreground"
+                "rounded-lg py-1.5 transition-all text-center",
+                paymentType === "Credit" ? "bg-amber-500 text-white shadow-2xs font-bold" : "text-amber-600 hover:text-amber-700"
               )}
             >
               {language === "sw" ? "Mkopo" : "Credit"}
             </button>
           </div>
+        </div>
 
-          {paymentType === "M-Pesa" && (
-            <div className="space-y-2 rounded-xl border border-border/80 bg-card p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {language === "sw" ? "Malipo kwa simu" : "Pay with mobile money"}
-              </p>
-              <Label className="text-xs font-semibold">
-                {language === "sw" ? "Namba ya simu" : "Phone number"}
-              </Label>
-              <Input
-                type="tel"
-                inputMode="tel"
-                value={mobilePhone}
-                onChange={(e) => setMobilePhone(e.target.value)}
-                placeholder="07XXXXXXXX"
-                className="h-11 rounded-xl text-sm"
-              />
-              <p className="text-[11px] text-muted-foreground">
+        {/* Payment Amount & Method Inputs */}
+        <div className="space-y-2">
+          {paymentType === "Credit" ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/40 p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-100">
+                <Users className="h-4 w-4 text-amber-600" />
+                <span>{language === "sw" ? "Mauzo ya Mkopo (Deni)" : "Credit Sale (Customer Debt)"}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed">
                 {language === "sw"
-                  ? "Utapokea ombi la kuthibitisha kwenye simu yako."
-                  : "You'll get a prompt on your phone to approve."}
+                  ? `Kiasi cha ${formatMoney(total)} kitaongezwa kwenye akaunti ya mteja. Malipo hayahitajiki papo hapo.`
+                  : `Amount of ${formatMoney(total)} will be assigned to customer receivable balance. No immediate cash collected.`}
               </p>
-            </div>
-          )}
-
-          {paymentType === "Cash" && (
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold">Cash (TZS)</Label>
-              <Input
-                type="number"
-                inputMode="decimal"
-                value={cashAmount}
-                onChange={(e) => { setCashOverridden(true); setCashAmount(e.target.value); }}
-                className="h-10 rounded-xl"
-              />
-              {changeDue > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {language === "sw" ? "Chenji" : "Change"}: {formatMoney(changeDue)}
+              {customerMode === "walk-in" ? (
+                <p className="text-[11px] font-bold text-rose-600 pt-0.5">
+                  {language === "sw" ? "⚠️ Tafadhali chagua mteja au andika jina la mteja hapo juu." : "⚠️ Please select a customer or type a customer name above."}
                 </p>
-              )}
+              ) : customerMode === "custom" && !customerName.trim() ? (
+                <p className="text-[11px] font-bold text-rose-600 pt-0.5">
+                  {language === "sw" ? "⚠️ Tafadhali andika jina la mteja hapo juu." : "⚠️ Please type a customer name above."}
+                </p>
+              ) : customerMode === "custom" ? (
+                <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300 pt-0.5">
+                  {language === "sw"
+                    ? `Mteja "${customerName.trim()}" ataongezwa kwenye orodha ya wateja na deni lake kutunzwa.`
+                    : `Customer "${customerName.trim()}" will be saved with this credit debt balance.`}
+                </p>
+              ) : null}
             </div>
-          )}
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-foreground">Cash (TSH)</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    value={cashAmount}
+                    onChange={(e) => { setCashOverridden(true); setCashAmount(e.target.value); }}
+                    onFocus={(e) => { if (e.target.value === "0") { setCashAmount(""); } }}
+                    onBlur={(e) => {
+                      if (!e.target.value.trim()) { setCashOverridden(false); }
+                    }}
+                    placeholder="0"
+                    className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-foreground">M-Pesa / Mobile (TSH)</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    value={mpesaAmount}
+                    onChange={(e) => setMpesaAmount(e.target.value)}
+                    onFocus={(e) => { if (e.target.value === "0") setMpesaAmount(""); }}
+                    placeholder="0"
+                    className="h-9 rounded-xl border-border bg-background text-xs font-bold text-center"
+                  />
+                </div>
+              </div>
 
-          {paymentType === "Credit" && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
-              {language === "sw" ? "Mauzo ya mkopo — deni la mteja." : "Credit sale — customer debt."}
-            </div>
+              {changeDue > 0 && (
+                <div className="flex justify-between rounded-xl bg-[var(--success-bg)] p-2.5 text-xs font-bold text-[var(--success-text)]">
+                  <span>{language === "sw" ? "Chenji ya Mteja" : "Change Due"}</span>
+                  <span>{formatMoney(changeDue)}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        <Button
-          className="w-full h-12 rounded-xl text-sm font-bold gap-2 bg-[#1A1D29] hover:bg-[#2a2e3d] text-white"
-          disabled={createSale.isPending || cartItems.length === 0 || payUi === "waiting"}
-          onClick={async () => {
-            if (paymentType === "M-Pesa") {
-              if (!mobilePhone.trim()) {
-                toast.error(language === "sw" ? "Weka namba ya simu" : "Enter phone number");
-                return;
-              }
-              setMpesaCode(mobilePhone.trim());
-              setMpesaAmount(String(total));
-              setPayUi("waiting");
-              try {
-                await new Promise((r) => setTimeout(r, 600));
-                await handleCompleteSale();
-                setPayUi("success");
-              } catch {
-                setPayUi("failed");
-              }
-              return;
-            }
-            handleCompleteSale();
-          }}
-        >
-          {createSale.isPending || payUi === "waiting" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : null}
-          <span>
-            {paymentType === "M-Pesa"
-              ? (language === "sw" ? `Lipa ${formatMoney(total)}` : `Pay ${formatMoney(total)}`)
-              : (language === "sw" ? "Kamilisha Mauzo" : "Complete Sale")}
-          </span>
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <Button
+            variant="outline"
+            onClick={handleHoldDraft}
+            disabled={cartItems.length === 0}
+            className="h-10 rounded-xl text-xs flex-1"
+          >
+            <History className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+            <span>{t("sales.saveAsDraft")}</span>
+          </Button>
 
+          <Button
+            onClick={handleCompleteSale}
+            disabled={cartItems.length === 0 || createSale.isPending}
+            className="h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground flex-[2] shadow-xs hover:bg-primary/90"
+          >
+            {createSale.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1 text-accent" />}
+            <span>{language === "sw" ? "Kamilisha Mauzo" : "Complete Sale"}</span>
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -1061,31 +1083,6 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
       </Sheet>
 
       {/* Receipt Modal */}
-
-      {payUi === "waiting" && (
-        <PaymentWaiting
-          amountLabel={formatMoney(total)}
-          phoneLabel={mobilePhone || "—"}
-          language={language === "sw" ? "sw" : "en"}
-          onCancel={() => setPayUi("idle")}
-        />
-      )}
-      {payUi === "success" && (
-        <PaymentSuccess
-          amountLabel={formatMoney(total)}
-          language={language === "sw" ? "sw" : "en"}
-          onContinue={() => setPayUi("idle")}
-          onViewReceipt={() => { setPayUi("idle"); setShowReceipt(true); }}
-        />
-      )}
-      {payUi === "failed" && (
-        <PaymentFailed
-          language={language === "sw" ? "sw" : "en"}
-          onRetry={() => setPayUi("idle")}
-          onDismiss={() => setPayUi("idle")}
-        />
-      )}
-
       {showReceipt && lastSale && (
         <Receipt
           data={lastSale}

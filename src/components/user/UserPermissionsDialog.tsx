@@ -261,8 +261,8 @@ export function UserPermissionsDialog({
                       <div className="flex items-center gap-2.5 truncate pr-2">
                         <Checkbox
                           checked={isChecked}
-                          onCheckedChange={() => togglePath(item.path)}
-                          className="h-4 w-4 rounded data-[state=checked]:bg-primary"
+                          className="h-4 w-4 rounded data-[state=checked]:bg-primary pointer-events-none"
+                          tabIndex={-1}
                         />
                         <div className="truncate">
                           <p className="truncate text-xs font-semibold text-foreground">
