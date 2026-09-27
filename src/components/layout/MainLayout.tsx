@@ -108,7 +108,7 @@ function LayoutContent() {
       <div
         className={cn(
           "min-w-0 max-w-full overflow-x-clip transition-[margin,width] duration-300",
-          showMobileNav && "pb-20",
+          showMobileNav && "pb-28",
         )}
         style={{
           marginLeft: sidebarOffset,
@@ -120,7 +120,7 @@ function LayoutContent() {
         <main
           className={cn(
             "safe-bottom min-h-[calc(100vh-4.5rem)] min-w-0 max-w-full overflow-x-clip px-3 pt-3 sm:px-4 sm:pt-4 lg:px-5 xl:px-6",
-            showMobileNav ? "pb-24" : "pb-4 sm:pb-5",
+            showMobileNav ? "pb-28" : "pb-4 sm:pb-5",
           )}
         >
           <motion.div
