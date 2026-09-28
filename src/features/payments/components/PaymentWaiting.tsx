@@ -24,8 +24,8 @@ export function PaymentWaiting({
   isChecking,
 }: Props) {
   const isSw = language === "sw";
-  const [secondsLeft, setSecondsLeft] = useState(45);
-  const endTimeRef = useRef<number>(Date.now() + 45_000);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const endTimeRef = useRef<number>(Date.now() + 60_000);
   const hasTimedOutRef = useRef(false);
   const onTimeoutRef = useRef(onTimeout);
   onTimeoutRef.current = onTimeout;
@@ -48,24 +48,24 @@ export function PaymentWaiting({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#1A1D29]/55 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-[24px] bg-white p-7 text-center shadow-2xl">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#FEF7E6]">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-[24px] bg-white dark:bg-[#1A1D29] border border-border/40 dark:border-[#2E344A] p-7 text-center shadow-2xl">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#FEF7E6] dark:bg-[#D99A4E]/15">
           <Loader2 className="h-7 w-7 animate-spin text-[#D99A4E]" />
         </div>
-        <h2 className="mt-4 text-xl font-semibold text-[#1A1D29]">
+        <h2 className="mt-4 text-xl font-semibold text-[#1A1D29] dark:text-white">
           {isSw ? "Inasubiri malipo" : "Waiting for payment"}
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#6B7280]">
+        <p className="mt-1.5 text-sm leading-relaxed text-[#6B7280] dark:text-[#94A3B8]">
           {isSw
             ? "Weka PIN kuthibitisha ombi kwenye simu:"
             : "Enter your PIN on your phone to approve:"}
         </p>
-        <p className="mt-1 text-base font-semibold text-[#1A1D29]">{phoneLabel}</p>
-        <p className="mt-2 text-2xl font-bold tracking-tight text-[#1A1D29]">{amountLabel}</p>
+        <p className="mt-1 text-base font-semibold text-[#1A1D29] dark:text-white">{phoneLabel}</p>
+        <p className="mt-2 text-2xl font-bold tracking-tight text-[#1A1D29] dark:text-white">{amountLabel}</p>
 
         {/* 60-Second Countdown Timer Badge */}
-        <div className="mt-3.5 inline-flex items-center gap-1.5 rounded-full bg-[#F3F4F6] px-3.5 py-1 text-xs font-semibold text-[#4B5563]">
+        <div className="mt-3.5 inline-flex items-center gap-1.5 rounded-full bg-[#F3F4F6] dark:bg-[#282E42] border border-border/40 dark:border-[#374151] px-3.5 py-1 text-xs font-semibold text-[#4B5563] dark:text-[#CBD5E1]">
           <Clock className="h-3.5 w-3.5 text-[#D99A4E]" />
           <span>
             {isSw ? "Muda uliobaki:" : "Expires in:"} {secondsLeft}s
@@ -76,9 +76,8 @@ export function PaymentWaiting({
           {onCheckAgain && (
             <Button
               type="button"
-              variant="outline"
               disabled={isChecking || isCancelling}
-              className="h-11 rounded-xl border-[#E5E7EB] font-medium text-sm text-[#1A1D29] hover:bg-[#F9FAFB]"
+              className="h-11 w-full rounded-xl border border-[#E5E7EB] dark:border-[#374151] bg-[#F9FAFB] dark:bg-[#282E42] text-[#1A1D29] dark:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#323952] font-semibold text-sm transition-colors shadow-xs"
               onClick={onCheckAgain}
             >
               {isChecking ? (
@@ -95,12 +94,12 @@ export function PaymentWaiting({
               variant="ghost"
               disabled={isCancelling}
               onClick={onCancel}
-              className="h-10 rounded-xl text-xs font-semibold text-[#DC2626] hover:bg-[#FEE2E2]/60 hover:text-[#B91C1C]"
+              className="h-10 rounded-xl text-xs font-semibold text-[#DC2626] dark:text-[#F87171] hover:bg-[#FEE2E2]/60 dark:hover:bg-[#EF4444]/15 hover:text-[#B91C1C] dark:hover:text-[#FCA5A5]"
             >
               {isCancelling ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-[#DC2626]" />
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-[#DC2626] dark:text-[#F87171]" />
               ) : (
-                <XCircle className="mr-1.5 h-3.5 w-3.5 text-[#DC2626]" />
+                <XCircle className="mr-1.5 h-3.5 w-3.5 text-[#DC2626] dark:text-[#F87171]" />
               )}
               {isSw ? "Ghairi" : "Cancel"}
             </Button>

@@ -339,11 +339,11 @@ serve(async (req) => {
         });
       }
 
-      // If the USSD prompt has been pending for more than 45 seconds without completing,
-      // it has timed out on the telecom network (M-Pesa/Tigo USSD session expires in 45s).
+      // If the USSD prompt has been pending for more than 60 seconds without completing,
+      // it has timed out on the telecom network (M-Pesa/Tigo USSD session expires in 60s).
       const createdAtMs = new Date(String(payment.created_at)).getTime();
       const ageMs = Date.now() - createdAtMs;
-      if (ageMs > 45_000) {
+      if (ageMs > 60_000) {
         const timeoutMsg = "Muda wa kuthibitisha kwenye simu umekwisha au ombi lilighairiwa.";
         await adminClient
           .from("subscription_payments")
