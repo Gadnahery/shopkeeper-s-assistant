@@ -24,8 +24,8 @@ export function PaymentWaiting({
   isChecking,
 }: Props) {
   const isSw = language === "sw";
-  const [secondsLeft, setSecondsLeft] = useState(60);
-  const endTimeRef = useRef<number>(Date.now() + 60_000);
+  const [secondsLeft, setSecondsLeft] = useState(45);
+  const endTimeRef = useRef<number>(Date.now() + 45_000);
   const hasTimedOutRef = useRef(false);
   const onTimeoutRef = useRef(onTimeout);
   onTimeoutRef.current = onTimeout;

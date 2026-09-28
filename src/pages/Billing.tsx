@@ -87,12 +87,19 @@ export default function Billing() {
     }
   }, [waiting, latestPayment?.status, isSw]);
 
-  // If pending payment exists for this provider, show waiting
+  // If pending payment exists for this provider and is fresh (< 45s), show waiting; otherwise clean it up
   useEffect(() => {
     if (pendingPayment?.provider === "harakapay" && pendingPayment.status === "pending") {
-      setWaiting(true);
+      const createdAtMs = new Date(String(pendingPayment.created_at)).getTime();
+      const ageMs = Date.now() - createdAtMs;
+      if (ageMs < 45_000) {
+        setWaiting(true);
+      } else {
+        // If older than 45s, proactively mark it cancelled so it doesn't linger or confuse the UI
+        cancelPayment(pendingPayment.id).catch(() => {});
+      }
     }
-  }, [pendingPayment?.provider, pendingPayment?.status]);
+  }, [pendingPayment?.provider, pendingPayment?.status, pendingPayment?.created_at, pendingPayment?.id, cancelPayment]);
 
   // Active polling of HarakaPay status while waiting (every 3.5s)
   useEffect(() => {
