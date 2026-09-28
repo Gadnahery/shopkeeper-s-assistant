@@ -92,7 +92,7 @@ describe("Sales History & POS Quick Add Product Verification", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Sales History")).toBeInTheDocument();
+    expect(screen.getByText(/Today's sales/i)).toBeInTheDocument();
 
     // Click "Custom Date" calendar trigger button
     const customDateBtn = screen.getByRole("button", { name: /custom date/i });

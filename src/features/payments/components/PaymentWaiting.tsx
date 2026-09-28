@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, XCircle, RefreshCw, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -25,17 +25,27 @@ export function PaymentWaiting({
 }: Props) {
   const isSw = language === "sw";
   const [secondsLeft, setSecondsLeft] = useState(60);
+  const endTimeRef = useRef<number>(Date.now() + 60_000);
+  const hasTimedOutRef = useRef(false);
+  const onTimeoutRef = useRef(onTimeout);
+  onTimeoutRef.current = onTimeout;
 
   useEffect(() => {
-    if (secondsLeft <= 0) {
-      if (onTimeout) onTimeout();
-      return;
-    }
-    const interval = setInterval(() => {
-      setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
-    }, 1000);
+    const updateCountdown = () => {
+      const remainingMs = endTimeRef.current - Date.now();
+      const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+      setSecondsLeft(remainingSec);
+
+      if (remainingSec <= 0 && !hasTimedOutRef.current) {
+        hasTimedOutRef.current = true;
+        onTimeoutRef.current?.();
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
-  }, [secondsLeft, onTimeout]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#1A1D29]/55 p-4 backdrop-blur-sm">

@@ -552,7 +552,7 @@ export default function HRM() {
                     className="h-9 gap-1.5 rounded-xl bg-neutral-950 text-xs font-medium text-white shadow-xs hover:bg-neutral-900 dark:bg-white dark:text-neutral-950"
                   >
                     <Plus className="h-3.5 w-3.5 text-accent" />
-                    <span>{language === "sw" ? "+ Mfanyakazi" : "+ Add Staff"}</span>
+                    <span>{language === "sw" ? "Mfanyakazi" : "Add Employee"}</span>
                   </Button>
                 </div>
 

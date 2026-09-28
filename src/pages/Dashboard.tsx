@@ -469,7 +469,7 @@ export default function Dashboard() {
 
           <div className="mt-2 flex items-center justify-between">
             <div>
-              <p className="text-2xl font-black tracking-tight text-foreground">
+              <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground">
                 {formatMoney(pnl.grossSales)}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">

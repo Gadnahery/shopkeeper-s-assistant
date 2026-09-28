@@ -95,15 +95,14 @@ describe("Recycle Bin Module Verification", () => {
     expect(recycleBinNavItem?.labelKey).toBe("nav.recycleBin");
   });
 
-  it("renders the Recycle Bin page with 7-day retention policy and deleted items", () => {
+  it("renders the Recycle Bin page with deleted items", () => {
     render(
       <MemoryRouter>
         <RecycleBin />
       </MemoryRouter>
     );
 
-    expect(screen.getByText("Recycle Bin")).toBeInTheDocument();
-    expect(screen.getByText(/7-day retention policy/i)).toBeInTheDocument();
+    expect(screen.getByText(/Deleted items are kept for 7 days/i)).toBeInTheDocument();
     expect(screen.getByText("INV-2026-0001")).toBeInTheDocument();
     expect(screen.getByText("Panadol Extra")).toBeInTheDocument();
   });

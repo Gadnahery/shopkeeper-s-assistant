@@ -8,9 +8,8 @@
   --page: #f7f7f5;
   --surface: #ffffff;
   --muted: #6b7280;
-  --line: #e5e7eb;
-  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  --font-ui: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-ui: "DM Sans", "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-ui);
 
   background: var(--page);
   color: var(--ink);

@@ -209,21 +209,43 @@ export default function Billing() {
     try {
       setIsCancelling(true);
       const paymentIdToCancel = activePaymentId || pendingPayment?.id;
-      await cancelPayment(paymentIdToCancel || undefined);
-    } catch {
-      // Best effort
-    } finally {
-      setIsCancelling(false);
+      const res = await cancelPayment(paymentIdToCancel || undefined);
+      if (res?.status === "success") {
+        setWaiting(false);
+        setOutcome("success");
+        toast.success(
+          isSw
+            ? "Malipo yamekamilika! WiseCash Pro imeamilishwa."
+            : "Payment confirmed! WiseCash Pro is active.",
+        );
+        return;
+      }
       setWaiting(false);
       setOutcome("idle");
       toast.info(isSw ? "Ombi la malipo limeghairiwa." : "Payment request cancelled.");
+    } catch {
+      // Best effort
+      setWaiting(false);
+      setOutcome("idle");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
   const handleTimeout = async () => {
     try {
       const paymentIdToCancel = activePaymentId || pendingPayment?.id;
-      await cancelPayment(paymentIdToCancel || undefined);
+      const res = await cancelPayment(paymentIdToCancel || undefined);
+      if (res?.status === "success") {
+        setWaiting(false);
+        setOutcome("success");
+        toast.success(
+          isSw
+            ? "Malipo yamekamilika! WiseCash Pro imeamilishwa."
+            : "Payment confirmed! WiseCash Pro is active.",
+        );
+        return;
+      }
     } catch {
       // Best effort
     }

@@ -552,7 +552,7 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
               <span className="font-semibold">-{formatMoney(discount)}</span>
             </div>
           )}
-          <div className="flex justify-between border-t border-border pt-1.5 text-sm font-black text-foreground">
+          <div className="flex justify-between border-t border-border pt-1.5 text-sm font-bold text-foreground">
             <span>{t("sales.total")}</span>
             <span className="text-primary text-base">{formatMoney(total)}</span>
           </div>
@@ -1055,7 +1055,7 @@ export function POSSaleView({ onBackToHistory }: POSSaleViewProps) {
                 <p className="text-[11px] font-medium opacity-85 truncate">
                   {cartItems.reduce((sum, it) => sum + it.quantity, 0)} {language === "sw" ? "bidhaa" : "items"}
                 </p>
-                <p className="text-sm font-black text-accent truncate">
+                <p className="text-sm font-bold text-accent truncate">
                   {formatMoney(total)}
                 </p>
               </div>

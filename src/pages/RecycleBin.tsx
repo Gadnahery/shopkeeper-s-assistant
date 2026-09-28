@@ -30,6 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/common/PageHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -196,52 +197,34 @@ export default function RecycleBin() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      {/* Description & Actions Banner */}
+      <PageHeader
+        title={language === "sw" ? "Jalada la Taka" : "Recycle Bin"}
+        subtitle={
+          language === "sw"
+            ? "Vipengele vilivyofutwa huwekwa kwa siku 7 kabla ya kufutwa kabisa."
+            : "Deleted items are kept for 7 days before being permanently removed."
+        }
+        actions={
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
-              {language === "sw" ? "Jalada la Taka" : "Recycle Bin"}
-            </h1>
             <Badge variant="outline" className="font-semibold text-xs border-primary/30 text-primary bg-primary/5">
               {items.length} {language === "sw" ? "Vipengele" : "Items"}
             </Badge>
+            {canManage && items.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setEmptyBinDialogOpen(true)}
+                className="h-9 rounded-xl text-xs font-bold gap-1.5 shadow-sm"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>{language === "sw" ? "Safisha Jalada Lote" : "Empty Recycle Bin"}</span>
+              </Button>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {language === "sw"
-              ? "Vipengele vilivyofutwa huwekwa kwa siku 7 kabla ya kufutwa kabisa."
-              : "Deleted items are kept for 7 days before being permanently removed."}
-          </p>
-        </div>
+        }
+      />
 
-        {/* Action: Empty Bin */}
-        {canManage && items.length > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setEmptyBinDialogOpen(true)}
-            className="h-9 rounded-xl text-xs font-bold gap-1.5 shadow-sm"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>{language === "sw" ? "Safisha Jalada Lote" : "Empty Recycle Bin"}</span>
-          </Button>
-        )}
-      </div>
-
-      {/* Info Notice Banner */}
-      <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-foreground shadow-xs">
-        <Info className="h-4 w-4 shrink-0 text-primary" />
-        <div className="flex-1">
-          <span className="font-semibold">
-            {language === "sw" ? "Sera ya Uhifadhi wa Siku 7:" : "7-Day Retention Policy:"}
-          </span>{" "}
-          <span className="text-muted-foreground">
-            {language === "sw"
-              ? "Rekodi zote zilizofutwa zitaondolewa kiotomatiki mara tu siku 7 zikipita. Unaweza kurejesha rekodi yoyote wakati wowote kabla ya muda kuisha."
-              : "All deleted records will be permanently purged once their 7-day timer expires. You can restore any item back to its active view anytime."}
-          </span>
-        </div>
-      </div>
 
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

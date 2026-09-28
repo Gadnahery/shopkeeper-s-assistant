@@ -46,6 +46,7 @@ export default function SupplierDetail() {
   return (
     <div className="min-w-0 space-y-6">
       <PageHeader
+        showTitle={true}
         title={supplier.name}
         subtitle={
           language === "sw"

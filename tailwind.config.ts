@@ -69,8 +69,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Inter", "system-ui", "sans-serif"],
+        sans: ["DM Sans", "Instrument Sans", "Inter", "system-ui", "sans-serif"],
+        display: ["DM Sans", "Instrument Sans", "Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {
         xl: "var(--radius-xl, 16px)",

@@ -759,7 +759,7 @@ export default function Orders() {
                   className="h-10 gap-2 rounded-xl bg-neutral-950 px-4 text-xs font-bold text-white dark:bg-white dark:text-neutral-950 shadow-xs hover:bg-neutral-800 dark:hover:bg-neutral-200"
                 >
                   <Plus className="h-4 w-4 text-white dark:text-neutral-950" />
-                  <span>{language === "sw" ? "+ Ongeza Agizo" : "+ Add Order"}</span>
+                  <span>{language === "sw" ? "Ongeza Agizo" : "Add Order"}</span>
                 </Button>
               </div>
 

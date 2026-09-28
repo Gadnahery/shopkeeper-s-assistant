@@ -81,6 +81,7 @@ export default function CustomerDetail() {
   return (
     <div className="min-w-0 space-y-6">
       <PageHeader
+        showTitle={true}
         title={customer.name}
         subtitle={
           language === "sw"

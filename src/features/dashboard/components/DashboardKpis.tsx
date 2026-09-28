@@ -140,7 +140,7 @@ export function DashboardKpis({
         </div>
 
         <div className="mt-1">
-          <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+          <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
             {formatMoney(totalSales)}
           </p>
         </div>
@@ -184,7 +184,7 @@ export function DashboardKpis({
         <div className="mt-1">
           {isCostDataMissing ? (
             <div className="space-y-0.5">
-              <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+              <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
                 {formatMoney(netProfit)}
               </p>
               <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
@@ -195,7 +195,7 @@ export function DashboardKpis({
           ) : (
             <p
               className={cn(
-                "text-xl sm:text-2xl font-black tracking-tight truncate",
+                "text-base sm:text-2xl font-bold tracking-tight truncate",
                 netProfit >= 0 ? "text-foreground" : "text-rose-600 dark:text-rose-400"
               )}
             >
@@ -237,7 +237,7 @@ export function DashboardKpis({
         </div>
 
         <div className="mt-1">
-          <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+          <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
             {formatMoney(cashReceived)}
           </p>
         </div>

@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    --font-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-display: "Instrument Serif", "Times New Roman", Georgia, serif;
+    --font-sans: "DM Sans", "Instrument Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-display: var(--font-sans);
 
     /* Light theme is default */
     --background: 210 20% 98%;       /* #f9fafb */
@@ -199,7 +199,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     letter-spacing: -0.02em;
   }
 

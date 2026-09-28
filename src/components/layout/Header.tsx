@@ -77,8 +77,8 @@ export function Header() {
     }
     if (path.startsWith("/sales")) {
       return {
-        title: t("nav.sales"),
-        breadcrumb: t("nav.sales"),
+        title: language === "sw" ? "Historia ya Mauzo" : "Sales History",
+        breadcrumb: language === "sw" ? "Historia ya Mauzo" : "Sales History",
         showPeriod: false,
         action: null,
       };
@@ -104,32 +104,39 @@ export function Header() {
         title: t("nav.customers"),
         breadcrumb: t("nav.customers"),
         showPeriod: false,
-        action: {
-          label: `+ ${t("customers.addCustomer")}`,
-          onClick: () => navigate("/customers?new=true"),
-        },
+        action: null,
       };
     }
-    if (path.startsWith("/expenses") || path.startsWith("/billing")) {
+    if (path.startsWith("/billing")) {
+      return {
+        title: language === "sw" ? "Usajili na Malipo" : "Billing & Subscription",
+        breadcrumb: language === "sw" ? "Usajili na Malipo" : "Billing & Subscription",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/expenses")) {
       return {
         title: t("nav.finance"),
         breadcrumb: t("nav.finance"),
         showPeriod: true,
-        action: {
-          label: `+ ${t("expenses.addNewExpense")}`,
-          onClick: () => navigate("/expenses?new=true"),
-        },
+        action: null,
       };
     }
-    if (path.startsWith("/hrm") || path.startsWith("/user-management")) {
+    if (path.startsWith("/user-management")) {
+      return {
+        title: language === "sw" ? "Usimamizi wa Watumiaji" : "User Management",
+        breadcrumb: language === "sw" ? "Usimamizi wa Watumiaji" : "User Management",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/hrm")) {
       return {
         title: t("nav.hrm"),
         breadcrumb: t("nav.hrm"),
         showPeriod: false,
-        action: {
-          label: language === "sw" ? "+ Ongeza Mfanyakazi" : "+ Add Employee",
-          onClick: () => navigate("/hrm?new=true"),
-        },
+        action: null,
       };
     }
     if (path.startsWith("/reports")) {
@@ -159,56 +166,72 @@ export function Header() {
     }
     if (path.startsWith("/recycle-bin")) {
       return {
-        title: language === "sw" ? "Jalala" : "Recycle Bin",
-        breadcrumb: language === "sw" ? "Jalala" : "Recycle Bin",
+        title: language === "sw" ? "Jalada la Taka" : "Recycle Bin",
+        breadcrumb: language === "sw" ? "Jalada la Taka" : "Recycle Bin",
         showPeriod: false,
         action: null,
       };
     }
     if (path.startsWith("/assets")) {
       return {
-        title: language === "sw" ? "Rasilimali" : "Assets",
-        breadcrumb: language === "sw" ? "Rasilimali" : "Assets",
+        title: language === "sw" ? "Usimamizi wa Mali" : "Assets Management",
+        breadcrumb: language === "sw" ? "Usimamizi wa Mali" : "Assets Management",
         showPeriod: false,
         action: null,
       };
     }
     if (path.startsWith("/categories")) {
       return {
-        title: language === "sw" ? "Makundi" : "Categories",
-        breadcrumb: language === "sw" ? "Makundi" : "Categories",
+        title: language === "sw" ? "Kategoria za Bidhaa" : "Product Categories",
+        breadcrumb: language === "sw" ? "Kategoria za Bidhaa" : "Product Categories",
         showPeriod: false,
         action: null,
       };
     }
     if (path.startsWith("/loyalty")) {
       return {
-        title: language === "sw" ? "Uaminifu" : "Loyalty",
-        breadcrumb: language === "sw" ? "Uaminifu" : "Loyalty",
+        title: language === "sw" ? "Uaminifu wa Wateja" : "Customer Loyalty",
+        breadcrumb: language === "sw" ? "Uaminifu wa Wateja" : "Customer Loyalty",
         showPeriod: false,
         action: null,
       };
     }
     if (path.startsWith("/notifications")) {
       return {
-        title: language === "sw" ? "Taarifa" : "Notifications",
-        breadcrumb: language === "sw" ? "Taarifa" : "Notifications",
+        title: language === "sw" ? "Arifa & Taarifa za Duka" : "Notifications & Store Alerts",
+        breadcrumb: language === "sw" ? "Arifa & Taarifa za Duka" : "Notifications & Store Alerts",
         showPeriod: false,
         action: null,
       };
     }
     if (path.startsWith("/todo")) {
       return {
-        title: language === "sw" ? "Mambo ya Kufanya" : "Todo",
-        breadcrumb: language === "sw" ? "Mambo ya Kufanya" : "Todo",
+        title: language === "sw" ? "Orodha ya Kazi" : "To-Do List",
+        breadcrumb: language === "sw" ? "Orodha ya Kazi" : "To-Do List",
         showPeriod: false,
         action: null,
       };
     }
     if (path.startsWith("/appointments")) {
       return {
-        title: language === "sw" ? "Miadi" : "Appointments",
-        breadcrumb: language === "sw" ? "Miadi" : "Appointments",
+        title: language === "sw" ? "Miadi & Ratiba" : "Appointments & Schedule",
+        breadcrumb: language === "sw" ? "Miadi & Ratiba" : "Appointments & Schedule",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/receive-stock")) {
+      return {
+        title: language === "sw" ? "Pokea Stoki" : "Receive Stock",
+        breadcrumb: language === "sw" ? "Pokea Stoki" : "Receive Stock",
+        showPeriod: false,
+        action: null,
+      };
+    }
+    if (path.startsWith("/inventory/add") || path.startsWith("/products/add")) {
+      return {
+        title: language === "sw" ? "Ongeza Bidhaa Mpya" : "Add New Product",
+        breadcrumb: language === "sw" ? "Ongeza Bidhaa Mpya" : "Add New Product",
         showPeriod: false,
         action: null,
       };
@@ -251,9 +274,6 @@ export function Header() {
           <h1 className="truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-none">
             {pageInfo.title}
           </h1>
-          <p className="mt-1 truncate text-xs text-muted-foreground">
-            {t("header.home")} &gt; {pageInfo.breadcrumb}
-          </p>
         </div>
       </div>
 

@@ -1,47 +1,45 @@
 import { ReactNode } from "react";
-import { cn } from "@/lib/utils";
-import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 
 type PageHeaderProps = {
-  title: string;
+  title?: string;
   subtitle?: string;
+  description?: string;
   actions?: ReactNode;
+  showTitle?: boolean;
 };
 
-export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
-  const { isMobile } = useAdaptiveLayout();
+export function PageHeader({
+  title,
+  subtitle,
+  description,
+  actions,
+  showTitle = false,
+}: PageHeaderProps) {
+  const text = subtitle || description;
+  const hasSubtitle = Boolean(text);
+  const shouldRenderTitle = showTitle || !hasSubtitle;
 
   return (
-    <div
-      className={cn(
-        "relative max-w-full overflow-hidden",
-        isMobile
-          ? "rounded-xl border-0 bg-transparent p-0"
-          : "rounded-2xl border border-border bg-card p-5 shadow-xs sm:p-6",
-      )}
-    >
-      <div className={cn("relative flex min-w-0 max-w-full gap-4", isMobile ? "flex-col" : "flex-wrap items-center justify-between")}>
-        <div className="min-w-0 flex-1">
-          <h1 className={cn("font-bold tracking-tight text-foreground", isMobile ? "text-xl" : "text-2xl")}>
-            {title}
-          </h1>
-          {subtitle ? (
-            <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              {subtitle}
-            </p>
-          ) : null}
+    <div className="space-y-3 sm:space-y-3.5">
+      {shouldRenderTitle && title ? (
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+          {title}
+        </h1>
+      ) : null}
+
+      {/* Subtitle stays alone, unboxed, font size bigger, not bold */}
+      {text ? (
+        <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed max-w-3xl">
+          {text}
+        </p>
+      ) : null}
+
+      {/* Everything else (buttons, search inputs, badges) stays below the subtitle */}
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-0.5">
+          {actions}
         </div>
-        {actions ? (
-          <div
-            className={cn(
-              "flex w-full min-w-0 max-w-full gap-2.5",
-              isMobile ? "flex-row flex-wrap items-center" : "flex-wrap items-center md:justify-end xl:w-auto",
-            )}
-          >
-            {actions}
-          </div>
-        ) : null}
-      </div>
+      ) : null}
     </div>
   );
 }

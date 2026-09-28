@@ -169,6 +169,25 @@ serve(async (req) => {
                 provider: "harakapay",
               });
 
+              const feeAmount = Number(
+                paymentObj.fee_amount ?? paymentObj.fee ?? paymentObj.transaction_fee ?? NaN,
+              );
+              const netAmount = Number(
+                paymentObj.net_amount ?? paymentObj.netAmount ?? paymentObj.amount_received ?? NaN,
+              );
+              if (
+                (Number.isFinite(feeAmount) && feeAmount > 0) ||
+                (Number.isFinite(netAmount) && netAmount > 0)
+              ) {
+                await adminClient
+                  .from("subscription_payments")
+                  .update({
+                    ...(Number.isFinite(feeAmount) && feeAmount > 0 ? { fee_amount: feeAmount } : {}),
+                    ...(Number.isFinite(netAmount) && netAmount > 0 ? { net_amount: netAmount } : {}),
+                  })
+                  .eq("id", payment.id);
+              }
+
               return json({
                 ok: true,
                 status: "success",

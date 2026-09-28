@@ -811,13 +811,6 @@ export default function Expenses() {
                     <p className="mt-3 text-sm font-semibold text-foreground">
                       {language === "sw" ? "Hakuna matumizi yaliyorekodiwa" : "No expenses recorded"}
                     </p>
-                    <Button
-                      onClick={handleStartAddExpense}
-                      className="mt-3 h-8 rounded-xl text-xs bg-primary text-primary-foreground"
-                    >
-                      <Plus className="mr-1 h-3.5 w-3.5 text-accent" />
-                      {t("expenses.addExpense")}
-                    </Button>
                   </div>
                 ) : (
                   <>

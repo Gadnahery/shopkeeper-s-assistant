@@ -237,36 +237,30 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Top Header with Title, Period Subtitle & Primary "Add Sale" Button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
-              {language === "sw" ? "Rekodi za Mauzo" : "Sales History"}
-            </h1>
-            <Badge variant="outline" className="font-semibold text-xs border-primary/30 text-primary bg-primary/5">
-              {periodSales.length} {language === "sw" ? "Miamala" : "Transactions"}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {period === "today"
-              ? language === "sw"
-                ? `Mauzo ya leo (${format(new Date(), "dd MMMM yyyy")})`
-                : `Today's sales (${format(new Date(), "MMMM dd, yyyy")})`
-              : period === "custom"
-              ? customRange.from
-                ? customRange.to
-                  ? `${format(customRange.from, "dd MMM yyyy")} – ${format(customRange.to, "dd MMM yyyy")}`
-                  : `${format(customRange.from, "dd MMM yyyy")} – ...`
-                : language === "sw"
-                ? "Chagua tarehe kwenye kalenda"
-                : "Select date range from calendar"
-              : PERIOD_LABELS[period]?.[language] || ""}
-          </p>
-        </div>
+      {/* Subtitle alone, unboxed, not bold */}
+      <div className="space-y-3 sm:space-y-3.5">
+        <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+          {period === "today"
+            ? language === "sw"
+              ? `Mauzo ya leo (${format(new Date(), "dd MMMM yyyy")})`
+              : `Today's sales (${format(new Date(), "MMMM dd, yyyy")})`
+            : period === "custom"
+            ? customRange.from
+              ? customRange.to
+                ? `${format(customRange.from, "dd MMM yyyy")} – ${format(customRange.to, "dd MMM yyyy")}`
+                : `${format(customRange.from, "dd MMM yyyy")} – ...`
+              : language === "sw"
+              ? "Chagua tarehe kwenye kalenda"
+              : "Select date range from calendar"
+            : PERIOD_LABELS[period]?.[language] || ""}
+        </p>
 
-        {/* Action Buttons & "Add Sale" */}
-        <div className="flex items-center gap-2.5">
+        {/* Action Buttons & Badge stay below the subtitle */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+          <Badge variant="outline" className="font-semibold text-xs border-primary/30 text-primary bg-primary/5 h-7 px-2.5">
+            {periodSales.length} {language === "sw" ? "Miamala" : "Transactions"}
+          </Badge>
+
           <Button
             onClick={onAddSale}
             className="h-10 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-200 px-4 text-xs sm:text-sm font-bold shadow-sm gap-2"
@@ -377,7 +371,7 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
               {formatMoney(totalSalesVal)}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -397,7 +391,7 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
               {formatMoney(cashSalesVal)}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -416,7 +410,7 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
               {formatMoney(mpesaSalesVal)}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -437,7 +431,7 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
+            <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">
               {formatMoney(creditSalesVal)}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -634,7 +628,7 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
                       </TableCell>
 
                       {/* Total Amount */}
-                      <TableCell className="py-3 text-right font-black text-foreground whitespace-nowrap">
+                      <TableCell className="py-3 text-right font-bold text-foreground whitespace-nowrap">
                         {formatMoney(s.total)}
                       </TableCell>
 

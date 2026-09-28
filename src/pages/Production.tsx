@@ -446,7 +446,7 @@ export default function Production() {
                 className="h-8 w-full gap-1 rounded-xl border-dashed border-border text-xs font-medium text-muted-foreground hover:bg-muted"
               >
                 <Plus className="h-3.5 w-3.5 text-accent" />
-                <span>{language === "sw" ? "+ Ongeza Malighafi" : "+ Add Material"}</span>
+                <span>{language === "sw" ? "Ongeza Malighafi" : "Add Material"}</span>
               </Button>
             </div>
 
