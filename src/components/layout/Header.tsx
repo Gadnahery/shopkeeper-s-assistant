@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   Calendar as CalendarIcon,
-  ChevronDown,
   Menu,
+  PanelLeft,
   Plus,
+  Search,
   ShieldCheck,
   WifiOff,
   RefreshCw,
@@ -25,18 +26,12 @@ import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { useIsPlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { useSyncQueue } from "@/hooks/useSyncQueue";
 import { PendingSyncDialog } from "@/features/sync";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setCollapsed } = useSidebar();
+  const { toggleSidebar, setCollapsed } = useSidebar();
   const { t, language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { isMobile } = useAdaptiveLayout();
@@ -47,7 +42,6 @@ export function Header() {
   const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const hasAlerts = (unreadCount > 0) || ((lowStock?.length ?? 0) > 0);
   const { formatDate } = useShopFormatting();
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("today");
 
   const todayFormatted = formatDate(new Date(), {
     weekday: "short",
@@ -63,7 +57,6 @@ export function Header() {
       return {
         title: t("nav.purchases"),
         breadcrumb: t("nav.purchases"),
-        showPeriod: true,
         action: null,
       };
     }
@@ -71,7 +64,6 @@ export function Header() {
       return {
         title: t("nav.production"),
         breadcrumb: t("nav.production"),
-        showPeriod: true,
         action: null,
       };
     }
@@ -79,7 +71,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Historia ya Mauzo" : "Sales History",
         breadcrumb: language === "sw" ? "Historia ya Mauzo" : "Sales History",
-        showPeriod: false,
         action: null,
       };
     }
@@ -87,7 +78,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Maagizo" : "Orders",
         breadcrumb: language === "sw" ? "Maagizo" : "Orders",
-        showPeriod: true,
         action: null,
       };
     }
@@ -95,7 +85,6 @@ export function Header() {
       return {
         title: t("nav.inventory"),
         breadcrumb: t("nav.inventory"),
-        showPeriod: false,
         action: null,
       };
     }
@@ -103,7 +92,6 @@ export function Header() {
       return {
         title: t("nav.customers"),
         breadcrumb: t("nav.customers"),
-        showPeriod: false,
         action: null,
       };
     }
@@ -111,7 +99,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Usajili na Malipo" : "Billing & Subscription",
         breadcrumb: language === "sw" ? "Usajili na Malipo" : "Billing & Subscription",
-        showPeriod: false,
         action: null,
       };
     }
@@ -119,7 +106,6 @@ export function Header() {
       return {
         title: t("nav.finance"),
         breadcrumb: t("nav.finance"),
-        showPeriod: true,
         action: null,
       };
     }
@@ -127,7 +113,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Usimamizi wa Watumiaji" : "User Management",
         breadcrumb: language === "sw" ? "Usimamizi wa Watumiaji" : "User Management",
-        showPeriod: false,
         action: null,
       };
     }
@@ -135,7 +120,6 @@ export function Header() {
       return {
         title: t("nav.hrm"),
         breadcrumb: t("nav.hrm"),
-        showPeriod: false,
         action: null,
       };
     }
@@ -143,7 +127,6 @@ export function Header() {
       return {
         title: t("nav.reports"),
         breadcrumb: t("nav.reports"),
-        showPeriod: true,
         action: null,
       };
     }
@@ -151,7 +134,6 @@ export function Header() {
       return {
         title: t("nav.settings"),
         breadcrumb: t("nav.settings"),
-        showPeriod: false,
         action: null,
       };
     }
@@ -160,7 +142,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Wasambazaji" : "Suppliers",
         breadcrumb: language === "sw" ? "Wasambazaji" : "Suppliers",
-        showPeriod: false,
         action: null,
       };
     }
@@ -168,7 +149,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Jalada la Taka" : "Recycle Bin",
         breadcrumb: language === "sw" ? "Jalada la Taka" : "Recycle Bin",
-        showPeriod: false,
         action: null,
       };
     }
@@ -176,7 +156,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Usimamizi wa Mali" : "Assets Management",
         breadcrumb: language === "sw" ? "Usimamizi wa Mali" : "Assets Management",
-        showPeriod: false,
         action: null,
       };
     }
@@ -184,7 +163,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Kategoria za Bidhaa" : "Product Categories",
         breadcrumb: language === "sw" ? "Kategoria za Bidhaa" : "Product Categories",
-        showPeriod: false,
         action: null,
       };
     }
@@ -192,7 +170,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Uaminifu wa Wateja" : "Customer Loyalty",
         breadcrumb: language === "sw" ? "Uaminifu wa Wateja" : "Customer Loyalty",
-        showPeriod: false,
         action: null,
       };
     }
@@ -200,7 +177,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Arifa & Taarifa za Duka" : "Notifications & Store Alerts",
         breadcrumb: language === "sw" ? "Arifa & Taarifa za Duka" : "Notifications & Store Alerts",
-        showPeriod: false,
         action: null,
       };
     }
@@ -208,7 +184,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Orodha ya Kazi" : "To-Do List",
         breadcrumb: language === "sw" ? "Orodha ya Kazi" : "To-Do List",
-        showPeriod: false,
         action: null,
       };
     }
@@ -216,7 +191,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Miadi & Ratiba" : "Appointments & Schedule",
         breadcrumb: language === "sw" ? "Miadi & Ratiba" : "Appointments & Schedule",
-        showPeriod: false,
         action: null,
       };
     }
@@ -224,7 +198,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Pokea Stoki" : "Receive Stock",
         breadcrumb: language === "sw" ? "Pokea Stoki" : "Receive Stock",
-        showPeriod: false,
         action: null,
       };
     }
@@ -232,7 +205,6 @@ export function Header() {
       return {
         title: language === "sw" ? "Ongeza Bidhaa Mpya" : "Add New Product",
         breadcrumb: language === "sw" ? "Ongeza Bidhaa Mpya" : "Add New Product",
-        showPeriod: false,
         action: null,
       };
     }
@@ -241,79 +213,128 @@ export function Header() {
     return {
       title: t("nav.overview"),
       breadcrumb: t("nav.overview"),
-      showPeriod: false,
       action: null,
     };
   };
 
   const pageInfo = getPageInfo();
 
-  const periodLabels: Record<string, string> = {
-    today: t("header.today"),
-    week: t("header.thisWeek"),
-    month: t("header.thisMonth"),
-    year: t("header.thisYear"),
+  const handleOpenSearch = () => {
+    window.dispatchEvent(new CustomEvent("open-search-palette"));
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-[76px] w-full items-center justify-between border-b border-border bg-background px-4 sm:px-6 lg:px-8">
-      {/* Left: Mobile trigger, Title & Breadcrumbs */}
-      <div className="flex min-w-0 items-center gap-3">
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(false)}
-            className="h-9 w-9 shrink-0 rounded-xl text-foreground hover:bg-muted"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        )}
+    <header className="sticky top-0 z-30 flex h-[76px] w-full items-center justify-between border-b border-border bg-background px-4 sm:px-6 lg:px-8 relative">
+      {/* ========================================================================= */}
+      {/* 1. LEFT SECTION: Sidebar/Menu Toggle + Page Title (Desktop & Mobile)     */}
+      {/* ========================================================================= */}
+      <div className="flex min-w-0 items-center gap-2.5 sm:gap-3 shrink-0 mr-3">
+        {/* Desktop Sidebar Toggle Button [ ◫ ] (Image 3) */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleSidebar}
+          className="hidden md:flex h-9 w-9 shrink-0 rounded-xl border-border bg-card text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground transition-all"
+          title={language === "sw" ? "Funga/Fungua menyu" : "Toggle Sidebar"}
+        >
+          <PanelLeft className="h-4 w-4" />
+        </Button>
 
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-none">
-            {pageInfo.title}
-          </h1>
-        </div>
+        {/* Mobile Menu Trigger Button [ ☰ ] (Image 2) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCollapsed(false)}
+          className="flex md:hidden h-9 w-9 shrink-0 rounded-xl text-foreground hover:bg-muted"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Page Title: Visible and truncated so it never overlaps the search bar */}
+        <h1 className="truncate text-base sm:text-lg lg:text-xl font-bold tracking-tight text-foreground max-w-[150px] sm:max-w-[180px] lg:max-w-[240px] xl:max-w-[320px]">
+          {pageInfo.title}
+        </h1>
       </div>
 
-      {/* Right: Date pill, Period selector, Contextual Action, Notifications */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      {/* ========================================================================= */}
+      {/* 2. DESKTOP CENTER: Static Search Bar (Image 3)                            */}
+      {/* Absolute 50% positioning ensures it NEVER moves across page transitions!  */}
+      {/* ========================================================================= */}
+      <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center pointer-events-auto z-10">
+        <button
+          type="button"
+          onClick={handleOpenSearch}
+          className="group relative flex h-9 w-60 lg:w-80 xl:w-96 items-center justify-between rounded-xl border border-border/80 bg-card px-3 text-left text-xs font-normal text-muted-foreground shadow-xs transition-all hover:border-border hover:bg-muted/40 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 active:scale-[0.99]"
+          title={language === "sw" ? "Fungua utafutaji (⌘K)" : "Open search (⌘K)"}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <Search className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-foreground transition-colors shrink-0" />
+            <span className="truncate text-muted-foreground/80 group-hover:text-foreground">
+              {language === "sw" ? 'Jaribu "Point of Sale"' : 'Try "Point of Sale"'}
+            </span>
+          </div>
+          <kbd className="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-muted/60 px-1.5 font-mono text-[10px] font-medium text-muted-foreground shadow-2xs">
+            ⌘K
+          </kbd>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. MOBILE RIGHT: Fixed Search [ 🔍 ] + Theme [ ☼ ] + Bell [ 🔔 ] (Image 2)*/}
+      {/* Pinned to the right edge with shrink-0: NEVER moves across page navigations! */}
+      {/* ========================================================================= */}
+      <div className="flex md:hidden items-center gap-1.5 shrink-0 ml-auto">
+        {/* Mobile Search Button (Image 2 style) */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleOpenSearch}
+          className="h-9 w-9 rounded-xl border-border bg-card text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground transition-all active:scale-[0.98]"
+          title={language === "sw" ? "Tafuta" : "Search"}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+
+        {/* Theme Toggle Button (Mobile) */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={(e) => toggleTheme(e)}
+          className="h-9 w-9 rounded-xl border-border bg-card text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground transition-all"
+          title={theme === "dark" ? (language === "sw" ? "Badili kwenda Mandhari ya Mwanga" : "Switch to Light Mode") : (language === "sw" ? "Badili kwenda Mandhari ya Giza" : "Switch to Dark Mode")}
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4 text-amber-500 hover:rotate-45 transition-transform" />
+          ) : (
+            <Moon className="h-4 w-4 text-slate-700 dark:text-slate-300 hover:-rotate-12 transition-transform" />
+          )}
+        </Button>
+
+        {/* Notification Bell (Mobile) */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => navigate("/notifications")}
+          className="relative h-9 w-9 rounded-xl border-border bg-card text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground"
+          title={t("nav.notifications")}
+        >
+          <Bell className="h-4 w-4" />
+          {hasAlerts && (
+            <span className="absolute right-1.5 top-1.5 flex h-2 w-2 rounded-full bg-destructive ring-2 ring-card" />
+          )}
+        </Button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 4. DESKTOP RIGHT: Date Pill, Actions, Admin, Sync, Theme, Bell             */}
+      {/* Timeline dropdown selector removed to keep navbar and search bar free!    */}
+      {/* ========================================================================= */}
+      <div className="hidden md:flex items-center gap-2 sm:gap-2.5 ml-auto shrink-0">
         {/* Date Pill (Desktop) */}
-        <div className="hidden items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs md:flex">
+        <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs shrink-0">
           <CalendarIcon className="h-3.5 w-3.5 text-accent" />
           <span>{todayFormatted}</span>
         </div>
-
-        {/* Period Dropdown (where relevant) */}
-        {pageInfo.showPeriod && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 gap-1.5 rounded-xl border-border bg-card px-3 text-xs font-medium text-foreground shadow-xs hover:bg-muted"
-              >
-                <span>{periodLabels[selectedPeriod] || t("header.today")}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36 rounded-xl border-border bg-popover shadow-md">
-              <DropdownMenuItem onClick={() => setSelectedPeriod("today")} className="text-xs">
-                {t("header.today")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedPeriod("week")} className="text-xs">
-                {t("header.thisWeek")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedPeriod("month")} className="text-xs">
-                {t("header.thisMonth")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedPeriod("year")} className="text-xs">
-                {t("header.thisYear")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
 
         {/* Primary Contextual Action Button */}
         {pageInfo.action && (

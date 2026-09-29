@@ -63,7 +63,7 @@ export default function PlatformAdminOverview() {
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Platform Administration Overview
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-[13px] sm:text-sm text-muted-foreground mt-1">
           Monitor subscriptions, verify manual customer payments, and track platform revenue across all shops.
         </p>
       </div>

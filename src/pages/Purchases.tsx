@@ -50,6 +50,12 @@ import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import {
+  TimelineSelector,
+  type TimelinePeriod,
+  getTimelinePeriodDates,
+} from "@/components/common/TimelineSelector";
+import { isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
 interface FormItem {
   productId: string;
@@ -67,6 +73,8 @@ export default function Purchases() {
   const [searchTerm, setSearchTerm] = useState("");
   const [supplierSearch, setSupplierSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [period, setPeriod] = useState<TimelinePeriod>("all");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [mobileOrderPage, setMobileOrderPage] = useState(1);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
@@ -157,27 +165,40 @@ export default function Purchases() {
     );
   };
 
+  // Active period date boundaries
+  const periodDates = useMemo(() => {
+    return getTimelinePeriodDates(period, customRange);
+  }, [period, customRange]);
+
+  // Filter purchases for the active period
+  const periodPurchases = useMemo(() => {
+    if (!purchases) return [];
+    if (period === "all") return purchases;
+    return purchases.filter((p) =>
+      isTimestampInLocalDayRange(p.created_at || p.received_date, periodDates.start, periodDates.end)
+    );
+  }, [purchases, period, periodDates]);
+
   // KPI Calculations
   const totalPurchasesAmount = useMemo(() => {
-    return (purchases || []).reduce((sum, p) => sum + (p.total_amount || 0), 0);
-  }, [purchases]);
+    return periodPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0);
+  }, [periodPurchases]);
 
   const totalPaidAmount = useMemo(() => {
-    return (purchases || []).reduce((sum, p) => sum + (p.paid_amount || 0), 0);
-  }, [purchases]);
+    return periodPurchases.reduce((sum, p) => sum + (p.paid_amount || 0), 0);
+  }, [periodPurchases]);
 
   const totalOutstanding = useMemo(() => {
-    return (purchases || []).reduce((sum, p) => sum + (p.outstanding || 0), 0);
-  }, [purchases]);
+    return periodPurchases.reduce((sum, p) => sum + (p.outstanding || 0), 0);
+  }, [periodPurchases]);
 
   const totalReceivedItems = useMemo(() => {
-    return (purchases || []).reduce((sum, p) => sum + (p.items_count || 1), 0);
-  }, [purchases]);
+    return periodPurchases.reduce((sum, p) => sum + (p.items_count || 1), 0);
+  }, [periodPurchases]);
 
   // Filtered Orders
   const filteredOrders = useMemo(() => {
-    if (!purchases) return [];
-    return purchases.filter((p) => {
+    return periodPurchases.filter((p) => {
       const matchSearch =
         p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.supplier_name && p.supplier_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -185,7 +206,7 @@ export default function Purchases() {
       const matchStatus = statusFilter === "all" || p.status === statusFilter;
       return matchSearch && matchStatus;
     });
-  }, [purchases, searchTerm, statusFilter]);
+  }, [periodPurchases, searchTerm, statusFilter]);
 
   const MOBILE_PURCHASE_PAGE_SIZE = 4;
   const totalMobileOrderPages = Math.ceil(filteredOrders.length / MOBILE_PURCHASE_PAGE_SIZE) || 1;
@@ -196,7 +217,7 @@ export default function Purchases() {
 
   useEffect(() => {
     setMobileOrderPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, period, customRange]);
 
   // Filtered Suppliers
   const filteredSuppliers = useMemo(() => {
@@ -892,6 +913,25 @@ export default function Purchases() {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Header controls: Subtitle on the left, TimelineSelector on the right */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+          {language === "sw"
+            ? "Maagizo ya mzigo na wasambazaji."
+            : "Supplier orders and stock arrivals."}
+        </p>
+
+        <div className="flex items-center justify-start sm:justify-end ml-auto">
+          <TimelineSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            language={language}
+          />
+        </div>
+      </div>
+
       {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
@@ -903,7 +943,7 @@ export default function Purchases() {
           </div>
           <div className="mt-2 sm:mt-3">
             <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalPurchasesAmount)}</p>
-            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{purchases?.length || 0} {language === "sw" ? "maagizo yote" : "total orders"}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{periodPurchases.length} {language === "sw" ? "maagizo yote" : "total orders"}</p>
           </div>
         </Card>
 

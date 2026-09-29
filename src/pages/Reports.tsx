@@ -45,49 +45,34 @@ import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { exportToCSV, exportToPrintablePDF } from "@/utils/exportData";
 import { PageLoader } from "@/components/PageLoader";
 import { EditSaleDialog } from "@/components/sales/EditSaleDialog";
-import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
+import {
+  TimelineSelector,
+  type TimelinePeriod,
+  getTimelinePeriodDates,
+} from "@/components/common/TimelineSelector";
 
-type DateRangeType = "daily" | "weekly" | "monthly" | "custom";
-
-function getRangeForType(type: DateRangeType, customStart?: Date, customEnd?: Date): { start: string; end: string } {
-  const now = new Date();
-  switch (type) {
-    case "daily":
-      return { start: format(startOfDay(now), "yyyy-MM-dd"), end: format(endOfDay(now), "yyyy-MM-dd") };
-    case "weekly":
-      return { start: format(startOfWeek(now), "yyyy-MM-dd"), end: format(endOfWeek(now), "yyyy-MM-dd") };
-    case "monthly":
-      return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd") };
-    case "custom":
-      if (customStart && customEnd) {
-        return { start: format(customStart, "yyyy-MM-dd"), end: format(customEnd, "yyyy-MM-dd") };
-      }
-      return { start: format(subDays(now, 7), "yyyy-MM-dd"), end: format(now, "yyyy-MM-dd") };
-    default:
-      return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd") };
-  }
-}
 
 export default function Reports() {
   const { language, t } = useLanguage();
   const { isOwner, role } = useAuth();
   const { formatMoney, formatNumber } = useShopFormatting();
   const [searchParams] = useSearchParams();
-  const rangeParam = searchParams.get("range") as DateRangeType | null;
+  const rangeParam = searchParams.get("range");
 
-  const [rangeType, setRangeType] = useState<DateRangeType>(
-    rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam) ? rangeParam : "monthly",
+  const [period, setPeriod] = useState<TimelinePeriod>(
+    rangeParam === "daily"
+      ? "today"
+      : rangeParam === "weekly"
+      ? "week"
+      : rangeParam === "monthly"
+      ? "month"
+      : "month"
   );
-
-  useEffect(() => {
-    if (rangeParam && ["daily", "weekly", "monthly", "custom"].includes(rangeParam)) {
-      setRangeType(rangeParam);
-    }
-  }, [rangeParam]);
-
-  const [customRange, setCustomRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 7), to: new Date() });
-  const [customOpen, setCustomOpen] = useState(false);
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({
+    from: subDays(new Date(), 7),
+    to: new Date(),
+  });
   const [reportTab, setReportTab] = useState<string>("sales");
   const [editingSale, setEditingSale] = useState<any | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -95,8 +80,8 @@ export default function Reports() {
   const canEdit = isOwner || role === "manager" || role === "owner";
 
   const { start, end } = useMemo(
-    () => getRangeForType(rangeType, customRange?.from, customRange?.to),
-    [rangeType, customRange],
+    () => getTimelinePeriodDates(period, customRange),
+    [period, customRange],
   );
 
   const { data: sales, isLoading: salesLoading } = useSalesByDateRange(start, end);
@@ -180,13 +165,13 @@ export default function Reports() {
         Total: s.total,
         Payment: s.payment_method,
       })),
-      `sales-report-${rangeType}`,
+      `sales-report-${period}`,
     );
   };
 
   const handlePrintPDF = () => {
     exportToPrintablePDF({
-      title: `${language === "sw" ? "Ripoti ya Biashara" : "Business Performance Report"} (${rangeType.toUpperCase()})`,
+      title: `${language === "sw" ? "Ripoti ya Biashara" : "Business Performance Report"} (${period.toUpperCase()})`,
       period: `${start} to ${end}`,
       stats: [
         { label: language === "sw" ? "Jumla ya Mapato" : "Total Revenue", value: formatMoney(netRevenue) },
@@ -204,6 +189,25 @@ export default function Reports() {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Header controls: Subtitle on the left, TimelineSelector on the right */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+          {language === "sw"
+            ? "Ripoti za biashara na takwimu."
+            : "Business analytics and export reports."}
+        </p>
+
+        <div className="flex items-center justify-start sm:justify-end ml-auto">
+          <TimelineSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            language={language}
+          />
+        </div>
+      </div>
+
       {/* 4 Olly KPI Stat Cards (2x2 on Mobile, 4 cols on Desktop) */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         {/* KPI 1: Revenue */}
@@ -288,39 +292,6 @@ export default function Reports() {
           </Tabs>
 
           <div className="flex items-center gap-2">
-            <Select value={rangeType} onValueChange={(v: DateRangeType) => setRangeType(v)}>
-              <SelectTrigger className="h-9 w-32 rounded-xl border-border bg-background text-xs font-medium">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border bg-popover text-xs">
-                <SelectItem value="daily">{t("reports.daily")}</SelectItem>
-                <SelectItem value="weekly">{t("reports.weekly")}</SelectItem>
-                <SelectItem value="monthly">{t("reports.monthly")}</SelectItem>
-                <SelectItem value="custom">{t("reports.custom")}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {rangeType === "custom" && (
-              <Popover open={customOpen} onOpenChange={setCustomOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 rounded-xl border-border text-xs">
-                    <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                    <span>Custom</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="range"
-                    selected={customRange}
-                    onSelect={(val) => {
-                      setCustomRange(val);
-                      if (val?.from && val?.to) setCustomOpen(false);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-
             <Button
               variant="outline"
               size="sm"

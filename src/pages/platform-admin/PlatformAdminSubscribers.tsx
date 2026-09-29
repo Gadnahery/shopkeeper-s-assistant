@@ -69,7 +69,7 @@ export default function PlatformAdminSubscribers() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Shop Subscribers & Status
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-[13px] sm:text-sm text-muted-foreground mt-0.5">
             Monitor billing status, pending activations, and access expiry across all registered shops.
           </p>
         </div>

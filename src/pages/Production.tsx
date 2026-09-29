@@ -47,6 +47,12 @@ import { useShopFormatting } from "@/hooks/useShopFormatting";
 import { useAdaptiveLayout } from "@/hooks/useAdaptiveLayout";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import {
+  TimelineSelector,
+  type TimelinePeriod,
+  getTimelinePeriodDates,
+} from "@/components/common/TimelineSelector";
+import { isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
 interface MaterialFormRow {
   productId: string;
@@ -61,6 +67,8 @@ export default function Production() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [period, setPeriod] = useState<TimelinePeriod>("all");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Inline Master-Detail State (NO POPUPS)
@@ -120,29 +128,42 @@ export default function Production() {
     }
   }, [batches, selectedBatch, isCreatingRun, isMobile]);
 
+  // Active period date boundaries
+  const periodDates = useMemo(() => {
+    return getTimelinePeriodDates(period, customRange);
+  }, [period, customRange]);
+
+  // Filter batches for the active period
+  const periodBatches = useMemo(() => {
+    if (!batches) return [];
+    if (period === "all") return batches;
+    return batches.filter((b) =>
+      isTimestampInLocalDayRange(b.created_at || (b as any).start_date, periodDates.start, periodDates.end)
+    );
+  }, [batches, period, periodDates]);
+
   // KPI Calculations
   const totalProducedUnits = useMemo(() => {
-    return (batches || [])
+    return periodBatches
       .filter((b) => b.status === "completed")
       .reduce((sum, b) => sum + (b.quantity_produced || 0), 0);
-  }, [batches]);
+  }, [periodBatches]);
 
   const activeBatchesCount = useMemo(() => {
-    return (batches || []).filter((b) => b.status === "in_progress" || b.status === "planned").length;
-  }, [batches]);
+    return periodBatches.filter((b) => b.status === "in_progress" || b.status === "planned").length;
+  }, [periodBatches]);
 
   const totalProductionCost = useMemo(() => {
-    return (batches || []).reduce((sum, b) => sum + (b.total_cost || 0), 0);
-  }, [batches]);
+    return periodBatches.reduce((sum, b) => sum + (b.total_cost || 0), 0);
+  }, [periodBatches]);
 
   const completedBatchesCount = useMemo(() => {
-    return (batches || []).filter((b) => b.status === "completed").length;
-  }, [batches]);
+    return periodBatches.filter((b) => b.status === "completed").length;
+  }, [periodBatches]);
 
   // Filtered Batches
   const filteredBatches = useMemo(() => {
-    if (!batches) return [];
-    return batches.filter((b) => {
+    return periodBatches.filter((b) => {
       const matchSearch =
         b.batch_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (b.output_product_name && b.output_product_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -150,7 +171,7 @@ export default function Production() {
       const matchStatus = statusFilter === "all" || b.status === statusFilter;
       return matchSearch && matchStatus;
     });
-  }, [batches, searchTerm, statusFilter]);
+  }, [periodBatches, searchTerm, statusFilter]);
 
   // Material helpers
   const handleMaterialProductChange = (index: number, productId: string) => {
@@ -728,6 +749,17 @@ export default function Production() {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Timeline Selector */}
+      <div className="flex items-center justify-start sm:justify-end">
+        <TimelineSelector
+          period={period}
+          onPeriodChange={setPeriod}
+          customRange={customRange}
+          onCustomRangeChange={setCustomRange}
+          language={language}
+        />
+      </div>
+
       {/* 4 KPI Top Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-card rounded-xl border border-border p-4 flex gap-3 shadow-xs min-w-0">

@@ -29,8 +29,8 @@ import {
 } from "lucide-react";
 
 const PAGES = [
+  { path: "/sales", labelKey: "nav.sales", labelOverride: "Point of Sale (POS)", icon: ShoppingCart },
   { path: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { path: "/sales", labelKey: "nav.sales", icon: ShoppingCart },
   { path: "/inventory", labelKey: "nav.inventory", icon: Package },
   { path: "/categories", labelKey: "nav.categories", icon: Tags },
   { path: "/orders", labelKey: "nav.orders", icon: ClipboardList },
@@ -50,7 +50,7 @@ const PAGES = [
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -59,8 +59,13 @@ export function CommandPalette() {
         setOpen((o) => !o);
       }
     };
+    const handleOpen = () => setOpen(true);
     document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    window.addEventListener("open-search-palette", handleOpen);
+    return () => {
+      document.removeEventListener("keydown", down);
+      window.removeEventListener("open-search-palette", handleOpen);
+    };
   }, []);
 
   const run = (path: string) => {
@@ -70,16 +75,17 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search pages..." />
+      <CommandInput placeholder={language === "sw" ? 'Tafuta (k.m. "Point of Sale", kurasa)...' : 'Type to search (e.g. "Point of Sale", pages)...'} />
       <CommandList>
         <CommandEmpty>No results.</CommandEmpty>
-        <CommandGroup heading="Navigate">
+        <CommandGroup heading={language === "sw" ? "Nenda Kwenye Ukurasa" : "Quick Navigate"}>
           {PAGES.map((p) => {
             const Icon = p.icon;
+            const label = p.labelOverride || t(p.labelKey);
             return (
-              <CommandItem key={p.path} onSelect={() => run(p.path)}>
+              <CommandItem key={p.path + (p.labelOverride || "")} onSelect={() => run(p.path)}>
                 <Icon className="mr-2 h-4 w-4" />
-                {t(p.labelKey)}
+                {label}
               </CommandItem>
             );
           })}

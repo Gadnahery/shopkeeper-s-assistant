@@ -18,7 +18,7 @@ export default function TermsOfServicePage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             {isSw ? "Masharti ya Huduma" : "Terms of Service"}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-[13px] sm:text-sm text-muted-foreground">
             {isSw ? "Imesasishwa Septemba 2026." : "Updated September 2026."}
           </p>
         </div>

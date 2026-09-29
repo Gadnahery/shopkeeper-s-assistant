@@ -31,7 +31,7 @@ export function PublicPageShell({
               <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">
                 {title}
               </h1>
-              <p className="mt-5 text-base leading-7 text-muted-foreground md:text-lg">
+              <p className="mt-5 text-[15px] sm:text-base leading-relaxed text-muted-foreground">
                 {description}
               </p>
             </div>

@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { format, subDays, startOfWeek, startOfMonth, startOfYear } from "date-fns";
 import {
-  CalendarDays,
   ReceiptText,
   Pencil,
   Plus,
@@ -22,8 +21,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -45,8 +42,9 @@ import { Receipt } from "@/components/Receipt";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 import { isTimestampInLocalDayRange } from "@/lib/dateUtils";
+import { TimelineSelector, TimelinePeriod } from "@/components/common/TimelineSelector";
 
-type Period = "today" | "week" | "month" | "year" | "all" | "custom";
+type Period = TimelinePeriod;
 
 const PERIOD_LABELS: Record<Period, Record<"en" | "sw", string>> = {
   today: { en: "Today", sw: "Leo" },
@@ -98,7 +96,6 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
   // Timeline / Period Filter - DEFAULTS TO "today"
   const [period, setPeriod] = useState<Period>("today");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
-  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -237,125 +234,57 @@ export function SalesHistoryView({ onAddSale }: SalesHistoryViewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Subtitle alone, unboxed, not bold */}
+      {/* Header controls & filters */}
       <div className="space-y-3 sm:space-y-3.5">
-        <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
-          {period === "today"
-            ? language === "sw"
-              ? `Mauzo ya leo (${format(new Date(), "dd MMMM yyyy")})`
-              : `Today's sales (${format(new Date(), "MMMM dd, yyyy")})`
-            : period === "custom"
-            ? customRange.from
-              ? customRange.to
-                ? `${format(customRange.from, "dd MMM yyyy")} – ${format(customRange.to, "dd MMM yyyy")}`
-                : `${format(customRange.from, "dd MMM yyyy")} – ...`
-              : language === "sw"
-              ? "Chagua tarehe kwenye kalenda"
-              : "Select date range from calendar"
-            : PERIOD_LABELS[period]?.[language] || ""}
-        </p>
+        {/* Top row: Page subtitle on the left, Transactions badge and Add Sale button on the right */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+            {language === "sw"
+              ? "Miamala ya mauzo na risiti."
+              : "Sales transactions and receipts."}
+          </p>
 
-        {/* Action Buttons & Badge stay below the subtitle */}
+          <div className="flex items-center gap-3 shrink-0 ml-auto">
+            <Badge variant="outline" className="font-semibold text-xs border-primary/30 text-primary bg-primary/5 h-7 px-2.5">
+              {periodSales.length} {language === "sw" ? "Miamala" : "Transactions"}
+            </Badge>
+
+            <Button
+              onClick={onAddSale}
+              className="h-10 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-200 px-4 text-xs sm:text-sm font-bold shadow-sm gap-2 shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span>{language === "sw" ? "Uza Bidhaa (Mauzo Mapya)" : "Add Sale"}</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Lower row: Selected timeline text on the left, TimelineSelector on the right */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
-          <Badge variant="outline" className="font-semibold text-xs border-primary/30 text-primary bg-primary/5 h-7 px-2.5">
-            {periodSales.length} {language === "sw" ? "Miamala" : "Transactions"}
-          </Badge>
+          <p className="text-[13px] sm:text-sm text-muted-foreground font-normal leading-relaxed">
+            {period === "today"
+              ? language === "sw"
+                ? `Mauzo ya leo (${format(new Date(), "dd MMMM yyyy")})`
+                : `Today's sales (${format(new Date(), "MMMM dd, yyyy")})`
+              : period === "custom"
+              ? customRange.from
+                ? customRange.to
+                  ? `${format(customRange.from, "dd MMM yyyy")} – ${format(customRange.to, "dd MMM yyyy")}`
+                  : `${format(customRange.from, "dd MMM yyyy")} – ...`
+                : language === "sw"
+                ? "Chagua tarehe kwenye kalenda"
+                : "Select date range from calendar"
+              : PERIOD_LABELS[period]?.[language] || ""}
+          </p>
 
-          <Button
-            onClick={onAddSale}
-            className="h-10 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-200 px-4 text-xs sm:text-sm font-bold shadow-sm gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>{language === "sw" ? "Uza Bidhaa (Mauzo Mapya)" : "Add Sale"}</span>
-          </Button>
+          <TimelineSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            language={language}
+          />
         </div>
-      </div>
-
-      {/* Timeline Toggle Bar (Matching Dashboard Experience) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-2.5 shadow-xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {(["today", "week", "month", "year", "all"] as Exclude<Period, "custom">[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={cn(
-                "rounded-xl px-3 py-1.5 text-xs font-semibold transition-all shrink-0",
-                period === p
-                  ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              {PERIOD_LABELS[p][language]}
-            </button>
-          ))}
-        </div>
-
-        {/* Custom Range Picker */}
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <button
-              onClick={() => {
-                setPeriod("custom");
-                setCalendarOpen(true);
-              }}
-              className={cn(
-                "flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold transition-all shrink-0",
-                period === "custom"
-                  ? "bg-primary text-primary-foreground shadow-xs border-primary font-bold"
-                  : "bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              <span>
-                {period === "custom" && customRange.from
-                  ? customRange.to
-                    ? `${format(customRange.from, "dd MMM")} – ${format(customRange.to, "dd MMM")}`
-                    : format(customRange.from, "dd MMM yyyy")
-                  : language === "sw"
-                  ? "Chagua Tarehe"
-                  : "Custom Date"}
-              </span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 rounded-2xl shadow-xl border border-border" align="end">
-            <Calendar
-              mode="range"
-              selected={{ from: customRange.from, to: customRange.to }}
-              onSelect={(range) => {
-                setCustomRange({ from: range?.from, to: range?.to });
-                if (range?.from && range?.to) {
-                  setPeriod("custom");
-                  setCalendarOpen(false);
-                }
-              }}
-              numberOfMonths={2}
-              disabled={{ after: new Date() }}
-              className="p-3"
-            />
-            {period === "custom" && customRange.from && (
-              <div className="border-t border-border p-2 flex justify-between items-center">
-                <span className="text-[11px] text-muted-foreground px-2">
-                  {customRange.to
-                    ? `${format(customRange.from, "MMM dd")} → ${format(customRange.to, "MMM dd, yyyy")}`
-                    : language === "sw"
-                    ? "Chagua tarehe ya mwisho"
-                    : "Pick end date"}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setCustomRange({});
-                    setPeriod("today");
-                  }}
-                  className="h-7 text-xs text-muted-foreground"
-                >
-                  {language === "sw" ? "Futa" : "Clear"}
-                </Button>
-              </div>
-            )}
-          </PopoverContent>
-        </Popover>
       </div>
 
       {/* 4 Olly KPI Stat Cards for the Period */}

@@ -27,7 +27,7 @@ export function PageHeader({
         </h1>
       ) : null}
 
-      {/* Subtitle stays alone, unboxed, font size bigger, not bold */}
+      {/* Subtitle stays alone, unboxed, font size standard to match Recycle Bin */}
       {text ? (
         <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed max-w-3xl">
           {text}

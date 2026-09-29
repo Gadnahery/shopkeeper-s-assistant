@@ -45,6 +45,12 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
+import {
+  TimelineSelector,
+  type TimelinePeriod,
+  getTimelinePeriodDates,
+} from "@/components/common/TimelineSelector";
+import { isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
 const STATUS_CONFIG: Record<string, { labelEn: string; labelSw: string; badgeClass: string }> = {
   pending: {
@@ -85,7 +91,8 @@ export default function Orders() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<"all" | "today" | "week" | "month">("all");
+  const [period, setPeriod] = useState<TimelinePeriod>("all");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -154,13 +161,9 @@ export default function Orders() {
   const updateStatus = useUpdateOrderStatus();
   const deleteOrder = useDeleteOrder();
 
-  const dateRangeFilter = useMemo(() => {
-    if (dateRange === "all") return { from: null, to: null };
-    const now = new Date();
-    if (dateRange === "today") return { from: startOfDay(now), to: endOfDay(now) };
-    if (dateRange === "week") return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
-    return { from: startOfDay(subDays(now, 30)), to: endOfDay(now) };
-  }, [dateRange]);
+  const periodDates = useMemo(() => {
+    return getTimelinePeriodDates(period, customRange);
+  }, [period, customRange]);
 
   const filteredOrders = useMemo(() => {
     let list = orders ?? [];
@@ -174,13 +177,14 @@ export default function Orders() {
       );
     }
     if (statusFilter !== "all") list = list.filter((o) => o.status === statusFilter);
-    if (dateRangeFilter.from)
-      list = list.filter(
-        (o) => new Date(o.created_at) >= dateRangeFilter.from! && new Date(o.created_at) <= dateRangeFilter.to!,
+    if (period !== "all") {
+      list = list.filter((o) =>
+        isTimestampInLocalDayRange(o.created_at, periodDates.start, periodDates.end)
       );
+    }
     if (priorityFilter !== "all") list = list.filter((o) => ((o as any).priority ?? "medium") === priorityFilter);
     return list;
-  }, [orders, search, statusFilter, dateRangeFilter, priorityFilter]);
+  }, [orders, search, statusFilter, period, periodDates, priorityFilter]);
 
   const totalMobileOrderPages = Math.max(1, Math.ceil(filteredOrders.length / MOBILE_ORDER_PAGE_SIZE));
   const currentMobileOrders = useMemo(() => {
@@ -190,7 +194,7 @@ export default function Orders() {
 
   useEffect(() => {
     setMobileOrderPage(1);
-  }, [search, statusFilter, priorityFilter, dateRange]);
+  }, [search, statusFilter, priorityFilter, period, customRange]);
 
 
 
@@ -678,6 +682,25 @@ export default function Orders() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 space-y-6 pb-12">
+      {/* Header controls: Subtitle on the left, TimelineSelector on the right */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+          {language === "sw"
+            ? "Maagizo ya wateja na utekelezaji."
+            : "Customer orders and fulfillment."}
+        </p>
+
+        <div className="flex items-center justify-start sm:justify-end ml-auto">
+          <TimelineSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            language={language}
+          />
+        </div>
+      </div>
+
       {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
@@ -785,18 +808,6 @@ export default function Orders() {
                         {language === "sw" ? v.labelSw : v.labelEn}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
-                  <SelectTrigger className="h-10 w-32 rounded-xl border-border bg-background text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover text-xs">
-                    <SelectItem value="all">{language === "sw" ? "Muda Wote" : "All Time"}</SelectItem>
-                    <SelectItem value="today">{language === "sw" ? "Leo" : "Today"}</SelectItem>
-                    <SelectItem value="week">{language === "sw" ? "Wiki Hii" : "This Week"}</SelectItem>
-                    <SelectItem value="month">{language === "sw" ? "Mwezi Huu" : "This Month"}</SelectItem>
                   </SelectContent>
                 </Select>
 

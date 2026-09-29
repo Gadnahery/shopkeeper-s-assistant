@@ -69,7 +69,7 @@ export default function PlatformAdminRevenue() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Revenue & Collections
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-[13px] sm:text-sm text-muted-foreground mt-0.5">
             Breakdown of verified subscription payments received across mobile money networks.
           </p>
         </div>

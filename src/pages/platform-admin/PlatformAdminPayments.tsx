@@ -142,7 +142,7 @@ export default function PlatformAdminPayments() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Subscription Payments Verification
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-[13px] sm:text-sm text-muted-foreground mt-0.5">
             Verify manual M-Pesa / HaloPesa submissions against bank/wallet statements.
           </p>
         </div>

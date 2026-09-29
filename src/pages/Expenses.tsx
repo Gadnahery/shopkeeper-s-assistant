@@ -55,6 +55,12 @@ import { PageLoader } from "@/components/PageLoader";
 import { cn } from "@/lib/utils";
 import { useOtherIncome } from "@/hooks/useOtherIncome";
 import { OtherIncomePanel } from "@/components/finance/OtherIncomePanel";
+import {
+  TimelineSelector,
+  type TimelinePeriod,
+  getTimelinePeriodDates,
+} from "@/components/common/TimelineSelector";
+import { isTimestampInLocalDayRange } from "@/lib/dateUtils";
 
 function safeFormatDate(value: any, pattern: string, fallback = "—"): string {
   if (!value) return fallback;
@@ -88,6 +94,8 @@ export default function Expenses() {
   const [activeTab, setActiveTab] = useState<string>("expenses");
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [period, setPeriod] = useState<TimelinePeriod>("all");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [mobilePage, setMobilePage] = useState(1);
 
   // Inline Master-Detail Panel State (NO POPUPS)
@@ -95,6 +103,11 @@ export default function Expenses() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [expenseToDeleteId, setExpenseToDeleteId] = useState<string | null>(null);
+
+  // Active period date boundaries
+  const periodDates = useMemo(() => {
+    return getTimelinePeriodDates(period, customRange);
+  }, [period, customRange]);
 
   // New Expense Form
   const [newForm, setNewForm] = useState({
@@ -107,10 +120,7 @@ export default function Expenses() {
 
   const { data: expenses, isLoading } = useExpenses();
   const { data: otherIncome = [], isLoading: otherIncomeLoading } = useOtherIncome();
-  const { data: salesList } = useSalesByDateRange(
-    format(new Date(new Date().getFullYear(), 0, 1), "yyyy-MM-dd"),
-    format(new Date(), "yyyy-MM-dd")
-  );
+  const { data: salesList } = useSalesByDateRange(periodDates.start, periodDates.end);
   const { data: purchasesList } = usePurchases();
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
@@ -183,10 +193,34 @@ export default function Expenses() {
 
   useEffect(() => {
     setMobilePage(1);
-  }, [searchTerm, categoryFilter]);
+  }, [searchTerm, categoryFilter, period, customRange]);
+
+  const periodExpenses = useMemo(() => {
+    if (!expenses) return [];
+    if (period === "all") return expenses;
+    return expenses.filter((e) =>
+      isTimestampInLocalDayRange(e.date || e.created_at, periodDates.start, periodDates.end)
+    );
+  }, [expenses, period, periodDates]);
+
+  const periodOtherIncome = useMemo(() => {
+    if (!otherIncome) return [];
+    if (period === "all") return otherIncome;
+    return otherIncome.filter((i) =>
+      isTimestampInLocalDayRange(i.date || i.created_at, periodDates.start, periodDates.end)
+    );
+  }, [otherIncome, period, periodDates]);
+
+  const periodPurchasesList = useMemo(() => {
+    if (!purchasesList) return [];
+    if (period === "all") return purchasesList;
+    return purchasesList.filter((p) =>
+      isTimestampInLocalDayRange(p.created_at || (p as any).received_date, periodDates.start, periodDates.end)
+    );
+  }, [purchasesList, period, periodDates]);
 
   const filteredExpenses = useMemo(() => {
-    return (expenses || []).filter((e) => {
+    return periodExpenses.filter((e) => {
       const q = searchTerm.toLowerCase();
       const expTitle = e.title || (e as any).description || "";
       const matchesSearch =
@@ -197,7 +231,7 @@ export default function Expenses() {
       const matchesCat = categoryFilter === "all" || e.category === categoryFilter;
       return matchesSearch && matchesCat;
     });
-  }, [expenses, searchTerm, categoryFilter]);
+  }, [periodExpenses, searchTerm, categoryFilter]);
 
   const MOBILE_PAGE_SIZE = 4;
   const totalMobilePages = Math.ceil(filteredExpenses.length / MOBILE_PAGE_SIZE) || 1;
@@ -208,8 +242,8 @@ export default function Expenses() {
 
   // KPI Calculations
   const totalAmount = useMemo(() => {
-    return (expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  }, [expenses]);
+    return periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [periodExpenses]);
 
   const thisMonthExpenses = useMemo(() => {
     const currentMonth = format(new Date(), "yyyy-MM");
@@ -220,25 +254,25 @@ export default function Expenses() {
 
   const categoryBreakdown = useMemo(() => {
     const map = new Map<string, number>();
-    (expenses || []).forEach((e) => {
+    periodExpenses.forEach((e) => {
       const cat = e.category || "other";
       map.set(cat, (map.get(cat) || 0) + Number(e.amount || 0));
     });
     return Array.from(map.entries())
       .map(([cat, total]) => ({ cat, total }))
       .sort((a, b) => b.total - a.total);
-  }, [expenses]);
+  }, [periodExpenses]);
 
   // Profit KPI calculations
   const totalRevenue = useMemo(() => {
     const sales = (salesList || []).reduce((sum, s) => sum + (Number(s.total) || 0), 0);
-    const other = (otherIncome || []).reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+    const other = periodOtherIncome.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
     return sales + other;
-  }, [salesList, otherIncome]);
+  }, [salesList, periodOtherIncome]);
 
   const totalCOGS = useMemo(() => {
-    return (purchasesList || []).reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
-  }, [purchasesList]);
+    return periodPurchasesList.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
+  }, [periodPurchasesList]);
 
   const grossProfit = Math.max(0, totalRevenue - totalCOGS);
   const netProfit = Math.max(0, grossProfit - totalAmount);
@@ -602,6 +636,25 @@ export default function Expenses() {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Header controls: Subtitle on the left, TimelineSelector on the right */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+          {language === "sw"
+            ? "Matumizi ya duka, faida na hasara."
+            : "Track shop spending and profit & loss."}
+        </p>
+
+        <div className="flex items-center justify-start sm:justify-end ml-auto">
+          <TimelineSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+            language={language}
+          />
+        </div>
+      </div>
+
       {/* 4 Compact Olly KPI Cards (2x2 on Mobile, 4 cols on Desktop) */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
         <Card className="border border-border bg-card p-3.5 sm:p-5 shadow-xs transition-all hover:shadow-sm">
@@ -613,7 +666,7 @@ export default function Expenses() {
           </div>
           <div className="mt-2 sm:mt-3">
             <p className="text-base sm:text-2xl font-bold tracking-tight text-foreground truncate">{formatMoney(totalAmount)}</p>
-            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{expenses?.length || 0} {language === "sw" ? "miamala" : "transactions"}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground truncate">{periodExpenses.length} {language === "sw" ? "miamala" : "transactions"}</p>
           </div>
         </Card>
 

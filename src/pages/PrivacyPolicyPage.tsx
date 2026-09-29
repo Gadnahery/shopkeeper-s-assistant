@@ -18,7 +18,7 @@ export default function PrivacyPolicyPage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             {isSw ? "Sera ya Faragha" : "Privacy Policy"}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-[13px] sm:text-sm text-muted-foreground">
             {isSw
               ? "Imesasishwa Septemba 2026. Inalingana na Sheria ya Ulinzi wa Data Binafsi ya Tanzania (2022)."
               : "Updated September 2026. Aligned with Tanzania’s Personal Data Protection Act (2022)."}
